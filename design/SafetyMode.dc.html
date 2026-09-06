@@ -1,0 +1,185 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    /* ---- tokens ------------------------------------------------------
+       :root carries the light marketing surface. .app overrides with the
+       near-black desktop shell. Components below read only the vars, so
+       one component set serves both.                                    */
+    :root {
+      --bg:#F6F4EF; --panel:#F1EDE5; --raised:#FFFFFF; --sunk:#E9E5DC;
+      --line:#DAD5CB; --line-soft:#E4DFD5;
+      --fg:#161719; --mut:#6E6A62; --faint:#8B867C;
+      --acc:#5B5CF0; --acc-fg:#FFFFFF; --acc-soft:#F0F0FE;
+      --ok:#41603F; --ok-line:#5F7F63;
+      --warn:#8A5F14; --warn-line:#C08A2E; --warn-soft:#FBF6EC;
+      --bad:#8E4A44; --bad-line:#B4514A; --bad-soft:#F9F0EF;
+    }
+    .app {
+      --bg:#0F1011; --panel:#141517; --raised:#1A1B1E; --sunk:#1E2023;
+      --line:#2A2C30; --line-soft:#202225;
+      --fg:#E9E9E7; --mut:#9C9D9A; --faint:#6F716F;
+      --acc:#6E6FF5; --acc-fg:#FFFFFF; --acc-soft:#1C1D33;
+      --ok:#8FBF93; --ok-line:#5F8F65;
+      --warn:#E0B368; --warn-line:#B4863A; --warn-soft:#241E12;
+      --bad:#EC8880; --bad-line:#B4564E; --bad-soft:#2A1817;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; background: #F6F4EF; color: #161719;
+      font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+      font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+    a { color: var(--acc); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ---- surfaces ---- */
+    .app, .site { background: var(--bg); color: var(--fg); }
+    .win { display: flex; flex-direction: column; overflow: hidden; background: var(--bg); color: var(--fg); }
+    .box { border: 1px solid var(--line); background: var(--raised); border-radius: 6px; }
+    .soft { background: var(--sunk); }
+    .note { border: 1px dashed var(--acc); background: var(--acc-soft); border-radius: 6px; }
+    .note .lab { color: var(--acc); }
+
+    .chrome { height: 34px; flex-shrink: 0; display: flex; align-items: center; gap: 10px;
+      padding: 0 12px; border-bottom: 1px solid var(--line); background: var(--panel); }
+
+    /* ---- type ---- */
+    .m { font-family: "Geist Mono", "Cascadia Mono", ui-monospace, Consolas, monospace; }
+    .lab { font-family: "Geist Mono", "Cascadia Mono", ui-monospace, Consolas, monospace;
+      font-size: 11px; letter-spacing: .04em; color: var(--faint); }
+    .h1 { font-size: 26px; line-height: 1.2; font-weight: 600; letter-spacing: -.012em; margin: 0; }
+    .h2 { font-size: 15px; font-weight: 600; margin: 0; }
+    .h3 { font-size: 14px; font-weight: 600; margin: 0; }
+    .mut { color: var(--mut); }
+    .prose { font-size: 15px; line-height: 1.62; }
+
+    /* ---- controls ---- */
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+      height: 32px; padding: 0 14px; border: 1px solid var(--line); background: var(--raised);
+      border-radius: 6px; font-size: 13px; color: var(--fg); }
+    .btnp { background: var(--acc); border-color: var(--acc); color: var(--acc-fg); }
+    .btnq { background: transparent; border-color: transparent; color: var(--mut); }
+    .btns { height: 28px; padding: 0 10px; font-size: 12px; }
+    .btnl { height: 40px; padding: 0 18px; font-size: 14px; }
+    .pill { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 9px;
+      border-radius: 11px; border: 1px solid var(--line); background: var(--raised);
+      font-size: 11px; color: var(--fg); }
+    .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .track { height: 5px; border-radius: 3px; background: var(--line); overflow: hidden; }
+    .fillbar { height: 100%; background: var(--acc); border-radius: 3px; }
+
+    /* ---- wireframe placeholders ---- */
+    .ph { background: var(--line); border-radius: 2px; }
+    .xbox { border: 1px solid var(--line); border-radius: 5px; background-color: var(--sunk);
+      background-image:
+        linear-gradient(to top right, transparent calc(50% - 0.5px), var(--line) 50%, transparent calc(50% + 0.5px)),
+        linear-gradient(to bottom right, transparent calc(50% - 0.5px), var(--line) 50%, transparent calc(50% + 0.5px)); }
+  </style>
+</helmet>
+<div class="win" style="width:1280px;height:800px">
+
+  <div class="chrome">
+    <div class="xbox" style="width:16px;height:16px"></div>
+    <span style="font-size:12px;font-weight:600">ForgeLocal</span>
+    <div style="flex-grow:1"></div>
+    <div style="display:flex;align-items:center;gap:16px">
+      <div class="ph" style="width:11px;height:2px"></div>
+      <div class="ph" style="width:9px;height:9px;border-radius:1px"></div>
+      <div class="ph" style="width:10px;height:10px;border-radius:1px"></div>
+    </div>
+  </div>
+
+  <div style="flex-grow:1;display:flex;align-items:center;justify-content:center;padding:0 40px">
+    <div style="width:760px;display:flex;flex-direction:column;gap:18px">
+
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <h1 class="h1">How much should it ask?</h1>
+        <p class="mut" style="margin:0">You can change this per project later. There is no mode that turns protections off.</p>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+
+        <div class="box" style="padding:16px;display:flex;gap:14px;align-items:flex-start">
+          <div style="width:16px;height:16px;border-radius:50%;border:1px solid #C9C6BE;flex-shrink:0;margin-top:2px"></div>
+          <div style="display:flex;flex-direction:column;gap:8px;flex-grow:1">
+            <span class="h2">Ask every time</span>
+            <span class="mut" style="font-size:12px">Approve every write and every command, including reading files and running tests.</span>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <span class="pill" style="height:20px;font-size:11px">Edit a file: asks</span>
+              <span class="pill" style="height:20px;font-size:11px">npm test: asks</span>
+              <span class="pill" style="height:20px;font-size:11px">git status: asks</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="box" style="padding:16px;display:flex;gap:14px;align-items:flex-start;border-color:#5B5CF0;box-shadow:inset 0 0 0 1px #5B5CF0">
+          <div style="width:16px;height:16px;border-radius:50%;border:5px solid #5B5CF0;background:#FFFFFF;flex-shrink:0;margin-top:2px"></div>
+          <div style="display:flex;flex-direction:column;gap:8px;flex-grow:1">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span class="h2">Balanced</span>
+              <span class="pill" style="height:20px;font-size:10px;background:#5B5CF0;border-color:#5B5CF0;color:#FFFFFF">Recommended</span>
+            </div>
+            <span class="mut" style="font-size:12px;text-wrap:pretty">Routine edits and safe project commands run on their own. Installs, network access, secrets, deletes, Git writes and anything outside the project ask first.</span>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <span class="pill" style="height:20px;font-size:11px">Edit a file: runs</span>
+              <span class="pill" style="height:20px;font-size:11px">npm test: runs</span>
+              <span class="pill" style="height:20px;font-size:11px">npm install: asks</span>
+              <span class="pill" style="height:20px;font-size:11px">git commit: asks</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="box" style="padding:16px;display:flex;gap:14px;align-items:flex-start">
+          <div style="width:16px;height:16px;border-radius:50%;border:1px solid #C9C6BE;flex-shrink:0;margin-top:2px"></div>
+          <div style="display:flex;flex-direction:column;gap:8px;flex-grow:1">
+            <span class="h2">Autopilot</span>
+            <span class="mut" style="font-size:12px">Broader project actions run without asking. Destructive and system-wide operations stay blocked or still ask.</span>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <span class="pill" style="height:20px;font-size:11px">npm install: runs</span>
+              <span class="pill" style="height:20px;font-size:11px">git commit: runs</span>
+              <span class="pill" style="height:20px;font-size:11px;border-color:#B4514A;color:#B4514A">Delete outside project: blocked</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="note" style="padding:12px 14px;display:flex;gap:10px;align-items:flex-start">
+        <span class="lab" style="flex-shrink:0;padding-top:2px">Note</span>
+        <span class="mut" style="font-size:12px">A permission prompt is not sandbox isolation, and the copy here should never imply that it is. Protected workspace mode comes later.</span>
+      </div>
+
+    </div>
+  </div>
+
+  <div style="height:60px;flex-shrink:0;border-top:1px solid #DAD5CB;background:#EFEBE3;display:flex;align-items:center;gap:20px;padding:0 24px">
+    <span class="lab" style="flex-shrink:0">Step 10 of 11</span>
+    <div style="display:flex;gap:5px;flex-grow:1">
+      <div style="width:26px;height:4px;border-radius:2px;background:#B9B4A9"></div>
+      <div style="width:26px;height:4px;border-radius:2px;background:#B9B4A9"></div>
+      <div style="width:26px;height:4px;border-radius:2px;background:#B9B4A9"></div>
+      <div style="width:26px;height:4px;border-radius:2px;background:#B9B4A9"></div>
+      <div style="width:26px;height:4px;border-radius:2px;background:#B9B4A9"></div>
+      <div style="width:26px;height:4px;border-radius:2px;background:#B9B4A9"></div>
+      <div style="width:26px;height:4px;border-radius:2px;background:#B9B4A9"></div>
+      <div style="width:26px;height:4px;border-radius:2px;background:#B9B4A9"></div>
+      <div style="width:26px;height:4px;border-radius:2px;background:#B9B4A9"></div>
+      <div style="width:26px;height:4px;border-radius:2px;background:#5B5CF0"></div>
+      <div style="width:26px;height:4px;border-radius:2px;background:#DFDAD0"></div>
+    </div>
+    <div style="display:flex;gap:10px;flex-shrink:0">
+      <div class="btn btns" style="height:34px">Back</div>
+      <div class="btn btnp btns" style="height:34px;padding:0 18px">Start building</div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

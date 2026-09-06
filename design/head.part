@@ -1,0 +1,84 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    /* ---- tokens ------------------------------------------------------
+       :root carries the light marketing surface. .app overrides with the
+       near-black desktop shell. Components below read only the vars, so
+       one component set serves both.                                    */
+    :root {
+      --bg:#F6F4EF; --panel:#F1EDE5; --raised:#FFFFFF; --sunk:#E9E5DC;
+      --line:#DAD5CB; --line-soft:#E4DFD5;
+      --fg:#161719; --mut:#6E6A62; --faint:#8B867C;
+      --acc:#5B5CF0; --acc-fg:#FFFFFF; --acc-soft:#F0F0FE;
+      --ok:#41603F; --ok-line:#5F7F63;
+      --warn:#8A5F14; --warn-line:#C08A2E; --warn-soft:#FBF6EC;
+      --bad:#8E4A44; --bad-line:#B4514A; --bad-soft:#F9F0EF;
+    }
+    .app {
+      --bg:#0F1011; --panel:#141517; --raised:#1A1B1E; --sunk:#1E2023;
+      --line:#2A2C30; --line-soft:#202225;
+      --fg:#E9E9E7; --mut:#9C9D9A; --faint:#6F716F;
+      --acc:#6E6FF5; --acc-fg:#FFFFFF; --acc-soft:#1C1D33;
+      --ok:#8FBF93; --ok-line:#5F8F65;
+      --warn:#E0B368; --warn-line:#B4863A; --warn-soft:#241E12;
+      --bad:#EC8880; --bad-line:#B4564E; --bad-soft:#2A1817;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; background: #F6F4EF; color: #161719;
+      font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+      font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+    a { color: var(--acc); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ---- surfaces ---- */
+    .app, .site { background: var(--bg); color: var(--fg); }
+    .win { display: flex; flex-direction: column; overflow: hidden; background: var(--bg); color: var(--fg); }
+    .box { border: 1px solid var(--line); background: var(--raised); border-radius: 6px; }
+    .soft { background: var(--sunk); }
+    .note { border: 1px dashed var(--acc); background: var(--acc-soft); border-radius: 6px; }
+    .note .lab { color: var(--acc); }
+
+    .chrome { height: 34px; flex-shrink: 0; display: flex; align-items: center; gap: 10px;
+      padding: 0 12px; border-bottom: 1px solid var(--line); background: var(--panel); }
+
+    /* ---- type ---- */
+    .m { font-family: "Geist Mono", "Cascadia Mono", ui-monospace, Consolas, monospace; }
+    .lab { font-family: "Geist Mono", "Cascadia Mono", ui-monospace, Consolas, monospace;
+      font-size: 11px; letter-spacing: .04em; color: var(--faint); }
+    .h1 { font-size: 26px; line-height: 1.2; font-weight: 600; letter-spacing: -.012em; margin: 0; }
+    .h2 { font-size: 15px; font-weight: 600; margin: 0; }
+    .h3 { font-size: 14px; font-weight: 600; margin: 0; }
+    .mut { color: var(--mut); }
+    .prose { font-size: 15px; line-height: 1.62; }
+
+    /* ---- controls ---- */
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+      height: 32px; padding: 0 14px; border: 1px solid var(--line); background: var(--raised);
+      border-radius: 6px; font-size: 13px; color: var(--fg); }
+    .btnp { background: var(--acc); border-color: var(--acc); color: var(--acc-fg); }
+    .btnq { background: transparent; border-color: transparent; color: var(--mut); }
+    .btns { height: 28px; padding: 0 10px; font-size: 12px; }
+    .btnl { height: 40px; padding: 0 18px; font-size: 14px; }
+    .pill { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 9px;
+      border-radius: 11px; border: 1px solid var(--line); background: var(--raised);
+      font-size: 11px; color: var(--fg); }
+    .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .track { height: 5px; border-radius: 3px; background: var(--line); overflow: hidden; }
+    .fillbar { height: 100%; background: var(--acc); border-radius: 3px; }
+
+    /* ---- wireframe placeholders ---- */
+    .ph { background: var(--line); border-radius: 2px; }
+    .xbox { border: 1px solid var(--line); border-radius: 5px; background-color: var(--sunk);
+      background-image:
+        linear-gradient(to top right, transparent calc(50% - 0.5px), var(--line) 50%, transparent calc(50% + 0.5px)),
+        linear-gradient(to bottom right, transparent calc(50% - 0.5px), var(--line) 50%, transparent calc(50% + 0.5px)); }
+  </style>
+</helmet>

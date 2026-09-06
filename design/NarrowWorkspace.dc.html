@@ -1,0 +1,226 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    /* ---- tokens ------------------------------------------------------
+       :root carries the light marketing surface. .app overrides with the
+       near-black desktop shell. Components below read only the vars, so
+       one component set serves both.                                    */
+    :root {
+      --bg:#F6F4EF; --panel:#F1EDE5; --raised:#FFFFFF; --sunk:#E9E5DC;
+      --line:#DAD5CB; --line-soft:#E4DFD5;
+      --fg:#161719; --mut:#6E6A62; --faint:#8B867C;
+      --acc:#5B5CF0; --acc-fg:#FFFFFF; --acc-soft:#F0F0FE;
+      --ok:#41603F; --ok-line:#5F7F63;
+      --warn:#8A5F14; --warn-line:#C08A2E; --warn-soft:#FBF6EC;
+      --bad:#8E4A44; --bad-line:#B4514A; --bad-soft:#F9F0EF;
+    }
+    .app {
+      --bg:#0F1011; --panel:#141517; --raised:#1A1B1E; --sunk:#1E2023;
+      --line:#2A2C30; --line-soft:#202225;
+      --fg:#E9E9E7; --mut:#9C9D9A; --faint:#6F716F;
+      --acc:#6E6FF5; --acc-fg:#FFFFFF; --acc-soft:#1C1D33;
+      --ok:#8FBF93; --ok-line:#5F8F65;
+      --warn:#E0B368; --warn-line:#B4863A; --warn-soft:#241E12;
+      --bad:#EC8880; --bad-line:#B4564E; --bad-soft:#2A1817;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; background: #F6F4EF; color: #161719;
+      font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+      font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+    a { color: var(--acc); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ---- surfaces ---- */
+    .app, .site { background: var(--bg); color: var(--fg); }
+    .win { display: flex; flex-direction: column; overflow: hidden; background: var(--bg); color: var(--fg); }
+    .box { border: 1px solid var(--line); background: var(--raised); border-radius: 6px; }
+    .soft { background: var(--sunk); }
+    .note { border: 1px dashed var(--acc); background: var(--acc-soft); border-radius: 6px; }
+    .note .lab { color: var(--acc); }
+
+    .chrome { height: 34px; flex-shrink: 0; display: flex; align-items: center; gap: 10px;
+      padding: 0 12px; border-bottom: 1px solid var(--line); background: var(--panel); }
+
+    /* ---- type ---- */
+    .m { font-family: "Geist Mono", "Cascadia Mono", ui-monospace, Consolas, monospace; }
+    .lab { font-family: "Geist Mono", "Cascadia Mono", ui-monospace, Consolas, monospace;
+      font-size: 11px; letter-spacing: .04em; color: var(--faint); }
+    .h1 { font-size: 26px; line-height: 1.2; font-weight: 600; letter-spacing: -.012em; margin: 0; }
+    .h2 { font-size: 15px; font-weight: 600; margin: 0; }
+    .h3 { font-size: 14px; font-weight: 600; margin: 0; }
+    .mut { color: var(--mut); }
+    .prose { font-size: 15px; line-height: 1.62; }
+
+    /* ---- controls ---- */
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+      height: 32px; padding: 0 14px; border: 1px solid var(--line); background: var(--raised);
+      border-radius: 6px; font-size: 13px; color: var(--fg); }
+    .btnp { background: var(--acc); border-color: var(--acc); color: var(--acc-fg); }
+    .btnq { background: transparent; border-color: transparent; color: var(--mut); }
+    .btns { height: 28px; padding: 0 10px; font-size: 12px; }
+    .btnl { height: 40px; padding: 0 18px; font-size: 14px; }
+    .pill { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 9px;
+      border-radius: 11px; border: 1px solid var(--line); background: var(--raised);
+      font-size: 11px; color: var(--fg); }
+    .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .track { height: 5px; border-radius: 3px; background: var(--line); overflow: hidden; }
+    .fillbar { height: 100%; background: var(--acc); border-radius: 3px; }
+
+    /* ---- wireframe placeholders ---- */
+    .ph { background: var(--line); border-radius: 2px; }
+    .xbox { border: 1px solid var(--line); border-radius: 5px; background-color: var(--sunk);
+      background-image:
+        linear-gradient(to top right, transparent calc(50% - 0.5px), var(--line) 50%, transparent calc(50% + 0.5px)),
+        linear-gradient(to bottom right, transparent calc(50% - 0.5px), var(--line) 50%, transparent calc(50% + 0.5px)); }
+  </style>
+</helmet>
+<div class="win" style="width:900px;height:840px">
+
+  <div class="chrome">
+    <div class="xbox" style="width:16px;height:16px"></div>
+    <span style="font-size:12px;font-weight:600">ForgeLocal</span>
+    <span class="mut" style="font-size:12px">task-tracker</span>
+    <div style="flex-grow:1"></div>
+    <div style="display:flex;align-items:center;gap:16px">
+      <div class="ph" style="width:11px;height:2px"></div>
+      <div class="ph" style="width:9px;height:9px;border-radius:1px"></div>
+      <div class="ph" style="width:10px;height:10px;border-radius:1px"></div>
+    </div>
+  </div>
+
+  <div style="flex-grow:1;display:flex;min-height:0">
+
+    <div style="width:56px;flex-shrink:0;border-right:1px solid #DAD5CB;background:#F1EDE5;display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:8px">
+      <div class="btn btnp" style="width:34px;height:34px;padding:0;flex-shrink:0">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      </div>
+      <div class="box" style="width:34px;height:34px;flex-shrink:0;border-color:#5B5CF0;box-shadow:inset 0 0 0 1px #5B5CF0"></div>
+      <div class="xbox" style="width:34px;height:34px;flex-shrink:0"></div>
+      <div class="xbox" style="width:34px;height:34px;flex-shrink:0"></div>
+      <div style="flex-grow:1"></div>
+      <div class="xbox" style="width:34px;height:34px;flex-shrink:0"></div>
+      <div class="xbox" style="width:34px;height:34px;flex-shrink:0"></div>
+    </div>
+
+    <div style="flex-grow:1;min-width:0;display:flex;flex-direction:column;background:#FFFFFF">
+
+      <div style="padding:13px 16px;border-bottom:1px solid #E4DFD5;display:flex;align-items:flex-start;gap:10px">
+        <div style="display:flex;flex-direction:column;gap:5px;flex-grow:1;min-width:0">
+          <span class="h2">Build a polished one-page task tracker with local storage</span>
+          <span class="lab">Step 4 of 7 &middot; installing dependencies</span>
+        </div>
+        <span class="pill" style="height:22px;font-size:11px;border-color:#C08A2E;color:#8A5F14;flex-shrink:0">Needs approval</span>
+      </div>
+
+      <div style="height:38px;flex-shrink:0;border-bottom:1px solid #E4DFD5;display:flex;align-items:stretch;padding:0 12px;gap:2px;background:#F1EDE5">
+        <div style="display:flex;align-items:center;padding:0 13px;font-size:12px;font-weight:600;background:#FFFFFF;border:1px solid #E4DFD5;border-bottom-color:#FFFFFF;border-radius:4px 4px 0 0;margin-bottom:-1px">Task</div>
+        <div style="display:flex;align-items:center;padding:0 13px;font-size:12px;color:#6E6A62">Preview</div>
+        <div style="display:flex;align-items:center;padding:0 13px;font-size:12px;color:#6E6A62">Diff</div>
+        <div style="display:flex;align-items:center;padding:0 13px;font-size:12px;color:#6E6A62">Files</div>
+        <div style="display:flex;align-items:center;padding:0 13px;font-size:12px;color:#6E6A62">Terminal</div>
+        <div style="flex-grow:1"></div>
+        <div style="display:flex;align-items:center;padding:0 4px">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8B867C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+        </div>
+      </div>
+
+      <div style="flex-grow:1;min-height:0;overflow:hidden;padding:14px 16px;display:flex;flex-direction:column;gap:12px">
+
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <span class="lab">Plan</span>
+          <div class="box soft" style="padding:11px 13px;display:flex;flex-direction:column;gap:5px">
+            <span style="font-size:12px">1. Scaffold the Vite and React project</span>
+            <span style="font-size:12px">2. Build the list, the composer and the filter bar</span>
+            <span style="font-size:12px">3. Persist to localStorage behind a small hook</span>
+            <span style="font-size:12px">4. Add a smoke test, then start the preview</span>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <span class="lab">Actions</span>
+          <div style="display:flex;align-items:center;gap:9px;padding:5px 0">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5F7F63" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M20 6 9 17l-5-5"/></svg>
+            <span class="m" style="font-size:12px;flex-grow:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">write_file src/App.jsx</span>
+            <span class="lab">+84</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:9px;padding:5px 0">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5F7F63" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M20 6 9 17l-5-5"/></svg>
+            <span class="m" style="font-size:12px;flex-grow:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">write_file src/useTasks.js</span>
+            <span class="lab">+31</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:9px;padding:5px 0">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5F7F63" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M20 6 9 17l-5-5"/></svg>
+            <span class="m" style="font-size:12px;flex-grow:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">apply_patch index.html</span>
+            <span class="lab">+6 &minus;2</span>
+          </div>
+        </div>
+
+        <div class="box" style="border-color:#C08A2E;background:#FBF6EC;padding:13px;display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="dot" style="background:#C08A2E"></div>
+            <span class="h3">Install 3 dependencies</span>
+            <div style="flex-grow:1"></div>
+            <span class="lab">Reversible</span>
+          </div>
+          <div class="box m" style="padding:8px 10px;font-size:11px;background:#FFFFFF">npm install react-router-dom clsx nanoid</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <div class="btn btnp btns">Allow once</div>
+            <div class="btn btns">Allow for this task</div>
+            <div class="btn btns">Deny</div>
+          </div>
+        </div>
+
+        <div class="note" style="padding:11px 13px;display:flex;gap:10px;align-items:flex-start">
+          <span class="lab" style="flex-shrink:0;padding-top:2px">Rule</span>
+          <span class="mut" style="font-size:12px">The rail collapses to icons and the work surface joins the tab bar, but the approval card and the local indicator survive at every width.</span>
+        </div>
+
+      </div>
+
+      <div style="border-top:1px solid #E4DFD5;padding:11px 16px;display:flex;flex-direction:column;gap:9px">
+        <div class="box soft" style="height:46px;padding:9px 11px"><span class="mut" style="font-size:12px">Ask for a change, or add to the plan</span></div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="pill" style="height:22px;font-size:11px">Local</span>
+          <div style="flex-grow:1"></div>
+          <div class="btn btns">Pause</div>
+          <div class="btn btnp btns">Send</div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <div style="height:30px;flex-shrink:0;border-top:1px solid #DAD5CB;background:#EFEBE3;display:flex;align-items:center;padding:0 14px;font-size:11px">
+    <div style="display:flex;align-items:center;gap:7px;padding-right:12px;border-right:1px solid #DAD5CB">
+      <div class="dot" style="width:7px;height:7px;background:#5F7F63"></div>
+      <span>Balanced</span>
+      <span class="m mut">[model:tag]</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:7px;padding:0 12px;border-right:1px solid #DAD5CB"><span>Local</span></div>
+    <div style="display:flex;align-items:center;gap:7px;padding:0 12px;border-right:1px solid #DAD5CB">
+      <span class="mut">RAM</span>
+      <div class="track" style="width:44px;height:5px"><div class="fillbar" style="width:61%;background:#8B867C"></div></div>
+      <span class="mut">61%</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:7px;padding:0 12px;border-right:1px solid #DAD5CB">
+      <span class="mut">Context</span>
+      <div class="track" style="width:44px;height:5px"><div class="fillbar" style="width:42%"></div></div>
+      <span class="mut">42%</span>
+    </div>
+    <div style="flex-grow:1"></div>
+    <div style="display:flex;align-items:center;gap:7px"><span class="mut">Safety</span><span>Balanced</span></div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

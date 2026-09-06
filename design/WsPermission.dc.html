@@ -1,0 +1,240 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    /* ---- tokens ------------------------------------------------------
+       :root carries the light marketing surface. .app overrides with the
+       near-black desktop shell. Components below read only the vars, so
+       one component set serves both.                                    */
+    :root {
+      --bg:#F6F4EF; --panel:#F1EDE5; --raised:#FFFFFF; --sunk:#E9E5DC;
+      --line:#DAD5CB; --line-soft:#E4DFD5;
+      --fg:#161719; --mut:#6E6A62; --faint:#8B867C;
+      --acc:#5B5CF0; --acc-fg:#FFFFFF; --acc-soft:#F0F0FE;
+      --ok:#41603F; --ok-line:#5F7F63;
+      --warn:#8A5F14; --warn-line:#C08A2E; --warn-soft:#FBF6EC;
+      --bad:#8E4A44; --bad-line:#B4514A; --bad-soft:#F9F0EF;
+    }
+    .app {
+      --bg:#0F1011; --panel:#141517; --raised:#1A1B1E; --sunk:#1E2023;
+      --line:#2A2C30; --line-soft:#202225;
+      --fg:#E9E9E7; --mut:#9C9D9A; --faint:#6F716F;
+      --acc:#6E6FF5; --acc-fg:#FFFFFF; --acc-soft:#1C1D33;
+      --ok:#8FBF93; --ok-line:#5F8F65;
+      --warn:#E0B368; --warn-line:#B4863A; --warn-soft:#241E12;
+      --bad:#EC8880; --bad-line:#B4564E; --bad-soft:#2A1817;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; background: #F6F4EF; color: #161719;
+      font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+      font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+    a { color: var(--acc); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ---- surfaces ---- */
+    .app, .site { background: var(--bg); color: var(--fg); }
+    .win { display: flex; flex-direction: column; overflow: hidden; background: var(--bg); color: var(--fg); }
+    .box { border: 1px solid var(--line); background: var(--raised); border-radius: 6px; }
+    .soft { background: var(--sunk); }
+    .note { border: 1px dashed var(--acc); background: var(--acc-soft); border-radius: 6px; }
+    .note .lab { color: var(--acc); }
+
+    .chrome { height: 34px; flex-shrink: 0; display: flex; align-items: center; gap: 10px;
+      padding: 0 12px; border-bottom: 1px solid var(--line); background: var(--panel); }
+
+    /* ---- type ---- */
+    .m { font-family: "Geist Mono", "Cascadia Mono", ui-monospace, Consolas, monospace; }
+    .lab { font-family: "Geist Mono", "Cascadia Mono", ui-monospace, Consolas, monospace;
+      font-size: 11px; letter-spacing: .04em; color: var(--faint); }
+    .h1 { font-size: 26px; line-height: 1.2; font-weight: 600; letter-spacing: -.012em; margin: 0; }
+    .h2 { font-size: 15px; font-weight: 600; margin: 0; }
+    .h3 { font-size: 14px; font-weight: 600; margin: 0; }
+    .mut { color: var(--mut); }
+    .prose { font-size: 15px; line-height: 1.62; }
+
+    /* ---- controls ---- */
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+      height: 32px; padding: 0 14px; border: 1px solid var(--line); background: var(--raised);
+      border-radius: 6px; font-size: 13px; color: var(--fg); }
+    .btnp { background: var(--acc); border-color: var(--acc); color: var(--acc-fg); }
+    .btnq { background: transparent; border-color: transparent; color: var(--mut); }
+    .btns { height: 28px; padding: 0 10px; font-size: 12px; }
+    .btnl { height: 40px; padding: 0 18px; font-size: 14px; }
+    .pill { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 9px;
+      border-radius: 11px; border: 1px solid var(--line); background: var(--raised);
+      font-size: 11px; color: var(--fg); }
+    .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .track { height: 5px; border-radius: 3px; background: var(--line); overflow: hidden; }
+    .fillbar { height: 100%; background: var(--acc); border-radius: 3px; }
+
+    /* ---- wireframe placeholders ---- */
+    .ph { background: var(--line); border-radius: 2px; }
+    .xbox { border: 1px solid var(--line); border-radius: 5px; background-color: var(--sunk);
+      background-image:
+        linear-gradient(to top right, transparent calc(50% - 0.5px), var(--line) 50%, transparent calc(50% + 0.5px)),
+        linear-gradient(to bottom right, transparent calc(50% - 0.5px), var(--line) 50%, transparent calc(50% + 0.5px)); }
+  </style>
+</helmet>
+<div class="win app" style="width:1440px;height:900px">
+
+  <div style="flex-grow:1;display:flex;min-height:0">
+
+    <div style="width:256px;flex-shrink:0;border-right:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;min-height:0">
+      <div style="height:46px;flex-shrink:0;display:flex;align-items:center;padding:0 12px">
+        <div class="btn btnq" style="width:28px;height:28px;padding:0">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></svg>
+        </div>
+      </div>
+      <div style="padding:0 12px 10px">
+        <div class="btn" style="width:100%;justify-content:flex-start;gap:9px">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          New session
+        </div>
+      </div>
+      <div style="padding:0 12px 12px">
+        <div class="box soft" style="height:34px;display:flex;align-items:center;gap:9px;padding:0 10px">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+          <span style="font-size:13px;flex-grow:1">task-tracker</span>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+        </div>
+      </div>
+      <div style="flex-grow:1;min-height:0;overflow:hidden;padding:0 8px;display:flex;flex-direction:column;gap:1px">
+        <span class="lab" style="padding:0 8px 6px">Today</span>
+        <div style="display:flex;align-items:center;gap:9px;padding:7px 8px;border-radius:6px;background:var(--raised)">
+          <div class="dot" style="background:var(--warn-line)"></div>
+          <span style="font-size:13px;flex-grow:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Persist tasks to localStorage</span>
+          <span class="lab" style="font-size:10px;color:var(--warn)">approve</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:9px;padding:7px 8px;border-radius:6px">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M20 6 9 17l-5-5"/></svg>
+          <span class="mut" style="font-size:13px;flex-grow:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Add a filter bar to the list</span>
+        </div>
+      </div>
+      <div style="flex-shrink:0;border-top:1px solid var(--line-soft);padding:8px;display:flex;flex-direction:column;gap:1px">
+        <div style="display:flex;align-items:center;gap:10px;padding:7px 8px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--mut)" stroke-width="1.7"><rect x="3" y="3" width="18" height="18" rx="3"/><rect x="8" y="8" width="8" height="8" rx="1.5"/></svg><span style="font-size:13px">Models</span></div>
+        <div style="display:flex;align-items:center;gap:10px;padding:7px 8px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--mut)" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="9"/></svg><span style="font-size:13px">Settings</span></div>
+      </div>
+    </div>
+
+    <div style="flex-grow:1;min-width:0;display:flex;flex-direction:column;background:var(--bg)">
+
+      <div style="height:46px;flex-shrink:0;border-bottom:1px solid var(--line-soft);display:flex;align-items:center;gap:12px;padding:0 18px">
+        <span style="font-size:13px;font-weight:600">Persist tasks to localStorage</span>
+        <div style="flex-grow:1"></div>
+        <span class="pill" style="gap:7px;border-color:var(--warn-line);color:var(--warn)">Waiting for you</span>
+        <div class="btn btnq btns" style="gap:7px">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h7l2 2h7v12H4z"/></svg>
+          Artifacts
+          <span class="pill" style="height:17px;padding:0 6px;font-size:10px">2</span>
+        </div>
+      </div>
+
+      <div style="flex-grow:1;min-height:0;overflow:hidden;display:flex;justify-content:center;padding:0 40px">
+        <div style="width:800px;display:flex;flex-direction:column;gap:22px;padding-top:26px">
+
+          <div class="prose mut" style="display:flex;flex-direction:column;gap:6px">
+            <span>The hook is in place. The test needs a DOM environment that is not installed yet, so I need to add one dependency before I can run it.</span>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:2px">
+            <div style="display:flex;align-items:center;gap:10px;padding:7px 2px">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="m9 18 6-6-6-6"/></svg>
+              <span class="mut" style="font-size:13px;flex-grow:1">Edited 2 files</span>
+              <span class="m" style="font-size:12px;color:var(--ok)">+46</span>
+              <span class="m" style="font-size:12px;color:var(--bad)">&minus;12</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;padding:7px 2px">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="m9 18 6-6-6-6"/></svg>
+              <span class="mut" style="font-size:13px;flex-grow:1">Read package.json</span>
+              <span class="lab">0.2s</span>
+            </div>
+          </div>
+
+          <div class="box" style="border-color:var(--warn-line);background:var(--warn-soft);padding:0;overflow:hidden">
+
+            <div style="padding:14px 18px;display:flex;align-items:center;gap:11px;border-bottom:1px solid var(--line-soft)">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--warn-line)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+              <span class="h2" style="flex-grow:1">Install one package before running the test</span>
+              <span class="pill" style="border-color:var(--warn-line);color:var(--warn);background:transparent">Network</span>
+            </div>
+
+            <div class="m" style="margin:16px 18px 0;padding:11px 13px;font-size:12px;background:var(--bg);border:1px solid var(--line);border-radius:6px">npm install --save-dev jsdom</div>
+
+            <div style="padding:14px 18px;display:flex;flex-direction:column;gap:10px">
+              <div style="display:flex;gap:14px">
+                <span class="lab" style="width:104px;flex-shrink:0;padding-top:2px">Why</span>
+                <span style="font-size:13px">vitest needs a DOM to assert that tasks reload after a refresh. Nothing in the project provides one.</span>
+              </div>
+              <div style="display:flex;gap:14px">
+                <span class="lab" style="width:104px;flex-shrink:0;padding-top:2px">Where</span>
+                <span class="m" style="font-size:12px">C:\Users\[you]\projects\task-tracker</span>
+              </div>
+              <div style="display:flex;gap:14px">
+                <span class="lab" style="width:104px;flex-shrink:0;padding-top:2px">Risk</span>
+                <span style="font-size:13px">Downloads from the npm registry and writes into node_modules. Nothing outside the project is touched.</span>
+              </div>
+              <div style="display:flex;gap:14px">
+                <span class="lab" style="width:104px;flex-shrink:0;padding-top:2px">Reversible</span>
+                <span style="font-size:13px;display:flex;align-items:center;gap:8px">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                  Yes, a checkpoint was taken before the last edit
+                </span>
+              </div>
+            </div>
+
+            <div style="padding:0 18px 16px;display:flex;align-items:center;gap:9px;flex-wrap:wrap">
+              <div class="btn btnp">Allow once</div>
+              <div class="btn">Always allow this exact command here</div>
+              <div class="btn">Deny</div>
+              <div style="flex-grow:1"></div>
+              <a href="#" style="font-size:13px">Edit command</a>
+            </div>
+
+          </div>
+
+          <div class="note" style="padding:12px 15px;display:flex;gap:11px;align-items:flex-start">
+            <span class="lab" style="flex-shrink:0;padding-top:2px">Rule</span>
+            <span class="mut" style="font-size:13px">Nothing runs while this card is open, and the remembered permission is scoped to this exact command in this workspace. There is no "allow everything" beside the primary action.</span>
+          </div>
+
+        </div>
+      </div>
+
+      <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:center;padding:0 40px">
+        <div style="width:800px;display:flex;flex-direction:column;gap:10px">
+          <div class="box" style="padding:14px 16px;display:flex;flex-direction:column;gap:14px;border-radius:14px;opacity:.55">
+            <span style="font-size:15px;color:var(--faint)">Waiting on your decision above</span>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div class="btn btnq btns" style="width:28px;padding:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div>
+              <div class="btn btnq btns" style="gap:7px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="3"/><rect x="8" y="8" width="8" height="8" rx="1.5"/></svg>Qwen3.6 27B</div>
+              <div style="flex-grow:1"></div>
+              <div class="btn btns" style="width:32px;height:32px;padding:0;border-radius:16px"><span style="width:10px;height:10px;border-radius:2px;background:var(--faint)"></span></div>
+            </div>
+          </div>
+          <div style="height:40px;display:flex;align-items:center;gap:9px">
+            <span class="lab">task-tracker</span>
+            <span class="lab" style="color:var(--line)">/</span>
+            <span class="lab">main</span>
+            <span class="lab" style="color:var(--line)">/</span>
+            <span class="lab" style="color:var(--acc)">Qwen3.6 27B</span>
+            <div style="flex-grow:1"></div>
+            <span class="lab">Context 38%</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

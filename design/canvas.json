@@ -1,0 +1,77 @@
+{
+  "pages": [
+    { "id": "page-1", "name": "Workspace" },
+    { "id": "page-2", "name": "Onboarding" },
+    { "id": "page-3", "name": "Marketing site" },
+    { "id": "page-4", "name": "Superseded" }
+  ],
+  "artboards": [
+    { "file": "WsEmpty.dc.html",      "title": "Workspace, empty",        "page": "page-1", "x": 0,    "y": 0,    "w": 1440, "h": 900 },
+    { "file": "WsRunning.dc.html",    "title": "Workspace, agent running","page": "page-1", "x": 1560, "y": 0,    "w": 1440, "h": 900 },
+    { "file": "WsPermission.dc.html", "title": "Permission request",      "page": "page-1", "x": 0,    "y": 1020, "w": 1440, "h": 900 },
+    { "file": "WsReview.dc.html",     "title": "Change review, drawer open","page": "page-1", "x": 1560, "y": 1020, "w": 1440, "h": 900 },
+    { "file": "ModelPicker.dc.html",  "title": "Model picker",            "page": "page-1", "x": 0,    "y": 2040, "w": 760,  "h": 660 },
+
+    { "file": "Welcome.dc.html",        "title": "1. Welcome",              "page": "page-2", "x": 0,    "y": 0,    "w": 1280, "h": 800 },
+    { "file": "Intent.dc.html",         "title": "2. Intent",               "page": "page-2", "x": 1380, "y": 0,    "w": 1280, "h": 800 },
+    { "file": "Permissions.dc.html",    "title": "3. Permission preview",   "page": "page-2", "x": 2760, "y": 0,    "w": 1280, "h": 800 },
+    { "file": "HardwareScan.dc.html",   "title": "4. Hardware scan",        "page": "page-2", "x": 0,    "y": 920,  "w": 1280, "h": 800 },
+    { "file": "Recommendation.dc.html", "title": "5. Recommendation",       "page": "page-2", "x": 1380, "y": 920,  "w": 1280, "h": 800 },
+    { "file": "Download.dc.html",       "title": "6-7. Runtime + download", "page": "page-2", "x": 2760, "y": 920,  "w": 1280, "h": 800 },
+    { "file": "SelfTest.dc.html",       "title": "8. Capability self-test", "page": "page-2", "x": 0,    "y": 1840, "w": 1280, "h": 800 },
+    { "file": "NewProject.dc.html",     "title": "9. Project setup",        "page": "page-2", "x": 1380, "y": 1840, "w": 1280, "h": 800 },
+    { "file": "CloneRepo.dc.html",      "title": "9b. Clone from Git",      "page": "page-2", "x": 2760, "y": 1840, "w": 1280, "h": 800 },
+    { "file": "SafetyMode.dc.html",     "title": "10. Permission preset",   "page": "page-2", "x": 0,    "y": 2760, "w": 1280, "h": 800 },
+
+    { "file": "Homepage.dc.html",     "title": "Marketing home", "page": "page-3", "x": 0,    "y": 0, "w": 1280, "h": 3600 },
+    { "file": "ModelsPage.dc.html",   "title": "Model catalog",  "page": "page-3", "x": 1380, "y": 0, "w": 1280, "h": 1550 },
+    { "file": "SecurityPage.dc.html", "title": "Security",       "page": "page-3", "x": 2760, "y": 0, "w": 1280, "h": 1950 },
+
+    { "file": "Main.dc.html",            "title": "OLD workspace, running",  "page": "page-4", "x": 0,    "y": 0,    "w": 1440, "h": 900 },
+    { "file": "DiffReview.dc.html",      "title": "OLD review",              "page": "page-4", "x": 1560, "y": 0,    "w": 1440, "h": 900 },
+    { "file": "PlanReview.dc.html",      "title": "OLD plan review",         "page": "page-4", "x": 3120, "y": 0,    "w": 1440, "h": 900 },
+    { "file": "Home.dc.html",            "title": "OLD home",                "page": "page-4", "x": 0,    "y": 1020, "w": 1440, "h": 900 },
+    { "file": "ModelManager.dc.html",    "title": "OLD model manager",       "page": "page-4", "x": 1560, "y": 1020, "w": 1440, "h": 900 },
+    { "file": "ProfileDetail.dc.html",   "title": "OLD profile detail",      "page": "page-4", "x": 3120, "y": 1020, "w": 1440, "h": 900 },
+    { "file": "Settings.dc.html",        "title": "OLD settings",            "page": "page-4", "x": 0,    "y": 2040, "w": 1440, "h": 900 },
+    { "file": "Recovery.dc.html",        "title": "OLD recovery states",     "page": "page-4", "x": 1560, "y": 2040, "w": 1440, "h": 620 },
+    { "file": "CloudBoost.dc.html",      "title": "OLD cloud boost",         "page": "page-4", "x": 3120, "y": 2040, "w": 1280, "h": 800 },
+    { "file": "ApprovalCard.dc.html",    "title": "OLD approval card",       "page": "page-4", "x": 0,    "y": 3060, "w": 620,  "h": 560 },
+    { "file": "NarrowWorkspace.dc.html", "title": "OLD narrow workspace",    "page": "page-4", "x": 1560, "y": 3060, "w": 900,  "h": 840 }
+  ],
+  "annotations": [
+    {
+      "id": "note-workspace",
+      "page": "page-1",
+      "x": 0,
+      "y": -190,
+      "w": 760,
+      "text": "Rebuilt to the screen map: conversation-first, near-black shell.\nNo permanent file tree, terminal, diff or preview. Sidebar 256px, readable column 800px, context drawer hidden until there is something to inspect (see Change review, where the sidebar has collapsed to make room).\nCompleted low-risk events collapse to one quiet line. The current event stays expanded. Permission cards stay expanded until answered and nothing runs behind them.\nStill to build on this page: recovery states, My Models, Explore, runtime health, automations, tools, settings."
+    },
+    {
+      "id": "note-onboarding",
+      "page": "page-2",
+      "x": 0,
+      "y": -190,
+      "w": 700,
+      "text": "Still the light shell from the first blueprint. The flow itself matches the screen map (one question per screen, size and destination shown before any large download, ends inside a real session), but these need restyling into the near-black app shell and renumbering to the map's eight P0 steps.\nIntent and Permission preview fold into Welcome and Permission preset in the map's version."
+    },
+    {
+      "id": "note-marketing",
+      "page": "page-3",
+      "x": 0,
+      "y": -170,
+      "w": 660,
+      "text": "Light surface, which the screen map keeps for marketing.\nDrawn: home, model catalog, security. Still undrawn: Product / how it works, Model detail, Download, Pricing, Sign in, Account, Docs, Changelog.\nBracketed values are placeholders. Check counts stay blank until the suite has actually run. ForgeLocal is a provisional name; the screen map asks for a clean-room name of its own."
+    },
+    {
+      "id": "note-superseded",
+      "page": "page-4",
+      "x": 0,
+      "y": -190,
+      "w": 760,
+      "text": "Do not build from this page.\nThese were drawn to the first blueprint, before the screen map locked the workspace as conversation-first. They use a permanent three-panel IDE layout with a task-state rail beside every conversation, which the map rules out: \"Do not begin from an IDE layout.\"\nKept because the content is still useful reference: the recovery-state anatomy, the profile evidence table, the settings privacy pane and the cloud-boost consent screen all carry decisions worth porting into the new shell."
+    }
+  ],
+  "launch": { "view": "canvas", "page": "page-1" }
+}

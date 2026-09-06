@@ -1,0 +1,271 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    /* ---- tokens ------------------------------------------------------
+       :root carries the light marketing surface. .app overrides with the
+       near-black desktop shell. Components below read only the vars, so
+       one component set serves both.                                    */
+    :root {
+      --bg:#F6F4EF; --panel:#F1EDE5; --raised:#FFFFFF; --sunk:#E9E5DC;
+      --line:#DAD5CB; --line-soft:#E4DFD5;
+      --fg:#161719; --mut:#6E6A62; --faint:#8B867C;
+      --acc:#5B5CF0; --acc-fg:#FFFFFF; --acc-soft:#F0F0FE;
+      --ok:#41603F; --ok-line:#5F7F63;
+      --warn:#8A5F14; --warn-line:#C08A2E; --warn-soft:#FBF6EC;
+      --bad:#8E4A44; --bad-line:#B4514A; --bad-soft:#F9F0EF;
+    }
+    .app {
+      --bg:#0F1011; --panel:#141517; --raised:#1A1B1E; --sunk:#1E2023;
+      --line:#2A2C30; --line-soft:#202225;
+      --fg:#E9E9E7; --mut:#9C9D9A; --faint:#6F716F;
+      --acc:#6E6FF5; --acc-fg:#FFFFFF; --acc-soft:#1C1D33;
+      --ok:#8FBF93; --ok-line:#5F8F65;
+      --warn:#E0B368; --warn-line:#B4863A; --warn-soft:#241E12;
+      --bad:#EC8880; --bad-line:#B4564E; --bad-soft:#2A1817;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; background: #F6F4EF; color: #161719;
+      font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+      font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+    a { color: var(--acc); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ---- surfaces ---- */
+    .app, .site { background: var(--bg); color: var(--fg); }
+    .win { display: flex; flex-direction: column; overflow: hidden; background: var(--bg); color: var(--fg); }
+    .box { border: 1px solid var(--line); background: var(--raised); border-radius: 6px; }
+    .soft { background: var(--sunk); }
+    .note { border: 1px dashed var(--acc); background: var(--acc-soft); border-radius: 6px; }
+    .note .lab { color: var(--acc); }
+
+    .chrome { height: 34px; flex-shrink: 0; display: flex; align-items: center; gap: 10px;
+      padding: 0 12px; border-bottom: 1px solid var(--line); background: var(--panel); }
+
+    /* ---- type ---- */
+    .m { font-family: "Geist Mono", "Cascadia Mono", ui-monospace, Consolas, monospace; }
+    .lab { font-family: "Geist Mono", "Cascadia Mono", ui-monospace, Consolas, monospace;
+      font-size: 11px; letter-spacing: .04em; color: var(--faint); }
+    .h1 { font-size: 26px; line-height: 1.2; font-weight: 600; letter-spacing: -.012em; margin: 0; }
+    .h2 { font-size: 15px; font-weight: 600; margin: 0; }
+    .h3 { font-size: 14px; font-weight: 600; margin: 0; }
+    .mut { color: var(--mut); }
+    .prose { font-size: 15px; line-height: 1.62; }
+
+    /* ---- controls ---- */
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+      height: 32px; padding: 0 14px; border: 1px solid var(--line); background: var(--raised);
+      border-radius: 6px; font-size: 13px; color: var(--fg); }
+    .btnp { background: var(--acc); border-color: var(--acc); color: var(--acc-fg); }
+    .btnq { background: transparent; border-color: transparent; color: var(--mut); }
+    .btns { height: 28px; padding: 0 10px; font-size: 12px; }
+    .btnl { height: 40px; padding: 0 18px; font-size: 14px; }
+    .pill { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 9px;
+      border-radius: 11px; border: 1px solid var(--line); background: var(--raised);
+      font-size: 11px; color: var(--fg); }
+    .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .track { height: 5px; border-radius: 3px; background: var(--line); overflow: hidden; }
+    .fillbar { height: 100%; background: var(--acc); border-radius: 3px; }
+
+    /* ---- wireframe placeholders ---- */
+    .ph { background: var(--line); border-radius: 2px; }
+    .xbox { border: 1px solid var(--line); border-radius: 5px; background-color: var(--sunk);
+      background-image:
+        linear-gradient(to top right, transparent calc(50% - 0.5px), var(--line) 50%, transparent calc(50% + 0.5px)),
+        linear-gradient(to bottom right, transparent calc(50% - 0.5px), var(--line) 50%, transparent calc(50% + 0.5px)); }
+  </style>
+</helmet>
+<div class="win app" style="width:1440px;height:900px">
+
+  <div style="height:46px;flex-shrink:0;border-bottom:1px solid var(--line-soft);display:flex;align-items:center;gap:12px;padding:0 16px">
+    <div class="btn btnq" style="width:28px;height:28px;padding:0">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></svg>
+    </div>
+    <span style="font-size:13px;font-weight:600">Persist tasks to localStorage</span>
+    <div style="display:flex;align-items:center;gap:7px">
+      <span class="m" style="font-size:12px;color:var(--faint)">task-tracker</span>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+    </div>
+    <div style="flex-grow:1"></div>
+    <span class="pill" style="gap:7px;border-color:var(--ok-line);color:var(--ok)">Ready to review</span>
+    <div class="btn btns" style="gap:7px;border-color:var(--acc);color:var(--acc)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h7l2 2h7v12H4z"/></svg>
+      Artifacts
+      <span class="pill" style="height:17px;padding:0 6px;font-size:10px;border-color:var(--acc);color:var(--acc);background:transparent">3</span>
+    </div>
+  </div>
+
+  <div style="flex-grow:1;display:flex;min-height:0">
+
+    <div style="flex-grow:1;min-width:0;display:flex;flex-direction:column;background:var(--bg)">
+
+      <div style="flex-grow:1;min-height:0;overflow:hidden;display:flex;justify-content:center;padding:0 32px">
+        <div style="width:100%;max-width:720px;display:flex;flex-direction:column;gap:20px;padding-top:24px">
+
+          <div style="display:flex;flex-direction:column;gap:2px">
+            <div style="display:flex;align-items:center;gap:10px;padding:6px 2px">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="m9 18 6-6-6-6"/></svg>
+              <span class="mut" style="font-size:13px;flex-grow:1">Installed 1 package</span>
+              <span class="lab">8.1s</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;padding:6px 2px">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="m9 18 6-6-6-6"/></svg>
+              <span class="mut" style="font-size:13px;flex-grow:1">Ran tests &middot; 4 passed</span>
+              <span class="lab">3.4s</span>
+            </div>
+          </div>
+
+          <div class="prose" style="display:flex;flex-direction:column;gap:12px">
+            <span>Tasks now persist across a refresh. State lives in a <span class="m" style="font-size:13px">useTasks</span> hook that reads once on mount and writes on every change, so the components never touch storage directly.</span>
+            <span class="mut">One thing worth your attention: a stored list from an older build would have no <span class="m" style="font-size:13px">createdAt</span> field, so the hook fills it in on read rather than dropping the entry.</span>
+          </div>
+
+          <div class="box" style="padding:0;overflow:hidden">
+            <div style="padding:13px 16px;display:flex;align-items:center;gap:11px;border-bottom:1px solid var(--line-soft)">
+              <span class="h3" style="flex-grow:1">Result</span>
+              <span class="m" style="font-size:12px;color:var(--ok)">+46</span>
+              <span class="m" style="font-size:12px;color:var(--bad)">&minus;12</span>
+            </div>
+            <div style="padding:13px 16px;display:flex;flex-direction:column;gap:9px">
+              <div style="display:flex;align-items:center;gap:10px">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                <span style="font-size:13px;flex-grow:1">4 tests passed</span>
+                <span class="m lab">exit 0</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                <span style="font-size:13px;flex-grow:1">Build succeeded</span>
+                <span class="m lab">exit 0</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--warn-line)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+                <span class="mut" style="font-size:13px;flex-grow:1">No test covers a corrupt stored value</span>
+              </div>
+            </div>
+            <div style="padding:0 16px 14px;display:flex;align-items:center;gap:9px">
+              <div class="btn btnp">Keep changes</div>
+              <div class="btn">Revert all</div>
+              <div style="flex-grow:1"></div>
+              <span class="lab">Checkpoint 4</span>
+            </div>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="pill mut">Also cover a corrupt stored value</span>
+            <span class="pill mut">Add a clear-all button</span>
+          </div>
+
+        </div>
+      </div>
+
+      <div style="flex-shrink:0;display:flex;justify-content:center;padding:0 32px 14px">
+        <div style="width:100%;max-width:720px;display:flex;flex-direction:column;gap:9px">
+          <div class="box" style="padding:12px 15px;display:flex;flex-direction:column;gap:12px;border-radius:14px">
+            <span style="font-size:15px;color:var(--faint)">Ask for a change, or start the next task</span>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div class="btn btnq btns" style="width:28px;padding:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div>
+              <div class="btn btnq btns" style="gap:7px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="3"/><rect x="8" y="8" width="8" height="8" rx="1.5"/></svg>Qwen3.6 27B</div>
+              <div style="flex-grow:1"></div>
+              <div class="btn btnp" style="width:32px;height:32px;padding:0;border-radius:16px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:9px">
+            <span class="lab">task-tracker</span>
+            <span class="lab" style="color:var(--line)">/</span>
+            <span class="lab">main</span>
+            <div style="flex-grow:1"></div>
+            <span class="lab">Context 41%</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div style="width:520px;flex-shrink:0;border-left:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;min-height:0">
+
+      <div style="height:42px;flex-shrink:0;border-bottom:1px solid var(--line-soft);display:flex;align-items:stretch;padding:0 8px;gap:2px">
+        <div style="display:flex;align-items:center;gap:7px;padding:0 11px;font-size:12px;color:var(--mut)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/></svg>
+          Preview
+        </div>
+        <div style="display:flex;align-items:center;gap:7px;padding:0 11px;font-size:12px;font-weight:600;color:var(--fg);border-bottom:2px solid var(--acc)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+          Diff
+        </div>
+        <div style="display:flex;align-items:center;padding:0 11px;font-size:12px;color:var(--mut)">Files</div>
+        <div style="display:flex;align-items:center;padding:0 11px;font-size:12px;color:var(--mut)">Problems</div>
+        <div style="display:flex;align-items:center;padding:0 11px;font-size:12px;color:var(--mut)">Terminal</div>
+        <div style="flex-grow:1"></div>
+        <div style="display:flex;align-items:center;gap:2px">
+          <div class="btn btnq btns" style="width:26px;padding:0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></div>
+          <div class="btn btnq btns" style="width:26px;padding:0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></div>
+        </div>
+      </div>
+
+      <div style="height:40px;flex-shrink:0;border-bottom:1px solid var(--line-soft);display:flex;align-items:center;gap:9px;padding:0 12px">
+        <span style="font-size:12px;font-weight:600">2 files</span>
+        <span class="m" style="font-size:12px;color:var(--ok)">+46</span>
+        <span class="m" style="font-size:12px;color:var(--bad)">&minus;12</span>
+        <div style="flex-grow:1"></div>
+        <div class="btn btnq btns" style="height:24px">Unified</div>
+        <div class="btn btns" style="height:24px">Split</div>
+      </div>
+
+      <div style="flex-shrink:0;border-bottom:1px solid var(--line-soft);padding:8px 6px;display:flex;flex-direction:column;gap:1px">
+        <span class="lab" style="padding:2px 8px 6px">Modified</span>
+        <div style="display:flex;align-items:center;gap:9px;padding:6px 8px;border-radius:5px;background:var(--raised)">
+          <span class="m" style="font-size:12px;flex-grow:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">src/App.jsx</span>
+          <span class="m" style="font-size:11px;color:var(--ok)">+8</span>
+          <span class="m" style="font-size:11px;color:var(--bad)">&minus;12</span>
+          <a href="#" style="font-size:11px">Revert</a>
+        </div>
+        <span class="lab" style="padding:8px 8px 6px">Added</span>
+        <div style="display:flex;align-items:center;gap:9px;padding:6px 8px;border-radius:5px">
+          <span class="m mut" style="font-size:12px;flex-grow:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">src/useTasks.js</span>
+          <span class="m" style="font-size:11px;color:var(--ok)">+38</span>
+          <a href="#" style="font-size:11px">Revert</a>
+        </div>
+      </div>
+
+      <div style="flex-grow:1;min-height:0;overflow:hidden;background:var(--bg);display:flex;flex-direction:column">
+        <div style="padding:7px 14px;border-bottom:1px solid var(--line-soft);background:var(--panel)">
+          <span class="m" style="font-size:11px;color:var(--faint)">@@ -1,18 +1,14 @@ src/App.jsx</span>
+        </div>
+        <div class="m" style="font-size:11.5px;line-height:1.85;padding:8px 0">
+          <div style="padding:0 14px;color:var(--mut)">import { useState } from 'react'</div>
+          <div style="padding:0 14px;background:var(--bad-soft);border-left:2px solid var(--bad-line);color:var(--bad)">- const [tasks, setTasks] = useState([])</div>
+          <div style="padding:0 14px;background:var(--bad-soft);border-left:2px solid var(--bad-line);color:var(--bad)">-</div>
+          <div style="padding:0 14px;background:var(--bad-soft);border-left:2px solid var(--bad-line);color:var(--bad)">- function addTask(text) {</div>
+          <div style="padding:0 14px;background:var(--bad-soft);border-left:2px solid var(--bad-line);color:var(--bad)">-&nbsp;&nbsp;setTasks([...tasks, { id: nanoid(), text }])</div>
+          <div style="padding:0 14px;background:var(--bad-soft);border-left:2px solid var(--bad-line);color:var(--bad)">- }</div>
+          <div style="padding:0 14px;background:var(--acc-soft);border-left:2px solid var(--ok-line);color:var(--ok)">+ import { useTasks } from './useTasks'</div>
+          <div style="padding:0 14px;background:var(--acc-soft);border-left:2px solid var(--ok-line);color:var(--ok)">+</div>
+          <div style="padding:0 14px;background:var(--acc-soft);border-left:2px solid var(--ok-line);color:var(--ok)">+ export default function App() {</div>
+          <div style="padding:0 14px;background:var(--acc-soft);border-left:2px solid var(--ok-line);color:var(--ok)">+&nbsp;&nbsp;const { tasks, add, toggle } = useTasks()</div>
+          <div style="padding:0 14px;color:var(--mut)">&nbsp;</div>
+          <div style="padding:0 14px;color:var(--mut)">&nbsp;&nbsp;return (</div>
+          <div style="padding:0 14px;color:var(--mut)">&nbsp;&nbsp;&nbsp;&nbsp;&lt;main className="wrap"&gt;</div>
+        </div>
+        <div style="flex-grow:1"></div>
+        <div style="padding:9px 14px;border-top:1px solid var(--line-soft);display:flex;align-items:center;gap:10px;background:var(--panel)">
+          <span class="lab" style="flex-grow:1">Hunk 1 of 3</span>
+          <div class="btn btnq btns" style="height:24px">Revert hunk</div>
+          <div class="btn btns" style="height:24px">Keep hunk</div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

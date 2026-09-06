@@ -1,0 +1,183 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    /* ---- tokens ------------------------------------------------------
+       :root carries the light marketing surface. .app overrides with the
+       near-black desktop shell. Components below read only the vars, so
+       one component set serves both.                                    */
+    :root {
+      --bg:#F6F4EF; --panel:#F1EDE5; --raised:#FFFFFF; --sunk:#E9E5DC;
+      --line:#DAD5CB; --line-soft:#E4DFD5;
+      --fg:#161719; --mut:#6E6A62; --faint:#8B867C;
+      --acc:#5B5CF0; --acc-fg:#FFFFFF; --acc-soft:#F0F0FE;
+      --ok:#41603F; --ok-line:#5F7F63;
+      --warn:#8A5F14; --warn-line:#C08A2E; --warn-soft:#FBF6EC;
+      --bad:#8E4A44; --bad-line:#B4514A; --bad-soft:#F9F0EF;
+    }
+    .app {
+      --bg:#0F1011; --panel:#141517; --raised:#1A1B1E; --sunk:#1E2023;
+      --line:#2A2C30; --line-soft:#202225;
+      --fg:#E9E9E7; --mut:#9C9D9A; --faint:#6F716F;
+      --acc:#6E6FF5; --acc-fg:#FFFFFF; --acc-soft:#1C1D33;
+      --ok:#8FBF93; --ok-line:#5F8F65;
+      --warn:#E0B368; --warn-line:#B4863A; --warn-soft:#241E12;
+      --bad:#EC8880; --bad-line:#B4564E; --bad-soft:#2A1817;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; background: #F6F4EF; color: #161719;
+      font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+      font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+    a { color: var(--acc); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ---- surfaces ---- */
+    .app, .site { background: var(--bg); color: var(--fg); }
+    .win { display: flex; flex-direction: column; overflow: hidden; background: var(--bg); color: var(--fg); }
+    .box { border: 1px solid var(--line); background: var(--raised); border-radius: 6px; }
+    .soft { background: var(--sunk); }
+    .note { border: 1px dashed var(--acc); background: var(--acc-soft); border-radius: 6px; }
+    .note .lab { color: var(--acc); }
+
+    .chrome { height: 34px; flex-shrink: 0; display: flex; align-items: center; gap: 10px;
+      padding: 0 12px; border-bottom: 1px solid var(--line); background: var(--panel); }
+
+    /* ---- type ---- */
+    .m { font-family: "Geist Mono", "Cascadia Mono", ui-monospace, Consolas, monospace; }
+    .lab { font-family: "Geist Mono", "Cascadia Mono", ui-monospace, Consolas, monospace;
+      font-size: 11px; letter-spacing: .04em; color: var(--faint); }
+    .h1 { font-size: 26px; line-height: 1.2; font-weight: 600; letter-spacing: -.012em; margin: 0; }
+    .h2 { font-size: 15px; font-weight: 600; margin: 0; }
+    .h3 { font-size: 14px; font-weight: 600; margin: 0; }
+    .mut { color: var(--mut); }
+    .prose { font-size: 15px; line-height: 1.62; }
+
+    /* ---- controls ---- */
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+      height: 32px; padding: 0 14px; border: 1px solid var(--line); background: var(--raised);
+      border-radius: 6px; font-size: 13px; color: var(--fg); }
+    .btnp { background: var(--acc); border-color: var(--acc); color: var(--acc-fg); }
+    .btnq { background: transparent; border-color: transparent; color: var(--mut); }
+    .btns { height: 28px; padding: 0 10px; font-size: 12px; }
+    .btnl { height: 40px; padding: 0 18px; font-size: 14px; }
+    .pill { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 9px;
+      border-radius: 11px; border: 1px solid var(--line); background: var(--raised);
+      font-size: 11px; color: var(--fg); }
+    .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .track { height: 5px; border-radius: 3px; background: var(--line); overflow: hidden; }
+    .fillbar { height: 100%; background: var(--acc); border-radius: 3px; }
+
+    /* ---- wireframe placeholders ---- */
+    .ph { background: var(--line); border-radius: 2px; }
+    .xbox { border: 1px solid var(--line); border-radius: 5px; background-color: var(--sunk);
+      background-image:
+        linear-gradient(to top right, transparent calc(50% - 0.5px), var(--line) 50%, transparent calc(50% + 0.5px)),
+        linear-gradient(to bottom right, transparent calc(50% - 0.5px), var(--line) 50%, transparent calc(50% + 0.5px)); }
+  </style>
+</helmet>
+<div class="win" style="width:1280px;height:800px">
+
+  <div class="chrome">
+    <div class="xbox" style="width:16px;height:16px"></div>
+    <span style="font-size:12px;font-weight:600">ForgeLocal</span>
+    <div style="flex-grow:1"></div>
+    <div style="display:flex;align-items:center;gap:16px">
+      <div class="ph" style="width:11px;height:2px"></div>
+      <div class="ph" style="width:9px;height:9px;border-radius:1px"></div>
+      <div class="ph" style="width:10px;height:10px;border-radius:1px"></div>
+    </div>
+  </div>
+
+  <div style="flex-grow:1;display:flex;align-items:center;justify-content:center;padding:0 40px">
+    <div style="width:720px;display:flex;flex-direction:column;gap:16px">
+
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <h1 class="h1">Getting the runtime and the model</h1>
+        <p class="mut" style="margin:0">Nothing multi-gigabyte starts without showing size, destination and remaining space first.</p>
+      </div>
+
+      <div class="box" style="padding:14px 16px;display:flex;align-items:center;gap:12px">
+        <div class="dot" style="background:#5F7F63"></div>
+        <div style="display:flex;flex-direction:column;gap:2px;flex-grow:1">
+          <span class="h3">Ollama detected, using it</span>
+          <span class="m mut" style="font-size:12px">v[x.y.z] &middot; http://127.0.0.1:11434 &middot; version passed this profile</span>
+        </div>
+        <a href="#" style="font-size:12px">Choose another way</a>
+      </div>
+
+      <div class="box" style="display:flex;flex-direction:column">
+
+        <div style="padding:16px;display:flex;align-items:flex-start;gap:12px;border-bottom:1px solid #E4DFD5">
+          <div class="xbox" style="width:34px;height:34px;flex-shrink:0"></div>
+          <div style="display:flex;flex-direction:column;gap:3px;flex-grow:1">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span class="h2">Everyday building</span>
+              <span class="pill" style="height:20px;font-size:10px">Balanced</span>
+            </div>
+            <span class="m mut" style="font-size:12px">[model:tag] &middot; downloading from the upstream distribution source</span>
+          </div>
+        </div>
+
+        <div style="padding:16px;display:flex;flex-direction:column;gap:12px;border-bottom:1px solid #E4DFD5">
+          <div class="track"><div class="fillbar" style="width:41%"></div></div>
+          <div style="display:flex;gap:26px">
+            <div style="display:flex;flex-direction:column;gap:3px"><span class="lab">Done</span><span class="m" style="font-size:12px">3.4 of 8.4 GB</span></div>
+            <div style="display:flex;flex-direction:column;gap:3px"><span class="lab">Speed</span><span class="m" style="font-size:12px">28.6 MB/s</span></div>
+            <div style="display:flex;flex-direction:column;gap:3px"><span class="lab">Remaining</span><span class="m" style="font-size:12px">about 3 min</span></div>
+            <div style="display:flex;flex-direction:column;gap:3px"><span class="lab">Free after</span><span class="m" style="font-size:12px">239 GB</span></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="lab" style="flex-shrink:0">Destination</span>
+            <span class="m mut" style="font-size:12px;flex-grow:1">C:\Users\[you]\.ollama\models</span>
+            <a href="#" style="font-size:12px">Change</a>
+          </div>
+        </div>
+
+        <div style="padding:14px 16px;display:flex;align-items:center;gap:10px">
+          <div class="btn btns">Pause</div>
+          <div class="btn btns">Cancel</div>
+          <div style="flex-grow:1"></div>
+          <a href="#" style="font-size:12px">Use the app while this downloads</a>
+        </div>
+
+      </div>
+
+      <div class="note" style="padding:12px 14px;display:flex;gap:10px;align-items:flex-start">
+        <span class="lab" style="flex-shrink:0;padding-top:2px">States</span>
+        <span class="mut" style="font-size:12px;text-wrap:pretty">This card also carries: network interrupted (resume), digest mismatch (re-pull), and insufficient disk, which stops before any partial pull when the size is known.</span>
+      </div>
+
+    </div>
+  </div>
+
+  <div style="height:60px;flex-shrink:0;border-top:1px solid #DAD5CB;background:#EFEBE3;display:flex;align-items:center;gap:20px;padding:0 24px">
+    <span class="lab" style="flex-shrink:0">Steps 6 and 7 of 11</span>
+    <div style="display:flex;gap:5px;flex-grow:1">
+      <div style="width:26px;height:4px;border-radius:2px;background:#B9B4A9"></div>
+      <div style="width:26px;height:4px;border-radius:2px;background:#B9B4A9"></div>
+      <div style="width:26px;height:4px;border-radius:2px;background:#B9B4A9"></div>
+      <div style="width:26px;height:4px;border-radius:2px;background:#B9B4A9"></div>
+      <div style="width:26px;height:4px;border-radius:2px;background:#B9B4A9"></div>
+      <div style="width:26px;height:4px;border-radius:2px;background:#5B5CF0"></div>
+      <div style="width:26px;height:4px;border-radius:2px;background:#5B5CF0"></div>
+      <div style="width:26px;height:4px;border-radius:2px;background:#DFDAD0"></div>
+      <div style="width:26px;height:4px;border-radius:2px;background:#DFDAD0"></div>
+      <div style="width:26px;height:4px;border-radius:2px;background:#DFDAD0"></div>
+      <div style="width:26px;height:4px;border-radius:2px;background:#DFDAD0"></div>
+    </div>
+    <div style="display:flex;gap:10px;flex-shrink:0">
+      <div class="btn btns" style="height:34px">Back</div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

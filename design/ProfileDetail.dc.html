@@ -1,0 +1,313 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    /* ---- tokens ------------------------------------------------------
+       :root carries the light marketing surface. .app overrides with the
+       near-black desktop shell. Components below read only the vars, so
+       one component set serves both.                                    */
+    :root {
+      --bg:#F6F4EF; --panel:#F1EDE5; --raised:#FFFFFF; --sunk:#E9E5DC;
+      --line:#DAD5CB; --line-soft:#E4DFD5;
+      --fg:#161719; --mut:#6E6A62; --faint:#8B867C;
+      --acc:#5B5CF0; --acc-fg:#FFFFFF; --acc-soft:#F0F0FE;
+      --ok:#41603F; --ok-line:#5F7F63;
+      --warn:#8A5F14; --warn-line:#C08A2E; --warn-soft:#FBF6EC;
+      --bad:#8E4A44; --bad-line:#B4514A; --bad-soft:#F9F0EF;
+    }
+    .app {
+      --bg:#0F1011; --panel:#141517; --raised:#1A1B1E; --sunk:#1E2023;
+      --line:#2A2C30; --line-soft:#202225;
+      --fg:#E9E9E7; --mut:#9C9D9A; --faint:#6F716F;
+      --acc:#6E6FF5; --acc-fg:#FFFFFF; --acc-soft:#1C1D33;
+      --ok:#8FBF93; --ok-line:#5F8F65;
+      --warn:#E0B368; --warn-line:#B4863A; --warn-soft:#241E12;
+      --bad:#EC8880; --bad-line:#B4564E; --bad-soft:#2A1817;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; background: #F6F4EF; color: #161719;
+      font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+      font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+    a { color: var(--acc); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ---- surfaces ---- */
+    .app, .site { background: var(--bg); color: var(--fg); }
+    .win { display: flex; flex-direction: column; overflow: hidden; background: var(--bg); color: var(--fg); }
+    .box { border: 1px solid var(--line); background: var(--raised); border-radius: 6px; }
+    .soft { background: var(--sunk); }
+    .note { border: 1px dashed var(--acc); background: var(--acc-soft); border-radius: 6px; }
+    .note .lab { color: var(--acc); }
+
+    .chrome { height: 34px; flex-shrink: 0; display: flex; align-items: center; gap: 10px;
+      padding: 0 12px; border-bottom: 1px solid var(--line); background: var(--panel); }
+
+    /* ---- type ---- */
+    .m { font-family: "Geist Mono", "Cascadia Mono", ui-monospace, Consolas, monospace; }
+    .lab { font-family: "Geist Mono", "Cascadia Mono", ui-monospace, Consolas, monospace;
+      font-size: 11px; letter-spacing: .04em; color: var(--faint); }
+    .h1 { font-size: 26px; line-height: 1.2; font-weight: 600; letter-spacing: -.012em; margin: 0; }
+    .h2 { font-size: 15px; font-weight: 600; margin: 0; }
+    .h3 { font-size: 14px; font-weight: 600; margin: 0; }
+    .mut { color: var(--mut); }
+    .prose { font-size: 15px; line-height: 1.62; }
+
+    /* ---- controls ---- */
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+      height: 32px; padding: 0 14px; border: 1px solid var(--line); background: var(--raised);
+      border-radius: 6px; font-size: 13px; color: var(--fg); }
+    .btnp { background: var(--acc); border-color: var(--acc); color: var(--acc-fg); }
+    .btnq { background: transparent; border-color: transparent; color: var(--mut); }
+    .btns { height: 28px; padding: 0 10px; font-size: 12px; }
+    .btnl { height: 40px; padding: 0 18px; font-size: 14px; }
+    .pill { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 9px;
+      border-radius: 11px; border: 1px solid var(--line); background: var(--raised);
+      font-size: 11px; color: var(--fg); }
+    .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .track { height: 5px; border-radius: 3px; background: var(--line); overflow: hidden; }
+    .fillbar { height: 100%; background: var(--acc); border-radius: 3px; }
+
+    /* ---- wireframe placeholders ---- */
+    .ph { background: var(--line); border-radius: 2px; }
+    .xbox { border: 1px solid var(--line); border-radius: 5px; background-color: var(--sunk);
+      background-image:
+        linear-gradient(to top right, transparent calc(50% - 0.5px), var(--line) 50%, transparent calc(50% + 0.5px)),
+        linear-gradient(to bottom right, transparent calc(50% - 0.5px), var(--line) 50%, transparent calc(50% + 0.5px)); }
+  </style>
+</helmet>
+<div class="win" style="width:1440px;height:900px">
+
+  <div class="chrome">
+    <div class="xbox" style="width:16px;height:16px"></div>
+    <span style="font-size:12px;font-weight:600">ForgeLocal</span>
+    <span class="mut" style="font-size:12px">Models</span>
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8B867C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+    <span class="mut" style="font-size:12px">Everyday building</span>
+    <div style="flex-grow:1"></div>
+    <div style="display:flex;align-items:center;gap:16px">
+      <div class="ph" style="width:11px;height:2px"></div>
+      <div class="ph" style="width:9px;height:9px;border-radius:1px"></div>
+      <div class="ph" style="width:10px;height:10px;border-radius:1px"></div>
+    </div>
+  </div>
+
+  <div style="flex-grow:1;min-height:0;display:flex;background:#FFFFFF;overflow:hidden">
+
+    <div style="width:240px;flex-shrink:0;border-right:1px solid #DAD5CB;background:#F1EDE5;display:flex;flex-direction:column;padding:12px 10px;gap:14px">
+      <div class="box soft" style="height:30px;display:flex;align-items:center;gap:8px;padding:0 10px">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8B867C" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <span class="mut" style="font-size:12px">Search projects</span>
+      </div>
+      <div class="btn btnp btns" style="height:32px;width:100%">New project</div>
+      <div style="display:flex;flex-direction:column;gap:5px">
+        <span class="lab" style="padding:0 6px">Projects</span>
+        <div style="display:flex;align-items:center;gap:8px;padding:6px 8px">
+          <div class="dot" style="background:#DFDAD0"></div>
+          <span class="mut" style="font-size:12px">task-tracker</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding:6px 8px">
+          <div class="dot" style="background:#DFDAD0"></div>
+          <span class="mut" style="font-size:12px">invoice-parser</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding:6px 8px">
+          <div class="dot" style="background:#DFDAD0"></div>
+          <span class="mut" style="font-size:12px">site-redesign</span>
+        </div>
+      </div>
+      <div style="flex-grow:1"></div>
+      <div style="display:flex;flex-direction:column;gap:2px;border-top:1px solid #DAD5CB;padding-top:10px">
+        <div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:4px;background:#FFFFFF;border:1px solid #C9C6BE">
+          <div class="xbox" style="width:14px;height:14px"></div>
+          <span style="font-size:12px;font-weight:600">Models</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding:6px 8px">
+          <div class="xbox" style="width:14px;height:14px"></div>
+          <span style="font-size:12px">Settings</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="flex-grow:1;min-width:0;padding:22px 26px;display:flex;flex-direction:column;gap:16px">
+
+      <div style="display:flex;flex-direction:column;gap:9px">
+        <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">
+          <span class="pill" style="height:22px;font-size:10px;background:#5B5CF0;border-color:#5B5CF0;color:#FFFFFF">Balanced</span>
+          <h1 class="h1" style="font-size:22px">Everyday building</h1>
+          <span class="m mut" style="font-size:12px">[model:tag]</span>
+          <span class="pill" style="height:22px;font-size:10px;border-color:#5F7F63;color:#41603F">Fit: excellent</span>
+        </div>
+        <span class="mut" style="font-size:12px;max-width:640px">A profile is the tested unit, not the weight file. Change any line below and it becomes a different profile with its own test record.</span>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <span class="lab">What this profile pins</span>
+        <div class="box" style="display:grid;grid-template-columns:repeat(3, minmax(0, 1fr))">
+          <div style="padding:11px 14px;border-right:1px solid #E4DFD5;border-bottom:1px solid #E4DFD5;display:flex;flex-direction:column;gap:3px">
+            <span class="lab">Runtime</span><span class="m" style="font-size:12px">ollama [x.y.z]</span>
+          </div>
+          <div style="padding:11px 14px;border-right:1px solid #E4DFD5;border-bottom:1px solid #E4DFD5;display:flex;flex-direction:column;gap:3px">
+            <span class="lab">Model tag</span><span class="m" style="font-size:12px">[model:tag]</span>
+          </div>
+          <div style="padding:11px 14px;border-bottom:1px solid #E4DFD5;display:flex;flex-direction:column;gap:3px">
+            <span class="lab">Quantization</span><span class="m" style="font-size:12px">[quant]</span>
+          </div>
+          <div style="padding:11px 14px;border-right:1px solid #E4DFD5;border-bottom:1px solid #E4DFD5;display:flex;flex-direction:column;gap:3px">
+            <span class="lab">Default context</span><span class="m" style="font-size:12px">16384</span>
+          </div>
+          <div style="padding:11px 14px;border-right:1px solid #E4DFD5;border-bottom:1px solid #E4DFD5;display:flex;flex-direction:column;gap:3px">
+            <span class="lab">Sampling</span><span class="m" style="font-size:12px">temp 0.2 &middot; top_p 0.9</span>
+          </div>
+          <div style="padding:11px 14px;border-bottom:1px solid #E4DFD5;display:flex;flex-direction:column;gap:3px">
+            <span class="lab">Reserved for completion</span><span class="m" style="font-size:12px">2048</span>
+          </div>
+          <div style="padding:11px 14px;border-right:1px solid #E4DFD5;display:flex;flex-direction:column;gap:3px">
+            <span class="lab">Tool schema</span><span class="m" style="font-size:12px">tools v[n]</span>
+          </div>
+          <div style="padding:11px 14px;border-right:1px solid #E4DFD5;display:flex;flex-direction:column;gap:3px">
+            <span class="lab">System prompt</span><span class="m" style="font-size:12px">prompt v[n]</span>
+          </div>
+          <div style="padding:11px 14px;display:flex;flex-direction:column;gap:3px">
+            <span class="lab">Repair behavior</span><span class="m" style="font-size:12px">schema-guided, 1 attempt</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;flex-grow:1;min-height:0">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span class="lab" style="flex-grow:1">Agent check suite</span>
+          <span class="m mut" style="font-size:11px">[N] of [N] passed &middot; run on [date]</span>
+        </div>
+        <div class="box" style="display:flex;flex-direction:column;overflow:hidden">
+          <div style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid #E4DFD5;background:#F1EDE5">
+            <span class="lab" style="flex-grow:1">Check</span>
+            <span class="lab" style="width:120px">Machine class</span>
+            <span class="lab" style="width:60px">Result</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid #E4DFD5">
+            <span style="font-size:12px;flex-grow:1">Single-file edit with a typed patch</span>
+            <span class="m mut" style="width:120px;font-size:11px">12 GB / 32 GB</span>
+            <span style="width:60px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5F7F63" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid #E4DFD5">
+            <span style="font-size:12px;flex-grow:1">Multi-file change with conflict detection</span>
+            <span class="m mut" style="width:120px;font-size:11px">8 GB / 16 GB</span>
+            <span style="width:60px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5F7F63" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid #E4DFD5">
+            <span style="font-size:12px;flex-grow:1">Bounded shell command with exit code</span>
+            <span class="m mut" style="width:120px;font-size:11px">12 GB / 32 GB</span>
+            <span style="width:60px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5F7F63" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid #E4DFD5">
+            <span style="font-size:12px;flex-grow:1">Malformed tool call, one schema repair</span>
+            <span class="m mut" style="width:120px;font-size:11px">CPU only / 32 GB</span>
+            <span style="width:60px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5F7F63" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid #E4DFD5">
+            <span style="font-size:12px;flex-grow:1">Context compaction keeps the goal and the file list</span>
+            <span class="m mut" style="width:120px;font-size:11px">8 GB / 16 GB</span>
+            <span style="width:60px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5F7F63" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 14px">
+            <span style="font-size:12px;flex-grow:1">Large multi-service repository</span>
+            <span class="m mut" style="width:120px;font-size:11px">12 GB / 32 GB</span>
+            <span class="m" style="width:60px;font-size:11px;color:#8E4A44">failed</span>
+          </div>
+        </div>
+        <span class="mut" style="font-size:11px">A failed check is published, not hidden. It becomes the known limit shown on the card.</span>
+      </div>
+
+    </div>
+
+    <div style="width:320px;flex-shrink:0;border-left:1px solid #E4DFD5;background:#FBFAF7;padding:22px 20px;display:flex;flex-direction:column;gap:18px">
+
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <span class="lab">Hardware envelope</span>
+        <div class="box" style="padding:13px;display:flex;flex-direction:column;gap:9px">
+          <div style="display:flex;justify-content:space-between;gap:8px"><span class="mut" style="font-size:12px">Minimum VRAM</span><span class="m" style="font-size:12px">10 GB</span></div>
+          <div style="display:flex;justify-content:space-between;gap:8px"><span class="mut" style="font-size:12px">Minimum system RAM</span><span class="m" style="font-size:12px">16 GB</span></div>
+          <div style="display:flex;justify-content:space-between;gap:8px"><span class="mut" style="font-size:12px">Disk</span><span class="m" style="font-size:12px">9.0 GB</span></div>
+          <div style="display:flex;justify-content:space-between;gap:8px"><span class="mut" style="font-size:12px">Reserve held back</span><span class="m" style="font-size:12px">OS, context, tools</span></div>
+          <div style="height:1px;background:#E4DFD5"></div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5F7F63" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            <span style="font-size:12px">Your PC clears the VRAM minimum by 2 GB</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <span class="lab">License and source</span>
+        <div class="box" style="padding:13px;display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;flex-direction:column;gap:2px">
+            <span class="mut" style="font-size:11px">Weights license</span>
+            <span class="m" style="font-size:12px">[license]</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:2px">
+            <span class="mut" style="font-size:11px">Pulled from</span>
+            <span class="m" style="font-size:12px">[upstream source]</span>
+          </div>
+          <span class="mut" style="font-size:11px">We publish a signed manifest. We do not mirror the weights.</span>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <span class="lab">Profile history</span>
+        <div class="box" style="display:flex;flex-direction:column">
+          <div style="padding:10px 13px;border-bottom:1px solid #E4DFD5;display:flex;flex-direction:column;gap:2px">
+            <div style="display:flex;align-items:center;gap:7px">
+              <span class="m" style="font-size:12px;flex-grow:1">rev [n]</span>
+              <span class="pill" style="height:18px;font-size:10px">current</span>
+            </div>
+            <span class="mut" style="font-size:11px">Context raised to 16384 after the reserve was re-measured</span>
+          </div>
+          <div style="padding:10px 13px;display:flex;flex-direction:column;gap:2px">
+            <span class="m mut" style="font-size:12px">rev [n-1]</span>
+            <span class="mut" style="font-size:11px">Prompt revision for the patch tool</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="flex-grow:1"></div>
+
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div class="btn btns" style="height:32px;width:100%">Pin this revision</div>
+        <a href="#" style="font-size:12px;text-align:center">Export the test record</a>
+      </div>
+
+    </div>
+
+  </div>
+
+  <div style="height:30px;flex-shrink:0;border-top:1px solid #DAD5CB;background:#EFEBE3;display:flex;align-items:center;padding:0 14px;font-size:11px">
+    <div style="display:flex;align-items:center;gap:7px;padding-right:14px;border-right:1px solid #DAD5CB">
+      <div class="dot" style="width:7px;height:7px;background:#5F7F63"></div>
+      <span>Balanced</span>
+      <span class="m mut">[model:tag]</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:7px;padding:0 14px;border-right:1px solid #DAD5CB"><span>Local</span></div>
+    <div style="display:flex;align-items:center;gap:7px;padding:0 14px;border-right:1px solid #DAD5CB">
+      <span class="mut">RAM</span>
+      <div class="track" style="width:52px;height:5px"><div class="fillbar" style="width:31%;background:#8B867C"></div></div>
+      <span class="mut">31%</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:7px;padding:0 14px;border-right:1px solid #DAD5CB">
+      <span class="mut">Context</span>
+      <div class="track" style="width:52px;height:5px"><div class="fillbar" style="width:0%"></div></div>
+      <span class="mut">idle</span>
+    </div>
+    <div style="flex-grow:1"></div>
+    <div style="display:flex;align-items:center;gap:7px"><span class="mut">Safety</span><span>Balanced</span></div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

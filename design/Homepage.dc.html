@@ -1,0 +1,343 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    /* ---- tokens ------------------------------------------------------
+       :root carries the light marketing surface. .app overrides with the
+       near-black desktop shell. Components below read only the vars, so
+       one component set serves both.                                    */
+    :root {
+      --bg:#F6F4EF; --panel:#F1EDE5; --raised:#FFFFFF; --sunk:#E9E5DC;
+      --line:#DAD5CB; --line-soft:#E4DFD5;
+      --fg:#161719; --mut:#6E6A62; --faint:#8B867C;
+      --acc:#5B5CF0; --acc-fg:#FFFFFF; --acc-soft:#F0F0FE;
+      --ok:#41603F; --ok-line:#5F7F63;
+      --warn:#8A5F14; --warn-line:#C08A2E; --warn-soft:#FBF6EC;
+      --bad:#8E4A44; --bad-line:#B4514A; --bad-soft:#F9F0EF;
+    }
+    .app {
+      --bg:#0F1011; --panel:#141517; --raised:#1A1B1E; --sunk:#1E2023;
+      --line:#2A2C30; --line-soft:#202225;
+      --fg:#E9E9E7; --mut:#9C9D9A; --faint:#6F716F;
+      --acc:#6E6FF5; --acc-fg:#FFFFFF; --acc-soft:#1C1D33;
+      --ok:#8FBF93; --ok-line:#5F8F65;
+      --warn:#E0B368; --warn-line:#B4863A; --warn-soft:#241E12;
+      --bad:#EC8880; --bad-line:#B4564E; --bad-soft:#2A1817;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; background: #F6F4EF; color: #161719;
+      font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+      font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+    a { color: var(--acc); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ---- surfaces ---- */
+    .app, .site { background: var(--bg); color: var(--fg); }
+    .win { display: flex; flex-direction: column; overflow: hidden; background: var(--bg); color: var(--fg); }
+    .box { border: 1px solid var(--line); background: var(--raised); border-radius: 6px; }
+    .soft { background: var(--sunk); }
+    .note { border: 1px dashed var(--acc); background: var(--acc-soft); border-radius: 6px; }
+    .note .lab { color: var(--acc); }
+
+    .chrome { height: 34px; flex-shrink: 0; display: flex; align-items: center; gap: 10px;
+      padding: 0 12px; border-bottom: 1px solid var(--line); background: var(--panel); }
+
+    /* ---- type ---- */
+    .m { font-family: "Geist Mono", "Cascadia Mono", ui-monospace, Consolas, monospace; }
+    .lab { font-family: "Geist Mono", "Cascadia Mono", ui-monospace, Consolas, monospace;
+      font-size: 11px; letter-spacing: .04em; color: var(--faint); }
+    .h1 { font-size: 26px; line-height: 1.2; font-weight: 600; letter-spacing: -.012em; margin: 0; }
+    .h2 { font-size: 15px; font-weight: 600; margin: 0; }
+    .h3 { font-size: 14px; font-weight: 600; margin: 0; }
+    .mut { color: var(--mut); }
+    .prose { font-size: 15px; line-height: 1.62; }
+
+    /* ---- controls ---- */
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+      height: 32px; padding: 0 14px; border: 1px solid var(--line); background: var(--raised);
+      border-radius: 6px; font-size: 13px; color: var(--fg); }
+    .btnp { background: var(--acc); border-color: var(--acc); color: var(--acc-fg); }
+    .btnq { background: transparent; border-color: transparent; color: var(--mut); }
+    .btns { height: 28px; padding: 0 10px; font-size: 12px; }
+    .btnl { height: 40px; padding: 0 18px; font-size: 14px; }
+    .pill { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 9px;
+      border-radius: 11px; border: 1px solid var(--line); background: var(--raised);
+      font-size: 11px; color: var(--fg); }
+    .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .track { height: 5px; border-radius: 3px; background: var(--line); overflow: hidden; }
+    .fillbar { height: 100%; background: var(--acc); border-radius: 3px; }
+
+    /* ---- wireframe placeholders ---- */
+    .ph { background: var(--line); border-radius: 2px; }
+    .xbox { border: 1px solid var(--line); border-radius: 5px; background-color: var(--sunk);
+      background-image:
+        linear-gradient(to top right, transparent calc(50% - 0.5px), var(--line) 50%, transparent calc(50% + 0.5px)),
+        linear-gradient(to bottom right, transparent calc(50% - 0.5px), var(--line) 50%, transparent calc(50% + 0.5px)); }
+  </style>
+</helmet>
+<div style="width:1280px;min-height:3600px;background:#F6F4EF;display:flex;flex-direction:column">
+
+  <div style="height:66px;flex-shrink:0;border-bottom:1px solid #DAD5CB;display:flex;align-items:center;gap:28px;padding:0 56px">
+    <div style="display:flex;align-items:center;gap:9px">
+      <div class="xbox" style="width:22px;height:22px"></div>
+      <span style="font-size:14px;font-weight:600">ForgeLocal</span>
+    </div>
+    <div style="display:flex;gap:22px">
+      <span class="mut" style="font-size:13px">Models</span>
+      <span class="mut" style="font-size:13px">Security</span>
+      <span class="mut" style="font-size:13px">Pricing</span>
+      <span class="mut" style="font-size:13px">Docs</span>
+    </div>
+    <div style="flex-grow:1"></div>
+    <div class="btn btnp btns" style="height:34px;padding:0 16px">Download for Windows</div>
+  </div>
+
+  <div style="padding:76px 56px 68px;display:flex;flex-direction:column;gap:26px;align-items:flex-start">
+    <span class="pill">Windows first &middot; runs on your own hardware</span>
+    <div style="display:flex;flex-direction:column;gap:14px;max-width:760px">
+      <h1 class="h1" style="font-size:52px;line-height:1.08">Build on your PC.<br>Skip the model setup.</h1>
+      <p class="mut" style="margin:0;font-size:17px;max-width:600px;text-wrap:pretty">ForgeLocal scans your machine, picks a model profile that has actually passed our coding tests on hardware like yours, and gives it bounded tools for files, Git and the terminal.</p>
+    </div>
+    <div class="box" style="width:760px;padding:16px 18px;display:flex;flex-direction:column;gap:14px">
+      <span class="mut" style="font-size:14px">Build a polished one-page task tracker with local storage</span>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="pill" style="height:24px;font-size:11px">React web app</span>
+        <span class="pill" style="height:24px;font-size:11px">Python utility</span>
+        <span class="pill" style="height:24px;font-size:11px">Existing repo</span>
+        <div style="flex-grow:1"></div>
+        <div class="btn btnp" style="height:36px">See what your PC can build</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:20px">
+      <div class="btn btnp" style="height:44px;padding:0 22px;font-weight:600">Download for Windows</div>
+      <a href="#" style="font-size:13px">Check the verified model list first</a>
+    </div>
+  </div>
+
+  <div style="padding:48px 56px;border-top:1px solid #DAD5CB;background:#F1EDE5;display:flex;flex-direction:column;gap:24px">
+    <span class="lab">How it works</span>
+    <div style="display:grid;grid-template-columns:repeat(4, minmax(0, 1fr));gap:16px">
+      <div class="box" style="padding:20px;display:flex;flex-direction:column;gap:9px">
+        <span class="lab">01</span>
+        <span class="h2">Scan</span>
+        <span class="mut" style="font-size:13px">RAM, usable VRAM, disk and any runtime already installed. It stays on the device.</span>
+      </div>
+      <div class="box" style="padding:20px;display:flex;flex-direction:column;gap:9px">
+        <span class="lab">02</span>
+        <span class="h2">Match</span>
+        <span class="mut" style="font-size:13px">Three profiles sized to what is left after the OS, the context and the tools.</span>
+      </div>
+      <div class="box" style="padding:20px;display:flex;flex-direction:column;gap:9px">
+        <span class="lab">03</span>
+        <span class="h2">Verify</span>
+        <span class="mut" style="font-size:13px">A real tool loop runs in a throwaway folder before you get anywhere near your code.</span>
+      </div>
+      <div class="box" style="padding:20px;display:flex;flex-direction:column;gap:9px">
+        <span class="lab">04</span>
+        <span class="h2">Build</span>
+        <span class="mut" style="font-size:13px">Plan, approvals, diffs, tests, preview, and a rollback point for every batch.</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="padding:56px;display:flex;flex-direction:column;gap:20px">
+    <div style="display:flex;align-items:flex-end;gap:16px">
+      <div style="display:flex;flex-direction:column;gap:6px;flex-grow:1">
+        <h2 class="h1" style="font-size:26px">The workbench itself</h2>
+        <span class="mut">Task on the left, work surface on the right, and a status bar that never hides which model is running or where.</span>
+      </div>
+      <span class="pill" style="border-color:#5F7F63;color:#41603F">Verified profile</span>
+    </div>
+    <div class="box" style="height:400px;padding:12px;display:flex;gap:12px;background:#F1EDE5">
+      <div class="box" style="width:150px;flex-shrink:0;padding:12px;display:flex;flex-direction:column;gap:8px">
+        <div class="ph" style="width:70%;height:9px"></div>
+        <div class="ph" style="width:90%;height:9px"></div>
+        <div class="ph" style="width:60%;height:9px"></div>
+      </div>
+      <div class="box" style="width:330px;flex-shrink:0;padding:12px;display:flex;flex-direction:column;gap:9px">
+        <div class="ph" style="width:80%;height:12px"></div>
+        <div class="ph" style="width:55%;height:9px"></div>
+        <div style="height:10px"></div>
+        <div class="ph" style="width:100%;height:9px"></div>
+        <div class="ph" style="width:92%;height:9px"></div>
+        <div class="ph" style="width:74%;height:9px"></div>
+        <div style="flex-grow:1"></div>
+        <div class="box" style="border-color:#C08A2E;background:#FBF6EC;height:74px"></div>
+      </div>
+      <div class="xbox" style="flex-grow:1;background-color:#FBFAF7"></div>
+    </div>
+  </div>
+
+  <div style="padding:0 56px 56px;display:flex;flex-direction:column;gap:20px">
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <h2 class="h1" style="font-size:26px">Compatibility, with the evidence attached</h2>
+      <span class="mut">Every profile publishes what it was tested on and what it failed. Counts stay blank until the suite has actually run.</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3, minmax(0, 1fr));gap:16px">
+      <div class="box" style="padding:20px;display:flex;flex-direction:column;gap:10px">
+        <span class="pill" style="height:22px;font-size:11px;align-self:flex-start">Balanced</span>
+        <span class="h2">12 GB VRAM, 32 GB RAM</span>
+        <span class="mut" style="font-size:13px">Passed [N] of [N] agent checks on runtime [x.y.z]</span>
+        <a href="#" style="font-size:12px">Full test record</a>
+      </div>
+      <div class="box" style="padding:20px;display:flex;flex-direction:column;gap:10px">
+        <span class="pill" style="height:22px;font-size:11px;align-self:flex-start">Fast</span>
+        <span class="h2">8 GB VRAM, 16 GB RAM</span>
+        <span class="mut" style="font-size:13px">Passed [N] of [N] agent checks on runtime [x.y.z]</span>
+        <a href="#" style="font-size:12px">Full test record</a>
+      </div>
+      <div class="box" style="padding:20px;display:flex;flex-direction:column;gap:10px">
+        <span class="pill" style="height:22px;font-size:11px;align-self:flex-start">CPU only</span>
+        <span class="h2">No GPU, 32 GB RAM</span>
+        <span class="mut" style="font-size:13px">Passed [N] of [N] agent checks on runtime [x.y.z]</span>
+        <a href="#" style="font-size:12px">Full test record</a>
+      </div>
+    </div>
+  </div>
+
+  <div style="padding:52px 56px;border-top:1px solid #DAD5CB;background:#F1EDE5;display:flex;gap:48px">
+    <div style="width:400px;flex-shrink:0;display:flex;flex-direction:column;gap:12px">
+      <h2 class="h1" style="font-size:26px">It only touches what you point it at</h2>
+      <span class="mut" style="font-size:14px;text-wrap:pretty">A permission prompt is not the same thing as isolation, and we do not pretend otherwise. Here is exactly what the boundary is.</span>
+      <a href="#" style="font-size:13px">Read the security page</a>
+    </div>
+    <div style="flex-grow:1;display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:14px">
+      <div class="box" style="padding:16px;display:flex;flex-direction:column;gap:6px">
+        <span class="h3">One folder, canonicalized</span>
+        <span class="mut" style="font-size:12px">Traversal, junctions and device paths are rejected, not warned about.</span>
+      </div>
+      <div class="box" style="padding:16px;display:flex;flex-direction:column;gap:6px">
+        <span class="h3">Commands shown before they run</span>
+        <span class="mut" style="font-size:12px">Classified by risk, with a hard deny list that no mode unlocks.</span>
+      </div>
+      <div class="box" style="padding:16px;display:flex;flex-direction:column;gap:6px">
+        <span class="h3">A rollback point per batch</span>
+        <span class="mut" style="font-size:12px">Your existing uncommitted work is preserved. Nothing is committed for you.</span>
+      </div>
+      <div class="box" style="padding:16px;display:flex;flex-direction:column;gap:6px">
+        <span class="h3">Local unless you say otherwise</span>
+        <span class="mut" style="font-size:12px">Cloud inference is a per-task choice with a visible budget, never a default.</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="padding:56px;display:flex;flex-direction:column;gap:22px">
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <h2 class="h1" style="font-size:26px">Pricing</h2>
+      <span class="mut">Your own compute is never metered. The subscription pays for the compatibility work.</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3, minmax(0, 1fr));gap:16px;align-items:start">
+      <div class="box" style="padding:22px;display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <span class="h2">Free</span>
+          <span style="font-size:30px;font-weight:600">$0</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:7px">
+          <span class="mut" style="font-size:13px">Unlimited use of your own hardware</span>
+          <span class="mut" style="font-size:13px">Hardware scan and three tested profiles</span>
+          <span class="mut" style="font-size:13px">Files, Git, terminal, diff, preview, rollback</span>
+          <span class="mut" style="font-size:13px">Up to three active projects</span>
+        </div>
+        <div class="btn" style="width:100%">Download</div>
+      </div>
+      <div class="box" style="padding:22px;display:flex;flex-direction:column;gap:14px;border-color:#5B5CF0;box-shadow:inset 0 0 0 1px #5B5CF0">
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="h2">Pro</span>
+            <span class="pill" style="height:20px;font-size:10px;background:#5B5CF0;border-color:#5B5CF0;color:#FFFFFF">Most people</span>
+          </div>
+          <span style="font-size:30px;font-weight:600">$15<span class="mut" style="font-size:14px;font-weight:400"> /month</span></span>
+          <span class="mut" style="font-size:12px">or $144 a year</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:7px">
+          <span class="mut" style="font-size:13px">Unlimited projects and the full profile matrix</span>
+          <span class="mut" style="font-size:13px">Multi-model routing and project memory</span>
+          <span class="mut" style="font-size:13px">Advanced recovery and diagnostics</span>
+          <span class="mut" style="font-size:13px">Blueprints, background jobs, priority updates</span>
+        </div>
+        <div class="btn btnp" style="width:100%">Start Pro</div>
+      </div>
+      <div class="box" style="padding:22px;display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <span class="h2">Team</span>
+          <span style="font-size:30px;font-weight:600">$30<span class="mut" style="font-size:14px;font-weight:400"> /user/month</span></span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:7px">
+          <span class="mut" style="font-size:13px">Shared profiles and project policies</span>
+          <span class="mut" style="font-size:13px">Permission presets and audit trail</span>
+          <span class="mut" style="font-size:13px">Usage and health analytics</span>
+          <span class="mut" style="font-size:13px">Private blueprint library</span>
+        </div>
+        <div class="btn" style="width:100%">Talk to us</div>
+      </div>
+    </div>
+    <div class="box soft" style="padding:14px 18px;display:flex;align-items:center;gap:12px">
+      <span class="h3" style="flex-shrink:0">Cloud boost</span>
+      <span class="mut" style="font-size:13px;flex-grow:1">Optional, off by default. Bring your own key or pay usage, shown in real currency against a hard budget you set. Never opaque credits.</span>
+      <a href="#" style="font-size:12px">How it is billed</a>
+    </div>
+  </div>
+
+  <div style="padding:0 56px 56px;display:flex;flex-direction:column;gap:18px">
+    <h2 class="h1" style="font-size:26px">Questions people actually ask</h2>
+    <div style="display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:12px">
+      <div class="box" style="padding:15px 18px;display:flex;align-items:center;gap:12px">
+        <span style="font-size:13px;flex-grow:1">Is a local model as good as Claude or GPT?</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8B867C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+      </div>
+      <div class="box" style="padding:15px 18px;display:flex;align-items:center;gap:12px">
+        <span style="font-size:13px;flex-grow:1">What hardware do I actually need?</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8B867C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+      </div>
+      <div class="box" style="padding:15px 18px;display:flex;align-items:center;gap:12px">
+        <span style="font-size:13px;flex-grow:1">Who owns the code it writes?</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8B867C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+      </div>
+      <div class="box" style="padding:15px 18px;display:flex;align-items:center;gap:12px">
+        <span style="font-size:13px;flex-grow:1">Does it need the internet after setup?</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8B867C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+      </div>
+      <div class="box" style="padding:15px 18px;display:flex;align-items:center;gap:12px">
+        <span style="font-size:13px;flex-grow:1">What telemetry is collected, exactly?</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8B867C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+      </div>
+      <div class="box" style="padding:15px 18px;display:flex;align-items:center;gap:12px">
+        <span style="font-size:13px;flex-grow:1">How do I uninstall it and delete the models?</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8B867C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <div style="padding:64px 56px;border-top:1px solid #DAD5CB;background:#161719;display:flex;align-items:center;gap:40px">
+    <div style="flex-grow:1;display:flex;flex-direction:column;gap:12px">
+      <h2 class="h1" style="font-size:34px;color:#F6F4EF">See what your PC can build.</h2>
+      <span style="color:#A9A49B;font-size:14px">Signed Windows installer, checksum published. No account needed to use it locally.</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:9px;align-items:flex-end">
+      <div class="btn btnp" style="height:46px;padding:0 26px;font-weight:600">Download for Windows</div>
+      <span class="m" style="font-size:11px;color:#A9A49B">[version] &middot; [size] &middot; Windows 10 and 11, x64</span>
+    </div>
+  </div>
+
+  <div style="padding:28px 56px;background:#161719;border-top:1px solid #2A2B2E;display:flex;align-items:center;gap:24px">
+    <span style="color:#A9A49B;font-size:12px;flex-grow:1">[Company] &middot; [year]</span>
+    <span style="color:#A9A49B;font-size:12px">Models</span>
+    <span style="color:#A9A49B;font-size:12px">Security</span>
+    <span style="color:#A9A49B;font-size:12px">Privacy</span>
+    <span style="color:#A9A49B;font-size:12px">Docs</span>
+    <span style="color:#A9A49B;font-size:12px">Status</span>
+  </div>
+
+  <div style="flex-grow:1;min-height:0;background:#161719"></div>
+
+</div>
+</x-dc>
+</body>
+</html>

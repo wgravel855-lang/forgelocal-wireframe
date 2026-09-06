@@ -1,0 +1,195 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    /* ---- tokens ------------------------------------------------------
+       :root carries the light marketing surface. .app overrides with the
+       near-black desktop shell. Components below read only the vars, so
+       one component set serves both.                                    */
+    :root {
+      --bg:#F6F4EF; --panel:#F1EDE5; --raised:#FFFFFF; --sunk:#E9E5DC;
+      --line:#DAD5CB; --line-soft:#E4DFD5;
+      --fg:#161719; --mut:#6E6A62; --faint:#8B867C;
+      --acc:#5B5CF0; --acc-fg:#FFFFFF; --acc-soft:#F0F0FE;
+      --ok:#41603F; --ok-line:#5F7F63;
+      --warn:#8A5F14; --warn-line:#C08A2E; --warn-soft:#FBF6EC;
+      --bad:#8E4A44; --bad-line:#B4514A; --bad-soft:#F9F0EF;
+    }
+    .app {
+      --bg:#0F1011; --panel:#141517; --raised:#1A1B1E; --sunk:#1E2023;
+      --line:#2A2C30; --line-soft:#202225;
+      --fg:#E9E9E7; --mut:#9C9D9A; --faint:#6F716F;
+      --acc:#6E6FF5; --acc-fg:#FFFFFF; --acc-soft:#1C1D33;
+      --ok:#8FBF93; --ok-line:#5F8F65;
+      --warn:#E0B368; --warn-line:#B4863A; --warn-soft:#241E12;
+      --bad:#EC8880; --bad-line:#B4564E; --bad-soft:#2A1817;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; background: #F6F4EF; color: #161719;
+      font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+      font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+    a { color: var(--acc); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ---- surfaces ---- */
+    .app, .site { background: var(--bg); color: var(--fg); }
+    .win { display: flex; flex-direction: column; overflow: hidden; background: var(--bg); color: var(--fg); }
+    .box { border: 1px solid var(--line); background: var(--raised); border-radius: 6px; }
+    .soft { background: var(--sunk); }
+    .note { border: 1px dashed var(--acc); background: var(--acc-soft); border-radius: 6px; }
+    .note .lab { color: var(--acc); }
+
+    .chrome { height: 34px; flex-shrink: 0; display: flex; align-items: center; gap: 10px;
+      padding: 0 12px; border-bottom: 1px solid var(--line); background: var(--panel); }
+
+    /* ---- type ---- */
+    .m { font-family: "Geist Mono", "Cascadia Mono", ui-monospace, Consolas, monospace; }
+    .lab { font-family: "Geist Mono", "Cascadia Mono", ui-monospace, Consolas, monospace;
+      font-size: 11px; letter-spacing: .04em; color: var(--faint); }
+    .h1 { font-size: 26px; line-height: 1.2; font-weight: 600; letter-spacing: -.012em; margin: 0; }
+    .h2 { font-size: 15px; font-weight: 600; margin: 0; }
+    .h3 { font-size: 14px; font-weight: 600; margin: 0; }
+    .mut { color: var(--mut); }
+    .prose { font-size: 15px; line-height: 1.62; }
+
+    /* ---- controls ---- */
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+      height: 32px; padding: 0 14px; border: 1px solid var(--line); background: var(--raised);
+      border-radius: 6px; font-size: 13px; color: var(--fg); }
+    .btnp { background: var(--acc); border-color: var(--acc); color: var(--acc-fg); }
+    .btnq { background: transparent; border-color: transparent; color: var(--mut); }
+    .btns { height: 28px; padding: 0 10px; font-size: 12px; }
+    .btnl { height: 40px; padding: 0 18px; font-size: 14px; }
+    .pill { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 9px;
+      border-radius: 11px; border: 1px solid var(--line); background: var(--raised);
+      font-size: 11px; color: var(--fg); }
+    .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .track { height: 5px; border-radius: 3px; background: var(--line); overflow: hidden; }
+    .fillbar { height: 100%; background: var(--acc); border-radius: 3px; }
+
+    /* ---- wireframe placeholders ---- */
+    .ph { background: var(--line); border-radius: 2px; }
+    .xbox { border: 1px solid var(--line); border-radius: 5px; background-color: var(--sunk);
+      background-image:
+        linear-gradient(to top right, transparent calc(50% - 0.5px), var(--line) 50%, transparent calc(50% + 0.5px)),
+        linear-gradient(to bottom right, transparent calc(50% - 0.5px), var(--line) 50%, transparent calc(50% + 0.5px)); }
+  </style>
+</helmet>
+<div style="width:1440px;height:620px;background:#F6F4EF;padding:22px 26px;display:flex;flex-direction:column;gap:16px;overflow:hidden">
+
+    <div style="display:flex;align-items:flex-end;gap:16px">
+      <div style="display:flex;flex-direction:column;gap:5px;flex-grow:1">
+        <span class="lab">Specimen sheet, not a screen</span>
+        <h1 class="h1" style="font-size:22px">When it cannot finish, it says which layer failed</h1>
+        <span class="mut" style="font-size:12px">Every card names the layer, states what already happened without asking, and offers a real choice. None of them is a spinner that says "still thinking". These render inline in the task panel, in place of the plan.</span>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(3, minmax(0, 1fr));gap:14px;align-content:start">
+
+      <div class="box" style="border-color:#C08A2E;padding:14px;display:flex;flex-direction:column;gap:10px">
+        <span class="lab" style="color:#8A5F14">Layer: model load</span>
+        <span class="h3">The Best profile exceeded safe memory.</span>
+        <div style="display:flex;gap:9px;align-items:flex-start">
+          <span class="lab" style="width:74px;flex-shrink:0;padding-top:2px">Already done</span>
+          <span class="mut" style="font-size:12px">Unloaded it, cut context once, kept a local diagnostic.</span>
+        </div>
+        <div style="flex-grow:1"></div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap">
+          <div class="btn btnp btns" style="height:28px">Switch to Balanced</div>
+          <div class="btn btns" style="height:28px">Retry</div>
+        </div>
+      </div>
+
+      <div class="box" style="border-color:#C08A2E;padding:14px;display:flex;flex-direction:column;gap:10px">
+        <span class="lab" style="color:#8A5F14">Layer: tool call</span>
+        <span class="h3">The model produced an invalid action.</span>
+        <div style="display:flex;gap:9px;align-items:flex-start">
+          <span class="lab" style="width:74px;flex-shrink:0;padding-top:2px">Already done</span>
+          <span class="mut" style="font-size:12px">One schema-guided repair, then one re-prompt. Both failed.</span>
+        </div>
+        <div style="flex-grow:1"></div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap">
+          <div class="btn btnp btns" style="height:28px">Retry on Fast</div>
+          <div class="btn btns" style="height:28px">Raw error</div>
+          <div class="btn btns" style="height:28px">Stop</div>
+        </div>
+      </div>
+
+      <div class="box" style="border-color:#C08A2E;padding:14px;display:flex;flex-direction:column;gap:10px">
+        <span class="lab" style="color:#8A5F14">Layer: agent</span>
+        <span class="h3">It repeated the same step without progress.</span>
+        <div style="display:flex;gap:9px;align-items:flex-start">
+          <span class="lab" style="width:74px;flex-shrink:0;padding-top:2px">Already done</span>
+          <span class="mut" style="font-size:12px">Paused after 3 identical actions, summarized the state.</span>
+        </div>
+        <div style="flex-grow:1"></div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap">
+          <div class="btn btnp btns" style="height:28px">Resume with a correction</div>
+          <div class="btn btns" style="height:28px">Stop</div>
+        </div>
+      </div>
+
+      <div class="box" style="border-color:#C08A2E;padding:14px;display:flex;flex-direction:column;gap:10px">
+        <span class="lab" style="color:#8A5F14">Layer: context</span>
+        <span class="h3">This task is nearing the working-memory limit.</span>
+        <div style="display:flex;gap:9px;align-items:flex-start">
+          <span class="lab" style="width:74px;flex-shrink:0;padding-top:2px">Already done</span>
+          <span class="mut" style="font-size:12px">Built a structured summary: goal, decisions, files, checks, what is left.</span>
+        </div>
+        <div class="track"><div class="fillbar" style="width:88%;background:#C08A2E"></div></div>
+        <div style="flex-grow:1"></div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap">
+          <div class="btn btnp btns" style="height:28px">Continue on the summary</div>
+          <div class="btn btns" style="height:28px">Split the task</div>
+        </div>
+      </div>
+
+      <div class="box" style="border-color:#B4514A;padding:14px;display:flex;flex-direction:column;gap:10px">
+        <span class="lab" style="color:#8E4A44">Layer: filesystem</span>
+        <span class="h3">That action is outside the selected project.</span>
+        <div class="box m" style="padding:7px 9px;font-size:11px;background:#F7EDEC;border-color:#E4C9C6">C:\Users\[you]\Documents\taxes</div>
+        <div style="display:flex;gap:9px;align-items:flex-start">
+          <span class="lab" style="width:74px;flex-shrink:0;padding-top:2px">Already done</span>
+          <span class="mut" style="font-size:12px">Denied. Not queued, not retried.</span>
+        </div>
+        <div style="flex-grow:1"></div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap">
+          <div class="btn btns" style="height:28px">Add that folder explicitly</div>
+          <div class="btn btns" style="height:28px">Cancel</div>
+        </div>
+      </div>
+
+      <div class="box" style="border-color:#B4514A;padding:14px;display:flex;flex-direction:column;gap:10px">
+        <span class="lab" style="color:#8E4A44">Layer: command</span>
+        <span class="h3">This command could remove data or alter the system.</span>
+        <div class="box m" style="padding:7px 9px;font-size:11px;background:#F7EDEC;border-color:#E4C9C6">rm -rf node_modules dist .git</div>
+        <div style="display:flex;gap:9px;align-items:flex-start">
+          <span class="lab" style="width:74px;flex-shrink:0;padding-top:2px">Already done</span>
+          <span class="mut" style="font-size:12px">Blocked by default. No safety mode unlocks this class.</span>
+        </div>
+        <div style="flex-grow:1"></div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap">
+          <div class="btn btns" style="height:28px">Review details</div>
+          <div class="btn btns" style="height:28px">Cancel</div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="note" style="padding:11px 14px;display:flex;gap:10px;align-items:flex-start;flex-shrink:0">
+      <span class="lab" style="flex-shrink:0;padding-top:2px">Also in this family</span>
+      <span class="mut" style="font-size:12px">Insufficient disk (stops before a partial pull), unsupported runtime version, hung process (timeout then process-tree kill), and preview built but never became healthy. Same anatomy: layer, message, what already happened, real choices.</span>
+    </div>
+
+</div>
+</x-dc>
+</body>
+</html>

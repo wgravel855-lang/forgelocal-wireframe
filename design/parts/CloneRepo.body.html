@@ -1,0 +1,105 @@
+<div class="win" style="width:1280px;height:800px">
+
+  <div class="chrome">
+    <div class="xbox" style="width:16px;height:16px"></div>
+    <span style="font-size:12px;font-weight:600">ForgeLocal</span>
+    <div style="flex-grow:1"></div>
+    <div style="display:flex;align-items:center;gap:16px">
+      <div class="ph" style="width:11px;height:2px"></div>
+      <div class="ph" style="width:9px;height:9px;border-radius:1px"></div>
+      <div class="ph" style="width:10px;height:10px;border-radius:1px"></div>
+    </div>
+  </div>
+
+  <div style="flex-grow:1;display:flex;align-items:center;justify-content:center;padding:0 40px">
+    <div style="width:780px;display:flex;flex-direction:column;gap:18px">
+
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <h1 class="h1">Clone from Git</h1>
+        <p class="mut" style="margin:0">A repository you have not read is untrusted input. Cloning it does not run anything in it.</p>
+      </div>
+
+      <div style="display:flex;gap:8px">
+        <div class="btn btns" style="height:32px">Start from a blueprint</div>
+        <div class="btn btns" style="height:32px">Open an existing folder</div>
+        <div class="btn btns" style="height:32px;background:#161719;border-color:#161719;color:#FFFFFF">Clone from Git</div>
+      </div>
+
+      <div class="box" style="padding:16px;display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <span class="lab">Repository URL</span>
+          <div class="box soft" style="height:36px;display:flex;align-items:center;padding:0 12px"><span class="m mut" style="font-size:12px">https://github.com/[owner]/[repo].git</span></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <span class="lab">Clone into, and the only folder the agent may touch</span>
+          <div style="display:flex;gap:8px">
+            <div class="box soft" style="height:36px;flex-grow:1;display:flex;align-items:center;padding:0 12px"><span class="m mut" style="font-size:12px">C:\Users\[you]\projects\[repo]</span></div>
+            <div class="btn" style="height:36px">Browse</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:20px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="lab">Branch</span>
+            <span class="m mut" style="font-size:12px">default</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="lab">Free space</span>
+            <span class="m mut" style="font-size:12px">248 GB on C:</span>
+          </div>
+          <div style="flex-grow:1"></div>
+          <span class="mut" style="font-size:12px">Private repositories need credentials you set up in Settings, not here.</span>
+        </div>
+      </div>
+
+      <div class="box" style="padding:16px;display:flex;flex-direction:column;gap:12px">
+        <span class="lab">What happens after the clone</span>
+        <div style="display:flex;flex-direction:column;gap:9px">
+          <div style="display:flex;gap:10px;align-items:flex-start">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5F7F63" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px"><path d="M20 6 9 17l-5-5"/></svg>
+            <span style="font-size:12px">The files land on disk. Nothing is installed and no script in the repository runs.</span>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5F7F63" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px"><path d="M20 6 9 17l-5-5"/></svg>
+            <span style="font-size:12px">Manifests are read to propose a start, test and preview command. You approve them before first use.</span>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5F7F63" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px"><path d="M20 6 9 17l-5-5"/></svg>
+            <span style="font-size:12px">HEAD is recorded as the first checkpoint. Your working tree is never staged, reset or cleaned without permission.</span>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8E4A44" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            <span style="font-size:12px">A command written in the repository's own README is never executed just because the model read it there.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="note" style="padding:12px 14px;display:flex;gap:10px;align-items:flex-start">
+        <span class="lab" style="flex-shrink:0;padding-top:2px">Note</span>
+        <span class="mut" style="font-size:12px">This is the one onboarding step that pulls arbitrary third-party content onto the machine, so it states the boundary rather than assuming the earlier permission screen covered it.</span>
+      </div>
+
+    </div>
+  </div>
+
+  <div style="height:60px;flex-shrink:0;border-top:1px solid #DAD5CB;background:#EFEBE3;display:flex;align-items:center;gap:20px;padding:0 24px">
+    <span class="lab" style="flex-shrink:0">Step 9 of 11</span>
+    <div style="display:flex;gap:5px;flex-grow:1">
+      <div style="width:26px;height:4px;border-radius:2px;background:#B9B4A9"></div>
+      <div style="width:26px;height:4px;border-radius:2px;background:#B9B4A9"></div>
+      <div style="width:26px;height:4px;border-radius:2px;background:#B9B4A9"></div>
+      <div style="width:26px;height:4px;border-radius:2px;background:#B9B4A9"></div>
+      <div style="width:26px;height:4px;border-radius:2px;background:#B9B4A9"></div>
+      <div style="width:26px;height:4px;border-radius:2px;background:#B9B4A9"></div>
+      <div style="width:26px;height:4px;border-radius:2px;background:#B9B4A9"></div>
+      <div style="width:26px;height:4px;border-radius:2px;background:#B9B4A9"></div>
+      <div style="width:26px;height:4px;border-radius:2px;background:#5B5CF0"></div>
+      <div style="width:26px;height:4px;border-radius:2px;background:#DFDAD0"></div>
+      <div style="width:26px;height:4px;border-radius:2px;background:#DFDAD0"></div>
+    </div>
+    <div style="display:flex;gap:10px;flex-shrink:0">
+      <div class="btn btns" style="height:34px">Back</div>
+      <div class="btn btnp btns" style="height:34px;padding:0 18px">Clone</div>
+    </div>
+  </div>
+
+</div>

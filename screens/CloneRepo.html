@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>9b. Clone from Git · ForgeLocal wireframe</title>
+<style>
+
+    /* ---- tokens ------------------------------------------------------
+       :root carries the light marketing surface. .app overrides with the
+       near-black desktop shell. Components below read only the vars, so
+       one component set serves both.                                    */
+    :root {
+      --bg:#F6F4EF; --panel:#F1EDE5; --raised:#FFFFFF; --sunk:#E9E5DC;
+      --line:#DAD5CB; --line-soft:#E4DFD5;
+      --fg:#161719; --mut:#6E6A62; --faint:#8B867C;
+      --acc:#5B5CF0; --acc-fg:#FFFFFF; --acc-soft:#F0F0FE;
+      --ok:#41603F; --ok-line:#5F7F63;
+      --warn:#8A5F14; --warn-line:#C08A2E; --warn-soft:#FBF6EC;
+      --bad:#8E4A44; --bad-line:#B4514A; --bad-soft:#F9F0EF;
+    }
+    .app {
+      --bg:#0F1011; --panel:#141517; --raised:#1A1B1E; --sunk:#1E2023;
+      --line:#2A2C30; --line-soft:#202225;
+      --fg:#E9E9E7; --mut:#9C9D9A; --faint:#6F716F;
+      --acc:#6E6FF5; --acc-fg:#FFFFFF; --acc-soft:#1C1D33;
+      --ok:#8FBF93; --ok-line:#5F8F65;
+      --warn:#E0B368; --warn-line:#B4863A; --warn-soft:#241E12;
+      --bad:#EC8880; --bad-line:#B4564E; --bad-soft:#2A1817;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; background: #F6F4EF; color: #161719;
+      font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+      font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+    a { color: var(--acc); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ---- surfaces ---- */
+    .app, .site { background: var(--bg); color: var(--fg); }
+    .win { display: flex; flex-direction: column; overflow: hidden; background: var(--bg); color: var(--fg); }
+    .box { border: 1px solid var(--line); background: var(--raised); border-radius: 6px; }
+    .soft { background: var(--sunk); }
+    .note { border: 1px dashed var(--acc); background: var(--acc-soft); border-radius: 6px; }
+    .note .lab { color: var(--acc); }
+
+    .chrome { height: 34px; flex-shrink: 0; display: flex; align-items: center; gap: 10px;
+      padding: 0 12px; border-bottom: 1px solid var(--line); background: var(--panel); }
+
+    /* ---- type ---- */
+    .m { font-family: "Geist Mono", "Cascadia Mono", ui-monospace, Consolas, monospace; }
+    .lab { font-family: "Geist Mono", "Cascadia Mono", ui-monospace, Consolas, monospace;
+      font-size: 11px; letter-spacing: .04em; color: var(--faint); }
+    .h1 { font-size: 26px; line-height: 1.2; font-weight: 600; letter-spacing: -.012em; margin: 0; }
+    .h2 { font-size: 15px; font-weight: 600; margin: 0; }
+    .h3 { font-size: 14px; font-weight: 600; margin: 0; }
+    .mut { color: var(--mut); }
+    .prose { font-size: 15px; line-height: 1.62; }
+
+    /* ---- controls ---- */
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+      height: 32px; padding: 0 14px; border: 1px solid var(--line); background: var(--raised);
+      border-radius: 6px; font-size: 13px; color: var(--fg); }
+    .btnp { background: var(--acc); border-color: var(--acc); color: var(--acc-fg); }
+    .btnq { background: transparent; border-color: transparent; color: var(--mut); }
+    .btns { height: 28px; padding: 0 10px; font-size: 12px; }
+    .btnl { height: 40px; padding: 0 18px; font-size: 14px; }
+    .pill { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 9px;
+      border-radius: 11px; border: 1px solid var(--line); background: var(--raised);
+      font-size: 11px; color: var(--fg); }
+    .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .track { height: 5px; border-radius: 3px; background: var(--line); overflow: hidden; }
+    .fillbar { height: 100%; background: var(--acc); border-radius: 3px; }
+
+    /* ---- wireframe placeholders ---- */
+    .ph { background: var(--line); border-radius: 2px; }
+    .xbox { border: 1px solid var(--line); border-radius: 5px; background-color: var(--sunk);
+      background-image:
+        linear-gradient(to top right, transparent calc(50% - 0.5px), var(--line) 50%, transparent calc(50% + 0.5px)),
+        linear-gradient(to bottom right, transparent calc(50% - 0.5px), var(--line) 50%, transparent calc(50% + 0.5px)); }
+  
+
+  body { margin:0; background:#E4E0D8;
+    display:flex; flex-direction:column; align-items:center; }
+  .bar { position:sticky; top:0; z-index:2; width:100%; height:44px; display:flex;
+    align-items:center; gap:14px; padding:0 18px;
+    background:#F1EDE5;
+    border-bottom:1px solid #DAD5CB;
+    color:#161719; font-size:13px; }
+  .bar a { color:#5B5CF0; }
+  #bare:target { display:none; }
+  #bare:target ~ .stage { padding:0; }
+  .stage { padding:28px 20px 56px; }
+  .frame { width:1280px; box-shadow:0 18px 48px rgba(0,0,0,.18); }
+  @media (max-width: 1340px) {
+    .stage { padding:16px 0 40px; }
+    .frame { transform-origin: top left; }
+  }
+</style>
+</head>
+<body>
+<div class="bar" id="bare">
+  <a href="../index.html">&larr; All screens</a>
+  <span style="opacity:.5">/</span>
+  <span>9b. Clone from Git</span>
+  <span style="flex-grow:1"></span>
+  <span style="opacity:.5;font-size:12px">1280 &times; 800</span>
+</div>
+<div class="stage"><div class="frame">
+<div class="win" style="width:1280px;height:800px">
+
+  <div class="chrome">
+    <div class="xbox" style="width:16px;height:16px"></div>
+    <span style="font-size:12px;font-weight:600">ForgeLocal</span>
+    <div style="flex-grow:1"></div>
+    <div style="display:flex;align-items:center;gap:16px">
+      <div class="ph" style="width:11px;height:2px"></div>
+      <div class="ph" style="width:9px;height:9px;border-radius:1px"></div>
+      <div class="ph" style="width:10px;height:10px;border-radius:1px"></div>
+    </div>
+  </div>
+
+  <div style="flex-grow:1;display:flex;align-items:center;justify-content:center;padding:0 40px">
+    <div style="width:780px;display:flex;flex-direction:column;gap:18px">
+
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <h1 class="h1">Clone from Git</h1>
+        <p class="mut" style="margin:0">A repository you have not read is untrusted input. Cloning it does not run anything in it.</p>
+      </div>
+
+      <div style="display:flex;gap:8px">
+        <div class="btn btns" style="height:32px">Start from a blueprint</div>
+        <div class="btn btns" style="height:32px">Open an existing folder</div>
+        <div class="btn btns" style="height:32px;background:#161719;border-color:#161719;color:#FFFFFF">Clone from Git</div>
+      </div>
+
+      <div class="box" style="padding:16px;display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <span class="lab">Repository URL</span>
+          <div class="box soft" style="height:36px;display:flex;align-items:center;padding:0 12px"><span class="m mut" style="font-size:12px">https://github.com/[owner]/[repo].git</span></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <span class="lab">Clone into, and the only folder the agent may touch</span>
+          <div style="display:flex;gap:8px">
+            <div class="box soft" style="height:36px;flex-grow:1;display:flex;align-items:center;padding:0 12px"><span class="m mut" style="font-size:12px">C:\Users\[you]\projects\[repo]</span></div>
+            <div class="btn" style="height:36px">Browse</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:20px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="lab">Branch</span>
+            <span class="m mut" style="font-size:12px">default</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="lab">Free space</span>
+            <span class="m mut" style="font-size:12px">248 GB on C:</span>
+          </div>
+          <div style="flex-grow:1"></div>
+          <span class="mut" style="font-size:12px">Private repositories need credentials you set up in Settings, not here.</span>
+        </div>
+      </div>
+
+      <div class="box" style="padding:16px;display:flex;flex-direction:column;gap:12px">
+        <span class="lab">What happens after the clone</span>
+        <div style="display:flex;flex-direction:column;gap:9px">
+          <div style="display:flex;gap:10px;align-items:flex-start">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5F7F63" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px"><path d="M20 6 9 17l-5-5"/></svg>
+            <span style="font-size:12px">The files land on disk. Nothing is installed and no script in the repository runs.</span>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5F7F63" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px"><path d="M20 6 9 17l-5-5"/></svg>
+            <span style="font-size:12px">Manifests are read to propose a start, test and preview command. You approve them before first use.</span>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5F7F63" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px"><path d="M20 6 9 17l-5-5"/></svg>
+            <span style="font-size:12px">HEAD is recorded as the first checkpoint. Your working tree is never staged, reset or cleaned without permission.</span>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8E4A44" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            <span style="font-size:12px">A command written in the repository's own README is never executed just because the model read it there.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="note" style="padding:12px 14px;display:flex;gap:10px;align-items:flex-start">
+        <span class="lab" style="flex-shrink:0;padding-top:2px">Note</span>
+        <span class="mut" style="font-size:12px">This is the one onboarding step that pulls arbitrary third-party content onto the machine, so it states the boundary rather than assuming the earlier permission screen covered it.</span>
+      </div>
+
+    </div>
+  </div>
+
+  <div style="height:60px;flex-shrink:0;border-top:1px solid #DAD5CB;background:#EFEBE3;display:flex;align-items:center;gap:20px;padding:0 24px">
+    <span class="lab" style="flex-shrink:0">Step 9 of 11</span>
+    <div style="display:flex;gap:5px;flex-grow:1">
+      <div style="width:26px;height:4px;border-radius:2px;background:#B9B4A9"></div>
+      <div style="width:26px;height:4px;border-radius:2px;background:#B9B4A9"></div>
+      <div style="width:26px;height:4px;border-radius:2px;background:#B9B4A9"></div>
+      <div style="width:26px;height:4px;border-radius:2px;background:#B9B4A9"></div>
+      <div style="width:26px;height:4px;border-radius:2px;background:#B9B4A9"></div>
+      <div style="width:26px;height:4px;border-radius:2px;background:#B9B4A9"></div>
+      <div style="width:26px;height:4px;border-radius:2px;background:#B9B4A9"></div>
+      <div style="width:26px;height:4px;border-radius:2px;background:#B9B4A9"></div>
+      <div style="width:26px;height:4px;border-radius:2px;background:#5B5CF0"></div>
+      <div style="width:26px;height:4px;border-radius:2px;background:#DFDAD0"></div>
+      <div style="width:26px;height:4px;border-radius:2px;background:#DFDAD0"></div>
+    </div>
+    <div style="display:flex;gap:10px;flex-shrink:0">
+      <div class="btn btns" style="height:34px">Back</div>
+      <div class="btn btnp btns" style="height:34px;padding:0 18px">Clone</div>
+    </div>
+  </div>
+
+</div>
+
+</div></div>
+</body>
+</html>
