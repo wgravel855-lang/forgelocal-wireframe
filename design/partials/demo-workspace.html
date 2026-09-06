@@ -1,0 +1,96 @@
+<div class="app" style="width:1280px;height:760px;display:flex;font-size:14px;line-height:20px;background:var(--bg)">
+
+  <div style="width:236px;flex-shrink:0;border-right:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column">
+    <div style="height:48px;display:flex;align-items:center;padding:0 12px;gap:6px">
+      <span style="width:16px;height:16px;border:1.5px solid var(--faint);border-radius:4px;display:block"></span>
+      <span class="grow"></span>
+      <span style="width:14px;height:14px;border:1.5px solid var(--faint);border-radius:3px;display:block"></span>
+    </div>
+    <div style="padding:0 10px 10px">
+      <div class="srow" style="height:36px;border:1px solid var(--line-strong);background:var(--raised);color:var(--fg)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        <span class="t">New session</span>
+      </div>
+    </div>
+    <div style="padding:0 10px 10px">
+      <div class="field" style="height:32px">
+        <span style="flex:1;color:var(--fg)">task-tracker</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9.5 6 6 6-6"/></svg>
+      </div>
+    </div>
+    <div style="padding:0 10px;display:flex;flex-direction:column">
+      <div class="sgroup">Today</div>
+      <div class="srow on"><span class="dot acc"></span><span class="t">Persist tasks to localStorage</span></div>
+      <div class="srow"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span class="t">Add a filter bar to the list</span></div>
+      <div class="srow"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span class="t">Scaffold the project</span></div>
+    </div>
+    <span class="grow"></span>
+    <div style="border-top:1px solid var(--line-soft);padding:8px 10px">
+      <div class="srow"><span class="t">Models</span></div>
+      <div class="srow"><span class="t">Settings</span></div>
+    </div>
+  </div>
+
+  <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+    <div class="topbar">
+      <span style="font-size:13.5px;font-weight:600">Persist tasks to localStorage</span>
+      <span class="grow"></span>
+      <span class="pill acc"><span class="dot acc"></span>Working &middot; 14s</span>
+      <span class="btn btns">Stop</span>
+      <span class="pill"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--ok-line)" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3.5"/><rect x="8" y="8" width="8" height="8" rx="1.8"/></svg>Local</span>
+    </div>
+
+    <div style="flex:1;min-height:0;overflow:hidden;display:flex;justify-content:center;padding:0 24px">
+      <div style="width:100%;max-width:744px;display:flex;flex-direction:column;gap:18px;padding-top:24px">
+
+        <div style="display:flex;justify-content:flex-end">
+          <div class="soft" style="max-width:500px;padding:10px 14px;border-radius:14px;font-size:15px;line-height:22px">
+            Save the task list to localStorage so it survives a refresh, and add a test for it.
+          </div>
+        </div>
+
+        <div class="prose"><p>I will move state into a small hook so the components stay unaware of storage, then cover the reload behaviour with one test.</p></div>
+
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <div class="lab" style="padding-bottom:4px">Plan</div>
+          <div style="display:flex;align-items:center;gap:10px;min-height:26px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span class="mut">Extract a useTasks hook backed by localStorage</span></div>
+          <div style="display:flex;align-items:center;gap:10px;min-height:26px"><span class="dot acc" style="margin:0 3px"></span><span style="font-weight:600">Add a test that survives a reload</span></div>
+          <div style="display:flex;align-items:center;gap:10px;min-height:26px"><span style="width:14px;height:14px;border-radius:4px;border:1px solid var(--line-strong)"></span><span class="faint">Run the suite and report</span></div>
+        </div>
+
+        <div class="act">
+          <div class="hd"><span class="dot acc"></span><span class="h3" style="flex:1">Working</span><span class="lab">14s</span></div>
+          <div class="sep"></div>
+          <div class="arow"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg><span class="t">Read 4 files</span><span class="lab">1.2s</span></div>
+          <div class="arow"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg><span class="t">Edited 2 files</span><span class="m" style="color:var(--ok)">+46</span><span class="m" style="color:var(--bad)">&minus;12</span></div>
+          <div class="arow now" style="align-items:flex-start;padding-top:8px">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--fg)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-top:4px"><path d="m6 9 6 6 6-6"/></svg>
+            <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+              <div style="display:flex;gap:10px"><span class="m" style="flex:1">npm test -- --run</span><span class="lab">running</span></div>
+              <pre class="m soft" style="margin:0;padding:9px 11px;border-radius:6px;color:var(--mut);font-size:12px;line-height:19px">&gt; vitest --run
+
+ &#10003; src/App.test.jsx (3)</pre>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div style="padding:0 24px 16px;display:flex;justify-content:center">
+      <div style="width:100%;max-width:744px">
+        <div class="composer">
+          <div class="ph">Add to the plan, or ask a question</div>
+          <div class="cbar">
+            <span class="btn btnq ico btns"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5.5v13M5.5 12h13"/></svg></span>
+            <span class="btn btnq btns"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="3.5"/><rect x="8" y="8" width="8" height="8" rx="1.8"/></svg>Qwen2.5 Coder 32B</span>
+            <span class="btn btnq btns">Build</span>
+            <span class="grow"></span>
+            <span class="btn ico" style="border-radius:16px"><span style="width:10px;height:10px;border-radius:2px;background:var(--fg)"></span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>

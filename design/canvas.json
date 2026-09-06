@@ -1,77 +1,430 @@
 {
   "pages": [
-    { "id": "page-1", "name": "Workspace" },
-    { "id": "page-2", "name": "Onboarding" },
-    { "id": "page-3", "name": "Marketing site" },
-    { "id": "page-4", "name": "Superseded" }
+    {
+      "id": "page-1",
+      "name": "Workspace"
+    },
+    {
+      "id": "page-2",
+      "name": "Onboarding"
+    },
+    {
+      "id": "page-3",
+      "name": "Marketing site"
+    },
+    {
+      "id": "page-4",
+      "name": "Superseded"
+    }
   ],
   "artboards": [
-    { "file": "WsEmpty.dc.html",      "title": "Workspace, empty",        "page": "page-1", "x": 0,    "y": 0,    "w": 1440, "h": 900 },
-    { "file": "WsRunning.dc.html",    "title": "Workspace, agent running","page": "page-1", "x": 1560, "y": 0,    "w": 1440, "h": 900 },
-    { "file": "WsPermission.dc.html", "title": "Permission request",      "page": "page-1", "x": 0,    "y": 1020, "w": 1440, "h": 900 },
-    { "file": "WsReview.dc.html",     "title": "Change review, drawer open","page": "page-1", "x": 1560, "y": 1020, "w": 1440, "h": 900 },
-    { "file": "ModelPicker.dc.html",  "title": "Model picker",            "page": "page-1", "x": 0,    "y": 2040, "w": 760,  "h": 660 },
-
-    { "file": "Welcome.dc.html",        "title": "1. Welcome",              "page": "page-2", "x": 0,    "y": 0,    "w": 1280, "h": 800 },
-    { "file": "Intent.dc.html",         "title": "2. Intent",               "page": "page-2", "x": 1380, "y": 0,    "w": 1280, "h": 800 },
-    { "file": "Permissions.dc.html",    "title": "3. Permission preview",   "page": "page-2", "x": 2760, "y": 0,    "w": 1280, "h": 800 },
-    { "file": "HardwareScan.dc.html",   "title": "4. Hardware scan",        "page": "page-2", "x": 0,    "y": 920,  "w": 1280, "h": 800 },
-    { "file": "Recommendation.dc.html", "title": "5. Recommendation",       "page": "page-2", "x": 1380, "y": 920,  "w": 1280, "h": 800 },
-    { "file": "Download.dc.html",       "title": "6-7. Runtime + download", "page": "page-2", "x": 2760, "y": 920,  "w": 1280, "h": 800 },
-    { "file": "SelfTest.dc.html",       "title": "8. Capability self-test", "page": "page-2", "x": 0,    "y": 1840, "w": 1280, "h": 800 },
-    { "file": "NewProject.dc.html",     "title": "9. Project setup",        "page": "page-2", "x": 1380, "y": 1840, "w": 1280, "h": 800 },
-    { "file": "CloneRepo.dc.html",      "title": "9b. Clone from Git",      "page": "page-2", "x": 2760, "y": 1840, "w": 1280, "h": 800 },
-    { "file": "SafetyMode.dc.html",     "title": "10. Permission preset",   "page": "page-2", "x": 0,    "y": 2760, "w": 1280, "h": 800 },
-
-    { "file": "Homepage.dc.html",     "title": "Marketing home", "page": "page-3", "x": 0,    "y": 0, "w": 1280, "h": 3600 },
-    { "file": "ModelsPage.dc.html",   "title": "Model catalog",  "page": "page-3", "x": 1380, "y": 0, "w": 1280, "h": 1550 },
-    { "file": "SecurityPage.dc.html", "title": "Security",       "page": "page-3", "x": 2760, "y": 0, "w": 1280, "h": 1950 },
-
-    { "file": "Main.dc.html",            "title": "OLD workspace, running",  "page": "page-4", "x": 0,    "y": 0,    "w": 1440, "h": 900 },
-    { "file": "DiffReview.dc.html",      "title": "OLD review",              "page": "page-4", "x": 1560, "y": 0,    "w": 1440, "h": 900 },
-    { "file": "PlanReview.dc.html",      "title": "OLD plan review",         "page": "page-4", "x": 3120, "y": 0,    "w": 1440, "h": 900 },
-    { "file": "Home.dc.html",            "title": "OLD home",                "page": "page-4", "x": 0,    "y": 1020, "w": 1440, "h": 900 },
-    { "file": "ModelManager.dc.html",    "title": "OLD model manager",       "page": "page-4", "x": 1560, "y": 1020, "w": 1440, "h": 900 },
-    { "file": "ProfileDetail.dc.html",   "title": "OLD profile detail",      "page": "page-4", "x": 3120, "y": 1020, "w": 1440, "h": 900 },
-    { "file": "Settings.dc.html",        "title": "OLD settings",            "page": "page-4", "x": 0,    "y": 2040, "w": 1440, "h": 900 },
-    { "file": "Recovery.dc.html",        "title": "OLD recovery states",     "page": "page-4", "x": 1560, "y": 2040, "w": 1440, "h": 620 },
-    { "file": "CloudBoost.dc.html",      "title": "OLD cloud boost",         "page": "page-4", "x": 3120, "y": 2040, "w": 1280, "h": 800 },
-    { "file": "ApprovalCard.dc.html",    "title": "OLD approval card",       "page": "page-4", "x": 0,    "y": 3060, "w": 620,  "h": 560 },
-    { "file": "NarrowWorkspace.dc.html", "title": "OLD narrow workspace",    "page": "page-4", "x": 1560, "y": 3060, "w": 900,  "h": 840 }
+    {
+      "file": "WsEmpty.dc.html",
+      "title": "Workspace, empty",
+      "page": "page-1",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "mode": "app"
+    },
+    {
+      "file": "WsRunning.dc.html",
+      "title": "Workspace, agent running",
+      "page": "page-1",
+      "x": 1560,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "mode": "app"
+    },
+    {
+      "file": "WsPermission.dc.html",
+      "title": "Permission request",
+      "page": "page-1",
+      "x": 0,
+      "y": 1020,
+      "w": 1440,
+      "h": 900,
+      "mode": "app"
+    },
+    {
+      "file": "WsReview.dc.html",
+      "title": "Change review, drawer open",
+      "page": "page-1",
+      "x": 1560,
+      "y": 1020,
+      "w": 1440,
+      "h": 900,
+      "mode": "app"
+    },
+    {
+      "file": "WsFailed.dc.html",
+      "title": "Stopped, no progress",
+      "page": "page-1",
+      "x": 0,
+      "y": 2040,
+      "w": 1440,
+      "h": 900,
+      "mode": "app"
+    },
+    {
+      "file": "ModelPicker.dc.html",
+      "title": "Model picker",
+      "page": "page-1",
+      "x": 1560,
+      "y": 2040,
+      "w": 760,
+      "h": 700,
+      "mode": "app"
+    },
+    {
+      "file": "ModelsExplore.dc.html",
+      "title": "Models, explore",
+      "page": "page-1",
+      "x": 0,
+      "y": 3060,
+      "w": 1440,
+      "h": 900,
+      "mode": "app"
+    },
+    {
+      "file": "ModelsMine.dc.html",
+      "title": "Models, my models",
+      "page": "page-1",
+      "x": 1560,
+      "y": 3060,
+      "w": 1440,
+      "h": 900,
+      "mode": "app"
+    },
+    {
+      "file": "Ob1Welcome.dc.html",
+      "title": "1. Welcome and scan",
+      "page": "page-2",
+      "x": 0,
+      "y": 0,
+      "w": 1380,
+      "h": 900,
+      "mode": "app"
+    },
+    {
+      "file": "Ob2Recommendation.dc.html",
+      "title": "2. Hardware and recommendation",
+      "page": "page-2",
+      "x": 1500,
+      "y": 0,
+      "w": 1380,
+      "h": 900,
+      "mode": "app"
+    },
+    {
+      "file": "Ob3Install.dc.html",
+      "title": "3. Install runtime and model",
+      "page": "page-2",
+      "x": 0,
+      "y": 1020,
+      "w": 1380,
+      "h": 900,
+      "mode": "app"
+    },
+    {
+      "file": "Ob4Project.dc.html",
+      "title": "4. Project and permissions",
+      "page": "page-2",
+      "x": 1500,
+      "y": 1020,
+      "w": 1380,
+      "h": 900,
+      "mode": "app"
+    },
+    {
+      "file": "Ob5FirstChat.dc.html",
+      "title": "5. First chat, the real workspace",
+      "page": "page-2",
+      "x": 0,
+      "y": 2040,
+      "w": 1380,
+      "h": 900,
+      "mode": "app"
+    },
+    {
+      "file": "Homepage.dc.html",
+      "title": "Marketing home",
+      "page": "page-3",
+      "x": 0,
+      "y": 0,
+      "w": 1280,
+      "h": 3400,
+      "mode": "page"
+    },
+    {
+      "file": "ModelsPage.dc.html",
+      "title": "Model catalog",
+      "page": "page-3",
+      "x": 1380,
+      "y": 0,
+      "w": 1280,
+      "h": 1550,
+      "mode": "page"
+    },
+    {
+      "file": "SecurityPage.dc.html",
+      "title": "Security",
+      "page": "page-3",
+      "x": 2760,
+      "y": 0,
+      "w": 1280,
+      "h": 1950,
+      "mode": "page"
+    },
+    {
+      "file": "Main.dc.html",
+      "title": "OLD Main",
+      "page": "page-4",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "mode": "fixed"
+    },
+    {
+      "file": "DiffReview.dc.html",
+      "title": "OLD DiffReview",
+      "page": "page-4",
+      "x": 1560,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "mode": "fixed"
+    },
+    {
+      "file": "PlanReview.dc.html",
+      "title": "OLD PlanReview",
+      "page": "page-4",
+      "x": 3120,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "mode": "fixed"
+    },
+    {
+      "file": "Home.dc.html",
+      "title": "OLD Home",
+      "page": "page-4",
+      "x": 0,
+      "y": 1020,
+      "w": 1440,
+      "h": 900,
+      "mode": "fixed"
+    },
+    {
+      "file": "ModelManager.dc.html",
+      "title": "OLD ModelManager",
+      "page": "page-4",
+      "x": 1560,
+      "y": 1020,
+      "w": 1440,
+      "h": 900,
+      "mode": "fixed"
+    },
+    {
+      "file": "ProfileDetail.dc.html",
+      "title": "OLD ProfileDetail",
+      "page": "page-4",
+      "x": 3120,
+      "y": 1020,
+      "w": 1440,
+      "h": 900,
+      "mode": "fixed"
+    },
+    {
+      "file": "Settings.dc.html",
+      "title": "OLD Settings",
+      "page": "page-4",
+      "x": 0,
+      "y": 2040,
+      "w": 1440,
+      "h": 900,
+      "mode": "fixed"
+    },
+    {
+      "file": "Recovery.dc.html",
+      "title": "OLD Recovery",
+      "page": "page-4",
+      "x": 1560,
+      "y": 2040,
+      "w": 1440,
+      "h": 900,
+      "mode": "fixed"
+    },
+    {
+      "file": "CloudBoost.dc.html",
+      "title": "OLD CloudBoost",
+      "page": "page-4",
+      "x": 3120,
+      "y": 2040,
+      "w": 1440,
+      "h": 900,
+      "mode": "fixed"
+    },
+    {
+      "file": "ApprovalCard.dc.html",
+      "title": "OLD ApprovalCard",
+      "page": "page-4",
+      "x": 0,
+      "y": 3060,
+      "w": 1440,
+      "h": 900,
+      "mode": "fixed"
+    },
+    {
+      "file": "NarrowWorkspace.dc.html",
+      "title": "OLD NarrowWorkspace",
+      "page": "page-4",
+      "x": 1560,
+      "y": 3060,
+      "w": 1440,
+      "h": 900,
+      "mode": "fixed"
+    },
+    {
+      "file": "Welcome.dc.html",
+      "title": "OLD Welcome",
+      "page": "page-4",
+      "x": 3120,
+      "y": 3060,
+      "w": 1440,
+      "h": 900,
+      "mode": "fixed"
+    },
+    {
+      "file": "Intent.dc.html",
+      "title": "OLD Intent",
+      "page": "page-4",
+      "x": 0,
+      "y": 4080,
+      "w": 1440,
+      "h": 900,
+      "mode": "fixed"
+    },
+    {
+      "file": "Permissions.dc.html",
+      "title": "OLD Permissions",
+      "page": "page-4",
+      "x": 1560,
+      "y": 4080,
+      "w": 1440,
+      "h": 900,
+      "mode": "fixed"
+    },
+    {
+      "file": "HardwareScan.dc.html",
+      "title": "OLD HardwareScan",
+      "page": "page-4",
+      "x": 3120,
+      "y": 4080,
+      "w": 1440,
+      "h": 900,
+      "mode": "fixed"
+    },
+    {
+      "file": "Recommendation.dc.html",
+      "title": "OLD Recommendation",
+      "page": "page-4",
+      "x": 0,
+      "y": 5100,
+      "w": 1440,
+      "h": 900,
+      "mode": "fixed"
+    },
+    {
+      "file": "Download.dc.html",
+      "title": "OLD Download",
+      "page": "page-4",
+      "x": 1560,
+      "y": 5100,
+      "w": 1440,
+      "h": 900,
+      "mode": "fixed"
+    },
+    {
+      "file": "SelfTest.dc.html",
+      "title": "OLD SelfTest",
+      "page": "page-4",
+      "x": 3120,
+      "y": 5100,
+      "w": 1440,
+      "h": 900,
+      "mode": "fixed"
+    },
+    {
+      "file": "NewProject.dc.html",
+      "title": "OLD NewProject",
+      "page": "page-4",
+      "x": 0,
+      "y": 6120,
+      "w": 1440,
+      "h": 900,
+      "mode": "fixed"
+    },
+    {
+      "file": "CloneRepo.dc.html",
+      "title": "OLD CloneRepo",
+      "page": "page-4",
+      "x": 1560,
+      "y": 6120,
+      "w": 1440,
+      "h": 900,
+      "mode": "fixed"
+    },
+    {
+      "file": "SafetyMode.dc.html",
+      "title": "OLD SafetyMode",
+      "page": "page-4",
+      "x": 3120,
+      "y": 6120,
+      "w": 1440,
+      "h": 900,
+      "mode": "fixed"
+    }
   ],
   "annotations": [
     {
       "id": "note-workspace",
       "page": "page-1",
       "x": 0,
-      "y": -190,
-      "w": 760,
-      "text": "Rebuilt to the screen map: conversation-first, near-black shell.\nNo permanent file tree, terminal, diff or preview. Sidebar 256px, readable column 800px, context drawer hidden until there is something to inspect (see Change review, where the sidebar has collapsed to make room).\nCompleted low-risk events collapse to one quiet line. The current event stays expanded. Permission cards stay expanded until answered and nothing runs behind them.\nStill to build on this page: recovery states, My Models, Explore, runtime health, automations, tools, settings."
+      "y": -210,
+      "w": 800,
+      "text": "Conversation-first. Sidebar 248px collapsing to nothing, top bar 48px, reading column 792px, composer radius 16px. No permanent file tree, terminal, diff or preview, and no bottom status bar.\nFinished low-risk work collapses into one Working group with quiet rows; only the current action stays open. Permission requests, errors and anything needing attention stay expanded and stop execution behind them.\nModel lives in the composer, context and permission mode in its options menu, project and branch in the project menu.\nVerified with no horizontal overflow and WCAG AA contrast at 1920, 1440, 1366, 1024 and 768."
     },
     {
       "id": "note-onboarding",
       "page": "page-2",
       "x": 0,
       "y": -190,
-      "w": 700,
-      "text": "Still the light shell from the first blueprint. The flow itself matches the screen map (one question per screen, size and destination shown before any large download, ends inside a real session), but these need restyling into the near-black app shell and renumbering to the map's eight P0 steps.\nIntent and Permission preview fold into Welcome and Permission preset in the map's version."
+      "w": 760,
+      "text": "Five steps in the same dark shell as the workspace, down from eleven light ones.\nStep 2 replaces the three equal recommendation cards with one recommended profile, a plain-language reason, and alternatives behind Compare other options. Model family, quantization and context stay behind Advanced.\nStep 3 folds runtime install, model download and the capability self-test into one screen; the seven technical checks sit behind View details.\nStep 5 is the real workspace, not a congratulations page."
     },
     {
       "id": "note-marketing",
       "page": "page-3",
       "x": 0,
-      "y": -170,
-      "w": 660,
-      "text": "Light surface, which the screen map keeps for marketing.\nDrawn: home, model catalog, security. Still undrawn: Product / how it works, Model detail, Download, Pricing, Sign in, Account, Docs, Changelog.\nBracketed values are placeholders. Check counts stay blank until the suite has actually run. ForgeLocal is a provisional name; the screen map asks for a clean-room name of its own."
+      "y": -190,
+      "w": 700,
+      "text": "Light surface. One primary Download action and one secondary See how it works; no fake prompt box in the hero.\nThe hero shows the actual dark workspace built from the same components and tokens as the app, not a placeholder panel. The three editorial sections alternate text with real interface, again built from live components rather than images.\nStill undrawn: Product, Model detail, Download, Pricing as a full route, Sign in, Account, Docs, Changelog."
     },
     {
       "id": "note-superseded",
       "page": "page-4",
       "x": 0,
       "y": -190,
-      "w": 760,
-      "text": "Do not build from this page.\nThese were drawn to the first blueprint, before the screen map locked the workspace as conversation-first. They use a permanent three-panel IDE layout with a task-state rail beside every conversation, which the map rules out: \"Do not begin from an IDE layout.\"\nKept because the content is still useful reference: the recovery-state anatomy, the profile evidence table, the settings privacy pane and the cloud-boost consent screen all carry decisions worth porting into the new shell."
+      "w": 800,
+      "text": "Do not build from this page.\nThe first six are the original three-panel IDE layout, replaced when the screen map locked the workspace as conversation-first. The ten light onboarding screens are replaced by the five-step dark flow.\nKept only because some content is worth porting: the recovery-state anatomy, the profile evidence table, the settings privacy pane and the cloud-boost consent screen."
     }
   ],
-  "launch": { "view": "canvas", "page": "page-1" }
+  "launch": {
+    "view": "canvas",
+    "page": "page-1"
+  }
 }

@@ -9,6 +9,7 @@
 // Output: ./index.html and ./screens/*.html at the repo root.
 
 import { readFileSync, writeFileSync, mkdirSync, readdirSync } from "node:fs";
+import { readBody } from "./lib/assemble.mjs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -25,7 +26,7 @@ const canvas = JSON.parse(readFileSync(join(here, "canvas.json"), "utf8"));
 const meta = new Map(
   canvas.artboards.map((a) => [
     a.file.replace(/\.dc\.html$/, ""),
-    { title: a.title ?? a.file, page: a.page ?? canvas.pages[0].id, w: a.w, h: a.h },
+    { title: a.title ?? a.file, page: a.page ?? canvas.pages[0].id, w: a.w, h: a.h, mode: a.mode ?? "fixed" },
   ]),
 );
 const pageName = new Map(canvas.pages.map((p) => [p.id, p.name]));
@@ -63,11 +64,32 @@ const names = canvas.artboards
   .filter((n) => onDisk.has(n));
 
 for (const name of names) {
-  const { title, w, h } = meta.get(name);
-  const body = readFileSync(join(partsDir, `${name}.body.html`), "utf8");
-  const dark = /class="(win )?app"/.test(body) || /class="app"/.test(body);
+  const { title, w, h, mode } = meta.get(name);
+  const body = readBody(partsDir, name);
 
-  const head = `
+  // "app"   fills the viewport, scrolls internally  (desktop shell)
+  // "page"  flows at full width, document scrolls   (marketing)
+  // "fixed" legacy fixed-width canvas               (superseded screens)
+  const fluid = mode === "app";
+  const flow = mode === "page";
+  const dark = fluid || (mode === "fixed" && /class="(win )?app[\s"]/.test(body));
+
+  const head = flow ? `
+  body { margin:0; }
+  .bar { position:sticky; top:0; z-index:5; height:40px; display:flex; align-items:center;
+    gap:14px; padding:0 16px; background:var(--panel);
+    border-bottom:1px solid var(--line); color:var(--fg); font-size:13px; }
+  #bare:target { display:none; }
+  ` : fluid ? `
+  html, body { height:100%; overflow:hidden; }
+  body { margin:0; display:flex; flex-direction:column; }
+  .bar { flex-shrink:0; height:40px; display:flex; align-items:center; gap:14px; padding:0 16px;
+    background:#121315; border-bottom:1px solid #26282C; color:#EDEDEB; font-size:13px; }
+  .bar a { color:#9698F2; }
+  #bare:target { display:none; }
+  .stage { flex:1; min-height:0; display:flex; }
+  .stage > * { flex:1; min-width:0; }
+  ` : `
   body { margin:0; background:${dark ? "#0A0A0B" : "#E4E0D8"};
     display:flex; flex-direction:column; align-items:center; }
   .bar { position:sticky; top:0; z-index:2; width:100%; height:44px; display:flex;
@@ -85,16 +107,20 @@ for (const name of names) {
     .frame { transform-origin: top left; }
   }`;
 
+  // A page-mode screen flows at whatever width it is given; only the legacy
+  // fixed canvases still get a hard-coded frame width.
+  const stage = flow
+    ? `<div class="stage">\n${body}\n</div>`
+    : `<div class="stage"><div class="frame">\n${body}\n</div></div>`;
+
   const page = `<div class="bar" id="bare">
   <a href="../index.html">&larr; All screens</a>
   <span style="opacity:.5">/</span>
   <span>${esc(title)}</span>
   <span style="flex-grow:1"></span>
-  <span style="opacity:.5;font-size:12px">${w} &times; ${h}</span>
+  <span style="opacity:.5;font-size:12px">${flow ? "responsive" : `${w} &times; ${h}`}</span>
 </div>
-<div class="stage"><div class="frame">
-${body}
-</div></div>`;
+${stage}`;
 
   writeFileSync(join(outDir, `${name}.html`), shell(`${title} · ForgeLocal wireframe`, head, page));
 }

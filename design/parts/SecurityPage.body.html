@@ -1,6 +1,6 @@
-<div style="width:1280px;min-height:1950px;background:#F6F4EF;display:flex;flex-direction:column">
+<div class="site" style="width:100%;min-height:100%;display:flex;flex-direction:column">
 
-  <div style="height:66px;flex-shrink:0;border-bottom:1px solid #DAD5CB;display:flex;align-items:center;gap:28px;padding:0 56px">
+  <div style="height:66px;flex-shrink:0;border-bottom:1px solid #DAD5CB;display:flex;align-items:center;gap:28px;padding:0 clamp(20px, 5vw, 56px)">
     <div style="display:flex;align-items:center;gap:9px">
       <div class="xbox" style="width:22px;height:22px"></div>
       <span style="font-size:14px;font-weight:600">ForgeLocal</span>
@@ -15,13 +15,13 @@
     <div class="btn btnp btns" style="height:34px;padding:0 16px">Download for Windows</div>
   </div>
 
-  <div style="padding:56px 56px 36px;display:flex;flex-direction:column;gap:14px">
+  <div style="padding:56px clamp(20px, 5vw, 56px) 36px;display:flex;flex-direction:column;gap:14px">
     <span class="lab">Security</span>
     <h1 class="h1" style="font-size:38px;max-width:800px">What it can reach, and what it cannot.</h1>
     <p class="mut" style="margin:0;font-size:15px;max-width:660px;text-wrap:pretty">The honest version, including the part most local AI tools leave out: a permission prompt is not isolation. Here is where the boundary actually is today, and where it is going.</p>
   </div>
 
-  <div style="padding:0 56px 44px;display:flex;flex-direction:column;gap:14px">
+  <div style="padding:0 clamp(20px, 5vw, 56px) 44px;display:flex;flex-direction:column;gap:14px">
     <span class="lab">The execution boundary</span>
     <div class="box" style="padding:26px;display:flex;flex-direction:column;gap:18px">
       <div style="display:flex;align-items:stretch;gap:12px">
@@ -31,7 +31,7 @@
           <span class="mut" style="font-size:12px">No file or shell access of its own</span>
         </div>
         <div style="display:flex;align-items:center;flex-shrink:0">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8B867C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
         </div>
         <div class="box soft" style="flex-grow:1;padding:16px;display:flex;flex-direction:column;gap:5px">
           <span class="lab">Validates</span>
@@ -39,7 +39,7 @@
           <span class="mut" style="font-size:12px">Every privileged call checks its sender</span>
         </div>
         <div style="display:flex;align-items:center;flex-shrink:0">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8B867C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
         </div>
         <div class="box" style="flex-grow:1;padding:16px;display:flex;flex-direction:column;gap:5px;border-color:#5B5CF0;box-shadow:inset 0 0 0 1px #5B5CF0">
           <span class="lab">Decides</span>
@@ -47,7 +47,7 @@
           <span class="mut" style="font-size:12px">Owns tools, secrets, approvals, checkpoints</span>
         </div>
         <div style="display:flex;align-items:center;flex-shrink:0">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8B867C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
         </div>
         <div class="box soft" style="flex-grow:1;padding:16px;display:flex;flex-direction:column;gap:5px">
           <span class="lab">Acts on</span>
@@ -65,9 +65,9 @@
     </div>
   </div>
 
-  <div style="padding:0 56px 44px;display:flex;flex-direction:column;gap:14px">
+  <div style="padding:0 clamp(20px, 5vw, 56px) 44px;display:flex;flex-direction:column;gap:14px">
     <span class="lab">How commands are classified</span>
-    <div class="box" style="display:flex;flex-direction:column;overflow:hidden">
+    <div style="overflow-x:auto"><div class="box" style="display:flex;flex-direction:column;min-width:740px">
       <div style="display:flex;align-items:center;gap:14px;padding:11px 16px;border-bottom:1px solid #E4DFD5;background:#F1EDE5">
         <span class="lab" style="flex-grow:1">Class</span>
         <span class="lab" style="width:150px">Ask every time</span>
@@ -117,10 +117,11 @@
         <span style="width:150px;font-size:12px;color:#8E4A44">Blocked</span>
       </div>
     </div>
+    </div>
     <span class="mut" style="font-size:12px">There is no consumer mode that turns the bottom two rows off.</span>
   </div>
 
-  <div style="padding:44px 56px;border-top:1px solid #DAD5CB;background:#F1EDE5;display:flex;gap:44px">
+  <div style="padding:44px clamp(20px, 5vw, 56px);border-top:1px solid #DAD5CB;background:#F1EDE5;display:flex;gap:44px">
     <div style="flex-grow:1;display:flex;flex-direction:column;gap:14px">
       <span class="lab">Where your data sits</span>
       <div class="box" style="display:flex;flex-direction:column">
@@ -162,7 +163,7 @@
     </div>
   </div>
 
-  <div style="padding:56px;border-top:1px solid #DAD5CB;background:#161719;display:flex;align-items:center;gap:40px">
+  <div style="padding:56px clamp(20px, 5vw, 56px);border-top:1px solid #DAD5CB;background:#161719;display:flex;align-items:center;gap:40px">
     <div style="flex-grow:1;display:flex;flex-direction:column;gap:10px">
       <h2 class="h1" style="font-size:30px;color:#F6F4EF">Read it before you install it.</h2>
       <span style="color:#A9A49B;font-size:14px">Signed installer, published checksum, and an uninstall that tells you what it is about to delete.</span>
@@ -170,7 +171,7 @@
     <div class="btn btnp" style="height:44px;padding:0 24px;font-weight:600">Download for Windows</div>
   </div>
 
-  <div style="padding:28px 56px;background:#161719;border-top:1px solid #2A2B2E;display:flex;align-items:center;gap:24px">
+  <div style="padding:28px clamp(20px, 5vw, 56px);background:#161719;border-top:1px solid #2A2B2E;display:flex;align-items:center;gap:24px">
     <span style="color:#A9A49B;font-size:12px;flex-grow:1">[Company] &middot; [year]</span>
     <span style="color:#A9A49B;font-size:12px">Models</span>
     <span style="color:#A9A49B;font-size:12px">Security</span>

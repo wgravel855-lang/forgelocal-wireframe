@@ -51,21 +51,46 @@ adding `class="win app"` to its root element.
 
 ## What is here
 
-**Workspace** — the product. Conversation-first: a collapsible session sidebar,
-a centered readable column, and a composer. No permanent file tree, terminal,
-diff or preview. Those live in one context drawer that stays shut until there is
-something to inspect. Five screens: empty, agent running, permission request,
-change review with the drawer open, and the model picker.
+**Workspace** — the product, conversation-first. A collapsible 248px session
+sidebar, a 48px top bar, a 792px reading column and a familiar composer. No
+permanent file tree, terminal, diff or preview, and no bottom status bar.
+Finished low-risk work collapses into one activity group; only the current
+action stays open. Eight screens: empty, running, permission request, change
+review with the drawer open, stopped after no progress, the model picker,
+Explore and My models.
 
-**Onboarding** — hardware scan, runtime setup, model recommendation, download,
-project setup, permission preset. Still in the light shell from an earlier
-brief; needs restyling into the app shell.
+**Onboarding** — five steps in the same dark shell: welcome and scan, hardware
+result with one recommended profile, combined runtime and model install, project
+and permissions, then the real workspace. There is no congratulations page.
 
-**Marketing site** — home, model catalog, security.
+**Marketing site** — home, model catalog, security. Light surface. The hero
+shows the actual workspace, built from the same components and tokens as the
+app rather than a placeholder image.
 
-**Superseded** — earlier screens built on a permanent three-panel IDE layout,
-before the screen map locked the workspace as conversation-first. Kept for the
-content only. Do not build from them.
+**Superseded** — the original three-panel IDE layout and the eleven-step light
+onboarding. Kept for content worth porting. Do not build from them.
+
+## Shared pieces
+
+`design/head.part` is the whole design system: tokens, layout primitives,
+controls, motion and the responsive rules. `:root` carries the light marketing
+palette and `.app` overrides it with the near-black desktop shell, so one set
+of component classes serves both.
+
+`design/partials/` holds the sidebar, top bar, composer, status chips and the
+homepage workspace demo. Screens pull them in with
+`<!--#include sidebar.html {"active":"s1"} -->`, so the shell cannot drift
+between screens. `design/lib/assemble.mjs` expands those includes.
+
+Each artboard in `canvas.json` declares a `mode`: `app` fills the viewport and
+scrolls internally, `page` flows at full width, `fixed` is a legacy canvas.
+
+## Verified
+
+Every non-superseded screen was checked in a browser at 1920, 1440, 1366, 1024
+and 768 for horizontal overflow, a composer pushed below the fold and clipped
+sidebar text, and every text node was checked against WCAG AA contrast. All
+pass.
 
 ## Conventions
 

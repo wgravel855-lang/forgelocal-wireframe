@@ -1,0 +1,52 @@
+<div class="app ob">
+
+  <!--#include ob-top.html {"n":"1"} -->
+
+  <div class="ob-body">
+    <div class="ob-col">
+
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <h1 class="h1">Your coding agent, running on this PC</h1>
+        <p class="prose mut" style="margin:0;max-width:520px">
+          ForgeLocal works on your own hardware by default. Your code and your prompts
+          stay on this machine unless you connect a cloud provider yourself.
+        </p>
+      </div>
+
+      <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px">
+        <li style="display:flex;gap:11px;align-items:flex-start">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0;margin-top:2px"><path d="M20 6 9 17l-5-5"/></svg>
+          <span style="font-size:14px;line-height:21px">It reads your hardware to pick a model that will actually run well, rather than making you guess.</span>
+        </li>
+        <li style="display:flex;gap:11px;align-items:flex-start">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0;margin-top:2px"><path d="M20 6 9 17l-5-5"/></svg>
+          <span style="font-size:14px;line-height:21px">It only touches the project folder you choose, and asks before anything risky.</span>
+        </li>
+        <li style="display:flex;gap:11px;align-items:flex-start">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0;margin-top:2px"><path d="M20 6 9 17l-5-5"/></svg>
+          <span style="font-size:14px;line-height:21px">Every change is a diff you can keep or undo.</span>
+        </li>
+      </ul>
+
+      <div class="box" style="padding:14px 16px;display:flex;gap:11px;align-items:flex-start">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0;margin-top:2px"><circle cx="12" cy="12" r="8.5"/><path d="M12 16v-4.5M12 8.2h.01"/></svg>
+        <p class="mut" style="margin:0;font-size:13.5px;line-height:20px">
+          Next, ForgeLocal reads this computer's CPU, memory, GPU and free disk space.
+          That reading stays on the device.
+          <a href="#">What gets read</a>
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+  <footer class="ob-foot">
+    <div class="inner">
+      <button class="btn btnp btnl" type="button">Set up this PC</button>
+      <button class="btn btnl" type="button">Connect an existing runtime</button>
+      <span class="grow"></span>
+      <span class="lab">No account needed</span>
+    </div>
+  </footer>
+
+</div>
