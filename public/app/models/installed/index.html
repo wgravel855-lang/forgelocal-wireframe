@@ -25,71 +25,239 @@
 <main id="main" style="height:100%"><div class="app" style="height:100%;position:relative">
   <div class="shell">
 
-    <style>
-  .sidebar[data-active="s1"] .srow[data-id="s1"],
-  .sidebar[data-active="s2"] .srow[data-id="s2"],
-  .sidebar[data-active="s3"] .srow[data-id="s3"],
-  .sidebar[data-active="new"] .srow[data-id="new"],
-  .sidebar[data-active="models"] .srow[data-id="models"],
-  .sidebar[data-active="settings"] .srow[data-id="settings"] {
-    background: var(--raised); color: var(--fg); box-shadow: inset 0 0 0 1px var(--line);
-  }
-</style>
-<aside class="sidebar" data-active="models" aria-label="Projects and sessions">
+    <aside class="sidebar" data-active="models" aria-label="Chats and projects">
 
-  <div style="height:48px;flex-shrink:0;display:flex;align-items:center;gap:4px;padding:0 8px 0 10px">
+  <!-- Header: the collapse control stays where it has always been, with the
+       section name beside it and compose on the right. -->
+  <div class="side-hd">
     <button class="btn btnq ico btns" type="button" data-sidebar-toggle aria-expanded="true" aria-label="Hide sidebar">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M9.5 4v16"/></svg>
     </button>
-    <span class="grow"></span>
-    <a class="btn btnq ico btns" href="/app/" aria-label="New session" title="New session">
+    <span class="side-hd-t" data-hide-collapsed>Chats</span>
+    <span class="grow" data-hide-collapsed></span>
+    <a class="btn btnq ico btns" href="/app/" aria-label="New chat" title="New chat">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.6 3.6a2.1 2.1 0 0 1 3 3L7.4 18.8 3.5 20l1.2-3.9z"/></svg>
     </a>
   </div>
 
-  <div style="padding:0 8px 8px">
-    <a class="srow" data-id="new" href="/app/" aria-label="New session" title="New session" style="height:40px;border:1px solid var(--line-strong);background:var(--raised);color:var(--fg)">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-      <span class="t">New session</span>
-    </a>
+  <div class="side-search" data-hide-collapsed>
+    <label class="field">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="flex-shrink:0"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>
+      <span class="vh">Search chats</span>
+      <input type="search" data-chat-search placeholder="Search chats" autocomplete="off">
+    </label>
   </div>
 
-  <div style="padding:0 8px 10px">
-    <button class="field" type="button" style="width:100%" aria-label="Switch project" title="One example project is included in this prototype." data-inert="One example project is included in this prototype.">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M3 7.5A2 2 0 0 1 5 5.5h3.6l1.8 2H19a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
-      <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--fg);text-align:left">task-tracker</span>
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="m6 9.5 6 6 6-6"/></svg>
-    </button>
+  <!-- Projects, not folders: a chat belongs to a project, and the picker scopes
+       the list to one. -->
+  <div class="side-project" data-hide-collapsed>
+    <div style="position:relative">
+      <button class="field" type="button" style="width:100%" data-popover="project-pop"
+        aria-expanded="false" aria-haspopup="menu" aria-label="Switch project">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M3 7.5A2 2 0 0 1 5 5.5h3.6l1.8 2H19a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+        <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--fg);text-align:left" data-project-label>task-tracker</span>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="m6 9.5 6 6 6-6"/></svg>
+      </button>
+      <div class="menu popover" id="project-pop" role="menu" aria-label="Projects" hidden
+        style="top:calc(100% + 6px);left:0;right:0;padding:6px">
+        <button role="menuitemradio" class="srow" type="button" data-project-pick="task-tracker"
+          aria-checked="true">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M3 7.5A2 2 0 0 1 5 5.5h3.6l1.8 2H19a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+          <span class="t">task-tracker</span>
+        </button>
+        <button role="menuitemradio" class="srow" type="button" data-project-pick="portfolio-site"
+          aria-checked="false">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M3 7.5A2 2 0 0 1 5 5.5h3.6l1.8 2H19a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+          <span class="t">portfolio-site</span>
+        </button>
+        <button role="menuitemradio" class="srow" type="button" data-project-pick="api-gateway"
+          aria-checked="false">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M3 7.5A2 2 0 0 1 5 5.5h3.6l1.8 2H19a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+          <span class="t">api-gateway</span>
+        </button>
+      </div>
+    </div>
   </div>
 
-  <nav class="scroll" style="padding:0 8px" aria-label="Recent sessions">
-    <div class="sgroup">Today</div>
-    <a class="srow" data-id="s1" href="/app/running/" aria-label="Persist tasks to localStorage" title="Persist tasks to localStorage">
-      <span class="dot acc" aria-hidden="true"></span>
-      <span class="t">Persist tasks to localStorage</span>
-    </a>
-    <button class="srow" type="button" data-id="s2" aria-label="Add a filter bar to the list, no screens in this prototype" title="This session has no screens in the prototype." data-inert="This session has no screens in the prototype.">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M20 6 9 17l-5-5"/></svg>
-      <span class="t">Add a filter bar to the list</span>
-    </button>
-    <a class="srow" data-id="s3" href="/app/stopped/" aria-label="Switch the date helper to Temporal" title="Switch the date helper to Temporal">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--bad)" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M18 6 6 18M6 6l12 12"/></svg>
-      <span class="t">Switch the date helper to Temporal</span>
-    </a>
-
-    <div class="sgroup" style="margin-top:8px">Yesterday</div>
-    <button class="srow" type="button" aria-label="Scaffold the project, no screens in this prototype" title="This session has no screens in the prototype." data-inert="This session has no screens in the prototype.">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M20 6 9 17l-5-5"/></svg>
-      <span class="t">Scaffold the project</span>
-    </button>
-    <button class="srow" type="button" aria-label="Set up Vitest, no screens in this prototype" title="This session has no screens in the prototype." data-inert="This session has no screens in the prototype.">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M20 6 9 17l-5-5"/></svg>
-      <span class="t">Set up Vitest</span>
-    </button>
-    <button class="srow" type="button" aria-label="Show more sessions" title="Older sessions are not stored in this prototype." data-inert="Older sessions are not stored in this prototype."><span class="t faint">Show more</span></button>
+  <nav class="chat-list scroll" data-hide-collapsed aria-label="Chats">
+    <section class="cgroup" data-group="pinned" hidden>
+      <h2 class="cgroup-hd">
+        <button type="button" data-group-toggle aria-expanded="true">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9.5 6 6 6-6"/></svg>
+          Pinned
+        </button>
+      </h2>
+      <div class="cgroup-body">
+      
+      </div>
+    </section>
+    <section class="cgroup" data-group="today">
+      <h2 class="cgroup-hd">
+        <button type="button" data-group-toggle aria-expanded="true">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9.5 6 6 6-6"/></svg>
+          Today
+        </button>
+      </h2>
+      <div class="cgroup-body">
+      <div class="chat" data-chat="c1" data-project="task-tracker"
+        data-bucket="today" data-pinned data-route="/app/running/">
+        <button class="chat-open" type="button" title="Persist tasks to localStorage"
+          aria-label="Persist tasks to localStorage, running">
+          <span class="ic" aria-hidden="true"><span class="dot acc pulse" aria-hidden="true"></span></span>
+          <span class="t" data-chat-title>Persist tasks to localStorage</span>
+        </button>
+        <button class="chat-more" type="button" aria-haspopup="menu" aria-expanded="false"
+          aria-label="Actions for Persist tasks to localStorage">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r=".9"/><circle cx="12" cy="12" r=".9"/><circle cx="19" cy="12" r=".9"/></svg>
+        </button>
+      </div>
+      <div class="chat" data-chat="c2" data-project="task-tracker"
+        data-bucket="today">
+        <button class="chat-open" type="button" title="Add a filter bar to the list"
+          aria-label="Add a filter bar to the list, finished">
+          <span class="ic" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span>
+          <span class="t" data-chat-title>Add a filter bar to the list</span>
+        </button>
+        <button class="chat-more" type="button" aria-haspopup="menu" aria-expanded="false"
+          aria-label="Actions for Add a filter bar to the list">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r=".9"/><circle cx="12" cy="12" r=".9"/><circle cx="19" cy="12" r=".9"/></svg>
+        </button>
+      </div>
+      <div class="chat" data-chat="c3" data-project="task-tracker"
+        data-bucket="today" data-route="/app/stopped/">
+        <button class="chat-open" type="button" title="Switch the date helper to Temporal"
+          aria-label="Switch the date helper to Temporal, stopped">
+          <span class="ic" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--bad)" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></span>
+          <span class="t" data-chat-title>Switch the date helper to Temporal</span>
+        </button>
+        <button class="chat-more" type="button" aria-haspopup="menu" aria-expanded="false"
+          aria-label="Actions for Switch the date helper to Temporal">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r=".9"/><circle cx="12" cy="12" r=".9"/><circle cx="19" cy="12" r=".9"/></svg>
+        </button>
+      </div>
+      </div>
+    </section>
+    <section class="cgroup" data-group="week">
+      <h2 class="cgroup-hd">
+        <button type="button" data-group-toggle aria-expanded="true">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9.5 6 6 6-6"/></svg>
+          Previous 7 days
+        </button>
+      </h2>
+      <div class="cgroup-body">
+      <div class="chat" data-chat="c4" data-project="task-tracker"
+        data-bucket="week">
+        <button class="chat-open" type="button" title="Scaffold the project"
+          aria-label="Scaffold the project, finished">
+          <span class="ic" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span>
+          <span class="t" data-chat-title>Scaffold the project</span>
+        </button>
+        <button class="chat-more" type="button" aria-haspopup="menu" aria-expanded="false"
+          aria-label="Actions for Scaffold the project">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r=".9"/><circle cx="12" cy="12" r=".9"/><circle cx="19" cy="12" r=".9"/></svg>
+        </button>
+      </div>
+      <div class="chat" data-chat="c5" data-project="task-tracker"
+        data-bucket="week">
+        <button class="chat-open" type="button" title="Set up Vitest"
+          aria-label="Set up Vitest, finished">
+          <span class="ic" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span>
+          <span class="t" data-chat-title>Set up Vitest</span>
+        </button>
+        <button class="chat-more" type="button" aria-haspopup="menu" aria-expanded="false"
+          aria-label="Actions for Set up Vitest">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r=".9"/><circle cx="12" cy="12" r=".9"/><circle cx="19" cy="12" r=".9"/></svg>
+        </button>
+      </div>
+      <div class="chat" data-chat="c7" data-project="portfolio-site"
+        data-bucket="week">
+        <button class="chat-open" type="button" title="Extract the card grid into a component"
+          aria-label="Extract the card grid into a component, finished">
+          <span class="ic" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span>
+          <span class="t" data-chat-title>Extract the card grid into a component</span>
+        </button>
+        <button class="chat-more" type="button" aria-haspopup="menu" aria-expanded="false"
+          aria-label="Actions for Extract the card grid into a component">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r=".9"/><circle cx="12" cy="12" r=".9"/><circle cx="19" cy="12" r=".9"/></svg>
+        </button>
+      </div>
+      </div>
+    </section>
+    <section class="cgroup" data-group="older">
+      <h2 class="cgroup-hd">
+        <button type="button" data-group-toggle aria-expanded="true">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9.5 6 6 6-6"/></svg>
+          Older
+        </button>
+      </h2>
+      <div class="cgroup-body">
+      <div class="chat" data-chat="c6" data-project="task-tracker"
+        data-bucket="older">
+        <button class="chat-open" type="button" title="Move request logging behind a flag"
+          aria-label="Move request logging behind a flag, finished">
+          <span class="ic" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span>
+          <span class="t" data-chat-title>Move request logging behind a flag</span>
+        </button>
+        <button class="chat-more" type="button" aria-haspopup="menu" aria-expanded="false"
+          aria-label="Actions for Move request logging behind a flag">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r=".9"/><circle cx="12" cy="12" r=".9"/><circle cx="19" cy="12" r=".9"/></svg>
+        </button>
+      </div>
+      <div class="chat" data-chat="c8" data-project="portfolio-site"
+        data-bucket="older">
+        <button class="chat-open" type="button" title="Fix the contrast on the dark header"
+          aria-label="Fix the contrast on the dark header, finished">
+          <span class="ic" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span>
+          <span class="t" data-chat-title>Fix the contrast on the dark header</span>
+        </button>
+        <button class="chat-more" type="button" aria-haspopup="menu" aria-expanded="false"
+          aria-label="Actions for Fix the contrast on the dark header">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r=".9"/><circle cx="12" cy="12" r=".9"/><circle cx="19" cy="12" r=".9"/></svg>
+        </button>
+      </div>
+      <div class="chat" data-chat="c9" data-project="api-gateway"
+        data-bucket="older">
+        <button class="chat-open" type="button" title="Rate limit the public endpoints"
+          aria-label="Rate limit the public endpoints, finished">
+          <span class="ic" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span>
+          <span class="t" data-chat-title>Rate limit the public endpoints</span>
+        </button>
+        <button class="chat-more" type="button" aria-haspopup="menu" aria-expanded="false"
+          aria-label="Actions for Rate limit the public endpoints">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r=".9"/><circle cx="12" cy="12" r=".9"/><circle cx="19" cy="12" r=".9"/></svg>
+        </button>
+      </div>
+      </div>
+    </section>
+    <p class="chat-empty" data-chat-empty hidden>No chat matches that search.</p>
+    <div class="chat-archived" data-archived-wrap hidden>
+      <button class="chat-archived-toggle" type="button" data-archived-toggle aria-expanded="false">
+        <span data-archived-label>Archived</span>
+      </button>
+    </div>
   </nav>
 
-  <div style="flex-shrink:0;border-top:1px solid var(--line-soft);padding:8px">
+  <!-- One shared row menu, moved to whichever row opened it. -->
+  <div class="menu popover chat-menu" id="chat-menu" role="menu" aria-label="Chat actions" hidden>
+    <button role="menuitem" type="button" data-chat-action="rename">Rename</button>
+    <button role="menuitem" type="button" data-chat-action="pin">Pin to top</button>
+    <div class="sep"></div>
+    <p class="chat-menu-hd">Move to project</p>
+    <button role="menuitemradio" type="button" data-move-to="task-tracker" aria-checked="false">
+          <span class="check" aria-hidden="true"></span>task-tracker
+        </button>
+        <button role="menuitemradio" type="button" data-move-to="portfolio-site" aria-checked="false">
+          <span class="check" aria-hidden="true"></span>portfolio-site
+        </button>
+        <button role="menuitemradio" type="button" data-move-to="api-gateway" aria-checked="false">
+          <span class="check" aria-hidden="true"></span>api-gateway
+        </button>
+    <div class="sep"></div>
+    <button role="menuitem" type="button" data-chat-action="archive">Archive</button>
+    <button role="menuitem" type="button" data-chat-action="delete" class="is-bad">Delete</button>
+  </div>
+
+  <div class="side-foot">
     <a class="srow" data-id="models" href="/app/models/" aria-label="Models" title="Models">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true" style="flex-shrink:0"><rect x="3" y="3" width="18" height="18" rx="3.5"/><rect x="8" y="8" width="8" height="8" rx="1.8"/></svg>
       <span class="t">Models</span>
@@ -121,7 +289,7 @@
   </button>
 
   <button class="hit" style="gap:7px;padding:0 8px;border-radius:7px;min-width:0" aria-label="Project and session details">
-    <span style="font-size:13.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Models</span>
+    <span data-ws-title style="font-size:13.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Models</span>
     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="m6 9.5 6 6 6-6"/></svg>
   </button>
 

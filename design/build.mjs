@@ -14,6 +14,7 @@ import { models } from "./data/models.mjs";
 import * as F from "./lib/fit.mjs";
 import { pickerHtml } from "./lib/picker.mjs";
 import { recommendationBlock, installBlock, exploreList, myModelsList } from "./lib/appviews.mjs";
+import { chatList, projectOptions, moveOptions } from "./lib/chatlist.mjs";
 
 F.registerModels(models);
 
@@ -36,6 +37,9 @@ const BIND = {
   "<!--MINE_LIST-->": () => mine.rows,
   "<!--MINE_TOTAL-->": () => mine.totalGB,
   "<!--MINE_FREE-->": () => mine.freeGB,
+  "<!--CHAT_LIST-->": () => chatList(),
+  "<!--PROJECT_OPTIONS-->": () => projectOptions(),
+  "<!--MOVE_OPTIONS-->": () => moveOptions(),
   "<!--MINE_COUNT-->": () => `${mine.count} model${mine.count === 1 ? "" : "s"}`,
   "<!--EXPLORE_COUNT-->": () => `${models.length} model${models.length === 1 ? "" : "s"}`,
   "<!--REC_NAME-->": () => inst.name,

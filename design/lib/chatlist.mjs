@@ -1,0 +1,72 @@
+// Renders the sidebar chat selector from the fixtures. Every chat is emitted
+// once, in its date bucket; the controller moves rows between the Pinned group
+// and their date group at runtime, so pinning survives without a rebuild.
+import { projects, chats, GROUPS } from "../data/chats.mjs";
+
+const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;")
+  .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+const dot = {
+  running: '<span class="dot acc pulse" aria-hidden="true"></span>',
+  done: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>',
+  failed: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--bad)" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>',
+  idle: '<span class="dot" aria-hidden="true"></span>',
+};
+
+const stateWord = { running: "running", done: "finished", failed: "stopped", idle: "idle" };
+
+function row(c) {
+  return `<div class="chat" data-chat="${esc(c.id)}" data-project="${esc(c.project)}"
+        data-bucket="${esc(c.bucket)}"${c.pinned ? " data-pinned" : ""}${c.route ? ` data-route="${esc(c.route)}"` : ""}>
+        <button class="chat-open" type="button" title="${esc(c.title)}"
+          aria-label="${esc(c.title)}, ${stateWord[c.state] || "idle"}">
+          <span class="ic" aria-hidden="true">${dot[c.state] || dot.idle}</span>
+          <span class="t" data-chat-title>${esc(c.title)}</span>
+        </button>
+        <button class="chat-more" type="button" aria-haspopup="menu" aria-expanded="false"
+          aria-label="Actions for ${esc(c.title)}">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r=".9"/><circle cx="12" cy="12" r=".9"/><circle cx="19" cy="12" r=".9"/></svg>
+        </button>
+      </div>`;
+}
+
+export function chatList() {
+  const groups = GROUPS.map(([id, label]) => {
+    const rows = id === "pinned" ? "" : chats.filter((c) => c.bucket === id).map(row).join("\n      ");
+    return `<section class="cgroup" data-group="${id}"${id === "pinned" ? " hidden" : ""}>
+      <h2 class="cgroup-hd">
+        <button type="button" data-group-toggle aria-expanded="true">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9.5 6 6 6-6"/></svg>
+          ${esc(label)}
+        </button>
+      </h2>
+      <div class="cgroup-body">
+      ${rows}
+      </div>
+    </section>`;
+  }).join("\n    ");
+
+  return `${groups}
+    <p class="chat-empty" data-chat-empty hidden>No chat matches that search.</p>
+    <div class="chat-archived" data-archived-wrap hidden>
+      <button class="chat-archived-toggle" type="button" data-archived-toggle aria-expanded="false">
+        <span data-archived-label>Archived</span>
+      </button>
+    </div>`;
+}
+
+export function projectOptions() {
+  return projects.map((p, i) =>
+    `<button role="menuitemradio" class="srow" type="button" data-project-pick="${esc(p.id)}"
+          aria-checked="${i === 0 ? "true" : "false"}">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M3 7.5A2 2 0 0 1 5 5.5h3.6l1.8 2H19a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+          <span class="t">${esc(p.name)}</span>
+        </button>`).join("\n        ");
+}
+
+export function moveOptions() {
+  return projects.map((p) =>
+    `<button role="menuitemradio" type="button" data-move-to="${esc(p.id)}" aria-checked="false">
+          <span class="check" aria-hidden="true"></span>${esc(p.name)}
+        </button>`).join("\n        ");
+}

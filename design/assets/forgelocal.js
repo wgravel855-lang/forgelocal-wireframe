@@ -130,8 +130,24 @@
     const inSidebar = $("[data-sidebar-toggle]", sidebar);
     const inTopbar = $$("[data-sidebar-toggle]").find((b) => b !== inSidebar);
 
+    // Below 1180 the sidebar is a drawer over the workspace. It needs its own
+    // open flag and a scrim: the collapse class alone left it display:none, so
+    // the toggle did nothing at all on a phone.
+    let scrim = $(".side-scrim");
+    if (!scrim) {
+      scrim = document.createElement("div");
+      scrim.className = "side-scrim";
+      scrim.hidden = true;
+      scrim.addEventListener("click", () => apply(true));
+      sidebar.parentElement.insertBefore(scrim, sidebar);
+    }
+
     const apply = (collapsed) => {
       shell.classList.toggle("is-collapsed", collapsed);
+      const drawer = innerWidth <= 1180;
+      if (drawer && !collapsed) sidebar.setAttribute("data-open", "");
+      else sidebar.removeAttribute("data-open");
+      scrim.hidden = !(drawer && !collapsed);
       // Exactly one toggle is reachable at a time: the sidebar's own control
       // hides it, the top bar's brings it back.
       if (inSidebar) inSidebar.hidden = collapsed;
@@ -142,16 +158,16 @@
       });
     };
     // Narrow windows start collapsed regardless of the stored preference.
-    const narrow = innerWidth < 1024;
+    const narrow = innerWidth <= 1180;
     apply(narrow ? true : store.get("sidebar-collapsed", false));
     $$("[data-sidebar-toggle]").forEach((b) =>
       b.addEventListener("click", () => {
         const now = !shell.classList.contains("is-collapsed");
         apply(now);
-        if (innerWidth >= 1024) store.set("sidebar-collapsed", now);
+        if (innerWidth > 1180) store.set("sidebar-collapsed", now);
       }));
     document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape" && innerWidth < 1024 && !shell.classList.contains("is-collapsed")) apply(true);
+      if (e.key === "Escape" && innerWidth <= 1180 && !shell.classList.contains("is-collapsed")) apply(true);
     });
 
     // The collapse decision has to be re-made when the window crosses the
@@ -159,11 +175,306 @@
     // widened should get its sidebar back.
     let wasNarrow = narrow;
     addEventListener("resize", () => {
-      const isNarrow = innerWidth < 1024;
+      const isNarrow = innerWidth <= 1180;
       if (isNarrow === wasNarrow) return;
       wasNarrow = isNarrow;
       apply(isNarrow ? true : store.get("sidebar-collapsed", false));
     });
+  }
+
+  /* ----------------------------------------------------------- chat list */
+  /* The selector is stateful across reloads: selection, renames, pins, project
+     moves, archives, deletes and the collapsed groups all live in one stored
+     object. Nothing is fabricated at runtime; every row starts from the markup
+     the build emitted. */
+  function wireChats() {
+    const list = $(".chat-list");
+    if (!list) return;
+    const rows = () => $$(".chat", list);
+    const menu = $("#chat-menu");
+    const search = $("[data-chat-search]");
+    const empty = $("[data-chat-empty]");
+    const pinnedGroup = $('.cgroup[data-group="pinned"]', list);
+    const archWrap = $("[data-archived-wrap]");
+    const archToggle = $("[data-archived-toggle]");
+    const archLabel = $("[data-archived-label]");
+
+    const st = store.get("chats", {});
+    st.over ??= {};
+    st.groups ??= {};
+    const save = () => store.set("chats", st);
+    const of = (id) => (st.over[id] ??= {});
+
+    const titleOf = (row) => $("[data-chat-title]", row).textContent.trim();
+    let showArchived = false;
+    let openFor = null;
+
+    /* ---- paint ---------------------------------------------------------- */
+    const paint = () => {
+      const q = (search?.value || "").trim().toLowerCase();
+      const project = store.get("project", rows()[0]?.dataset.project || "");
+      let shown = 0, archived = 0;
+
+      rows().forEach((row) => {
+        const id = row.dataset.chat;
+        const o = st.over[id] || {};
+        if (o.deleted) { row.remove(); return; }
+
+        // a moved chat keeps its markup and changes its project
+        const proj = o.project || row.dataset.project;
+        const inProject = !project || proj === project;
+        const hit = !q || titleOf(row).toLowerCase().includes(q);
+        const isArchived = !!o.archived;
+        if (isArchived && inProject) archived++;
+
+        const visible = inProject && hit && (showArchived ? isArchived : !isArchived);
+        row.hidden = !visible;
+        if (visible) shown++;
+
+        // pinning moves the row between the Pinned group and its date group
+        const wantPinned = o.pinned ?? row.hasAttribute("data-pinned");
+        const home = wantPinned ? pinnedGroup
+          : $(`.cgroup[data-group="${row.dataset.bucket}"]`, list);
+        const body = $(".cgroup-body", home);
+        if (row.parentElement !== body) body.appendChild(row);
+
+        const on = st.selected === id;
+        row.classList.toggle("is-on", on);
+        $(".chat-open", row).setAttribute("aria-current", on ? "true" : "false");
+      });
+
+      // a group with nothing visible in it is not a group
+      $$(".cgroup", list).forEach((g) => {
+        const any = $$(".chat", g).some((r) => !r.hidden);
+        g.hidden = !any;
+        const btn = $("[data-group-toggle]", g);
+        const openState = st.groups[g.dataset.group] !== false;
+        btn.setAttribute("aria-expanded", String(openState));
+        $(".cgroup-body", g).hidden = !openState;
+      });
+
+      if (empty) empty.hidden = shown > 0;
+      if (archWrap) {
+        archWrap.hidden = archived === 0 && !showArchived;
+        archToggle.setAttribute("aria-expanded", String(showArchived));
+        archLabel.textContent = showArchived
+          ? "Back to active chats" : `Archived (${archived})`;
+      }
+    };
+
+    /* ---- selection ------------------------------------------------------ */
+    const setTitle = (t) => { $$("[data-ws-title]").forEach((el) => { el.textContent = t; }); };
+
+    const select = (row, navigate) => {
+      st.selected = row.dataset.chat;
+      save();
+      paint();
+      setTitle(titleOf(row));
+      // a chat that has a built screen opens it; the rest change the title in
+      // place, which is all this prototype can honestly do
+      const route = row.dataset.route;
+      if (navigate && route && location.pathname !== route) {
+        setTimeout(() => { location.href = route; }, 120);
+      }
+    };
+
+    list.addEventListener("click", (e) => {
+      const open = e.target.closest(".chat-open");
+      if (open) { select(open.closest(".chat"), true); return; }
+      const g = e.target.closest("[data-group-toggle]");
+      if (g) {
+        const sec = g.closest(".cgroup");
+        st.groups[sec.dataset.group] = g.getAttribute("aria-expanded") !== "true";
+        save(); paint();
+      }
+    });
+
+    /* ---- search --------------------------------------------------------- */
+    if (search) {
+      let t;
+      search.addEventListener("input", () => { clearTimeout(t); t = setTimeout(paint, 100); });
+      search.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && search.value) { e.stopPropagation(); search.value = ""; paint(); }
+      });
+    }
+
+    /* ---- project scope -------------------------------------------------- */
+    $$("[data-project-pick]").forEach((b) => b.addEventListener("click", () => {
+      store.set("project", b.dataset.projectPick);
+      $$("[data-project-label]").forEach((l) => { l.textContent = $(".t", b).textContent; });
+      $$("[data-project-pick]").forEach((o) =>
+        o.setAttribute("aria-checked", String(o === b)));
+      closePop();
+      paint();
+    }));
+    (() => {
+      const saved = store.get("project", null);
+      const b = saved && $(`[data-project-pick="${saved}"]`);
+      if (b) {
+        $$("[data-project-label]").forEach((l) => { l.textContent = $(".t", b).textContent; });
+        $$("[data-project-pick]").forEach((o) => o.setAttribute("aria-checked", String(o === b)));
+      }
+    })();
+
+    /* ---- row menu ------------------------------------------------------- */
+    const closeMenu = (restore = true) => {
+      if (!openFor) return;
+      const trigger = $(".chat-more", openFor);
+      menu.hidden = true;
+      trigger.setAttribute("aria-expanded", "false");
+      const t = trigger;
+      openFor = null;
+      if (restore) t.focus();
+    };
+
+    const openMenu = (row) => {
+      closeMenu(false);
+      openFor = row;
+      const id = row.dataset.chat;
+      const o = st.over[id] || {};
+      const pinned = o.pinned ?? row.hasAttribute("data-pinned");
+      $('[data-chat-action="pin"]', menu).textContent = pinned ? "Unpin" : "Pin to top";
+      const proj = o.project || row.dataset.project;
+      $$("[data-move-to]", menu).forEach((b) =>
+        b.setAttribute("aria-checked", String(b.dataset.moveTo === proj)));
+
+      menu.hidden = false;
+      const r = row.getBoundingClientRect();
+      const host = row.closest(".sidebar").getBoundingClientRect();
+      const top = Math.min(r.bottom - host.top + 4, host.height - menu.offsetHeight - 8);
+      menu.style.top = Math.max(8, top) + "px";
+      menu.style.left = Math.max(8, r.right - host.left - menu.offsetWidth) + "px";
+      $(".chat-more", row).setAttribute("aria-expanded", "true");
+      $("button", menu).focus();
+    };
+
+    list.addEventListener("click", (e) => {
+      const more = e.target.closest(".chat-more");
+      if (!more) return;
+      e.stopPropagation();
+      const row = more.closest(".chat");
+      openFor === row ? closeMenu() : openMenu(row);
+    });
+
+    document.addEventListener("click", (e) => {
+      if (openFor && !e.target.closest("#chat-menu") && !e.target.closest(".chat-more"))
+        closeMenu(false);
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key !== "Escape" || !openFor) return;
+      e.stopPropagation();
+      closeMenu();
+    });
+    menu.addEventListener("keydown", (e) => {
+      const items = $$("button", menu).filter((b) => b.offsetParent !== null);
+      const i = items.indexOf(document.activeElement);
+      if (e.key === "ArrowDown") { e.preventDefault(); items[(i + 1) % items.length].focus(); }
+      if (e.key === "ArrowUp") { e.preventDefault(); items[(i - 1 + items.length) % items.length].focus(); }
+    });
+
+    /* ---- inline rename -------------------------------------------------- */
+    const rename = (row) => {
+      const span = $("[data-chat-title]", row);
+      if ($(".chat-rename", row)) return;
+      const was = span.textContent.trim();
+      const input = document.createElement("input");
+      input.className = "chat-rename";
+      input.value = was;
+      input.setAttribute("aria-label", "Rename chat");
+      span.replaceWith(input);
+      input.focus();
+      input.select();
+
+      let settled = false;
+      const finish = (commit) => {
+        if (settled) return;
+        settled = true;
+        const next = commit && input.value.trim() ? input.value.trim() : was;
+        span.textContent = next;
+        input.replaceWith(span);
+        if (next !== was) {
+          of(row.dataset.chat).title = next;
+          save();
+          const open = $(".chat-open", row);
+          open.title = next;
+          open.setAttribute("aria-label", next);
+          $(".chat-more", row).setAttribute("aria-label", `Actions for ${next}`);
+          if (st.selected === row.dataset.chat) setTitle(next);
+          toast("Chat renamed.");
+        }
+        $(".chat-more", row).focus();
+      };
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") { e.preventDefault(); finish(true); }
+        if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); finish(false); }
+      });
+      input.addEventListener("blur", () => finish(true));
+    };
+
+    /* ---- menu actions --------------------------------------------------- */
+    menu.addEventListener("click", (e) => {
+      const b = e.target.closest("button");
+      if (!b || !openFor) return;
+      const row = openFor, id = row.dataset.chat, o = of(id);
+      const title = titleOf(row);
+
+      if (b.dataset.moveTo) {
+        o.project = b.dataset.moveTo;
+        save(); closeMenu(); paint();
+        toast(`Moved "${title}" to ${b.dataset.moveTo}.`);
+        return;
+      }
+      switch (b.dataset.chatAction) {
+        case "rename":
+          closeMenu(false);
+          rename(row);
+          break;
+        case "pin":
+          o.pinned = !(o.pinned ?? row.hasAttribute("data-pinned"));
+          save(); closeMenu(); paint();
+          toast(o.pinned ? `Pinned "${title}".` : `Unpinned "${title}".`);
+          break;
+        case "archive":
+          o.archived = true;
+          save(); closeMenu(); paint();
+          toast(`Archived "${title}". It is under Archived at the end of the list.`);
+          break;
+        case "delete":
+          if (!confirm(`Delete "${title}"? This prototype cannot bring it back.`)) return;
+          o.deleted = true;
+          if (st.selected === id) delete st.selected;
+          save(); closeMenu(false); paint();
+          toast(`Deleted "${title}".`);
+          break;
+      }
+    });
+
+    if (archToggle) archToggle.addEventListener("click", () => { showArchived = !showArchived; paint(); });
+
+    /* ---- restore stored titles, then paint ------------------------------ */
+    rows().forEach((row) => {
+      const o = st.over[row.dataset.chat];
+      if (o?.title) {
+        $("[data-chat-title]", row).textContent = o.title;
+        const open = $(".chat-open", row);
+        open.title = o.title;
+        open.setAttribute("aria-label", o.title);
+        $(".chat-more", row).setAttribute("aria-label", `Actions for ${o.title}`);
+      }
+    });
+    // The route decides which chat is open. /app/ is a new chat, so a stored
+    // selection is only restored there when that chat has no screen of its own
+    // and was therefore being viewed in place.
+    const claimed = rows().find((r) => r.dataset.route === location.pathname);
+    if (claimed) st.selected = claimed.dataset.chat;
+    else {
+      const stored = rows().find((r) => r.dataset.chat === st.selected);
+      if (!stored || stored.dataset.route) delete st.selected;
+    }
+    save();
+    paint();
+    const sel = rows().find((r) => r.dataset.chat === st.selected);
+    if (sel) setTitle(titleOf(sel));
   }
 
   /* --------------------------------------------------------------- composer */
@@ -703,7 +1014,7 @@
     wireReview(); wireFilters(); wireNav(); wirePricing(); wirePlatform(); wireSignin();
     wireDownload(); wireLoadToggle(); wirePresets(); showPreset();
     wireActivity(); wireStopRun(); wirePermission(); wireRecover(); wireSuggest();
-    wireModelActions(); wireInert();
+    wireModelActions(); wireChats(); wireInert();
     document.documentElement.dataset.reducedMotion = String(reduced);
   };
   document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", boot) : boot();

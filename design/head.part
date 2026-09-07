@@ -101,7 +101,7 @@
 
     /* ---- app shell --------------------------------------------------- */
     .shell { display: flex; height: 100%; min-height: 0; overflow: hidden; }
-    .sidebar { width: 248px; flex-shrink: 0; border-right: 1px solid var(--line);
+    .sidebar { width: 272px; flex-shrink: 0; border-right: 1px solid var(--line);
       background: var(--panel); display: flex; flex-direction: column; min-height: 0; }
     .main { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--bg); }
     .topbar { height: 52px; flex-shrink: 0; display: flex; align-items: center; gap: 10px;
@@ -122,6 +122,75 @@
     .sgroup { font-family: "Geist Mono", "Cascadia Mono", ui-monospace, Consolas, monospace;
       font-size: 12px; color: var(--faint); padding: 0 10px; height: 30px;
       display: flex; align-items: center; letter-spacing: .02em; }
+
+    /* ---- chat selector ------------------------------------------------ */
+    /* The sidebar is a chat selector scoped to one project. Rows are 42px, the
+       row menu appears on hover, focus and selection, and nothing here borrows
+       the workspace's own surfaces. */
+    .side-hd { height: 52px; flex-shrink: 0; display: flex; align-items: center; gap: 6px;
+      padding: 0 8px 0 10px; }
+    .side-hd-t { font-size: 14px; font-weight: 600; letter-spacing: -.005em; }
+    .side-search { flex-shrink: 0; padding: 0 10px 8px; }
+    .side-search .field { height: 40px; width: 100%; }
+    .side-search input { font-size: 14px; }
+    .side-project { flex-shrink: 0; padding: 0 10px 10px; }
+    .chat-list { flex: 1; min-height: 0; overflow-y: auto; padding: 0 8px 8px; }
+    .side-foot { flex-shrink: 0; border-top: 1px solid var(--line-soft); padding: 8px; }
+
+    .cgroup[hidden] { display: none !important; }
+    .cgroup-hd { margin: 0; }
+    .cgroup-hd > button { display: flex; align-items: center; gap: 6px; width: 100%;
+      min-height: 40px; padding: 0 8px; border-radius: 6px;
+      font-family: "Geist Mono", "Cascadia Mono", ui-monospace, Consolas, monospace;
+      font-size: 13px; letter-spacing: .015em; color: var(--faint); text-align: left; }
+    .cgroup-hd > button:hover { color: var(--mut); background: var(--sunk); }
+    .cgroup-hd svg { flex-shrink: 0; transition: transform 160ms ease-out; }
+    .cgroup-hd > button[aria-expanded="false"] svg { transform: rotate(-90deg); }
+    .cgroup-hd > button[aria-expanded="false"] + .cgroup-body,
+    .cgroup-body[hidden] { display: none; }
+
+    .chat { position: relative; display: flex; align-items: center; border-radius: 8px;
+      transition: background 140ms ease-out; }
+    .chat:hover { background: var(--sunk); }
+    .chat.is-on { background: var(--sunk); box-shadow: inset 2px 0 0 var(--acc); }
+    .chat[hidden] { display: none !important; }
+    .chat-open { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px;
+      min-height: 42px; padding: 0 4px 0 10px; font-size: 14px; line-height: 20px;
+      color: var(--mut); text-align: left; }
+    .chat.is-on .chat-open { color: var(--fg); font-weight: 500; }
+    .chat-open .ic { display: inline-flex; width: 13px; flex-shrink: 0; justify-content: center; }
+    .chat-open .t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+      white-space: nowrap; }
+    /* the row menu is present for the pointer, the keyboard and the selection */
+    .chat-more { width: 40px; min-width: 40px; height: 42px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; color: var(--faint);
+      border-radius: 8px; opacity: 0; transition: opacity 140ms ease-out, color 140ms ease-out; }
+    .chat:hover .chat-more, .chat.is-on .chat-more,
+    .chat-more:focus-visible, .chat-more[aria-expanded="true"] { opacity: 1; }
+    .chat-more:hover { color: var(--fg); background: var(--line-soft); }
+    /* the inline rename field replaces the title in place */
+    .chat-rename { flex: 1; min-width: 0; height: 30px; border: 1px solid var(--acc);
+      border-radius: 6px; background: var(--bg); color: var(--fg); font-size: 14px;
+      padding: 0 8px; outline: none; }
+    .chat-empty { margin: 14px 10px; font-size: 13.5px; line-height: 20px; color: var(--faint); }
+    .chat-archived { padding: 6px 2px 0; }
+    .chat-archived-toggle { min-height: 40px; padding: 0 8px; font-size: 13px;
+      color: var(--faint); border-radius: 6px; width: 100%; text-align: left; }
+    .chat-archived-toggle:hover { color: var(--mut); background: var(--sunk); }
+
+    .chat-menu { width: 232px; padding: 6px; }
+    .chat-menu > button { display: flex; align-items: center; gap: 9px; width: 100%;
+      min-height: 40px; padding: 0 10px; border-radius: 7px; font-size: 13.5px;
+      color: var(--fg); text-align: left; }
+    .chat-menu > button:hover { background: var(--sunk); }
+    .chat-menu > button.is-bad { color: var(--bad); }
+    .chat-menu > button.is-bad:hover { background: var(--bad-soft); }
+    .chat-menu .sep { margin: 5px 0; }
+    .chat-menu-hd { margin: 4px 0 2px; padding: 0 10px;
+      font-family: "Geist Mono", "Cascadia Mono", ui-monospace, Consolas, monospace;
+      font-size: 12px; letter-spacing: .02em; color: var(--faint); }
+    .chat-menu .check { width: 14px; flex-shrink: 0; color: var(--acc-text); }
+    .chat-menu [aria-checked="true"] .check::before { content: "\2713"; }
 
     /* ---- controls ---------------------------------------------------- */
     /* 40px is the floor for every control; 44px for primary actions. The dense
@@ -607,9 +676,10 @@
     @media (min-width: 1024px) {
       .shell.is-collapsed .sidebar { display: flex; width: 60px; }
       .shell.is-collapsed .sidebar .t,
-      .shell.is-collapsed .sidebar .sgroup,
       .shell.is-collapsed .sidebar [data-hide-collapsed] { display: none; }
       .shell.is-collapsed .sidebar .srow { justify-content: center; padding: 0; }
+      .shell.is-collapsed .side-hd { flex-direction: column; height: auto; gap: 4px;
+        padding: 8px 0; }
       .shell.is-collapsed .sidebar { transition: width 180ms ease; }
     }
 
@@ -707,11 +777,15 @@
     /* Below 1180px the sidebar stops holding a column and becomes an overlay,
        hidden until asked for. [data-open] shows that overlay state. */
     @media (max-width: 1180px) {
-      .sidebar { position: absolute; z-index: 30; inset: 0 auto 0 0;
-        box-shadow: var(--shadow-menu); display: none; }
+      .sidebar { position: absolute; z-index: 40; inset: 0 auto 0 0; width: 280px;
+        max-width: 86vw; box-shadow: var(--shadow-menu); display: none; }
       .sidebar[data-open] { display: flex; }
+      /* the drawer is modal enough to need a way back out by tapping away */
+      .side-scrim { position: absolute; inset: 0; z-index: 35; background: rgba(0,0,0,.45); }
+      .side-scrim[hidden] { display: none !important; }
       .hide-sm { display: none; }
     }
+    @media (min-width: 1181px) { .side-scrim { display: none; } }
     @media (max-width: 1080px) {
       .drawer { width: 46%; min-width: 380px; }
     }
