@@ -40,8 +40,8 @@ const shell = (title, head, body) => `<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(title)}</title>
+<link rel="stylesheet" href="/assets/forgelocal.css">
 <style>
-${css}
 ${head}
 </style>
 </head>
@@ -114,7 +114,8 @@ for (const name of names) {
     : `<div class="stage"><div class="frame">\n${body}\n</div></div>`;
 
   const page = `<div class="bar" id="bare">
-  <a href="../index.html">&larr; All screens</a>
+  <a href="/gallery/">&larr; Gallery</a>
+  <a href="/" style="opacity:.6">Site</a>
   <span style="opacity:.5">/</span>
   <span>${esc(title)}</span>
   <span style="flex-grow:1"></span>
@@ -133,9 +134,9 @@ const card = (name) => {
   const { title, w, h } = meta.get(name);
   const s = CARD / w;
   const clipped = Math.min(Math.round(h * s), 300);
-  return `    <a class="card" href="screens/${name}.html">
+  return `    <a class="card" href="/screens/${name}.html">
       <div class="shot" style="height:${clipped}px">
-        <iframe src="screens/${name}.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
+        <iframe src="/screens/${name}.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
           style="width:${w}px;height:${h}px;transform:scale(${s.toFixed(4)})"></iframe>
       </div>
       <div class="cap"><span>${esc(title)}</span><span class="dim">${w}&times;${h}</span></div>
@@ -186,6 +187,7 @@ const indexBody = `<div class="wrap">
 ${sections}
 </div>`;
 
-writeFileSync(join(root, "index.html"), shell("ForgeLocal wireframe", indexHead, indexBody));
+mkdirSync(join(root, "gallery"), { recursive: true });
+writeFileSync(join(root, "gallery", "index.html"), shell("Screen gallery (internal) - ForgeLocal", indexHead, indexBody));
 
-console.log(`built index.html + ${names.length} screens`);
+console.log(`gallery + ${names.length} screens`);

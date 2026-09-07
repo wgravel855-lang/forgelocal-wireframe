@@ -4,224 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Change review, drawer open · ForgeLocal wireframe</title>
+<link rel="stylesheet" href="/assets/forgelocal.css">
 <style>
-
-    /* ==================================================================
-       ForgeLocal design tokens
-
-       :root  = light marketing surface
-       .app   = near-black desktop shell
-       Components read only the vars, so one set serves both.
-       ================================================================== */
-    :root {
-      --bg:#F7F5F0; --panel:#F1EEE7; --raised:#FFFFFF; --sunk:#EAE7DF;
-      --line:#DEDAD1; --line-soft:#E8E4DC; --line-strong:#C9C4B9;
-      --fg:#17181A; --mut:#5F6165; --faint:#64666B;
-      --acc:#5457CE; --acc-hi:#4B4EC2; --acc-text:#4F52C9; --acc-soft:#EDEDFA;
-      --ok:#2F6B3D; --ok-line:#5C9268; --ok-soft:#EDF4EE;
-      --warn:#7A5310; --warn-line:#BF8B2C; --warn-soft:#FBF4E6;
-      --bad:#9B3A33; --bad-line:#C2564D; --bad-soft:#FBEFEE;
-      --focus:#5457CE;
-      --shadow-menu:0 10px 30px rgba(23,24,26,.14), 0 1px 3px rgba(23,24,26,.10);
-    }
-    .app {
-      --bg:#0E0F10; --panel:#121315; --raised:#16171A; --sunk:#1B1D20;
-      --line:#26282C; --line-soft:#1E2023; --line-strong:#33363B;
-      --fg:#EDEDEB; --mut:#A2A39F; --faint:#8A8C88;
-      --acc:#6366D9; --acc-hi:#7275E2; --acc-text:#9698F2; --acc-soft:#191A2B;
-      --ok:#7FB98A; --ok-line:#4F7A59; --ok-soft:#131C16;
-      --warn:#D6A85C; --warn-line:#8A6A2E; --warn-soft:#1F1A10;
-      --bad:#E08A82; --bad-line:#8E4A44; --bad-soft:#211413;
-      --focus:#9698F2;
-      --shadow-menu:0 16px 40px rgba(0,0,0,.55), 0 2px 6px rgba(0,0,0,.4);
-    }
-
-    /* ---- reset / base ------------------------------------------------ */
-    *, *::before, *::after { box-sizing: border-box; }
-    html, body { height: 100%; }
-    body { margin: 0; background: var(--bg); color: var(--fg);
-      font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
-      font-size: 14px; line-height: 20px; -webkit-font-smoothing: antialiased;
-      text-rendering: optimizeLegibility; }
-    button, input, textarea, select { font: inherit; color: inherit; }
-    button { background: none; border: 0; padding: 0; cursor: pointer; }
-    a { color: var(--acc-text); text-decoration: none; }
-    a:hover { text-decoration: underline; }
-    :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
-    ::selection { background: var(--acc); color: #fff; }
-
-    /* ---- type -------------------------------------------------------- */
-    .m { font-family: "Geist Mono", "Cascadia Mono", ui-monospace, Consolas, monospace;
-      font-size: 12.5px; }
-    .lab { font-family: "Geist Mono", "Cascadia Mono", ui-monospace, Consolas, monospace;
-      font-size: 11.5px; letter-spacing: .01em; color: var(--faint); }
-    .h1 { font-size: 28px; line-height: 34px; font-weight: 600; letter-spacing: -.015em; margin: 0; }
-    .h2 { font-size: 15px; line-height: 21px; font-weight: 600; margin: 0; }
-    .h3 { font-size: 14px; line-height: 20px; font-weight: 600; margin: 0; }
-    .mut { color: var(--mut); }
-    .faint { color: var(--faint); }
-    .prose { font-size: 15px; line-height: 24px; }
-    .prose p { margin: 0 0 14px; }
-    .prose p:last-child { margin-bottom: 0; }
-
-    /* ---- surfaces ---------------------------------------------------- */
-    .app, .site { background: var(--bg); color: var(--fg); }
-    .box { border: 1px solid var(--line); background: var(--raised); border-radius: 8px; }
-    .soft { background: var(--sunk); }
-    .menu { border: 1px solid var(--line); background: var(--raised); border-radius: 10px;
-      box-shadow: var(--shadow-menu); }
-
-    /* ---- app shell --------------------------------------------------- */
-    .shell { display: flex; height: 100%; min-height: 0; overflow: hidden; }
-    .sidebar { width: 248px; flex-shrink: 0; border-right: 1px solid var(--line);
-      background: var(--panel); display: flex; flex-direction: column; min-height: 0; }
-    .main { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--bg); }
-    .topbar { height: 48px; flex-shrink: 0; display: flex; align-items: center; gap: 10px;
-      padding: 0 12px 0 10px; border-bottom: 1px solid var(--line-soft); }
-    .scroll { flex: 1; min-height: 0; overflow: hidden; }
-    .col { width: 100%; max-width: 792px; margin: 0 auto; padding: 0 24px; }
-    .drawer { width: 480px; flex-shrink: 0; border-left: 1px solid var(--line);
-      background: var(--panel); display: flex; flex-direction: column; min-height: 0; }
-
-    /* sidebar rows */
-    .srow { display: flex; align-items: center; gap: 10px; height: 34px; padding: 0 9px;
-      border-radius: 7px; font-size: 13.5px; color: var(--mut); cursor: pointer;
-      transition: background 140ms ease, color 140ms ease; width: 100%; text-align: left; }
-    .srow:hover { background: var(--sunk); color: var(--fg); }
-    .srow[aria-current="true"], .srow.on { background: var(--raised); color: var(--fg);
-      box-shadow: inset 0 0 0 1px var(--line); }
-    .srow .t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .sgroup { font-family: "Geist Mono", "Cascadia Mono", ui-monospace, Consolas, monospace;
-      font-size: 11px; color: var(--faint); padding: 0 9px; height: 26px;
-      display: flex; align-items: center; letter-spacing: .02em; }
-
-    /* ---- controls ---------------------------------------------------- */
-    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px;
-      height: 32px; padding: 0 13px; border: 1px solid var(--line-strong); background: var(--raised);
-      border-radius: 7px; font-size: 13px; color: var(--fg); white-space: nowrap;
-      transition: background 140ms ease, border-color 140ms ease, color 140ms ease; }
-    .btn:hover { background: var(--sunk); }
-    .btnp { background: var(--acc); border-color: var(--acc); color: #fff; }
-    .btnp:hover { background: var(--acc-hi); border-color: var(--acc-hi); }
-    .btnq { background: transparent; border-color: transparent; color: var(--mut); }
-    .btnq:hover { background: var(--sunk); color: var(--fg); }
-    .btnd { border-color: var(--bad-line); color: var(--bad); }
-    .btns { height: 28px; padding: 0 10px; font-size: 12.5px; border-radius: 6px; }
-    .btnl { height: 38px; padding: 0 18px; font-size: 14px; border-radius: 8px; }
-    .ico { width: 32px; padding: 0; }
-    .ico.btns { width: 28px; }
-
-    .pill { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 9px;
-      border-radius: 11px; border: 1px solid var(--line); background: transparent;
-      font-size: 11.5px; color: var(--mut); white-space: nowrap; }
-    .pill.ok { border-color: var(--ok-line); color: var(--ok); }
-    .pill.warn { border-color: var(--warn-line); color: var(--warn); }
-    .pill.bad { border-color: var(--bad-line); color: var(--bad); }
-    .pill.acc { border-color: var(--acc); color: var(--acc-text); }
-
-    .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; background: var(--faint); }
-    .dot.ok { background: var(--ok-line); }
-    .dot.warn { background: var(--warn-line); }
-    .dot.bad { background: var(--bad-line); }
-    .dot.acc { background: var(--acc); }
-
-    .track { height: 5px; border-radius: 3px; background: var(--line); overflow: hidden; }
-    .fillbar { height: 100%; background: var(--acc); border-radius: 3px; }
-
-    .field { height: 34px; border: 1px solid var(--line); background: var(--sunk);
-      border-radius: 7px; display: flex; align-items: center; gap: 9px; padding: 0 11px;
-      font-size: 13px; color: var(--mut); }
-
-    /* ---- composer ---------------------------------------------------- */
-    .composer { border: 1px solid var(--line-strong); background: var(--raised);
-      border-radius: 16px; padding: 12px 12px 10px;
-      display: flex; flex-direction: column; gap: 12px;
-      transition: border-color 140ms ease; }
-    .composer:focus-within { border-color: var(--acc); }
-    .composer .ph { font-size: 15px; line-height: 22px; color: var(--mut); min-height: 22px; }
-    .cbar { display: flex; align-items: center; gap: 6px; }
-
-    /* ---- activity group ---------------------------------------------- */
-    .act { border: 1px solid var(--line); border-radius: 8px; background: var(--raised);
-      overflow: hidden; }
-    .act > .hd { display: flex; align-items: center; gap: 9px; height: 36px; padding: 0 12px; }
-    .arow { display: flex; align-items: center; gap: 10px; min-height: 30px; padding: 4px 12px;
-      font-size: 13px; color: var(--mut); }
-    .arow .t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .arow.now { color: var(--fg); }
-
-    /* ---- misc -------------------------------------------------------- */
-    .sep { height: 1px; background: var(--line-soft); }
-    .grow { flex-grow: 1; }
-    .ph { background: var(--line); border-radius: 2px; }
-    .xbox { border: 1px solid var(--line); border-radius: 6px; background-color: var(--sunk);
-      background-image:
-        linear-gradient(to top right, transparent calc(50% - .5px), var(--line) 50%, transparent calc(50% + .5px)),
-        linear-gradient(to bottom right, transparent calc(50% - .5px), var(--line) 50%, transparent calc(50% + .5px)); }
-    .note { border: 1px dashed var(--line-strong); background: transparent; border-radius: 8px; }
-    .chrome { height: 34px; flex-shrink: 0; display: flex; align-items: center; gap: 10px;
-      padding: 0 12px; border-bottom: 1px solid var(--line); background: var(--panel); }
-
-    /* ---- pulse (single, on the current activity only) ---------------- */
-    @keyframes fl-pulse { 0%,100% { opacity: 1 } 50% { opacity: .45 } }
-    .pulse { animation: fl-pulse 2s ease-in-out infinite; }
-
-    /* ---- onboarding shell -------------------------------------------- */
-    .ob { height:100%; display:flex; flex-direction:column; }
-    .ob-top { height:48px; flex-shrink:0; display:flex; align-items:center; gap:12px;
-      padding:0 16px; border-bottom:1px solid var(--line-soft); }
-    .ob-steps { display:flex; gap:5px; }
-    .ob-steps i { width:22px; height:3px; border-radius:2px; background:var(--line); display:block; }
-    .ob-steps[data-step="2"] i:nth-child(-n+1),
-    .ob-steps[data-step="3"] i:nth-child(-n+2),
-    .ob-steps[data-step="4"] i:nth-child(-n+3),
-    .ob-steps[data-step="5"] i:nth-child(-n+4) { background: var(--line-strong); }
-    .ob-steps[data-step="1"] i:nth-child(1),
-    .ob-steps[data-step="2"] i:nth-child(2),
-    .ob-steps[data-step="3"] i:nth-child(3),
-    .ob-steps[data-step="4"] i:nth-child(4),
-    .ob-steps[data-step="5"] i:nth-child(5) { background: var(--acc); }
-    .ob-body { flex:1; min-height:0; overflow-y:auto; display:flex; flex-direction:column;
-      justify-content:center; }
-    .ob-col { width:100%; max-width:648px; margin:0 auto; padding:32px 24px;
-      display:flex; flex-direction:column; gap:22px; }
-    .ob-foot { flex-shrink:0; border-top:1px solid var(--line-soft); }
-    .ob-foot .inner { width:100%; max-width:648px; margin:0 auto; padding:12px 24px;
-      display:flex; align-items:center; gap:10px; }
-    .kv { display:grid; grid-template-columns:132px 1fr; gap:9px 14px; margin:0; }
-    .kv dt { color:var(--faint); font-size:12.5px; }
-    .kv dd { margin:0; font-size:13.5px; }
-    @media (max-width:640px) {
-      .ob-col { padding:24px 16px } .ob-foot .inner { padding:12px 16px }
-      .kv { grid-template-columns:1fr; gap:2px 0 }
-      .kv dd { margin-bottom:8px }
-    }
-
-    /* ---- responsive --------------------------------------------------- */
-    /* Below 1180px the sidebar stops holding a column and becomes an overlay,
-       hidden until asked for. [data-open] shows that overlay state. */
-    @media (max-width: 1180px) {
-      .sidebar { position: absolute; z-index: 30; inset: 0 auto 0 0;
-        box-shadow: var(--shadow-menu); display: none; }
-      .sidebar[data-open] { display: flex; }
-      .hide-sm { display: none; }
-    }
-    @media (max-width: 1080px) {
-      .drawer { width: 46%; min-width: 380px; }
-    }
-    @media (max-width: 860px) {
-      .drawer { position: absolute; inset: 48px 0 0 0; width: 100%; min-width: 0;
-        border-left: 0; z-index: 20; }
-      .col { padding: 0 16px; }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after {
-        animation-duration: .001ms !important; animation-iteration-count: 1 !important;
-        transition-duration: .001ms !important; scroll-behavior: auto !important;
-      }
-    }
-  
 
   html, body { height:100%; overflow:hidden; }
   body { margin:0; display:flex; flex-direction:column; }
@@ -236,7 +20,8 @@
 </head>
 <body>
 <div class="bar" id="bare">
-  <a href="../index.html">&larr; All screens</a>
+  <a href="/gallery/">&larr; Gallery</a>
+  <a href="/" style="opacity:.6">Site</a>
   <span style="opacity:.5">/</span>
   <span>Change review, drawer open</span>
   <span style="flex-grow:1"></span>
@@ -249,7 +34,7 @@
     <div class="main">
 
       <header class="topbar">
-  <button class="btn btnq ico btns" aria-label="Toggle sidebar">
+  <button class="btn btnq ico btns" type="button" data-sidebar-toggle aria-expanded="true" aria-label="Hide sidebar">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M9.5 4v16"/></svg>
   </button>
 
@@ -267,13 +52,13 @@
     Local
   </span>
 
-  <button class="btn btns btnq" type="button" style="gap:7px">
+  <button class="btn btns btnq" type="button" style="gap:7px" data-drawer-open>
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 6.5A2 2 0 0 1 5.5 4.5h3.4l1.6 2h8A2 2 0 0 1 20.5 8.5v9a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/></svg>
   Artifacts
   <span class="pill" style="height:18px;padding:0 6px;font-size:11px">3</span>
 </button>
 
-  <button class="btn btnq ico btns" aria-label="More options">
+  <button class="btn btnq ico btns" type="button" aria-label="More options" data-inert="The overflow menu is not built in this prototype.">
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r=".8"/><circle cx="12" cy="12" r=".8"/><circle cx="19" cy="12" r=".8"/></svg>
   </button>
 </header>
@@ -320,8 +105,8 @@
             </div>
             <div class="sep"></div>
             <div style="padding:12px 14px;display:flex;align-items:center;gap:8px">
-              <button class="btn btnp" type="button">Keep changes</button>
-              <button class="btn" type="button">Revert all</button>
+              <button class="btn btnp" type="button" data-review-action="keep-all">Keep changes</button>
+              <button class="btn" type="button" data-review-action="revert-all">Revert all</button>
               <span class="grow"></span>
               <span class="lab">Checkpoint 4</span>
             </div>
@@ -337,31 +122,89 @@
 
       <div style="flex-shrink:0;padding-bottom:14px">
         <div class="col" style="max-width:720px">
-          <form class="composer" style="" aria-label="Message ForgeLocal">
-  <div class="ph">Ask for a change, or start the next task</div>
+          <form class="composer" style="" data-composer  aria-label="Message ForgeLocal">
+  <label class="vh" for="composer-input">Describe a change or ask a question</label>
+  <textarea id="composer-input" class="ta" rows="1" placeholder="Ask for a change, or start the next task"></textarea>
+
   <div class="cbar">
-    <button class="btn btnq ico btns" type="button" aria-label="Attach a file or add context">
+    <button class="btn btnq ico btns" type="button" aria-label="Attach a file or add context"
+      data-inert="Attachments are not implemented in this prototype.">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M12 5.5v13M5.5 12h13"/></svg>
     </button>
 
-    <button class="btn btnq btns" type="button" aria-haspopup="menu">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3.5"/><rect x="8" y="8" width="8" height="8" rx="1.8"/></svg>
-      Qwen2.5 Coder 32B
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9.5 6 6 6-6"/></svg>
-    </button>
+    <div style="position:relative">
+      <button class="btn btnq btns" type="button" data-popover="model-pop" aria-expanded="false" aria-haspopup="menu">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3.5"/><rect x="8" y="8" width="8" height="8" rx="1.8"/></svg>
+        <span data-model-label>Qwen2.5 Coder 14B</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9.5 6 6 6-6"/></svg>
+      </button>
+      <!--MODEL_PICKER-->
+    </div>
 
-    <button class="btn btnq btns" type="button" aria-haspopup="menu">
-      Build
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9.5 6 6 6-6"/></svg>
-    </button>
+    <div style="position:relative">
+      <button class="btn btnq btns" type="button" data-popover="mode-pop" aria-expanded="false" aria-haspopup="menu">
+        <span data-mode-label>Build</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9.5 6 6 6-6"/></svg>
+      </button>
+      <div class="menu popover" id="mode-pop" role="menu" hidden
+        style="bottom:calc(100% + 8px);left:0;width:300px;padding:6px">
+        <button role="menuitemradio" aria-checked="false" class="srow" data-mode="Ask" style="height:auto;padding:9px;align-items:flex-start">
+          <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+            <span style="font-size:13.5px;font-weight:600">Ask</span>
+            <span class="faint" style="font-size:12px;line-height:17px">Answers questions and reads files. Changes nothing.</span>
+          </span>
+        </button>
+        <button role="menuitemradio" aria-checked="false" class="srow" data-mode="Plan" style="height:auto;padding:9px;align-items:flex-start">
+          <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+            <span style="font-size:13.5px;font-weight:600">Plan</span>
+            <span class="faint" style="font-size:12px;line-height:17px">Writes a plan for you to approve before anything runs.</span>
+          </span>
+        </button>
+        <button role="menuitemradio" aria-checked="true" class="srow on" data-mode="Build" style="height:auto;padding:9px;align-items:flex-start">
+          <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+            <span style="font-size:13.5px;font-weight:600">Build</span>
+            <span class="faint" style="font-size:12px;line-height:17px">Edits files and runs the project's own commands, asking per your permission preset.</span>
+          </span>
+        </button>
+      </div>
+    </div>
 
-    <button class="btn btnq ico btns" type="button" aria-label="More options" aria-haspopup="menu">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
-    </button>
+    <div style="position:relative">
+      <button class="btn btnq ico btns" type="button" data-popover="opts-pop" aria-expanded="false"
+        aria-haspopup="menu" aria-label="More options">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
+      </button>
+      <div class="menu popover" id="opts-pop" role="menu" hidden
+        style="bottom:calc(100% + 8px);left:0;width:300px;padding:10px 12px">
+        <div class="stack" style="gap:12px">
+          <div class="stack" style="gap:5px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span class="lab" style="flex:1">Context used</span>
+              <span class="m num">34%</span>
+            </div>
+            <div class="track"><div class="fillbar" style="width:34%"></div></div>
+            <span class="faint" style="font-size:12px">5.6k of 16k tokens. You are warned before it becomes a problem.</span>
+          </div>
+          <div class="sep"></div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="flex:1;font-size:13px">Permission preset</span>
+            <span class="pill">Balanced</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="flex:1;font-size:13px">Reasoning effort</span>
+            <span class="pill">High</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="flex:1;font-size:13px">Runs on</span>
+            <span class="pill ok">This device</span>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <span class="grow"></span>
 
-    <button class="btn btnp ico" type="submit" style="border-radius:16px" aria-label="Send">
+    <button class="btn btnp ico" type="submit" data-send style="border-radius:16px" aria-label="Send">
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5.5M5.5 12 12 5.5 18.5 12"/></svg>
 </button>
   </div>
@@ -371,44 +214,49 @@
 
     </div>
 
-    <aside class="drawer" aria-label="Artifacts">
+    <aside class="drawer" aria-label="Artifacts" style="position:relative">
+      <div class="drawer-handle" role="separator" aria-orientation="vertical" tabindex="0"
+        aria-label="Resize the artifacts panel. Left and right arrows adjust the width."></div>
 
       <div style="height:48px;flex-shrink:0;display:flex;align-items:center;gap:2px;padding:0 6px 0 8px;border-bottom:1px solid var(--line-soft)">
         <div role="tablist" style="display:flex;gap:2px;flex:1;min-width:0;overflow:hidden">
-          <button role="tab" class="btn btnq btns" type="button">Preview</button>
+          <button role="tab" class="btn btnq btns" type="button" aria-selected="false" tabindex="-1">Preview</button>
           <button role="tab" aria-selected="true" class="btn btns" type="button" style="background:var(--raised);border-color:var(--line-strong)">Diff</button>
-          <button role="tab" class="btn btnq btns" type="button">Files</button>
-          <button role="tab" class="btn btnq btns" type="button">Problems</button>
-          <button role="tab" class="btn btnq btns" type="button">Terminal</button>
+          <button role="tab" class="btn btnq btns" type="button" aria-selected="false" tabindex="-1">Files</button>
+          <button role="tab" class="btn btnq btns" type="button" aria-selected="false" tabindex="-1">Problems</button>
+          <button role="tab" class="btn btnq btns" type="button" aria-selected="false" tabindex="-1">Terminal</button>
         </div>
-        <button class="btn btnq ico btns" type="button" aria-label="Maximise">
+        <button class="btn btnq ico btns" type="button" data-drawer-max aria-pressed="false" aria-label="Maximize the artifacts panel">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 3.5h6v6M9.5 20.5h-6v-6M20.5 3.5l-7.5 7.5M3.5 20.5 11 13"/></svg>
         </button>
-        <button class="btn btnq ico btns" type="button" aria-label="Close artifacts">
+        <button class="btn btnq ico btns" type="button" data-drawer-close aria-label="Close artifacts">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
         </button>
       </div>
 
       <div style="flex-shrink:0;height:40px;display:flex;align-items:center;gap:8px;padding:0 12px;border-bottom:1px solid var(--line-soft)">
         <span style="font-size:13px;font-weight:600">2 files</span>
+        <span class="lab num" data-review-count>0 of 2 reviewed</span>
         <span class="m" style="color:var(--ok)">+46</span>
         <span class="m" style="color:var(--bad)">&minus;12</span>
         <span class="grow"></span>
         <div style="display:flex;gap:2px" role="group" aria-label="Diff mode">
-          <button class="btn btns" type="button" style="background:var(--raised);border-color:var(--line-strong)">Unified</button>
-          <button class="btn btnq btns" type="button">Split</button>
+          <button class="btn btns" type="button" data-diff-mode="unified" aria-pressed="true">Unified</button>
+          <button class="btn btnq btns" type="button" data-diff-mode="split" aria-pressed="false">Split</button>
         </div>
       </div>
 
       <div style="flex-shrink:0;padding:8px 6px;border-bottom:1px solid var(--line-soft);max-height:190px;overflow-y:auto">
         <div class="sgroup">Modified</div>
-        <button class="srow on" style="height:32px">
+        <button class="srow on" style="height:32px" data-review-file data-reviewed="false" aria-current="true">
+          <svg class="review-mark" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M20 6 9 17l-5-5"/></svg>
           <span class="m t">src/App.jsx</span>
           <span class="m" style="color:var(--ok);font-size:11.5px">+8</span>
           <span class="m" style="color:var(--bad);font-size:11.5px">&minus;12</span>
         </button>
         <div class="sgroup" style="margin-top:6px">Added</div>
-        <button class="srow" style="height:32px">
+        <button class="srow" style="height:32px" data-review-file data-reviewed="false">
+          <svg class="review-mark" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M20 6 9 17l-5-5"/></svg>
           <span class="m t">src/useTasks.js</span>
           <span class="m" style="color:var(--ok);font-size:11.5px">+38</span>
         </button>
@@ -422,9 +270,10 @@
       <div style="flex:1;min-height:0;display:flex;flex-direction:column;background:var(--bg);overflow:hidden">
         <div style="flex-shrink:0;padding:7px 12px;border-bottom:1px solid var(--line-soft);background:var(--panel);display:flex;align-items:center;gap:10px">
           <span class="lab" style="flex:1">@@ -1,18 +1,14 @@</span>
-          <button class="btn btnq btns" type="button" style="height:24px">Revert hunk</button>
+          <button class="btn btnq btns" type="button" style="height:24px" data-review-action="revert-hunk">Revert hunk</button>
         </div>
-        <div class="m" style="flex:1;min-height:0;overflow:auto;font-size:12px;line-height:20px;padding:6px 0">
+        <div data-diff-view data-mode="unified" style="flex:1;min-height:0;overflow:auto">
+        <div class="m diff-unified" style="font-size:12px;line-height:20px;padding:6px 0">
           <div style="padding:0 12px;color:var(--mut)">import { useState } from 'react'</div>
           <div style="padding:0 12px;background:var(--bad-soft);border-left:2px solid var(--bad-line);color:var(--bad)">- const [tasks, setTasks] = useState([])</div>
           <div style="padding:0 12px;background:var(--bad-soft);border-left:2px solid var(--bad-line);color:var(--bad)">- function addTask(text) {</div>
@@ -438,11 +287,30 @@
           <div style="padding:0 12px;color:var(--mut)">  return (</div>
           <div style="padding:0 12px;color:var(--mut)">    &lt;main className="wrap"&gt;</div>
         </div>
+        <div class="m diff-split" style="font-size:12px;line-height:20px;padding:6px 0;gap:1px;background:var(--line-soft)">
+          <div style="background:var(--bg);padding:0 0 4px">
+            <div class="lab" style="padding:2px 12px 6px">Before</div>
+            <div style="padding:0 12px;color:var(--mut)">import { useState } from 'react'</div>
+            <div style="padding:0 12px;background:var(--bad-soft);border-left:2px solid var(--bad-line);color:var(--bad)">const [tasks, setTasks] = useState([])</div>
+            <div style="padding:0 12px;background:var(--bad-soft);border-left:2px solid var(--bad-line);color:var(--bad)">function addTask(text) {</div>
+            <div style="padding:0 12px;background:var(--bad-soft);border-left:2px solid var(--bad-line);color:var(--bad)">  setTasks([...tasks, { id: nanoid(), text }])</div>
+            <div style="padding:0 12px;background:var(--bad-soft);border-left:2px solid var(--bad-line);color:var(--bad)">}</div>
+          </div>
+          <div style="background:var(--bg);padding:0 0 4px">
+            <div class="lab" style="padding:2px 12px 6px">After</div>
+            <div style="padding:0 12px;color:var(--mut)">import { useState } from 'react'</div>
+            <div style="padding:0 12px;background:var(--ok-soft);border-left:2px solid var(--ok-line);color:var(--ok)">import { useTasks } from './useTasks'</div>
+            <div style="padding:0 12px;background:var(--ok-soft);border-left:2px solid var(--ok-line);color:var(--ok)">&nbsp;</div>
+            <div style="padding:0 12px;background:var(--ok-soft);border-left:2px solid var(--ok-line);color:var(--ok)">export default function App() {</div>
+            <div style="padding:0 12px;background:var(--ok-soft);border-left:2px solid var(--ok-line);color:var(--ok)">  const { tasks, add, toggle } = useTasks()</div>
+          </div>
+        </div>
+      </div>
       </div>
 
       <div style="flex-shrink:0;border-top:1px solid var(--line-soft);padding:10px 12px;display:flex;align-items:center;gap:8px">
-        <button class="btn btns" type="button">Keep file</button>
-        <button class="btn btnq btns" type="button" style="border-color:var(--line)">Revert file</button>
+        <button class="btn btns" type="button" data-review-action="keep-file">Keep file</button>
+        <button class="btn btnq btns" type="button" style="border-color:var(--line)" data-review-action="revert-file">Revert file</button>
         <span class="grow"></span>
         <span class="lab">Hunk 1 of 3</span>
       </div>

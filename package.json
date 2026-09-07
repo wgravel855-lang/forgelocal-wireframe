@@ -1,0 +1,9 @@
+{
+  "name": "forgelocal-wireframe",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node design/build.mjs && node design/build-site.mjs",
+    "serve": "node design/serve.mjs"
+  }
+}

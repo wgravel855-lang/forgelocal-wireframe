@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Screen gallery (internal) - ForgeLocal</title>
+<link rel="stylesheet" href="/assets/forgelocal.css">
+<style>
+
+  body { margin:0; background:#F6F4EF; color:#161719; }
+  .wrap { max-width:1320px; margin:0 auto; padding:56px 32px 96px; }
+  header { display:flex; flex-direction:column; gap:12px; margin-bottom:44px; }
+  h1 { font-size:30px; font-weight:600; letter-spacing:-.015em; margin:0; }
+  h2 { font-size:16px; font-weight:600; margin:0 0 10px; }
+  section { margin-bottom:52px; }
+  .pagenote { margin:0 0 20px; max-width:760px; font-size:13px; line-height:1.6; color:#6E6A62;
+    border-left:2px solid #DAD5CB; padding-left:14px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill, 400px); justify-content:start; gap:22px; }
+  .card { display:block; border:1px solid #DAD5CB; border-radius:8px; overflow:hidden;
+    background:#FFF; text-decoration:none; color:inherit; }
+  .card:hover { border-color:#5B5CF0; text-decoration:none; }
+  .shot { overflow:hidden; background:#E4E0D8; border-bottom:1px solid #DAD5CB; }
+  .shot iframe { border:0; transform-origin:top left; pointer-events:none; display:block; }
+  .cap { display:flex; align-items:center; gap:10px; padding:11px 14px; font-size:13px; }
+  .cap .dim { margin-left:auto; font-size:11px; color:#8B867C;
+    font-family:"Geist Mono","Cascadia Mono",ui-monospace,Consolas,monospace; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="lab">Wireframe</span>
+    <h1>ForgeLocal</h1>
+    <p style="margin:0;max-width:660px;font-size:15px;line-height:1.6;color:#6E6A62">A local coding agent: it detects what the machine can run, installs a suitable open model, gives that model bounded coding tools, and keeps the whole thing reviewable. Greybox screens, not a build.</p>
+  </header>
+  <section>
+    <h2>Workspace</h2>
+    <p class="pagenote">Conversation-first. Sidebar 248px collapsing to nothing, top bar 48px, reading column 792px, composer radius 16px. No permanent file tree, terminal, diff or preview, and no bottom status bar.<br>Finished low-risk work collapses into one Working group with quiet rows; only the current action stays open. Permission requests, errors and anything needing attention stay expanded and stop execution behind them.<br>Model lives in the composer, context and permission mode in its options menu, project and branch in the project menu.<br>Verified with no horizontal overflow and WCAG AA contrast at 1920, 1440, 1366, 1024 and 768.</p>
+    <div class="grid">
+    <a class="card" href="/screens/WsEmpty.html">
+      <div class="shot" style="height:250px">
+        <iframe src="/screens/WsEmpty.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
+          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
+      </div>
+      <div class="cap"><span>Workspace, empty</span><span class="dim">1440&times;900</span></div>
+    </a>
+    <a class="card" href="/screens/WsRunning.html">
+      <div class="shot" style="height:250px">
+        <iframe src="/screens/WsRunning.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
+          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
+      </div>
+      <div class="cap"><span>Workspace, agent running</span><span class="dim">1440&times;900</span></div>
+    </a>
+    <a class="card" href="/screens/WsPermission.html">
+      <div class="shot" style="height:250px">
+        <iframe src="/screens/WsPermission.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
+          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
+      </div>
+      <div class="cap"><span>Permission request</span><span class="dim">1440&times;900</span></div>
+    </a>
+    <a class="card" href="/screens/WsReview.html">
+      <div class="shot" style="height:250px">
+        <iframe src="/screens/WsReview.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
+          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
+      </div>
+      <div class="cap"><span>Change review, drawer open</span><span class="dim">1440&times;900</span></div>
+    </a>
+    <a class="card" href="/screens/WsFailed.html">
+      <div class="shot" style="height:250px">
+        <iframe src="/screens/WsFailed.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
+          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
+      </div>
+      <div class="cap"><span>Stopped, no progress</span><span class="dim">1440&times;900</span></div>
+    </a>
+    <a class="card" href="/screens/ModelPicker.html">
+      <div class="shot" style="height:300px">
+        <iframe src="/screens/ModelPicker.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
+          style="width:760px;height:700px;transform:scale(0.5263)"></iframe>
+      </div>
+      <div class="cap"><span>Model picker</span><span class="dim">760&times;700</span></div>
+    </a>
+    <a class="card" href="/screens/ModelsExplore.html">
+      <div class="shot" style="height:250px">
+        <iframe src="/screens/ModelsExplore.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
+          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
+      </div>
+      <div class="cap"><span>Models, explore</span><span class="dim">1440&times;900</span></div>
+    </a>
+    <a class="card" href="/screens/ModelsMine.html">
+      <div class="shot" style="height:250px">
+        <iframe src="/screens/ModelsMine.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
+          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
+      </div>
+      <div class="cap"><span>Models, my models</span><span class="dim">1440&times;900</span></div>
+    </a>
+    </div>
+  </section>
+  <section>
+    <h2>Onboarding</h2>
+    <p class="pagenote">Five steps in the same dark shell as the workspace, down from eleven light ones.<br>Step 2 replaces the three equal recommendation cards with one recommended profile, a plain-language reason, and alternatives behind Compare other options. Model family, quantization and context stay behind Advanced.<br>Step 3 folds runtime install, model download and the capability self-test into one screen; the seven technical checks sit behind View details.<br>Step 5 is the real workspace, not a congratulations page.</p>
+    <div class="grid">
+    <a class="card" href="/screens/Ob1Welcome.html">
+      <div class="shot" style="height:261px">
+        <iframe src="/screens/Ob1Welcome.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
+          style="width:1380px;height:900px;transform:scale(0.2899)"></iframe>
+      </div>
+      <div class="cap"><span>1. Welcome and scan</span><span class="dim">1380&times;900</span></div>
+    </a>
+    <a class="card" href="/screens/Ob2Recommendation.html">
+      <div class="shot" style="height:261px">
+        <iframe src="/screens/Ob2Recommendation.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
+          style="width:1380px;height:900px;transform:scale(0.2899)"></iframe>
+      </div>
+      <div class="cap"><span>2. Hardware and recommendation</span><span class="dim">1380&times;900</span></div>
+    </a>
+    <a class="card" href="/screens/Ob3Install.html">
+      <div class="shot" style="height:261px">
+        <iframe src="/screens/Ob3Install.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
+          style="width:1380px;height:900px;transform:scale(0.2899)"></iframe>
+      </div>
+      <div class="cap"><span>3. Install runtime and model</span><span class="dim">1380&times;900</span></div>
+    </a>
+    <a class="card" href="/screens/Ob4Project.html">
+      <div class="shot" style="height:261px">
+        <iframe src="/screens/Ob4Project.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
+          style="width:1380px;height:900px;transform:scale(0.2899)"></iframe>
+      </div>
+      <div class="cap"><span>4. Project and permissions</span><span class="dim">1380&times;900</span></div>
+    </a>
+    <a class="card" href="/screens/Ob5FirstChat.html">
+      <div class="shot" style="height:261px">
+        <iframe src="/screens/Ob5FirstChat.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
+          style="width:1380px;height:900px;transform:scale(0.2899)"></iframe>
+      </div>
+      <div class="cap"><span>5. First chat, the real workspace</span><span class="dim">1380&times;900</span></div>
+    </a>
+    </div>
+  </section>
+  <section>
+    <h2>Marketing site</h2>
+    <p class="pagenote">Light surface. One primary Download action and one secondary See how it works; no fake prompt box in the hero.<br>The hero shows the actual dark workspace built from the same components and tokens as the app, not a placeholder panel. The three editorial sections alternate text with real interface, again built from live components rather than images.<br>Still undrawn: Product, Model detail, Download, Pricing as a full route, Sign in, Account, Docs, Changelog.</p>
+    <div class="grid">
+    <a class="card" href="/screens/Homepage.html">
+      <div class="shot" style="height:300px">
+        <iframe src="/screens/Homepage.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
+          style="width:1280px;height:3400px;transform:scale(0.3125)"></iframe>
+      </div>
+      <div class="cap"><span>Marketing home</span><span class="dim">1280&times;3400</span></div>
+    </a>
+    <a class="card" href="/screens/ModelsPage.html">
+      <div class="shot" style="height:300px">
+        <iframe src="/screens/ModelsPage.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
+          style="width:1280px;height:1550px;transform:scale(0.3125)"></iframe>
+      </div>
+      <div class="cap"><span>Model catalog</span><span class="dim">1280&times;1550</span></div>
+    </a>
+    <a class="card" href="/screens/SecurityPage.html">
+      <div class="shot" style="height:300px">
+        <iframe src="/screens/SecurityPage.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
+          style="width:1280px;height:1950px;transform:scale(0.3125)"></iframe>
+      </div>
+      <div class="cap"><span>Security</span><span class="dim">1280&times;1950</span></div>
+    </a>
+    </div>
+  </section>
+  <section>
+    <h2>Superseded</h2>
+    <p class="pagenote">Do not build from this page.<br>The first six are the original three-panel IDE layout, replaced when the screen map locked the workspace as conversation-first. The ten light onboarding screens are replaced by the five-step dark flow.<br>Kept only because some content is worth porting: the recovery-state anatomy, the profile evidence table, the settings privacy pane and the cloud-boost consent screen.</p>
+    <div class="grid">
+    <a class="card" href="/screens/Main.html">
+      <div class="shot" style="height:250px">
+        <iframe src="/screens/Main.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
+          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
+      </div>
+      <div class="cap"><span>OLD Main</span><span class="dim">1440&times;900</span></div>
+    </a>
+    <a class="card" href="/screens/DiffReview.html">
+      <div class="shot" style="height:250px">
+        <iframe src="/screens/DiffReview.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
+          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
+      </div>
+      <div class="cap"><span>OLD DiffReview</span><span class="dim">1440&times;900</span></div>
+    </a>
+    <a class="card" href="/screens/PlanReview.html">
+      <div class="shot" style="height:250px">
+        <iframe src="/screens/PlanReview.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
+          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
+      </div>
+      <div class="cap"><span>OLD PlanReview</span><span class="dim">1440&times;900</span></div>
+    </a>
+    <a class="card" href="/screens/Home.html">
+      <div class="shot" style="height:250px">
+        <iframe src="/screens/Home.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
+          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
+      </div>
+      <div class="cap"><span>OLD Home</span><span class="dim">1440&times;900</span></div>
+    </a>
+    <a class="card" href="/screens/ModelManager.html">
+      <div class="shot" style="height:250px">
+        <iframe src="/screens/ModelManager.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
+          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
+      </div>
+      <div class="cap"><span>OLD ModelManager</span><span class="dim">1440&times;900</span></div>
+    </a>
+    <a class="card" href="/screens/ProfileDetail.html">
+      <div class="shot" style="height:250px">
+        <iframe src="/screens/ProfileDetail.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
+          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
+      </div>
+      <div class="cap"><span>OLD ProfileDetail</span><span class="dim">1440&times;900</span></div>
+    </a>
+    <a class="card" href="/screens/Settings.html">
+      <div class="shot" style="height:250px">
+        <iframe src="/screens/Settings.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
+          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
+      </div>
+      <div class="cap"><span>OLD Settings</span><span class="dim">1440&times;900</span></div>
+    </a>
+    <a class="card" href="/screens/Recovery.html">
+      <div class="shot" style="height:250px">
+        <iframe src="/screens/Recovery.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
+          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
+      </div>
+      <div class="cap"><span>OLD Recovery</span><span class="dim">1440&times;900</span></div>
+    </a>
+    <a class="card" href="/screens/CloudBoost.html">
+      <div class="shot" style="height:250px">
+        <iframe src="/screens/CloudBoost.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
+          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
+      </div>
+      <div class="cap"><span>OLD CloudBoost</span><span class="dim">1440&times;900</span></div>
+    </a>
+    <a class="card" href="/screens/ApprovalCard.html">
+      <div class="shot" style="height:250px">
+        <iframe src="/screens/ApprovalCard.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
+          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
+      </div>
+      <div class="cap"><span>OLD ApprovalCard</span><span class="dim">1440&times;900</span></div>
+    </a>
+    <a class="card" href="/screens/NarrowWorkspace.html">
+      <div class="shot" style="height:250px">
+        <iframe src="/screens/NarrowWorkspace.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
+          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
+      </div>
+      <div class="cap"><span>OLD NarrowWorkspace</span><span class="dim">1440&times;900</span></div>
+    </a>
+    <a class="card" href="/screens/Welcome.html">
+      <div class="shot" style="height:250px">
+        <iframe src="/screens/Welcome.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
+          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
+      </div>
+      <div class="cap"><span>OLD Welcome</span><span class="dim">1440&times;900</span></div>
+    </a>
+    <a class="card" href="/screens/Intent.html">
+      <div class="shot" style="height:250px">
+        <iframe src="/screens/Intent.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
+          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
+      </div>
+      <div class="cap"><span>OLD Intent</span><span class="dim">1440&times;900</span></div>
+    </a>
+    <a class="card" href="/screens/Permissions.html">
+      <div class="shot" style="height:250px">
+        <iframe src="/screens/Permissions.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
+          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
+      </div>
+      <div class="cap"><span>OLD Permissions</span><span class="dim">1440&times;900</span></div>
+    </a>
+    <a class="card" href="/screens/HardwareScan.html">
+      <div class="shot" style="height:250px">
+        <iframe src="/screens/HardwareScan.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
+          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
+      </div>
+      <div class="cap"><span>OLD HardwareScan</span><span class="dim">1440&times;900</span></div>
+    </a>
+    <a class="card" href="/screens/Recommendation.html">
+      <div class="shot" style="height:250px">
+        <iframe src="/screens/Recommendation.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
+          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
+      </div>
+      <div class="cap"><span>OLD Recommendation</span><span class="dim">1440&times;900</span></div>
+    </a>
+    <a class="card" href="/screens/Download.html">
+      <div class="shot" style="height:250px">
+        <iframe src="/screens/Download.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
+          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
+      </div>
+      <div class="cap"><span>OLD Download</span><span class="dim">1440&times;900</span></div>
+    </a>
+    <a class="card" href="/screens/SelfTest.html">
+      <div class="shot" style="height:250px">
+        <iframe src="/screens/SelfTest.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
+          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
+      </div>
+      <div class="cap"><span>OLD SelfTest</span><span class="dim">1440&times;900</span></div>
+    </a>
+    <a class="card" href="/screens/NewProject.html">
+      <div class="shot" style="height:250px">
+        <iframe src="/screens/NewProject.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
+          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
+      </div>
+      <div class="cap"><span>OLD NewProject</span><span class="dim">1440&times;900</span></div>
+    </a>
+    <a class="card" href="/screens/CloneRepo.html">
+      <div class="shot" style="height:250px">
+        <iframe src="/screens/CloneRepo.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
+          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
+      </div>
+      <div class="cap"><span>OLD CloneRepo</span><span class="dim">1440&times;900</span></div>
+    </a>
+    <a class="card" href="/screens/SafetyMode.html">
+      <div class="shot" style="height:250px">
+        <iframe src="/screens/SafetyMode.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
+          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
+      </div>
+      <div class="cap"><span>OLD SafetyMode</span><span class="dim">1440&times;900</span></div>
+    </a>
+    </div>
+  </section>
+</div>
+</body>
+</html>

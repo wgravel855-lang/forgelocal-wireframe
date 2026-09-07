@@ -3,535 +3,362 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ForgeLocal wireframe</title>
-<style>
-
-    /* ==================================================================
-       ForgeLocal design tokens
-
-       :root  = light marketing surface
-       .app   = near-black desktop shell
-       Components read only the vars, so one set serves both.
-       ================================================================== */
-    :root {
-      --bg:#F7F5F0; --panel:#F1EEE7; --raised:#FFFFFF; --sunk:#EAE7DF;
-      --line:#DEDAD1; --line-soft:#E8E4DC; --line-strong:#C9C4B9;
-      --fg:#17181A; --mut:#5F6165; --faint:#64666B;
-      --acc:#5457CE; --acc-hi:#4B4EC2; --acc-text:#4F52C9; --acc-soft:#EDEDFA;
-      --ok:#2F6B3D; --ok-line:#5C9268; --ok-soft:#EDF4EE;
-      --warn:#7A5310; --warn-line:#BF8B2C; --warn-soft:#FBF4E6;
-      --bad:#9B3A33; --bad-line:#C2564D; --bad-soft:#FBEFEE;
-      --focus:#5457CE;
-      --shadow-menu:0 10px 30px rgba(23,24,26,.14), 0 1px 3px rgba(23,24,26,.10);
-    }
-    .app {
-      --bg:#0E0F10; --panel:#121315; --raised:#16171A; --sunk:#1B1D20;
-      --line:#26282C; --line-soft:#1E2023; --line-strong:#33363B;
-      --fg:#EDEDEB; --mut:#A2A39F; --faint:#8A8C88;
-      --acc:#6366D9; --acc-hi:#7275E2; --acc-text:#9698F2; --acc-soft:#191A2B;
-      --ok:#7FB98A; --ok-line:#4F7A59; --ok-soft:#131C16;
-      --warn:#D6A85C; --warn-line:#8A6A2E; --warn-soft:#1F1A10;
-      --bad:#E08A82; --bad-line:#8E4A44; --bad-soft:#211413;
-      --focus:#9698F2;
-      --shadow-menu:0 16px 40px rgba(0,0,0,.55), 0 2px 6px rgba(0,0,0,.4);
-    }
-
-    /* ---- reset / base ------------------------------------------------ */
-    *, *::before, *::after { box-sizing: border-box; }
-    html, body { height: 100%; }
-    body { margin: 0; background: var(--bg); color: var(--fg);
-      font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
-      font-size: 14px; line-height: 20px; -webkit-font-smoothing: antialiased;
-      text-rendering: optimizeLegibility; }
-    button, input, textarea, select { font: inherit; color: inherit; }
-    button { background: none; border: 0; padding: 0; cursor: pointer; }
-    a { color: var(--acc-text); text-decoration: none; }
-    a:hover { text-decoration: underline; }
-    :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
-    ::selection { background: var(--acc); color: #fff; }
-
-    /* ---- type -------------------------------------------------------- */
-    .m { font-family: "Geist Mono", "Cascadia Mono", ui-monospace, Consolas, monospace;
-      font-size: 12.5px; }
-    .lab { font-family: "Geist Mono", "Cascadia Mono", ui-monospace, Consolas, monospace;
-      font-size: 11.5px; letter-spacing: .01em; color: var(--faint); }
-    .h1 { font-size: 28px; line-height: 34px; font-weight: 600; letter-spacing: -.015em; margin: 0; }
-    .h2 { font-size: 15px; line-height: 21px; font-weight: 600; margin: 0; }
-    .h3 { font-size: 14px; line-height: 20px; font-weight: 600; margin: 0; }
-    .mut { color: var(--mut); }
-    .faint { color: var(--faint); }
-    .prose { font-size: 15px; line-height: 24px; }
-    .prose p { margin: 0 0 14px; }
-    .prose p:last-child { margin-bottom: 0; }
-
-    /* ---- surfaces ---------------------------------------------------- */
-    .app, .site { background: var(--bg); color: var(--fg); }
-    .box { border: 1px solid var(--line); background: var(--raised); border-radius: 8px; }
-    .soft { background: var(--sunk); }
-    .menu { border: 1px solid var(--line); background: var(--raised); border-radius: 10px;
-      box-shadow: var(--shadow-menu); }
-
-    /* ---- app shell --------------------------------------------------- */
-    .shell { display: flex; height: 100%; min-height: 0; overflow: hidden; }
-    .sidebar { width: 248px; flex-shrink: 0; border-right: 1px solid var(--line);
-      background: var(--panel); display: flex; flex-direction: column; min-height: 0; }
-    .main { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--bg); }
-    .topbar { height: 48px; flex-shrink: 0; display: flex; align-items: center; gap: 10px;
-      padding: 0 12px 0 10px; border-bottom: 1px solid var(--line-soft); }
-    .scroll { flex: 1; min-height: 0; overflow: hidden; }
-    .col { width: 100%; max-width: 792px; margin: 0 auto; padding: 0 24px; }
-    .drawer { width: 480px; flex-shrink: 0; border-left: 1px solid var(--line);
-      background: var(--panel); display: flex; flex-direction: column; min-height: 0; }
-
-    /* sidebar rows */
-    .srow { display: flex; align-items: center; gap: 10px; height: 34px; padding: 0 9px;
-      border-radius: 7px; font-size: 13.5px; color: var(--mut); cursor: pointer;
-      transition: background 140ms ease, color 140ms ease; width: 100%; text-align: left; }
-    .srow:hover { background: var(--sunk); color: var(--fg); }
-    .srow[aria-current="true"], .srow.on { background: var(--raised); color: var(--fg);
-      box-shadow: inset 0 0 0 1px var(--line); }
-    .srow .t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .sgroup { font-family: "Geist Mono", "Cascadia Mono", ui-monospace, Consolas, monospace;
-      font-size: 11px; color: var(--faint); padding: 0 9px; height: 26px;
-      display: flex; align-items: center; letter-spacing: .02em; }
-
-    /* ---- controls ---------------------------------------------------- */
-    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px;
-      height: 32px; padding: 0 13px; border: 1px solid var(--line-strong); background: var(--raised);
-      border-radius: 7px; font-size: 13px; color: var(--fg); white-space: nowrap;
-      transition: background 140ms ease, border-color 140ms ease, color 140ms ease; }
-    .btn:hover { background: var(--sunk); }
-    .btnp { background: var(--acc); border-color: var(--acc); color: #fff; }
-    .btnp:hover { background: var(--acc-hi); border-color: var(--acc-hi); }
-    .btnq { background: transparent; border-color: transparent; color: var(--mut); }
-    .btnq:hover { background: var(--sunk); color: var(--fg); }
-    .btnd { border-color: var(--bad-line); color: var(--bad); }
-    .btns { height: 28px; padding: 0 10px; font-size: 12.5px; border-radius: 6px; }
-    .btnl { height: 38px; padding: 0 18px; font-size: 14px; border-radius: 8px; }
-    .ico { width: 32px; padding: 0; }
-    .ico.btns { width: 28px; }
-
-    .pill { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 9px;
-      border-radius: 11px; border: 1px solid var(--line); background: transparent;
-      font-size: 11.5px; color: var(--mut); white-space: nowrap; }
-    .pill.ok { border-color: var(--ok-line); color: var(--ok); }
-    .pill.warn { border-color: var(--warn-line); color: var(--warn); }
-    .pill.bad { border-color: var(--bad-line); color: var(--bad); }
-    .pill.acc { border-color: var(--acc); color: var(--acc-text); }
-
-    .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; background: var(--faint); }
-    .dot.ok { background: var(--ok-line); }
-    .dot.warn { background: var(--warn-line); }
-    .dot.bad { background: var(--bad-line); }
-    .dot.acc { background: var(--acc); }
-
-    .track { height: 5px; border-radius: 3px; background: var(--line); overflow: hidden; }
-    .fillbar { height: 100%; background: var(--acc); border-radius: 3px; }
-
-    .field { height: 34px; border: 1px solid var(--line); background: var(--sunk);
-      border-radius: 7px; display: flex; align-items: center; gap: 9px; padding: 0 11px;
-      font-size: 13px; color: var(--mut); }
-
-    /* ---- composer ---------------------------------------------------- */
-    .composer { border: 1px solid var(--line-strong); background: var(--raised);
-      border-radius: 16px; padding: 12px 12px 10px;
-      display: flex; flex-direction: column; gap: 12px;
-      transition: border-color 140ms ease; }
-    .composer:focus-within { border-color: var(--acc); }
-    .composer .ph { font-size: 15px; line-height: 22px; color: var(--mut); min-height: 22px; }
-    .cbar { display: flex; align-items: center; gap: 6px; }
-
-    /* ---- activity group ---------------------------------------------- */
-    .act { border: 1px solid var(--line); border-radius: 8px; background: var(--raised);
-      overflow: hidden; }
-    .act > .hd { display: flex; align-items: center; gap: 9px; height: 36px; padding: 0 12px; }
-    .arow { display: flex; align-items: center; gap: 10px; min-height: 30px; padding: 4px 12px;
-      font-size: 13px; color: var(--mut); }
-    .arow .t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .arow.now { color: var(--fg); }
-
-    /* ---- misc -------------------------------------------------------- */
-    .sep { height: 1px; background: var(--line-soft); }
-    .grow { flex-grow: 1; }
-    .ph { background: var(--line); border-radius: 2px; }
-    .xbox { border: 1px solid var(--line); border-radius: 6px; background-color: var(--sunk);
-      background-image:
-        linear-gradient(to top right, transparent calc(50% - .5px), var(--line) 50%, transparent calc(50% + .5px)),
-        linear-gradient(to bottom right, transparent calc(50% - .5px), var(--line) 50%, transparent calc(50% + .5px)); }
-    .note { border: 1px dashed var(--line-strong); background: transparent; border-radius: 8px; }
-    .chrome { height: 34px; flex-shrink: 0; display: flex; align-items: center; gap: 10px;
-      padding: 0 12px; border-bottom: 1px solid var(--line); background: var(--panel); }
-
-    /* ---- pulse (single, on the current activity only) ---------------- */
-    @keyframes fl-pulse { 0%,100% { opacity: 1 } 50% { opacity: .45 } }
-    .pulse { animation: fl-pulse 2s ease-in-out infinite; }
-
-    /* ---- onboarding shell -------------------------------------------- */
-    .ob { height:100%; display:flex; flex-direction:column; }
-    .ob-top { height:48px; flex-shrink:0; display:flex; align-items:center; gap:12px;
-      padding:0 16px; border-bottom:1px solid var(--line-soft); }
-    .ob-steps { display:flex; gap:5px; }
-    .ob-steps i { width:22px; height:3px; border-radius:2px; background:var(--line); display:block; }
-    .ob-steps[data-step="2"] i:nth-child(-n+1),
-    .ob-steps[data-step="3"] i:nth-child(-n+2),
-    .ob-steps[data-step="4"] i:nth-child(-n+3),
-    .ob-steps[data-step="5"] i:nth-child(-n+4) { background: var(--line-strong); }
-    .ob-steps[data-step="1"] i:nth-child(1),
-    .ob-steps[data-step="2"] i:nth-child(2),
-    .ob-steps[data-step="3"] i:nth-child(3),
-    .ob-steps[data-step="4"] i:nth-child(4),
-    .ob-steps[data-step="5"] i:nth-child(5) { background: var(--acc); }
-    .ob-body { flex:1; min-height:0; overflow-y:auto; display:flex; flex-direction:column;
-      justify-content:center; }
-    .ob-col { width:100%; max-width:648px; margin:0 auto; padding:32px 24px;
-      display:flex; flex-direction:column; gap:22px; }
-    .ob-foot { flex-shrink:0; border-top:1px solid var(--line-soft); }
-    .ob-foot .inner { width:100%; max-width:648px; margin:0 auto; padding:12px 24px;
-      display:flex; align-items:center; gap:10px; }
-    .kv { display:grid; grid-template-columns:132px 1fr; gap:9px 14px; margin:0; }
-    .kv dt { color:var(--faint); font-size:12.5px; }
-    .kv dd { margin:0; font-size:13.5px; }
-    @media (max-width:640px) {
-      .ob-col { padding:24px 16px } .ob-foot .inner { padding:12px 16px }
-      .kv { grid-template-columns:1fr; gap:2px 0 }
-      .kv dd { margin-bottom:8px }
-    }
-
-    /* ---- responsive --------------------------------------------------- */
-    /* Below 1180px the sidebar stops holding a column and becomes an overlay,
-       hidden until asked for. [data-open] shows that overlay state. */
-    @media (max-width: 1180px) {
-      .sidebar { position: absolute; z-index: 30; inset: 0 auto 0 0;
-        box-shadow: var(--shadow-menu); display: none; }
-      .sidebar[data-open] { display: flex; }
-      .hide-sm { display: none; }
-    }
-    @media (max-width: 1080px) {
-      .drawer { width: 46%; min-width: 380px; }
-    }
-    @media (max-width: 860px) {
-      .drawer { position: absolute; inset: 48px 0 0 0; width: 100%; min-width: 0;
-        border-left: 0; z-index: 20; }
-      .col { padding: 0 16px; }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after {
-        animation-duration: .001ms !important; animation-iteration-count: 1 !important;
-        transition-duration: .001ms !important; scroll-behavior: auto !important;
-      }
-    }
-  
-
-  body { margin:0; background:#F6F4EF; color:#161719; }
-  .wrap { max-width:1320px; margin:0 auto; padding:56px 32px 96px; }
-  header { display:flex; flex-direction:column; gap:12px; margin-bottom:44px; }
-  h1 { font-size:30px; font-weight:600; letter-spacing:-.015em; margin:0; }
-  h2 { font-size:16px; font-weight:600; margin:0 0 10px; }
-  section { margin-bottom:52px; }
-  .pagenote { margin:0 0 20px; max-width:760px; font-size:13px; line-height:1.6; color:#6E6A62;
-    border-left:2px solid #DAD5CB; padding-left:14px; }
-  .grid { display:grid; grid-template-columns:repeat(auto-fill, 400px); justify-content:start; gap:22px; }
-  .card { display:block; border:1px solid #DAD5CB; border-radius:8px; overflow:hidden;
-    background:#FFF; text-decoration:none; color:inherit; }
-  .card:hover { border-color:#5B5CF0; text-decoration:none; }
-  .shot { overflow:hidden; background:#E4E0D8; border-bottom:1px solid #DAD5CB; }
-  .shot iframe { border:0; transform-origin:top left; pointer-events:none; display:block; }
-  .cap { display:flex; align-items:center; gap:10px; padding:11px 14px; font-size:13px; }
-  .cap .dim { margin-left:auto; font-size:11px; color:#8B867C;
-    font-family:"Geist Mono","Cascadia Mono",ui-monospace,Consolas,monospace; }
-</style>
+<title>ForgeLocal — a coding agent that runs on your PC</title>
+<meta name="description" content="ForgeLocal reads your hardware, installs a coding model that will actually run on it, and gives that model reviewable tools for files, commands and tests.">
+<meta property="og:title" content="ForgeLocal — a coding agent that runs on your PC">
+<meta property="og:description" content="ForgeLocal reads your hardware, installs a coding model that will actually run on it, and gives that model reviewable tools for files, commands and tests.">
+<meta property="og:type" content="website">
+<link rel="icon" href="/assets/mark.svg" type="image/svg+xml">
+<link rel="alternate icon" href="/favicon.ico">
+<link rel="stylesheet" href="/assets/forgelocal.css">
 </head>
-<body>
-<div class="wrap">
-  <header>
-    <span class="lab">Wireframe</span>
-    <h1>ForgeLocal</h1>
-    <p style="margin:0;max-width:660px;font-size:15px;line-height:1.6;color:#6E6A62">A local coding agent: it detects what the machine can run, installs a suitable open model, gives that model bounded coding tools, and keeps the whole thing reviewable. Greybox screens, not a build.</p>
-  </header>
-  <section>
-    <h2>Workspace</h2>
-    <p class="pagenote">Conversation-first. Sidebar 248px collapsing to nothing, top bar 48px, reading column 792px, composer radius 16px. No permanent file tree, terminal, diff or preview, and no bottom status bar.<br>Finished low-risk work collapses into one Working group with quiet rows; only the current action stays open. Permission requests, errors and anything needing attention stay expanded and stop execution behind them.<br>Model lives in the composer, context and permission mode in its options menu, project and branch in the project menu.<br>Verified with no horizontal overflow and WCAG AA contrast at 1920, 1440, 1366, 1024 and 768.</p>
-    <div class="grid">
-    <a class="card" href="screens/WsEmpty.html">
-      <div class="shot" style="height:250px">
-        <iframe src="screens/WsEmpty.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
-      </div>
-      <div class="cap"><span>Workspace, empty</span><span class="dim">1440&times;900</span></div>
+<body class="site" style="">
+<a class="vh" href="#main">Skip to content</a>
+<header class="mhead">
+  <div class="mwrap mhead-in">
+    <a class="brand" href="/" aria-current="page">
+      <svg viewBox="0 0 24 24" fill="none" width="22" height="22" aria-hidden="true" focusable="false" style="flex-shrink:0">
+  <rect x="2.4" y="2.4" width="19.2" height="19.2" rx="5.6" stroke="currentColor" stroke-width="1.7"/>
+  <path d="M8.6 8.9 11.7 12l-3.1 3.1" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M13.6 15.1h3.3" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+</svg>
+      <span>ForgeLocal</span>
     </a>
-    <a class="card" href="screens/WsRunning.html">
-      <div class="shot" style="height:250px">
-        <iframe src="screens/WsRunning.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
-      </div>
-      <div class="cap"><span>Workspace, agent running</span><span class="dim">1440&times;900</span></div>
-    </a>
-    <a class="card" href="screens/WsPermission.html">
-      <div class="shot" style="height:250px">
-        <iframe src="screens/WsPermission.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
-      </div>
-      <div class="cap"><span>Permission request</span><span class="dim">1440&times;900</span></div>
-    </a>
-    <a class="card" href="screens/WsReview.html">
-      <div class="shot" style="height:250px">
-        <iframe src="screens/WsReview.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
-      </div>
-      <div class="cap"><span>Change review, drawer open</span><span class="dim">1440&times;900</span></div>
-    </a>
-    <a class="card" href="screens/WsFailed.html">
-      <div class="shot" style="height:250px">
-        <iframe src="screens/WsFailed.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
-      </div>
-      <div class="cap"><span>Stopped, no progress</span><span class="dim">1440&times;900</span></div>
-    </a>
-    <a class="card" href="screens/ModelPicker.html">
-      <div class="shot" style="height:300px">
-        <iframe src="screens/ModelPicker.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:760px;height:700px;transform:scale(0.5263)"></iframe>
-      </div>
-      <div class="cap"><span>Model picker</span><span class="dim">760&times;700</span></div>
-    </a>
-    <a class="card" href="screens/ModelsExplore.html">
-      <div class="shot" style="height:250px">
-        <iframe src="screens/ModelsExplore.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
-      </div>
-      <div class="cap"><span>Models, explore</span><span class="dim">1440&times;900</span></div>
-    </a>
-    <a class="card" href="screens/ModelsMine.html">
-      <div class="shot" style="height:250px">
-        <iframe src="screens/ModelsMine.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
-      </div>
-      <div class="cap"><span>Models, my models</span><span class="dim">1440&times;900</span></div>
-    </a>
+    <button class="btn btnq ico" type="button" data-nav-toggle aria-expanded="false" aria-controls="site-nav" aria-label="Menu">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+    <nav id="site-nav" data-nav aria-label="Main">
+      <a href="/product/">Product</a>
+      <a href="/models/">Models</a>
+      <a href="/security/">Security</a>
+      <a href="/pricing/">Pricing</a>
+      <a href="/docs/">Docs</a>
+      <span class="mhead-sp"></span>
+      <a href="/signin/">Sign in</a>
+      <a href="/download/" class="btn btns">Download</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+<style>
+  .shot { border:1px solid var(--line-strong); border-radius:16px; overflow:hidden;
+    background:#0E0F10; position:relative; }
+  .shot > .inner { transform-origin:top left; }
+  .ed { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.1fr); gap:64px; align-items:center; }
+  .ed.flip > :first-child { order:2; }
+  .crop { border:1px solid var(--line-strong); border-radius:12px; overflow:hidden;
+    background:#0E0F10; padding:20px; }
+  @media (max-width:900px) {
+    .ed { grid-template-columns:1fr; gap:28px; }
+    .ed.flip > :first-child { order:0; }
+  }
+</style>
+
+<section class="mwrap msec mhero" style="padding-top:88px;padding-bottom:44px">
+  <div class="stack" style="gap:20px">
+    <h1>Build on your PC. Skip the model setup.</h1>
+    <p class="mlede">ForgeLocal works out what your machine can actually run, installs a coding
+      model that fits it, and gives that model reviewable tools for files, commands and tests.</p>
+    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding-top:4px">
+      <a href="/download/" class="btn btnp btnl" data-platform-cta>Download for Windows</a>
+      <a href="/product/" style="font-size:14px">See how it works</a>
     </div>
-  </section>
-  <section>
-    <h2>Onboarding</h2>
-    <p class="pagenote">Five steps in the same dark shell as the workspace, down from eleven light ones.<br>Step 2 replaces the three equal recommendation cards with one recommended profile, a plain-language reason, and alternatives behind Compare other options. Model family, quantization and context stay behind Advanced.<br>Step 3 folds runtime install, model download and the capability self-test into one screen; the seven technical checks sit behind View details.<br>Step 5 is the real workspace, not a congratulations page.</p>
-    <div class="grid">
-    <a class="card" href="screens/Ob1Welcome.html">
-      <div class="shot" style="height:261px">
-        <iframe src="screens/Ob1Welcome.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1380px;height:900px;transform:scale(0.2899)"></iframe>
-      </div>
-      <div class="cap"><span>1. Welcome and scan</span><span class="dim">1380&times;900</span></div>
-    </a>
-    <a class="card" href="screens/Ob2Recommendation.html">
-      <div class="shot" style="height:261px">
-        <iframe src="screens/Ob2Recommendation.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1380px;height:900px;transform:scale(0.2899)"></iframe>
-      </div>
-      <div class="cap"><span>2. Hardware and recommendation</span><span class="dim">1380&times;900</span></div>
-    </a>
-    <a class="card" href="screens/Ob3Install.html">
-      <div class="shot" style="height:261px">
-        <iframe src="screens/Ob3Install.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1380px;height:900px;transform:scale(0.2899)"></iframe>
-      </div>
-      <div class="cap"><span>3. Install runtime and model</span><span class="dim">1380&times;900</span></div>
-    </a>
-    <a class="card" href="screens/Ob4Project.html">
-      <div class="shot" style="height:261px">
-        <iframe src="screens/Ob4Project.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1380px;height:900px;transform:scale(0.2899)"></iframe>
-      </div>
-      <div class="cap"><span>4. Project and permissions</span><span class="dim">1380&times;900</span></div>
-    </a>
-    <a class="card" href="screens/Ob5FirstChat.html">
-      <div class="shot" style="height:261px">
-        <iframe src="screens/Ob5FirstChat.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1380px;height:900px;transform:scale(0.2899)"></iframe>
-      </div>
-      <div class="cap"><span>5. First chat, the real workspace</span><span class="dim">1380&times;900</span></div>
-    </a>
+    <p class="faint" style="margin:0;font-size:12.5px" data-platform-note>
+      Windows 10 and 11, 64-bit. Free for local use, no account needed.
+      Hardware is read inside the installed app, after you agree to it.
+    </p>
+  </div>
+</section>
+
+<section class="mwrap msec" style="padding-bottom:112px">
+  <div class="shot" style="height:600px">
+    <div class="inner" style="transform:scale(.82);width:1280px;height:732px">
+      <div class="app" style="width:1280px;height:760px;display:flex;font-size:14px;line-height:20px;background:var(--bg)">
+
+  <div style="width:236px;flex-shrink:0;border-right:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column">
+    <div style="height:48px;display:flex;align-items:center;padding:0 12px;gap:6px">
+      <span style="width:16px;height:16px;border:1.5px solid var(--faint);border-radius:4px;display:block"></span>
+      <span class="grow"></span>
+      <span style="width:14px;height:14px;border:1.5px solid var(--faint);border-radius:3px;display:block"></span>
     </div>
-  </section>
-  <section>
-    <h2>Marketing site</h2>
-    <p class="pagenote">Light surface. One primary Download action and one secondary See how it works; no fake prompt box in the hero.<br>The hero shows the actual dark workspace built from the same components and tokens as the app, not a placeholder panel. The three editorial sections alternate text with real interface, again built from live components rather than images.<br>Still undrawn: Product, Model detail, Download, Pricing as a full route, Sign in, Account, Docs, Changelog.</p>
-    <div class="grid">
-    <a class="card" href="screens/Homepage.html">
-      <div class="shot" style="height:300px">
-        <iframe src="screens/Homepage.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1280px;height:3400px;transform:scale(0.3125)"></iframe>
+    <div style="padding:0 10px 10px">
+      <div class="srow" style="height:36px;border:1px solid var(--line-strong);background:var(--raised);color:var(--fg)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        <span class="t">New session</span>
       </div>
-      <div class="cap"><span>Marketing home</span><span class="dim">1280&times;3400</span></div>
-    </a>
-    <a class="card" href="screens/ModelsPage.html">
-      <div class="shot" style="height:300px">
-        <iframe src="screens/ModelsPage.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1280px;height:1550px;transform:scale(0.3125)"></iframe>
-      </div>
-      <div class="cap"><span>Model catalog</span><span class="dim">1280&times;1550</span></div>
-    </a>
-    <a class="card" href="screens/SecurityPage.html">
-      <div class="shot" style="height:300px">
-        <iframe src="screens/SecurityPage.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1280px;height:1950px;transform:scale(0.3125)"></iframe>
-      </div>
-      <div class="cap"><span>Security</span><span class="dim">1280&times;1950</span></div>
-    </a>
     </div>
-  </section>
-  <section>
-    <h2>Superseded</h2>
-    <p class="pagenote">Do not build from this page.<br>The first six are the original three-panel IDE layout, replaced when the screen map locked the workspace as conversation-first. The ten light onboarding screens are replaced by the five-step dark flow.<br>Kept only because some content is worth porting: the recovery-state anatomy, the profile evidence table, the settings privacy pane and the cloud-boost consent screen.</p>
-    <div class="grid">
-    <a class="card" href="screens/Main.html">
-      <div class="shot" style="height:250px">
-        <iframe src="screens/Main.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
+    <div style="padding:0 10px 10px">
+      <div class="field" style="height:32px">
+        <span style="flex:1;color:var(--fg)">task-tracker</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9.5 6 6 6-6"/></svg>
       </div>
-      <div class="cap"><span>OLD Main</span><span class="dim">1440&times;900</span></div>
-    </a>
-    <a class="card" href="screens/DiffReview.html">
-      <div class="shot" style="height:250px">
-        <iframe src="screens/DiffReview.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
-      </div>
-      <div class="cap"><span>OLD DiffReview</span><span class="dim">1440&times;900</span></div>
-    </a>
-    <a class="card" href="screens/PlanReview.html">
-      <div class="shot" style="height:250px">
-        <iframe src="screens/PlanReview.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
-      </div>
-      <div class="cap"><span>OLD PlanReview</span><span class="dim">1440&times;900</span></div>
-    </a>
-    <a class="card" href="screens/Home.html">
-      <div class="shot" style="height:250px">
-        <iframe src="screens/Home.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
-      </div>
-      <div class="cap"><span>OLD Home</span><span class="dim">1440&times;900</span></div>
-    </a>
-    <a class="card" href="screens/ModelManager.html">
-      <div class="shot" style="height:250px">
-        <iframe src="screens/ModelManager.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
-      </div>
-      <div class="cap"><span>OLD ModelManager</span><span class="dim">1440&times;900</span></div>
-    </a>
-    <a class="card" href="screens/ProfileDetail.html">
-      <div class="shot" style="height:250px">
-        <iframe src="screens/ProfileDetail.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
-      </div>
-      <div class="cap"><span>OLD ProfileDetail</span><span class="dim">1440&times;900</span></div>
-    </a>
-    <a class="card" href="screens/Settings.html">
-      <div class="shot" style="height:250px">
-        <iframe src="screens/Settings.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
-      </div>
-      <div class="cap"><span>OLD Settings</span><span class="dim">1440&times;900</span></div>
-    </a>
-    <a class="card" href="screens/Recovery.html">
-      <div class="shot" style="height:250px">
-        <iframe src="screens/Recovery.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
-      </div>
-      <div class="cap"><span>OLD Recovery</span><span class="dim">1440&times;900</span></div>
-    </a>
-    <a class="card" href="screens/CloudBoost.html">
-      <div class="shot" style="height:250px">
-        <iframe src="screens/CloudBoost.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
-      </div>
-      <div class="cap"><span>OLD CloudBoost</span><span class="dim">1440&times;900</span></div>
-    </a>
-    <a class="card" href="screens/ApprovalCard.html">
-      <div class="shot" style="height:250px">
-        <iframe src="screens/ApprovalCard.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
-      </div>
-      <div class="cap"><span>OLD ApprovalCard</span><span class="dim">1440&times;900</span></div>
-    </a>
-    <a class="card" href="screens/NarrowWorkspace.html">
-      <div class="shot" style="height:250px">
-        <iframe src="screens/NarrowWorkspace.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
-      </div>
-      <div class="cap"><span>OLD NarrowWorkspace</span><span class="dim">1440&times;900</span></div>
-    </a>
-    <a class="card" href="screens/Welcome.html">
-      <div class="shot" style="height:250px">
-        <iframe src="screens/Welcome.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
-      </div>
-      <div class="cap"><span>OLD Welcome</span><span class="dim">1440&times;900</span></div>
-    </a>
-    <a class="card" href="screens/Intent.html">
-      <div class="shot" style="height:250px">
-        <iframe src="screens/Intent.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
-      </div>
-      <div class="cap"><span>OLD Intent</span><span class="dim">1440&times;900</span></div>
-    </a>
-    <a class="card" href="screens/Permissions.html">
-      <div class="shot" style="height:250px">
-        <iframe src="screens/Permissions.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
-      </div>
-      <div class="cap"><span>OLD Permissions</span><span class="dim">1440&times;900</span></div>
-    </a>
-    <a class="card" href="screens/HardwareScan.html">
-      <div class="shot" style="height:250px">
-        <iframe src="screens/HardwareScan.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
-      </div>
-      <div class="cap"><span>OLD HardwareScan</span><span class="dim">1440&times;900</span></div>
-    </a>
-    <a class="card" href="screens/Recommendation.html">
-      <div class="shot" style="height:250px">
-        <iframe src="screens/Recommendation.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
-      </div>
-      <div class="cap"><span>OLD Recommendation</span><span class="dim">1440&times;900</span></div>
-    </a>
-    <a class="card" href="screens/Download.html">
-      <div class="shot" style="height:250px">
-        <iframe src="screens/Download.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
-      </div>
-      <div class="cap"><span>OLD Download</span><span class="dim">1440&times;900</span></div>
-    </a>
-    <a class="card" href="screens/SelfTest.html">
-      <div class="shot" style="height:250px">
-        <iframe src="screens/SelfTest.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
-      </div>
-      <div class="cap"><span>OLD SelfTest</span><span class="dim">1440&times;900</span></div>
-    </a>
-    <a class="card" href="screens/NewProject.html">
-      <div class="shot" style="height:250px">
-        <iframe src="screens/NewProject.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
-      </div>
-      <div class="cap"><span>OLD NewProject</span><span class="dim">1440&times;900</span></div>
-    </a>
-    <a class="card" href="screens/CloneRepo.html">
-      <div class="shot" style="height:250px">
-        <iframe src="screens/CloneRepo.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
-      </div>
-      <div class="cap"><span>OLD CloneRepo</span><span class="dim">1440&times;900</span></div>
-    </a>
-    <a class="card" href="screens/SafetyMode.html">
-      <div class="shot" style="height:250px">
-        <iframe src="screens/SafetyMode.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
-      </div>
-      <div class="cap"><span>OLD SafetyMode</span><span class="dim">1440&times;900</span></div>
-    </a>
     </div>
-  </section>
+    <div style="padding:0 10px;display:flex;flex-direction:column">
+      <div class="sgroup">Today</div>
+      <div class="srow on"><span class="dot acc"></span><span class="t">Persist tasks to localStorage</span></div>
+      <div class="srow"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span class="t">Add a filter bar to the list</span></div>
+      <div class="srow"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span class="t">Scaffold the project</span></div>
+    </div>
+    <span class="grow"></span>
+    <div style="border-top:1px solid var(--line-soft);padding:8px 10px">
+      <div class="srow"><span class="t">Models</span></div>
+      <div class="srow"><span class="t">Settings</span></div>
+    </div>
+  </div>
+
+  <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+    <div class="topbar">
+      <span style="font-size:13.5px;font-weight:600">Persist tasks to localStorage</span>
+      <span class="grow"></span>
+      <span class="pill acc"><span class="dot acc"></span>Working &middot; 14s</span>
+      <span class="btn btns">Stop</span>
+      <span class="pill"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--ok-line)" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3.5"/><rect x="8" y="8" width="8" height="8" rx="1.8"/></svg>Local</span>
+    </div>
+
+    <div style="flex:1;min-height:0;overflow:hidden;display:flex;justify-content:center;padding:0 24px">
+      <div style="width:100%;max-width:744px;display:flex;flex-direction:column;gap:18px;padding-top:24px">
+
+        <div style="display:flex;justify-content:flex-end">
+          <div class="soft" style="max-width:500px;padding:10px 14px;border-radius:14px;font-size:15px;line-height:22px">
+            Save the task list to localStorage so it survives a refresh, and add a test for it.
+          </div>
+        </div>
+
+        <div class="prose"><p>I will move state into a small hook so the components stay unaware of storage, then cover the reload behaviour with one test.</p></div>
+
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <div class="lab" style="padding-bottom:4px">Plan</div>
+          <div style="display:flex;align-items:center;gap:10px;min-height:26px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span class="mut">Extract a useTasks hook backed by localStorage</span></div>
+          <div style="display:flex;align-items:center;gap:10px;min-height:26px"><span class="dot acc" style="margin:0 3px"></span><span style="font-weight:600">Add a test that survives a reload</span></div>
+          <div style="display:flex;align-items:center;gap:10px;min-height:26px"><span style="width:14px;height:14px;border-radius:4px;border:1px solid var(--line-strong)"></span><span class="faint">Run the suite and report</span></div>
+        </div>
+
+        <div class="act">
+          <div class="hd"><span class="dot acc"></span><span class="h3" style="flex:1">Working</span><span class="lab">14s</span></div>
+          <div class="sep"></div>
+          <div class="arow"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg><span class="t">Read 4 files</span><span class="lab">1.2s</span></div>
+          <div class="arow"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg><span class="t">Edited 2 files</span><span class="m" style="color:var(--ok)">+46</span><span class="m" style="color:var(--bad)">&minus;12</span></div>
+          <div class="arow now" style="align-items:flex-start;padding-top:8px">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--fg)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-top:4px"><path d="m6 9 6 6 6-6"/></svg>
+            <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+              <div style="display:flex;gap:10px"><span class="m" style="flex:1">npm test -- --run</span><span class="lab">running</span></div>
+              <pre class="m soft" style="margin:0;padding:9px 11px;border-radius:6px;color:var(--mut);font-size:12px;line-height:19px">&gt; vitest --run
+
+ &#10003; src/App.test.jsx (3)</pre>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div style="padding:0 24px 16px;display:flex;justify-content:center">
+      <div style="width:100%;max-width:744px">
+        <div class="composer">
+          <div class="ph">Add to the plan, or ask a question</div>
+          <div class="cbar">
+            <span class="btn btnq ico btns"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5.5v13M5.5 12h13"/></svg></span>
+            <span class="btn btnq btns"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="3.5"/><rect x="8" y="8" width="8" height="8" rx="1.8"/></svg>Qwen2.5 Coder 32B</span>
+            <span class="btn btnq btns">Build</span>
+            <span class="grow"></span>
+            <span class="btn ico" style="border-radius:16px"><span style="width:10px;height:10px;border-radius:2px;background:var(--fg)"></span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>
+    </div>
+  </div>
+  <p class="faint" style="margin:14px 2px 0;font-size:12.5px">
+    The workspace during a task, built from the same components the app ships.
+  </p>
+</section>
+
+<section class="mwrap msec" style="padding-bottom:112px;display:flex;flex-direction:column;gap:112px">
+
+  <div class="ed">
+    <div class="stack" style="gap:16px">
+      <span class="lab">Before anything downloads</span>
+      <h2 class="mh2" style="font-size:32px">It does the memory arithmetic for you</h2>
+      <p style="margin:0;font-size:15px;line-height:24px;color:var(--mut)">
+        Quantized weights, plus the key-value cache for the context you want, plus runtime
+        overhead, against the memory your machine actually has. ForgeLocal recommends one
+        profile and shows the sum. Quantization, context and offload stay behind Advanced
+        until you want them.
+      </p>
+      <a href="/models/" style="font-size:14px">See the catalog and the arithmetic</a>
+    </div>
+    <div class="crop">
+      <div class="app stack" style="gap:12px">
+        <dl class="kv" style="grid-template-columns:112px 1fr">
+          <dt>Graphics</dt><dd class="num">RTX 4070 &middot; <strong>12 GB</strong> usable</dd>
+          <dt>Memory</dt><dd class="num">32 GB total, 19 GB free</dd>
+        </dl>
+        <div class="box" style="border-color:var(--acc);padding:16px;display:flex;flex-direction:column;gap:11px">
+          <div style="display:flex;align-items:flex-start;gap:12px">
+            <div class="stack" style="flex:1;gap:4px">
+              <span class="h2" style="font-size:16px">Qwen2.5 Coder 14B</span>
+              <span class="mut" style="font-size:13px;line-height:19px">Q4_K_M at an 8k context</span>
+            </div>
+            <span class="pill warn" style="flex-shrink:0">Runs with tradeoffs</span>
+          </div>
+          <p class="faint" style="margin:0;font-size:12.5px;line-height:18px">
+            Needs 11.1 GB of the 12 GB available. It fits, but leaves little room for anything
+            else on the GPU. The 7B is a great fit if you want headroom.
+          </p>
+          <div><span class="btn btnp btns">Use recommended</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ed flip">
+    <div class="stack" style="gap:16px">
+      <span class="lab">Before it runs anything</span>
+      <h2 class="mh2" style="font-size:32px">You see the exact command</h2>
+      <p style="margin:0;font-size:15px;line-height:24px;color:var(--mut)">
+        Every risky action stops and explains itself: what runs, why the task needs it, where it
+        runs, what it can reach, and whether it can be undone. Remembering a permission scopes it
+        to that exact command in that project, and you can revoke it in settings. There is no
+        allow-everything button.
+      </p>
+      <a href="/security/" style="font-size:14px">How the permission boundary works</a>
+    </div>
+    <div class="crop">
+      <div class="app box" style="border-color:var(--warn-line);background:var(--warn-soft);overflow:hidden">
+        <div style="padding:14px 16px;display:flex;align-items:center;gap:10px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--warn-line)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M12 9.5v4.2M12 17.4h.01M10.4 4.2 2.1 18a2 2 0 0 0 1.7 3h16.4a2 2 0 0 0 1.7-3L13.6 4.2a2 2 0 0 0-3.2 0z"/></svg>
+          <span class="h2" style="flex:1">Install one package</span>
+          <span class="pill warn">Network</span>
+        </div>
+        <pre class="m" style="margin:0 16px;padding:10px 12px;border-radius:6px;background:var(--bg);border:1px solid var(--line);font-size:12.5px">npm install --save-dev jsdom</pre>
+        <dl class="kv" style="grid-template-columns:100px 1fr;padding:14px 16px 4px">
+          <dt>Why</dt><dd style="font-size:13px;line-height:19px">The test needs a DOM, and this project has none.</dd>
+          <dt>Scope</dt><dd style="font-size:13px;line-height:19px">Writes only inside node_modules and package.json.</dd>
+        </dl>
+        <div style="padding:12px 16px 16px;display:flex;gap:8px;flex-wrap:wrap">
+          <span class="btn btnp btns">Allow once</span>
+          <span class="btn btns">Always allow npm install here</span>
+          <span class="btn btns">Deny</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ed">
+    <div class="stack" style="gap:16px">
+      <span class="lab">After it finishes</span>
+      <h2 class="mh2" style="font-size:32px">Keep it, or put it back</h2>
+      <p style="margin:0;font-size:15px;line-height:24px;color:var(--mut)">
+        Changes arrive as a diff you review per file and per hunk, next to the tests that actually
+        ran and their exit codes. Work you had already made before the task started is listed
+        separately and is never inside a revert.
+      </p>
+    </div>
+    <div class="crop">
+      <div class="app stack" style="gap:10px">
+        <div style="display:flex;align-items:center;gap:9px">
+          <span class="h3" style="flex:1">2 files changed</span>
+          <span class="m num" style="color:var(--ok)">+46</span>
+          <span class="m num" style="color:var(--bad)">&minus;12</span>
+        </div>
+        <div class="m box" style="font-size:12px;line-height:20px;padding:8px 0;overflow:hidden">
+          <div style="padding:0 12px;color:var(--mut)">import { useState } from 'react'</div>
+          <div style="padding:0 12px;background:var(--bad-soft);border-left:2px solid var(--bad-line);color:var(--bad)">- const [tasks, setTasks] = useState([])</div>
+          <div style="padding:0 12px;background:var(--ok-soft);border-left:2px solid var(--ok-line);color:var(--ok)">+ import { useTasks } from './useTasks'</div>
+          <div style="padding:0 12px;background:var(--ok-soft);border-left:2px solid var(--ok-line);color:var(--ok)">+ const { tasks, add } = useTasks()</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:9px">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+          <span style="flex:1;font-size:13px">4 tests passed</span>
+          <span class="lab num">exit 0</span>
+        </div>
+        <div style="display:flex;gap:8px"><span class="btn btnp btns">Keep changes</span><span class="btn btns">Revert all</span></div>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<section style="border-top:1px solid var(--line);background:var(--panel)">
+  <div class="mwrap msec" style="padding-top:72px;padding-bottom:72px">
+    <div style="display:flex;align-items:flex-end;gap:24px;flex-wrap:wrap;margin-bottom:28px">
+      <div class="stack" style="flex:1;min-width:280px;gap:12px">
+        <h2 class="mh2" style="font-size:32px">Your own compute is never metered</h2>
+        <p style="margin:0;font-size:15px;line-height:24px;color:var(--mut);max-width:56ch">
+          Running models on your hardware is free. A subscription pays for the compatibility work
+          that keeps profiles tested as runtimes and model releases move.
+        </p>
+      </div>
+      <a href="/pricing/" class="btn">See full pricing</a>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden">
+      <div style="background:var(--bg);padding:22px">
+        <div style="font-size:13.5px;font-weight:600">Free</div>
+        <div class="num" style="font-size:26px;font-weight:600;margin:6px 0 8px">$0</div>
+        <div class="mut" style="font-size:13px;line-height:19px">Unlimited local use, three active projects</div>
+      </div>
+      <div style="background:var(--bg);padding:22px">
+        <div style="font-size:13.5px;font-weight:600">Pro</div>
+        <div class="num" style="font-size:26px;font-weight:600;margin:6px 0 8px">$15<span class="mut" style="font-size:13px;font-weight:400">/month</span></div>
+        <div class="mut" style="font-size:13px;line-height:19px">Unlimited projects, full profile matrix, automations</div>
+      </div>
+      <div style="background:var(--bg);padding:22px">
+        <div style="font-size:13.5px;font-weight:600">Team</div>
+        <div class="num" style="font-size:26px;font-weight:600;margin:6px 0 8px">$30<span class="mut" style="font-size:13px;font-weight:400">/user</span></div>
+        <div class="mut" style="font-size:13px;line-height:19px">Shared profiles, policies, audit trail</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+<footer class="mfoot">
+  <div class="mwrap mfoot-top">
+    <div class="mfoot-cta">
+      <h2>See what your PC can build</h2>
+      <div class="row">
+        <a href="/download/" class="btn btnp btnl" data-platform-cta>Download for Windows</a>
+        <span class="faint" style="font-size:12.5px" data-platform-note>Windows 10 and 11, 64-bit. Free for local use.</span>
+      </div>
+    </div>
+    <nav class="mfoot-nav" aria-label="Footer">
+      <div>
+        <span class="lab">Product</span>
+        <a href="/product/">How it works</a>
+        <a href="/models/">Models</a>
+        <a href="/pricing/">Pricing</a>
+        <a href="/download/">Download</a>
+      </div>
+      <div>
+        <span class="lab">Resources</span>
+        <a href="/docs/">Docs</a>
+        <a href="/changelog/">Changelog</a>
+        <a href="/status/">Status</a>
+      </div>
+      <div>
+        <span class="lab">Trust</span>
+        <a href="/security/">Security</a>
+        <a href="/privacy/">Privacy</a>
+        <a href="/terms/">Terms</a>
+      </div>
+    </nav>
+  </div>
+  <div class="mwrap mfoot-legal">
+    <span class="brand small"><svg viewBox="0 0 24 24" fill="none" width="16" height="16" aria-hidden="true" focusable="false" style="flex-shrink:0">
+  <rect x="2.4" y="2.4" width="19.2" height="19.2" rx="5.6" stroke="currentColor" stroke-width="1.7"/>
+  <path d="M8.6 8.9 11.7 12l-3.1 3.1" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M13.6 15.1h3.3" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+</svg> ForgeLocal</span>
+    <span class="faint">Independent project. Not affiliated with any model publisher.</span>
+    <span class="grow"></span>
+    <a href="/security/#disclosure" class="faint">Report a vulnerability</a>
+  </div>
+</footer>
+
+<script src="/assets/forgelocal.js" defer></script>
 </body>
 </html>

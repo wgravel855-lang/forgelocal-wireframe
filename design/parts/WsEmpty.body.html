@@ -21,12 +21,31 @@
             </div>
           </div>
 
-          <!--#include composer.html {"placeholder":"Describe a change, or ask about this project","mode":"Build","send":"<button class=\"btn btnp ico\" type=\"submit\" style=\"border-radius:16px\" aria-label=\"Send\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.3\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 19V5.5M5.5 12 12 5.5 18.5 12\"/></svg></button>"} -->
+
+    <div class="main">
+
+      <!--#include topbar.html {"title":"New session"} -->
+
+      <div class="scroll" style="display:flex;flex-direction:column;justify-content:center">
+        <div class="col" style="display:flex;flex-direction:column;gap:22px;padding-top:24px;padding-bottom:24px">
+
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <h1 class="h1">What do you want to build or change?</h1>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+              <span class="m faint">~/projects/task-tracker</span>
+              <span class="faint" aria-hidden="true">&middot;</span>
+              <span class="mut" style="font-size:13px">Git repo, on main</span>
+              <span class="faint" aria-hidden="true">&middot;</span>
+              <span class="mut" style="font-size:13px">Vite + React detected</span>
+            </div>
+          </div>
+
+          <!--#include composer.html {"placeholder":"Describe a change, or ask about this project","mode":"Build","send":"<!--#include send-arrow.html -->"} -->
 
           <div style="display:flex;flex-wrap:wrap;gap:8px">
-            <button class="btn btns btnq" style="border-color:var(--line)">Explain how this project is organised</button>
-            <button class="btn btns btnq" style="border-color:var(--line)">Fix a bug</button>
-            <button class="btn btns btnq" style="border-color:var(--line)">Add a small feature</button>
+            <button class="btn btns btnq" type="button" style="border-color:var(--line)" data-starter="Explain how this project is organised">Explain how this project is organised</button>
+            <button class="btn btns btnq" type="button" style="border-color:var(--line)" data-starter="Fix a bug">Fix a bug</button>
+            <button class="btn btns btnq" type="button" style="border-color:var(--line)" data-starter="Add a small feature">Add a small feature</button>
           </div>
 
         </div>

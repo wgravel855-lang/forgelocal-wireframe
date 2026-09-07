@@ -1,0 +1,91 @@
+[
+  {
+    "id": "qwen25-coder-7b-q4km",
+    "name": "Qwen2.5 Coder 7B",
+    "publisher": "Alibaba Qwen",
+    "tasks": [
+      "coding",
+      "tool-use"
+    ],
+    "quantization": "Q4_K_M",
+    "downloadGB": 4.68,
+    "license": "Apache-2.0",
+    "fit": "great",
+    "fitLabel": "Great fit",
+    "installed": true
+  },
+  {
+    "id": "qwen25-coder-14b-q4km",
+    "name": "Qwen2.5 Coder 14B",
+    "publisher": "Alibaba Qwen",
+    "tasks": [
+      "coding",
+      "tool-use"
+    ],
+    "quantization": "Q4_K_M",
+    "downloadGB": 8.99,
+    "license": "Apache-2.0",
+    "fit": "tradeoffs",
+    "fitLabel": "Runs with tradeoffs",
+    "installed": true
+  },
+  {
+    "id": "deepseek-coder-v2-lite-q4km",
+    "name": "DeepSeek-Coder-V2 Lite 16B",
+    "publisher": "DeepSeek",
+    "tasks": [
+      "coding",
+      "tool-use"
+    ],
+    "quantization": "Q4_K_M",
+    "downloadGB": 10.36,
+    "license": "DeepSeek License",
+    "fit": "offload",
+    "fitLabel": "CPU offload required",
+    "installed": false
+  },
+  {
+    "id": "qwen25-coder-32b-q4km",
+    "name": "Qwen2.5 Coder 32B",
+    "publisher": "Alibaba Qwen",
+    "tasks": [
+      "coding",
+      "tool-use"
+    ],
+    "quantization": "Q4_K_M",
+    "downloadGB": 19.85,
+    "license": "Apache-2.0",
+    "fit": "offload",
+    "fitLabel": "CPU offload required",
+    "installed": false
+  },
+  {
+    "id": "llama33-70b-q4km",
+    "name": "Llama 3.3 70B",
+    "publisher": "Meta",
+    "tasks": [
+      "general",
+      "coding"
+    ],
+    "quantization": "Q4_K_M",
+    "downloadGB": 42.52,
+    "license": "Llama 3.3 Community License",
+    "fit": "nofit",
+    "fitLabel": "Does not fit",
+    "installed": false
+  },
+  {
+    "id": "gemma2-9b-q4km",
+    "name": "Gemma 2 9B",
+    "publisher": "Google",
+    "tasks": [
+      "general"
+    ],
+    "quantization": "Q4_K_M",
+    "downloadGB": 5.76,
+    "license": "Gemma Terms of Use",
+    "fit": "great",
+    "fitLabel": "Great fit",
+    "installed": false
+  }
+]
