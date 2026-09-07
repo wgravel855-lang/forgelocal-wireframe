@@ -36,6 +36,8 @@ const BIND = {
   "<!--MINE_LIST-->": () => mine.rows,
   "<!--MINE_TOTAL-->": () => mine.totalGB,
   "<!--MINE_FREE-->": () => mine.freeGB,
+  "<!--MINE_COUNT-->": () => `${mine.count} model${mine.count === 1 ? "" : "s"}`,
+  "<!--EXPLORE_COUNT-->": () => `${models.length} model${models.length === 1 ? "" : "s"}`,
   "<!--REC_NAME-->": () => inst.name,
   "<!--REC_TOTAL-->": () => inst.total,
   "<!--REC_DONE-->": () => inst.done,

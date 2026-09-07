@@ -128,7 +128,7 @@
   <span class="grow"></span>
 
   <span class="pill bad" style="gap:7px"><span class="dot bad" aria-hidden="true"></span>Stopped</span>
-<button class="btn btns" type="button">Retry</button>
+<a class="btn btns" href="/app/running/">Retry</a>
 
   <span class="pill hide-sm" title="Everything is running on this computer">
     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--ok-line)" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3.5"/><rect x="8" y="8" width="8" height="8" rx="1.8"/></svg>
@@ -154,7 +154,7 @@
               <span class="dot bad" aria-hidden="true"></span>
               <span class="h3" style="flex:1">Stopped after 3 attempts</span>
               <span class="lab">2m 11s</span>
-              <button class="btn btnq btns" type="button" aria-expanded="true">Hide</button>
+              <button class="btn btnq btns" type="button" data-act-toggle aria-expanded="true">Hide</button>
             </div>
             <div class="sep"></div>
             <div class="arow">
@@ -212,11 +212,11 @@
             <div class="sep"></div>
 
             <div style="padding:12px 16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-              <button class="btn btnp" type="button">Restore checkpoint 2</button>
-              <button class="btn" type="button">Install a polyfill instead</button>
-              <button class="btn btnq" type="button" style="border-color:var(--line)">Keep the edits, stop here</button>
+              <button class="btn btnp" type="button" data-recover="restore">Restore checkpoint 2</button>
+              <a class="btn" href="/app/permission/">Install a polyfill instead</a>
+              <button class="btn btnq" type="button" style="border-color:var(--line)" data-recover="keep">Keep the edits, stop here</button>
               <span class="grow"></span>
-              <button class="btnq hit" type="button" style="font-size:14px;color:var(--acc-text);padding:0 8px">Open diagnostics</button>
+              <button class="btnq hit" type="button" style="font-size:14px;color:var(--acc-text);padding:0 8px" data-inert="The diagnostics screen is not built in this prototype.">Open diagnostics</button>
             </div>
 
           </section>

@@ -1,6 +1,6 @@
 <div class="app ob">
 
-  <!--#include ob-top.html {"n":"4"} -->
+  <!--#include ob-top.html {"n":"4","back":"/setup/3/","backLabel":"Back to step 3"} -->
 
   <div class="ob-body">
     <div class="ob-col">
@@ -20,12 +20,12 @@
             <div style="font-size:13.5px;font-weight:600">Open an existing folder</div>
             <div class="m faint" style="margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">~/projects/task-tracker</div>
           </div>
-          <button class="btn btns" type="button" style="flex-shrink:0">Change</button>
+          <button class="btn btns" type="button" style="flex-shrink:0" data-inert="Choosing a different project folder is not built in this prototype.">Change</button>
         </div>
 
         <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn btns btnq" type="button" style="border-color:var(--line)">Clone from Git</button>
-          <button class="btn btns btnq" type="button" style="border-color:var(--line)">Start from a blueprint</button>
+          <button class="btn btns btnq" type="button" style="border-color:var(--line)" data-inert="Cloning a repository is not built in this prototype.">Clone from Git</button>
+          <button class="btn btns btnq" type="button" style="border-color:var(--line)" data-inert="Project blueprints are not built in this prototype.">Start from a blueprint</button>
         </div>
       </div>
 

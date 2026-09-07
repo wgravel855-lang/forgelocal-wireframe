@@ -8,7 +8,7 @@
       <!--#include topbar.html {"title":"Models"} -->
 
       <div class="scroll" style="overflow-y:auto">
-        <div style="width:100%;max-width:960px;margin:0 auto;padding:26px 24px 32px;display:flex;flex-direction:column;gap:18px">
+        <div data-filter-root="mine" style="width:100%;max-width:960px;margin:0 auto;padding:26px 24px 32px;display:flex;flex-direction:column;gap:18px">
 
           <div style="display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap">
             <div style="flex:1;min-width:260px;display:flex;flex-direction:column;gap:6px">
@@ -18,23 +18,36 @@
             <label class="field" style="width:240px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="flex-shrink:0"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg><span class="vh">Search models</span><input type="search" data-filter-search placeholder="Search models"></label>
           </div>
 
-          <div role="tablist" style="display:flex;gap:2px;border-bottom:1px solid var(--line-soft)">
-            <button role="tab" style="padding:9px 12px;font-size:13.5px;color:var(--mut)">Explore</button>
-            <button role="tab" aria-selected="true" style="padding:9px 12px;font-size:13.5px;font-weight:600;border-bottom:2px solid var(--acc);margin-bottom:-1px">My models</button>
-            <button role="tab" style="padding:9px 12px;font-size:13.5px;color:var(--mut)">Downloads <span class="pill" style="padding:0 6px;margin-left:4px">1</span></button>
-          </div>
+          <!-- These are separate pages, not panels, so they are links rather than tabs. -->
+          <nav aria-label="Model views" style="display:flex;gap:2px;border-bottom:1px solid var(--line-soft)">
+            <a href="/app/models/" style="display:inline-flex;align-items:center;padding:9px 12px;font-size:13.5px;color:var(--mut)">Explore</a>
+            <span aria-current="page" style="display:inline-flex;align-items:center;padding:9px 12px;font-size:13.5px;font-weight:600;border-bottom:2px solid var(--acc);margin-bottom:-1px">My models</span>
+            <button type="button" style="padding:9px 12px;font-size:13.5px;color:var(--mut)" data-inert="There is no download queue in this prototype. The row below is the one download in progress.">Downloads <span class="pill" style="padding:0 6px;margin-left:4px">1</span></button>
+          </nav>
 
-          <div class="box" style="padding:12px 16px;display:flex;align-items:center;gap:12px">
-            <span class="dot acc pulse" aria-hidden="true"></span>
+          <div class="box" data-download style="padding:12px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+            <span class="dot acc pulse" data-dl-dot aria-hidden="true"></span>
             <div style="flex:1;min-width:0">
               <div style="font-size:13.5px;font-weight:600">Downloading DeepSeek-Coder-V2 Lite 16B</div>
               <div class="lab" style="margin-top:2px">4.1 of 9.4 GB &middot; 28.6 MB/s &middot; about 3 min left</div>
             </div>
-            <div class="track" style="width:120px;flex-shrink:0"><div class="fillbar" style="width:44%"></div></div>
-            <button class="btn btnq btns" type="button" style="border-color:var(--line);flex-shrink:0">Pause</button>
+            <span class="lab-fn mut" data-dl-state style="flex-shrink:0">Downloading</span>
+            <div class="track" style="width:120px;flex-shrink:0"><div class="fillbar" data-dl-bar style="width:44%"></div></div>
+            <button class="btn btnq btns" type="button" style="border-color:var(--line);flex-shrink:0" data-dl-toggle>Pause</button>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:10px">
+            <span class="lab-fn mut" data-filter-count><!--MINE_COUNT--></span>
+            <span class="grow"></span>
+            <button class="btn btns" type="button" data-filter-clear hidden>Clear</button>
           </div>
 
           <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px"><!--MINE_LIST--></ul>
+
+          <div class="box" data-filter-empty hidden style="padding:26px 20px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center">
+            <span class="h3">No installed model matches that search</span>
+            <span class="mut" style="font-size:13px;line-height:20px;max-width:44ch">Clear the search to see everything on disk, or look in <a class="link" href="/app/models/">Explore</a> for something else to install.</span>
+          </div>
 
           <div class="box" style="padding:14px 16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
             <div style="flex:1;min-width:200px;display:flex;flex-direction:column;gap:7px">
@@ -44,7 +57,7 @@
               </div>
               <div class="track" style="height:7px"><div class="fillbar" style="width:5%;background:var(--line-strong)"></div></div>
             </div>
-            <button class="btn btns" type="button">Change location</button>
+            <button class="btn btns" type="button" data-inert="Choosing a different model folder is not built in this prototype.">Change location</button>
           </div>
 
         </div>

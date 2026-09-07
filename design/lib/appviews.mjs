@@ -21,7 +21,7 @@ export function recommendationBlock(models) {
                 <div class="faint" style="font-size:13px;line-height:19px">${esc(x.displayName)} ${esc(x.quantization)} &middot; ${F.gb(x.downloadBytes, 1)} GB &middot; ${esc(note)}</div>
               </div>
               ${F.fitFor(x).rank <= 1
-                ? `<button class="btn btns" type="button" style="flex-shrink:0">Use this instead</button>`
+                ? `<a class="btn btns" href="/setup/3/" style="flex-shrink:0">Use this instead</a>`
                 : `<span class="pill ${tone[F.fitFor(x).tone]}" style="flex-shrink:0">${esc(F.fitFor(x).label)}</span>`}
             </div>`;
 
@@ -112,8 +112,8 @@ export function exploreList(models) {
     const action = m.loaded
       ? `<button class="btn btns" type="button" data-inert="Already loaded.">In use</button>`
       : m.installed
-        ? `<button class="btn btnp btns" type="button">Use</button>`
-        : `<button class="btn btns" type="button">Install</button>`;
+        ? `<button class="btn btnp btns" type="button" data-model-use="${esc(m.displayName)}" data-model-id="${esc(m.id)}">Use</button>`
+        : `<button class="btn btns" type="button" data-model-install="${esc(m.displayName)}">Install</button>`;
     return `<li class="box" data-filter-item data-name="${esc(m.displayName + " " + m.publisher)}"
               data-tags="${m.tasks.join(" ")} ${m.installed ? "installed" : ""} ${fit.rank <= 1 ? "fits" : ""}"
               style="padding:18px;display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
@@ -146,11 +146,13 @@ export function myModelsList(models) {
   const t = F.storageTotals(models);
   const rows = t.installed.map((m) => {
     const fit = F.fitFor(m);
-    return `<li class="box" style="padding:18px;display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap${m.loaded ? ";border-color:var(--acc)" : ""}">
+    return `<li class="box" data-filter-item data-name="${esc(m.displayName)} ${esc(m.publisher)}"
+              data-tags="${m.tasks.join(" ")} installed${fit.rank <= 1 ? " fits" : ""}"
+              style="padding:18px;display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap${m.loaded ? ";border-color:var(--acc)" : ""}">
               <div style="flex:1;min-width:260px;display:flex;flex-direction:column;gap:9px">
                 <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">
                   <span class="h2">${esc(m.displayName)}</span>
-                  <span class="pill ${m.loaded ? "ok" : ""}">${m.loaded ? "Loaded" : "Idle"}</span>
+                  <span class="pill ${m.loaded ? "ok" : ""}" data-load-pill>${m.loaded ? "Loaded" : "Idle"}</span>
                   ${m.recommended ? '<span class="pill">Default for coding</span>' : ""}
                 </div>
                 <div style="display:flex;gap:22px;flex-wrap:wrap">
@@ -161,7 +163,7 @@ export function myModelsList(models) {
                 </div>
               </div>
               <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;flex-shrink:0">
-                <button class="btn btns" type="button">${m.loaded ? "Eject" : "Load"}</button>
+                <button class="btn btns" type="button" data-load-toggle data-model="${esc(m.displayName)}">${m.loaded ? "Eject" : "Load"}</button>
                 <a class="link" href="/models/${m.id}/">Details</a>
               </div>
             </li>`;

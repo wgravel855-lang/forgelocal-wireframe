@@ -142,7 +142,7 @@
 </header>
 
       <div class="scroll" style="overflow-y:auto">
-        <div style="width:100%;max-width:960px;margin:0 auto;padding:26px 24px 32px;display:flex;flex-direction:column;gap:18px">
+        <div data-filter-root="explore" style="width:100%;max-width:960px;margin:0 auto;padding:26px 24px 32px;display:flex;flex-direction:column;gap:18px">
 
           <div style="display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap">
             <div style="flex:1;min-width:260px;display:flex;flex-direction:column;gap:6px">
@@ -152,22 +152,25 @@
             <label class="field" style="width:240px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="flex-shrink:0"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg><span class="vh">Search models</span><input type="search" data-filter-search placeholder="Search models"></label>
           </div>
 
-          <div role="tablist" style="display:flex;gap:2px;border-bottom:1px solid var(--line-soft)">
-            <button role="tab" aria-selected="true" style="padding:9px 12px;font-size:13.5px;font-weight:600;border-bottom:2px solid var(--acc);margin-bottom:-1px">Explore</button>
-            <button role="tab" style="padding:9px 12px;font-size:13.5px;color:var(--mut)">My models</button>
-            <button role="tab" style="padding:9px 12px;font-size:13.5px;color:var(--mut)">Downloads</button>
+          <!-- These are separate pages, not panels, so they are links rather than tabs. -->
+          <nav aria-label="Model views" style="display:flex;gap:2px;border-bottom:1px solid var(--line-soft)">
+            <span aria-current="page" style="display:inline-flex;align-items:center;padding:9px 12px;font-size:13.5px;font-weight:600;border-bottom:2px solid var(--acc);margin-bottom:-1px">Explore</span>
+            <a href="/app/models/installed/" style="display:inline-flex;align-items:center;padding:9px 12px;font-size:13.5px;color:var(--mut)">My models</a>
+            <button type="button" style="padding:9px 12px;font-size:13.5px;color:var(--mut)" data-inert="There is no download queue in this prototype. Step 3 of setup shows a download in progress.">Downloads</button>
+          </nav>
+
+          <div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center" role="group" aria-label="Filters">
+            <button class="pill" type="button" data-filter="fits" aria-pressed="false">Fits this PC</button>
+            <button class="pill" type="button" data-filter="coding" aria-pressed="false">Coding</button>
+            <button class="pill" type="button" data-filter="general" aria-pressed="false">General</button>
+            <button class="pill" type="button" data-filter="tool-use" aria-pressed="false">Tool use</button>
+            <button class="pill" type="button" data-filter="installed" aria-pressed="false">Installed</button>
+            <span class="grow"></span>
+            <span class="lab-fn mut" data-filter-count>6 models</span>
+            <button class="btn btns" type="button" data-filter-clear hidden>Clear</button>
           </div>
 
-          <div style="display:flex;gap:7px;flex-wrap:wrap" role="group" aria-label="Filters">
-            <button class="pill" style="border-color:var(--acc);color:var(--acc-text)">Fits this PC</button>
-            <button class="pill" >Coding</button>
-            <button class="pill" >General</button>
-            <button class="pill" >Vision</button>
-            <button class="pill" >Tool use</button>
-            <button class="pill" >Installed</button>
-          </div>
-
-          <ul data-filter-root style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px"><li class="box" data-filter-item data-name="Qwen2.5 Coder 7B Alibaba Qwen"
+          <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px"><li class="box" data-filter-item data-name="Qwen2.5 Coder 7B Alibaba Qwen"
               data-tags="coding tool-use installed fits"
               style="padding:18px;display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
               <div style="flex:1;min-width:260px;display:flex;flex-direction:column;gap:8px">
@@ -187,7 +190,7 @@
                 </div>
               </div>
               <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;flex-shrink:0">
-                <button class="btn btnp btns" type="button">Use</button>
+                <button class="btn btnp btns" type="button" data-model-use="Qwen2.5 Coder 7B" data-model-id="qwen25-coder-7b-q4km">Use</button>
                 <a class="link" href="/models/qwen25-coder-7b-q4km/">Details</a>
               </div>
             </li>
@@ -235,7 +238,7 @@
                 </div>
               </div>
               <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;flex-shrink:0">
-                <button class="btn btns" type="button">Install</button>
+                <button class="btn btns" type="button" data-model-install="DeepSeek-Coder-V2 Lite 16B">Install</button>
                 <a class="link" href="/models/deepseek-coder-v2-lite-q4km/">Details</a>
               </div>
             </li>
@@ -259,7 +262,7 @@
                 </div>
               </div>
               <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;flex-shrink:0">
-                <button class="btn btns" type="button">Install</button>
+                <button class="btn btns" type="button" data-model-install="Qwen2.5 Coder 32B">Install</button>
                 <a class="link" href="/models/qwen25-coder-32b-q4km/">Details</a>
               </div>
             </li>
@@ -283,7 +286,7 @@
                 </div>
               </div>
               <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;flex-shrink:0">
-                <button class="btn btns" type="button">Install</button>
+                <button class="btn btns" type="button" data-model-install="Llama 3.3 70B">Install</button>
                 <a class="link" href="/models/llama33-70b-q4km/">Details</a>
               </div>
             </li>
@@ -307,10 +310,15 @@
                 </div>
               </div>
               <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;flex-shrink:0">
-                <button class="btn btns" type="button">Install</button>
+                <button class="btn btns" type="button" data-model-install="Gemma 2 9B">Install</button>
                 <a class="link" href="/models/gemma2-9b-q4km/">Details</a>
               </div>
             </li></ul>
+
+          <div class="box" data-filter-empty hidden style="padding:26px 20px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center">
+            <span class="h3">No model matches those filters</span>
+            <span class="mut" style="font-size:13px;line-height:20px;max-width:44ch">Six models are catalogued here. Clear a filter or change the search to see them again.</span>
+          </div>
 
           <p class="faint" style="margin:0;font-size:13px;line-height:19px;max-width:70ch">
             Fit is arithmetic: quantized weights, plus the key-value cache at the stated context,

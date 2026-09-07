@@ -127,8 +127,8 @@
 
   <span class="grow"></span>
 
-  <span class="pill acc pulse" style="gap:7px"><span class="dot acc" aria-hidden="true"></span>Working &middot; 14s</span>
-<button class="btn btns" type="button">Stop</button>
+  <span class="pill acc pulse" data-run-pill style="gap:7px"><span class="dot acc" aria-hidden="true"></span><span data-run-state>Working &middot; 14s</span></span>
+<button class="btn btns" type="button" data-stop-run>Stop</button>
 
   <span class="pill hide-sm" title="Everything is running on this computer">
     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--ok-line)" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3.5"/><rect x="8" y="8" width="8" height="8" rx="1.8"/></svg>
@@ -184,7 +184,7 @@
               <span class="dot acc pulse" aria-hidden="true"></span>
               <span class="h3" style="flex:1">Working</span>
               <span class="lab">14s</span>
-              <button class="btn btnq btns" type="button" aria-expanded="true">Hide</button>
+              <button class="btn btnq btns" type="button" data-act-toggle aria-expanded="true">Hide</button>
             </div>
             <div class="sep"></div>
 

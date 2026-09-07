@@ -354,7 +354,10 @@
     const count = $("[data-filter-count]");
     const empty = $("[data-filter-empty]");
     const search = $("[data-filter-search]", root);
-    const active = new Set(store.get("filters", []));
+    // Each surface keeps its own selection, so filters chosen on Explore do not
+    // silently hide rows on a page that has no chips to clear them with.
+    const key = "filters:" + (root.dataset.filterRoot || "default");
+    const active = new Set(store.get(key, []));
 
     const paint = () => {
       $$("[data-filter]", root).forEach((b) => {
@@ -376,7 +379,7 @@
       if (empty) empty.hidden = shown > 0;
       const clear = $("[data-filter-clear]", root);
       if (clear) clear.hidden = active.size === 0 && !q;
-      store.set("filters", [...active]);
+      store.set(key, [...active]);
     };
 
     $$("[data-filter]", root).forEach((b) => b.addEventListener("click", () => {
@@ -492,10 +495,12 @@
     const wrap = $("[data-download]");
     if (!wrap) return;
     const toggle = $("[data-dl-toggle]", wrap);
+    // The My models row offers Pause only; setup step 3 also offers Cancel.
     const cancel = $("[data-dl-cancel]", wrap);
     const state = $("[data-dl-state]", wrap);
     const dot = $("[data-dl-dot]");
     const bar = $("[data-dl-bar]");
+    if (!toggle) return;
     let paused = false, cancelled = false;
 
     const paint = () => {
@@ -516,18 +521,145 @@
       toast(paused ? "Download paused. It resumes from where it stopped." : "Download resumed.");
     });
 
-    cancel.addEventListener("click", () => {
+    if (cancel) cancel.addEventListener("click", () => {
       if (cancelled) return;
       if (!confirm("Cancel this download? The part already downloaded is kept, so resuming later does not start over.")) return;
       cancelled = true; paused = false;
       toggle.disabled = true;
       cancel.disabled = true;
+      toggle.setAttribute("aria-disabled", "true");
       if (bar) bar.style.width = "0%";
       paint();
       toast("Cancelled. The partial file is kept for a later resume.");
     });
 
     paint();
+  }
+
+  /* ---------------------------------------------- the activity group's fold */
+  function wireActivity() {
+    $$("[data-act-toggle]").forEach((btn) => {
+      const group = btn.closest(".act");
+      if (!group) return;
+      const rows = [...group.children].filter((el) => el !== btn.parentElement);
+      const apply = (open) => {
+        btn.setAttribute("aria-expanded", String(open));
+        btn.textContent = open ? "Hide" : "Show";
+        rows.forEach((el) => { el.hidden = !open; });
+      };
+      apply(btn.getAttribute("aria-expanded") === "true");
+      btn.addEventListener("click", () => apply(btn.getAttribute("aria-expanded") !== "true"));
+    });
+  }
+
+  /* ------------------------------------------------------ stopping a run */
+  function wireStopRun() {
+    const btn = $("[data-stop-run]");
+    if (!btn) return;
+    btn.addEventListener("click", () => {
+      const pill = $("[data-run-pill]");
+      if (pill) pill.classList.remove("acc", "pulse");
+      $$("[data-run-state]").forEach((el) => { el.textContent = "Stopped by you"; });
+      $$(".act .dot.pulse").forEach((d) => d.classList.remove("pulse"));
+      // the composer goes back to accepting a new instruction
+      $$("[data-composer]").forEach((form) => {
+        delete form.dataset.running;
+        const send = $("[data-send]", form);
+        const ta = $("textarea", form);
+        if (send && ta) send.disabled = ta.value.trim() === "";
+      });
+      btn.replaceWith(Object.assign(document.createElement("a"),
+        { className: btn.className, href: "/app/review/", textContent: "See what changed" }));
+      toast("Stopped. The work already done is kept, and nothing was rolled back.");
+    });
+  }
+
+  /* -------------------------------------------------- permission decision */
+  function wirePermission() {
+    const btns = $$("[data-perm]");
+    if (!btns.length) return;
+    const row = btns[0].parentElement;
+    btns.forEach((b) => b.addEventListener("click", () => {
+      const kind = b.dataset.perm;
+      if (kind === "deny") {
+        row.replaceChildren(Object.assign(document.createElement("span"), {
+          className: "mut", style: "font-size:13.5px;line-height:20px",
+          textContent: "Denied. The package was not installed, and the run stopped here.",
+        }), Object.assign(document.createElement("a"),
+          { className: "btn btns", href: "/app/stopped/", textContent: "See where it stopped" }));
+        toast("Denied. Nothing was installed.");
+        return;
+      }
+      if (kind === "always") store.set("rule:npm-install", true);
+      toast(kind === "always"
+        ? "Allowed. npm install will not ask again in this project."
+        : "Allowed once. The next install will ask again.");
+      setTimeout(() => { location.href = "/app/running/"; }, 350);
+    }));
+  }
+
+  /* ------------------------------------------------------ recovery choices */
+  function wireRecover() {
+    $$("[data-recover]").forEach((b) => b.addEventListener("click", () => {
+      const row = b.parentElement;
+      if (b.dataset.recover === "restore") {
+        if (!confirm("Restore checkpoint 2? Every edit made after it is discarded.")) return;
+        toast("Restored checkpoint 2. The working tree matches it again.");
+      } else {
+        toast("Stopped here. The edits are still on disk and nothing was rolled back.");
+      }
+      row.replaceChildren(Object.assign(document.createElement("span"), {
+        className: "mut", style: "font-size:13.5px;line-height:20px",
+        textContent: b.dataset.recover === "restore"
+          ? "Restored to checkpoint 2."
+          : "Left as it is. The edits are still on disk.",
+      }), Object.assign(document.createElement("a"),
+        { className: "btn btns", href: "/app/", textContent: "Start a new session" }));
+    }));
+  }
+
+  /* ------------------------------------- a follow-up drops in the composer */
+  function wireSuggest() {
+    $$("[data-suggest]").forEach((b) => b.addEventListener("click", () => {
+      const ta = $("[data-composer] textarea");
+      if (!ta) return;
+      ta.value = b.dataset.suggest;
+      ta.dispatchEvent(new Event("input", { bubbles: true }));
+      ta.focus();
+    }));
+  }
+
+  /* --------------------------------------------- Explore: use and install */
+  function wireModelActions() {
+    $$("[data-model-use]").forEach((b) => b.addEventListener("click", () => {
+      store.set("model", b.dataset.modelId);
+      $$("[data-model-label]").forEach((l) => { l.textContent = b.dataset.modelUse; });
+      toast(`${b.dataset.modelUse} is the model this project will use.`);
+    }));
+    $$("[data-model-install]").forEach((b) => b.addEventListener("click", () => {
+      b.textContent = "Queued";
+      b.disabled = true;
+      b.setAttribute("aria-disabled", "true");
+      b.title = "Queued for download. Progress appears under My models.";
+      toast(`${b.dataset.modelInstall} queued. Progress shows under My models.`);
+    }));
+  }
+
+  /* ------------------------------------------------ load / eject a model */
+  function wireLoadToggle() {
+    $$("[data-load-toggle]").forEach((btn) => {
+      const row = btn.closest("li");
+      const pill = row && $("[data-load-pill]", row);
+      btn.addEventListener("click", () => {
+        const loading = btn.textContent.trim() === "Load";
+        btn.textContent = loading ? "Eject" : "Load";
+        if (pill) { pill.textContent = loading ? "Loaded" : "Idle"; pill.classList.toggle("ok", loading); }
+        if (row) row.style.borderColor = loading ? "var(--acc)" : "";
+        toast(loading
+          ? `${btn.dataset.model} is loaded into video memory.`
+          : `${btn.dataset.model} was ejected. Video memory is free again.`);
+      });
+    });
   }
 
   /* ------------------------------------------- onboarding permission preset */
@@ -572,7 +704,9 @@
   const boot = () => {
     wireSidebar(); wireComposer(); wireModelPicker(); wireTabs(); wireDrawer();
     wireReview(); wireFilters(); wireNav(); wirePricing(); wirePlatform(); wireSignin();
-    wireDownload(); wirePresets(); showPreset(); wireInert();
+    wireDownload(); wireLoadToggle(); wirePresets(); showPreset();
+    wireActivity(); wireStopRun(); wirePermission(); wireRecover(); wireSuggest();
+    wireModelActions(); wireInert();
     document.documentElement.dataset.reducedMotion = String(reduced);
   };
   document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", boot) : boot();

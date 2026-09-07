@@ -201,11 +201,11 @@
             </dl>
 
             <div style="padding:12px 16px 16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-              <button class="btn btnp" type="button">Allow once</button>
-              <button class="btn" type="button">Always allow this here</button>
-              <button class="btn btnq" type="button" style="border-color:var(--line)">Deny</button>
+              <button class="btn btnp" type="button" data-perm="once">Allow once</button>
+              <button class="btn" type="button" data-perm="always">Always allow this here</button>
+              <button class="btn btnq" type="button" style="border-color:var(--line)" data-perm="deny">Deny</button>
               <span class="grow"></span>
-              <button class="btnq hit" type="button" style="font-size:14px;color:var(--acc-text);padding:0 8px">Edit command</button>
+              <button class="btnq hit" type="button" style="font-size:14px;color:var(--acc-text);padding:0 8px" data-inert="Editing the proposed command is not built in this prototype.">Edit command</button>
             </div>
 
           </section>
