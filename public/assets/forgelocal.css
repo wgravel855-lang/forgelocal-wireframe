@@ -123,6 +123,20 @@ a.link,
 .sendbtn[data-stop="true"] .i-send { display: none; }
 .sendbtn[data-stop="true"] .i-stop { display: block; }
 
+/* ---- scrollbars ------------------------------------------------------- */
+/* Scoped to the dark shell so the light marketing pages keep their own. */
+.app { color-scheme: dark; }
+.app .thread-scroll, .app .scroll, .app pre, .app .drawer,
+.app [data-diff-view], .app .chat-list {
+  scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
+.app ::-webkit-scrollbar { width: 10px; height: 10px; }
+.app ::-webkit-scrollbar-track { background: transparent; }
+.app ::-webkit-scrollbar-thumb { background: var(--line-strong);
+  border-radius: 6px; border: 3px solid transparent; background-clip: content-box; }
+.app ::-webkit-scrollbar-thumb:hover { background: var(--mut);
+  border: 3px solid transparent; background-clip: content-box; }
+.app ::-webkit-scrollbar-corner { background: transparent; }
+
 /* ---- conversation --------------------------------------------------- */
 /* One geometry for every conversation: a 748px thread column, the composer
    docked to the same column, and three levels of emphasis — message,
@@ -130,13 +144,13 @@ a.link,
 .thread-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
   display: flex; flex-direction: column; }
 .col { width: 100%; max-width: 748px; margin: 0 auto; padding: 0 28px; }
-.thread { display: flex; flex-direction: column; gap: 32px;
+.thread { display: flex; flex-direction: column; gap: 34px;
   padding-top: 28px; padding-bottom: 28px; }
 .thread { flex: 0 0 auto; padding-bottom: 8px; }
 /* the empty state centres in the canvas; a conversation starts at the top */
 .thread.is-empty { flex: 1 0 auto; justify-content: center; gap: 0;
   padding-bottom: 8vh; }
-.turn { display: flex; flex-direction: column; gap: 14px; }
+.turn { display: flex; flex-direction: column; gap: 12px; }
 .turn-user { align-items: flex-end; }
 
 /* user message: one quiet raised surface, no border, no shadow */
@@ -257,10 +271,21 @@ a.link,
 
 /* ---- message actions ------------------------------------------------- */
 /* Reserved space, so revealing them never shifts the thread. */
-.mactions { display: flex; gap: 2px; min-height: 40px; align-items: center;
-  opacity: 0; transition: opacity 140ms ease-out; }
-.turn:hover .mactions, .mactions:focus-within { opacity: 1; }
-.turn-user .mactions { justify-content: flex-end; }
+.mactions { display: flex; gap: 2px; height: 40px; align-items: center;
+  opacity: 0; pointer-events: none; transition: opacity 140ms ease-out; }
+/* out of flow: the row sits in the gap between turns instead of adding to it */
+.turn > .mactions { position: absolute; left: 0; right: 0; top: 100%;
+  margin-top: -6px; }
+.turn { position: relative; }
+.turn:hover > .mactions, .turn:focus-within > .mactions,
+.turn > .mactions:focus-within { opacity: 1; pointer-events: auto; }
+.turn-user > .mactions { justify-content: flex-end; }
+/* a coarse pointer has no hover, so the actions stay put and readable */
+@media (hover: none), (pointer: coarse) {
+  .turn > .mactions { position: static; opacity: 1; pointer-events: auto;
+    margin-top: 4px; height: 44px; }
+  .mact { min-height: 44px; min-width: 44px; }
+}
 .mact { display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   min-height: 40px; min-width: 40px; padding: 0 8px; border-radius: 7px;
   color: var(--faint); font-size: 13px;
@@ -272,6 +297,9 @@ a.link,
 
 .thinking { display: flex; align-items: center; gap: 10px; margin: 0;
   font-size: 15px; color: var(--mut); }
+.haltnote { display: flex; align-items: center; gap: 9px; margin: 0;
+  font-size: 14.5px; line-height: 22px; color: var(--faint); }
+.haltnote svg { flex-shrink: 0; }
 @keyframes fl-spin { to { transform: rotate(360deg); } }
 .spin { width: 13px; height: 13px; flex-shrink: 0; border-radius: 50%;
   border: 1.7px solid var(--line-strong); border-top-color: var(--acc);
@@ -287,7 +315,7 @@ a.link,
   background: linear-gradient(to top, var(--bg), transparent); }
 .dock-inner { position: relative; }
 .jump { position: absolute; left: 50%; bottom: calc(100% + 10px); transform: translateX(-50%);
-  display: inline-flex; align-items: center; gap: 7px; min-height: 36px; padding: 0 14px;
+  display: inline-flex; align-items: center; gap: 7px; min-height: 40px; padding: 0 16px;
   border: 1px solid var(--line-strong); border-radius: 18px; background: var(--raised);
   color: var(--fg); font-size: 13px; white-space: nowrap; box-shadow: var(--shadow-menu);
   transition: background 140ms ease-out; z-index: 5; }
@@ -305,12 +333,18 @@ a.link,
   background: transparent; text-align: left;
   transition: background 140ms ease-out, border-color 140ms ease-out; }
 .starters > button:hover { background: var(--sunk); border-color: var(--line-strong); }
+/* one featured action, then two equal halves: never an empty third column */
 .starters > button:first-child { grid-column: 1 / -1; }
+.starters > button:nth-child(2) { grid-column: 1; }
+.starters > button:nth-child(3) { grid-column: 2; }
+.starters.is-pair > button:first-child { grid-column: 1; }
 .starters .s-t { font-size: 14.5px; line-height: 21px; color: var(--fg); font-weight: 500; }
 .starters .s-d { font-size: 13px; line-height: 19px; color: var(--faint); }
 @media (max-width: 720px) {
   .starters { grid-template-columns: 1fr; }
-  .starters > button { min-height: 44px; }
+  .starters > button, .starters > button:first-child,
+  .starters > button:nth-child(2), .starters > button:nth-child(3) {
+    grid-column: 1; min-height: 44px; }
 }
 @media (max-width: 640px) {
   .col { padding: 0 16px; }
@@ -588,23 +622,6 @@ button.pill, a.pill { height: 40px; border-radius: 20px; padding: 0 15px; font-s
 @media (max-width: 460px) {
   .cbar [data-model-label] { max-width: 6ch; }
   .cbar > .btn { padding: 0 8px; }
-}
-
-/* ---- starter suggestions ------------------------------------------ */
-/* An aligned grid of equal cards rather than three pills of different
-   widths. Each one says what it will actually do. */
-.starters { display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; }
-.starters > button { display:flex; flex-direction:column; align-items:flex-start; gap:3px;
-  min-height:64px; padding:12px 14px; border:1px solid var(--line); border-radius:10px;
-  background:transparent; text-align:left;
-  transition:background 140ms ease-out, border-color 140ms ease-out; }
-.starters > button:hover { background:var(--sunk); border-color:var(--line-strong); }
-.starters .s-t { font-size:14px; line-height:20px; color:var(--fg); font-weight:500; }
-.starters .s-d { font-size:13px; line-height:19px; color:var(--faint); }
-@media (max-width: 720px) {
-  .starters { grid-template-columns:1fr; }
-  .starters > button { min-height:0; }
-  .starters .s-d { display:none; }
 }
 
 /* ---- activity group ---------------------------------------------- */

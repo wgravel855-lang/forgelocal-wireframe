@@ -583,8 +583,8 @@
   const userMessage = (t, i) => `
     <article class="turn turn-user" data-turn="${i}">
       <div class="umsg" data-umsg><div class="umsg-body" data-umsg-text>${esc(t.text)}</div></div>
-      <div class="mactions" data-user-actions>
-        <button class="mact" type="button" data-copy="${esc(t.text)}" aria-label="Copy message"><span class="mact-i">${svg('<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5.5A1.5 1.5 0 0 1 6.5 4H15"/>', "currentColor", "1.8")}</span><span class="mact-t">Copy</span></button>
+      <div class="mactions" data-user-actions data-actions-for="${i}">
+        ${mactCopy(t.text, "Copy message")}
         <button class="mact" type="button" data-edit-msg aria-label="Edit message"><span class="mact-i">${svg('<path d="M12 20h9"/><path d="M16.6 3.6a2.1 2.1 0 0 1 3 3L7.4 18.8 3.5 20l1.2-3.9z"/>', "currentColor", "1.8")}</span><span class="mact-t">Edit</span></button>
       </div>
     </article>`;
@@ -713,22 +713,38 @@
         <button class="btnq hit recover-x" type="button" data-inert="${esc(r.text.inert)}">${esc(r.text.label)}</button>
       </div>` : "";
 
-  const messageActions = (i, text) => `
-      <div class="mactions" data-assistant-actions>
-        <button class="mact" type="button" data-copy="${esc(text)}" aria-label="Copy response"><span class="mact-i">${svg('<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5.5A1.5 1.5 0 0 1 6.5 4H15"/>', "currentColor", "1.8")}</span><span class="mact-t">Copy</span></button>
-        <button class="mact" type="button" data-vote="up" data-turn="${i}" aria-pressed="false" aria-label="Helpful"><span class="mact-i">${svg('<path d="M7 20V10M7 10l4.2-6.2a1.8 1.8 0 0 1 3 1.9L13 10h5.2a2 2 0 0 1 2 2.4l-1.3 6A2 2 0 0 1 17 20H7z"/>', "currentColor", "1.7")}</span></button>
-        <button class="mact" type="button" data-vote="down" data-turn="${i}" aria-pressed="false" aria-label="Not helpful"><span class="mact-i">${svg('<path d="M17 4v10M17 14l-4.2 6.2a1.8 1.8 0 0 1-3-1.9L11 14H5.8a2 2 0 0 1-2-2.4l1.3-6A2 2 0 0 1 7 4h10z"/>', "currentColor", "1.7")}</span></button>
-        <button class="mact" type="button" data-retry aria-label="Retry this response"><span class="mact-i">${svg('<path d="M20 11a8 8 0 1 0-2.3 6.3"/><path d="M20 5v6h-6"/>', "currentColor", "1.8")}</span></button>
-        <button class="mact" type="button" data-inert="A message overflow menu is not built in this prototype." aria-label="More actions"><span class="mact-i">${svg('<circle cx="5" cy="12" r=".9"/><circle cx="12" cy="12" r=".9"/><circle cx="19" cy="12" r=".9"/>', "currentColor", "2.2")}</span></button>
-      </div>`;
+  // Capabilities, not decoration: an action is only drawn when something real
+  // is behind it. This prototype has no regeneration callback and no overflow
+  // menu items, so Retry and More are absent rather than inert.
+  const CAPS = { copy: true, feedback: true, onRetry: null, moreItems: [] };
+  const mactCopy = (text, label) =>
+    `<button class="mact" type="button" data-copy="${esc(text)}" aria-label="${esc(label)}"><span class="mact-i">${svg('<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5.5A1.5 1.5 0 0 1 6.5 4H15"/>', "currentColor", "1.8")}</span><span class="mact-t">Copy</span></button>`;
+
+  const messageActions = (i, text) => {
+    const parts = [];
+    if (CAPS.copy) parts.push(mactCopy(text, "Copy response"));
+    if (CAPS.feedback) parts.push(
+      `<button class="mact" type="button" data-vote="up" data-turn="${i}" aria-pressed="false" aria-label="Helpful"><span class="mact-i">${svg('<path d="M7 20V10M7 10l4.2-6.2a1.8 1.8 0 0 1 3 1.9L13 10h5.2a2 2 0 0 1 2 2.4l-1.3 6A2 2 0 0 1 17 20H7z"/>', "currentColor", "1.7")}</span></button>`,
+      `<button class="mact" type="button" data-vote="down" data-turn="${i}" aria-pressed="false" aria-label="Not helpful"><span class="mact-i">${svg('<path d="M17 4v10M17 14l-4.2 6.2a1.8 1.8 0 0 1-3-1.9L11 14H5.8a2 2 0 0 1-2-2.4l1.3-6A2 2 0 0 1 7 4h10z"/>', "currentColor", "1.7")}</span></button>`);
+    if (CAPS.onRetry) parts.push(`<button class="mact" type="button" data-retry aria-label="Retry this response"><span class="mact-i">${svg('<path d="M20 11a8 8 0 1 0-2.3 6.3"/><path d="M20 5v6h-6"/>', "currentColor", "1.8")}</span></button>`);
+    if (CAPS.moreItems.length) parts.push(`<button class="mact" type="button" data-more aria-label="More actions"><span class="mact-i">${svg('<circle cx="5" cy="12" r=".9"/><circle cx="12" cy="12" r=".9"/><circle cx="19" cy="12" r=".9"/>', "currentColor", "2.2")}</span></button>`);
+    return parts.length ? `<div class="mactions" data-assistant-actions>${parts.join("")}</div>` : "";
+  };
 
   const assistantTurn = (t, i, state) => {
     const settled = state === "complete" || state === "stopped" || state === "error";
     const text = (t.blocks || []).filter((b) => b.t === "p" || b.t === "note")
       .map((b) => b.text).join("\n\n");
+    // Whatever text arrived is kept; the stopped status sits after it, so a
+    // stopped turn is a durable record in the thread rather than only a
+    // composer state and an announcement.
+    const halted = t.stopped
+      ? `<p class="haltnote">${svg('<rect x="7" y="7" width="10" height="10" rx="2"/>', "currentColor", "1.8")}<span>You stopped this response</span></p>`
+      : "";
     return `
     <article class="turn turn-assistant" data-turn="${i}">
-      <div class="prose amsg" data-amsg>${blocks(t.blocks)}</div>
+      ${(t.blocks || []).length ? `<div class="prose amsg" data-amsg>${blocks(t.blocks)}</div>` : ""}
+      ${halted}
       ${activityGroup(t.activity, i)}
       ${permissionBlock(t.permission, i)}
       ${recoveryBlock(t.recovery)}
@@ -833,30 +849,36 @@
     };
 
     /* ---- scroll ------------------------------------------------------ */
-    const atBottom = () => {
+    const AWAY = 112;   // px from the bottom before the reader counts as away
+    const distanceFromBottom = () => {
       const s = CONVO.scroll;
-      return s.scrollHeight - s.scrollTop - s.clientHeight < 48;
+      return s.scrollHeight - s.scrollTop - s.clientHeight;
     };
+    const atBottom = () => distanceFromBottom() < 48;
     const showJump = (on) => { if (jump) jump.hidden = !on; };
+    const syncJump = () => { showJump(distanceFromBottom() > AWAY); };
     const toBottom = (smooth) => {
       CONVO.scroll.scrollTo({ top: CONVO.scroll.scrollHeight,
         behavior: smooth && !reduced ? "smooth" : "auto" });
     };
     const follow = () => { if (CONVO.follow) toBottom(true); };
+    CONVO.syncJump = syncJump;
 
     let lastTop = CONVO.scroll.scrollTop;
     CONVO.scroll.addEventListener("scroll", () => {
       const s = CONVO.scroll;
-      // scrolling up by any real amount hands control back to the reader
+      // scrolling up by any real amount hands control back to the reader, and
+      // the button tracks position rather than waiting for new output
       if (s.scrollTop < lastTop - 4) CONVO.follow = false;
-      if (atBottom()) { CONVO.follow = true; showJump(false); }
+      if (atBottom()) CONVO.follow = true;
+      syncJump();
       lastTop = s.scrollTop;
     }, { passive: true });
 
     if (jump) jump.addEventListener("click", () => {
       CONVO.follow = true;
+      toBottom(!reduced);
       showJump(false);
-      toBottom(true);
       if (ta) ta.focus();
     });
 
@@ -881,7 +903,7 @@
       $$("[data-artifacts-n]").forEach((el) => { el.textContent = String(files); });
       CONVO.follow = true;
       showJump(false);
-      requestAnimationFrame(() => toBottom(false));
+      requestAnimationFrame(() => { toBottom(false); syncJump(); });
     };
     CONVO.load = load;
 
@@ -927,7 +949,7 @@
         return;
       }
       const retry = e.target.closest("[data-retry]");
-      if (retry) { toast("Retry is not wired to a model in this prototype."); return; }
+      if (retry && CAPS.onRetry) { CAPS.onRetry(retry.closest(".turn")); return; }
     });
 
     /* ---- inline edit of a user message ------------------------------- */
@@ -938,6 +960,9 @@
       const body = $("[data-umsg-text]", turn);
       if ($(".uedit", turn)) return;
       const was = body.textContent;
+      const actions = $(`[data-actions-for="${turn.dataset.turn}"]`, turn);
+      const actionsHome = actions && actions.nextSibling;
+      if (actions) actions.remove();
       const wrap = document.createElement("div");
       wrap.className = "uedit";
       wrap.innerHTML = `<textarea class="uedit-t" aria-label="Edit message"></textarea>
@@ -952,15 +977,19 @@
       input.setSelectionRange(was.length, was.length);
 
       const close = (commit) => {
-        if (commit && input.value.trim()) {
-          body.textContent = input.value.trim();
-          const c = $("[data-copy]", turn);
-          if (c) c.dataset.copy = input.value.trim();
+        const next = commit && input.value.trim() ? input.value.trim() : was;
+        if (commit && input.value.trim() && next !== was) {
+          body.textContent = next;
           say("Message updated");
         }
         wrap.remove();
         body.hidden = false;
-        b.focus();
+        if (actions) {
+          const c = $("[data-copy]", actions);
+          if (c) c.dataset.copy = next;
+          turn.insertBefore(actions, actionsHome);
+          $("[data-edit-msg]", actions).focus();
+        }
       };
       $("[data-edit-save]", wrap).addEventListener("click", () => close(true));
       $("[data-edit-cancel]", wrap).addEventListener("click", () => close(false));
@@ -1061,7 +1090,15 @@
 
       const stop = () => {
         clearTimeout(CONVO.timer);
-        if (CONVO.thread?.turns?.length) CONVO.thread.state = "stopped";
+        const turns = CONVO.thread?.turns;
+        if (turns?.length) {
+          // the pending turn becomes a real stopped turn, and one is created if
+          // nothing arrived, so a user message is never left hanging
+          const last = turns[turns.length - 1];
+          if (last.role === "assistant") last.stopped = true;
+          else turns.push({ role: "assistant", blocks: [], stopped: true });
+          CONVO.thread.state = "stopped";
+        }
         setState("stopped");
         renderThread();
         say("Stopped");
@@ -1071,8 +1108,8 @@
 
     // new content while the reader is away from the bottom offers a way back
     const io = new MutationObserver(() => {
-      if (CONVO.follow) toBottom(true);
-      else showJump(true);
+      if (CONVO.follow) toBottom(!reduced);
+      requestAnimationFrame(syncJump);
     });
     io.observe(el, { childList: true, subtree: true });
   }

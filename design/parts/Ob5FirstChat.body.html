@@ -25,10 +25,19 @@
 
           <div style="display:flex;flex-direction:column;gap:9px">
             <span class="lab">Since this is a React project with no tests yet, you could start with</span>
-            <div style="display:flex;flex-wrap:wrap;gap:8px">
-              <button class="btn btns btnq" type="button" style="border-color:var(--line)" data-starter="Walk me through how this project is organised">Walk me through how this project is organised</button>
-              <button class="btn btns btnq" type="button" style="border-color:var(--line)" data-starter="Set up Vitest and write one test">Set up Vitest and write one test</button>
-              <button class="btn btns btnq" type="button" style="border-color:var(--line)" data-starter="Add a filter bar to the task list">Add a filter bar to the task list</button>
+            <div class="starters">
+              <button type="button" data-starter="Walk me through how this project is organised">
+                <span class="s-t">Walk me through how this project is organised</span>
+                <span class="s-d">Reads the tree and the entry points. Changes nothing.</span>
+              </button>
+              <button type="button" data-starter="Set up Vitest and write one test">
+                <span class="s-t">Set up Vitest and write one test</span>
+                <span class="s-d">Installs it, then asks first.</span>
+              </button>
+              <button type="button" data-starter="Add a filter bar to the task list">
+                <span class="s-t">Add a filter bar to the task list</span>
+                <span class="s-d">Plans the change before editing.</span>
+              </button>
             </div>
           </div>
 
