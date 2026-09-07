@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "node design/build.mjs && node design/build-site.mjs",
+    "build": "node design/build.mjs && node design/build-gallery.mjs",
     "serve": "node design/serve.mjs"
   }
 }

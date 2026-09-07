@@ -3,319 +3,242 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Screen gallery (internal) - ForgeLocal</title>
+<title>Screen gallery (internal) — ForgeLocal</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="/assets/mark.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/assets/forgelocal.css">
 <style>
-
-  body { margin:0; background:#F6F4EF; color:#161719; }
-  .wrap { max-width:1320px; margin:0 auto; padding:56px 32px 96px; }
-  header { display:flex; flex-direction:column; gap:12px; margin-bottom:44px; }
-  h1 { font-size:30px; font-weight:600; letter-spacing:-.015em; margin:0; }
-  h2 { font-size:16px; font-weight:600; margin:0 0 10px; }
-  section { margin-bottom:52px; }
-  .pagenote { margin:0 0 20px; max-width:760px; font-size:13px; line-height:1.6; color:#6E6A62;
-    border-left:2px solid #DAD5CB; padding-left:14px; }
-  .grid { display:grid; grid-template-columns:repeat(auto-fill, 400px); justify-content:start; gap:22px; }
-  .card { display:block; border:1px solid #DAD5CB; border-radius:8px; overflow:hidden;
-    background:#FFF; text-decoration:none; color:inherit; }
-  .card:hover { border-color:#5B5CF0; text-decoration:none; }
-  .shot { overflow:hidden; background:#E4E0D8; border-bottom:1px solid #DAD5CB; }
-  .shot iframe { border:0; transform-origin:top left; pointer-events:none; display:block; }
-  .cap { display:flex; align-items:center; gap:10px; padding:11px 14px; font-size:13px; }
-  .cap .dim { margin-left:auto; font-size:11px; color:#8B867C;
-    font-family:"Geist Mono","Cascadia Mono",ui-monospace,Consolas,monospace; }
+  body { background: var(--bg); }
+  .g-wrap { max-width: 1360px; margin: 0 auto; padding: 56px 32px 96px; }
+  .g-head { display: flex; flex-direction: column; gap: 12px; margin-bottom: 40px; }
+  .g-head h1 { font-size: 30px; line-height: 38px; font-weight: 600; margin: 0; letter-spacing: -.02em; }
+  section { margin-bottom: 56px; }
+  section h2 { font-size: 18px; line-height: 26px; font-weight: 600; margin: 0 0 8px; }
+  .g-note { margin: 0 0 20px; max-width: 72ch; font-size: 14px; line-height: 21px; color: var(--mut);
+    border-left: 2px solid var(--line); padding-left: 14px; }
+  .g-grid { display: grid; grid-template-columns: repeat(auto-fill, 420px); justify-content: start; gap: 22px; }
+  .g-card { display: block; border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+    background: var(--raised); color: inherit; }
+  .g-card:hover { border-color: var(--acc); text-decoration: none; }
+  .g-shot { display: block; overflow: hidden; background: #0E0F10; border-bottom: 1px solid var(--line); }
+  .g-shot iframe { border: 0; transform-origin: top left; pointer-events: none; display: block; }
+  .g-cap { display: flex; align-items: center; gap: 12px; padding: 12px 14px; font-size: 14px; min-height: 44px; }
+  .g-dim { margin-left: auto; font-size: 12px; color: var(--faint);
+    font-family: "Geist Mono", "Cascadia Mono", ui-monospace, Consolas, monospace; }
+  @media (max-width: 520px) { .g-grid { grid-template-columns: 1fr } .g-shot iframe { transform-origin: top left } }
 </style>
 </head>
-<body>
-<div class="wrap">
-  <header>
-    <span class="lab">Wireframe</span>
-    <h1>ForgeLocal</h1>
-    <p style="margin:0;max-width:660px;font-size:15px;line-height:1.6;color:#6E6A62">A local coding agent: it detects what the machine can run, installs a suitable open model, gives that model bounded coding tools, and keeps the whole thing reviewable. Greybox screens, not a build.</p>
+<body class="site">
+<div class="g-wrap">
+  <header class="g-head">
+    <span class="lab">Internal design review</span>
+    <h1>ForgeLocal screen gallery</h1>
+    <p style="margin:0;max-width:72ch;font-size:15px;line-height:24px;color:var(--mut)">
+      Every tile below is a live preview of the real route, not a copy. Click one to open the
+      working screen. This page is a review tool and is not part of the product.
+      <a href="/">Go to the site</a>.
+    </p>
   </header>
-  <section>
-    <h2>Workspace</h2>
-    <p class="pagenote">Conversation-first. Sidebar 248px collapsing to nothing, top bar 48px, reading column 792px, composer radius 16px. No permanent file tree, terminal, diff or preview, and no bottom status bar.<br>Finished low-risk work collapses into one Working group with quiet rows; only the current action stays open. Permission requests, errors and anything needing attention stay expanded and stop execution behind them.<br>Model lives in the composer, context and permission mode in its options menu, project and branch in the project menu.<br>Verified with no horizontal overflow and WCAG AA contrast at 1920, 1440, 1366, 1024 and 768.</p>
-    <div class="grid">
-    <a class="card" href="/screens/WsEmpty.html">
-      <div class="shot" style="height:250px">
-        <iframe src="/screens/WsEmpty.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
+    <section>
+      <h2>Workspace</h2>
+      <p class="g-note">The real application routes. Controls here are live: sidebar collapse, model picker, composer, drawer tabs, diff mode and review actions all work.</p>
+      <div class="g-grid">
+      <a class="g-card" href="/app/">
+        <span class="g-shot" style="height:263px">
+          <iframe src="/app/" scrolling="no" tabindex="-1" aria-hidden="true" loading="lazy"
+            style="width:1440px;height:900px;transform:scale(0.2917)"></iframe>
+        </span>
+        <span class="g-cap"><span>Empty</span><span class="g-dim">/app/</span></span>
+      </a>
+      <a class="g-card" href="/app/running/">
+        <span class="g-shot" style="height:263px">
+          <iframe src="/app/running/" scrolling="no" tabindex="-1" aria-hidden="true" loading="lazy"
+            style="width:1440px;height:900px;transform:scale(0.2917)"></iframe>
+        </span>
+        <span class="g-cap"><span>Agent running</span><span class="g-dim">/app/running/</span></span>
+      </a>
+      <a class="g-card" href="/app/permission/">
+        <span class="g-shot" style="height:263px">
+          <iframe src="/app/permission/" scrolling="no" tabindex="-1" aria-hidden="true" loading="lazy"
+            style="width:1440px;height:900px;transform:scale(0.2917)"></iframe>
+        </span>
+        <span class="g-cap"><span>Permission request</span><span class="g-dim">/app/permission/</span></span>
+      </a>
+      <a class="g-card" href="/app/review/">
+        <span class="g-shot" style="height:263px">
+          <iframe src="/app/review/" scrolling="no" tabindex="-1" aria-hidden="true" loading="lazy"
+            style="width:1440px;height:900px;transform:scale(0.2917)"></iframe>
+        </span>
+        <span class="g-cap"><span>Change review</span><span class="g-dim">/app/review/</span></span>
+      </a>
+      <a class="g-card" href="/app/stopped/">
+        <span class="g-shot" style="height:263px">
+          <iframe src="/app/stopped/" scrolling="no" tabindex="-1" aria-hidden="true" loading="lazy"
+            style="width:1440px;height:900px;transform:scale(0.2917)"></iframe>
+        </span>
+        <span class="g-cap"><span>Stopped, no progress</span><span class="g-dim">/app/stopped/</span></span>
+      </a>
+      <a class="g-card" href="/app/models/">
+        <span class="g-shot" style="height:263px">
+          <iframe src="/app/models/" scrolling="no" tabindex="-1" aria-hidden="true" loading="lazy"
+            style="width:1440px;height:900px;transform:scale(0.2917)"></iframe>
+        </span>
+        <span class="g-cap"><span>Models, explore</span><span class="g-dim">/app/models/</span></span>
+      </a>
+      <a class="g-card" href="/app/models/installed/">
+        <span class="g-shot" style="height:263px">
+          <iframe src="/app/models/installed/" scrolling="no" tabindex="-1" aria-hidden="true" loading="lazy"
+            style="width:1440px;height:900px;transform:scale(0.2917)"></iframe>
+        </span>
+        <span class="g-cap"><span>Models, installed</span><span class="g-dim">/app/models/installed/</span></span>
+      </a>
       </div>
-      <div class="cap"><span>Workspace, empty</span><span class="dim">1440&times;900</span></div>
-    </a>
-    <a class="card" href="/screens/WsRunning.html">
-      <div class="shot" style="height:250px">
-        <iframe src="/screens/WsRunning.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
+    </section>
+    <section>
+      <h2>Onboarding</h2>
+      <p class="g-note">Five steps in the application shell. Step five is the real workspace rather than a congratulations page.</p>
+      <div class="g-grid">
+      <a class="g-card" href="/setup/1/">
+        <span class="g-shot" style="height:263px">
+          <iframe src="/setup/1/" scrolling="no" tabindex="-1" aria-hidden="true" loading="lazy"
+            style="width:1440px;height:900px;transform:scale(0.2917)"></iframe>
+        </span>
+        <span class="g-cap"><span>1. Welcome and scan</span><span class="g-dim">/setup/1/</span></span>
+      </a>
+      <a class="g-card" href="/setup/2/">
+        <span class="g-shot" style="height:263px">
+          <iframe src="/setup/2/" scrolling="no" tabindex="-1" aria-hidden="true" loading="lazy"
+            style="width:1440px;height:900px;transform:scale(0.2917)"></iframe>
+        </span>
+        <span class="g-cap"><span>2. Hardware and recommendation</span><span class="g-dim">/setup/2/</span></span>
+      </a>
+      <a class="g-card" href="/setup/3/">
+        <span class="g-shot" style="height:263px">
+          <iframe src="/setup/3/" scrolling="no" tabindex="-1" aria-hidden="true" loading="lazy"
+            style="width:1440px;height:900px;transform:scale(0.2917)"></iframe>
+        </span>
+        <span class="g-cap"><span>3. Install runtime and model</span><span class="g-dim">/setup/3/</span></span>
+      </a>
+      <a class="g-card" href="/setup/4/">
+        <span class="g-shot" style="height:263px">
+          <iframe src="/setup/4/" scrolling="no" tabindex="-1" aria-hidden="true" loading="lazy"
+            style="width:1440px;height:900px;transform:scale(0.2917)"></iframe>
+        </span>
+        <span class="g-cap"><span>4. Project and permissions</span><span class="g-dim">/setup/4/</span></span>
+      </a>
+      <a class="g-card" href="/setup/5/">
+        <span class="g-shot" style="height:263px">
+          <iframe src="/setup/5/" scrolling="no" tabindex="-1" aria-hidden="true" loading="lazy"
+            style="width:1440px;height:900px;transform:scale(0.2917)"></iframe>
+        </span>
+        <span class="g-cap"><span>5. First chat</span><span class="g-dim">/setup/5/</span></span>
+      </a>
       </div>
-      <div class="cap"><span>Workspace, agent running</span><span class="dim">1440&times;900</span></div>
-    </a>
-    <a class="card" href="/screens/WsPermission.html">
-      <div class="shot" style="height:250px">
-        <iframe src="/screens/WsPermission.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
+    </section>
+    <section>
+      <h2>Marketing site</h2>
+      <p class="g-note">Light surface. Every value on the model pages is derived from the shared profile source.</p>
+      <div class="g-grid">
+      <a class="g-card" href="/">
+        <span class="g-shot" style="height:300px">
+          <iframe src="/" scrolling="no" tabindex="-1" aria-hidden="true" loading="lazy"
+            style="width:1280px;height:1000px;transform:scale(0.3281)"></iframe>
+        </span>
+        <span class="g-cap"><span>Home</span><span class="g-dim">/</span></span>
+      </a>
+      <a class="g-card" href="/product/">
+        <span class="g-shot" style="height:295px">
+          <iframe src="/product/" scrolling="no" tabindex="-1" aria-hidden="true" loading="lazy"
+            style="width:1280px;height:900px;transform:scale(0.3281)"></iframe>
+        </span>
+        <span class="g-cap"><span>How it works</span><span class="g-dim">/product/</span></span>
+      </a>
+      <a class="g-card" href="/models/">
+        <span class="g-shot" style="height:300px">
+          <iframe src="/models/" scrolling="no" tabindex="-1" aria-hidden="true" loading="lazy"
+            style="width:1280px;height:1000px;transform:scale(0.3281)"></iframe>
+        </span>
+        <span class="g-cap"><span>Model catalog</span><span class="g-dim">/models/</span></span>
+      </a>
+      <a class="g-card" href="/models/qwen25-coder-14b-q4km/">
+        <span class="g-shot" style="height:300px">
+          <iframe src="/models/qwen25-coder-14b-q4km/" scrolling="no" tabindex="-1" aria-hidden="true" loading="lazy"
+            style="width:1280px;height:1000px;transform:scale(0.3281)"></iframe>
+        </span>
+        <span class="g-cap"><span>Model detail</span><span class="g-dim">/models/qwen25-coder-14b-q4km/</span></span>
+      </a>
+      <a class="g-card" href="/download/">
+        <span class="g-shot" style="height:295px">
+          <iframe src="/download/" scrolling="no" tabindex="-1" aria-hidden="true" loading="lazy"
+            style="width:1280px;height:900px;transform:scale(0.3281)"></iframe>
+        </span>
+        <span class="g-cap"><span>Download</span><span class="g-dim">/download/</span></span>
+      </a>
+      <a class="g-card" href="/pricing/">
+        <span class="g-shot" style="height:300px">
+          <iframe src="/pricing/" scrolling="no" tabindex="-1" aria-hidden="true" loading="lazy"
+            style="width:1280px;height:1000px;transform:scale(0.3281)"></iframe>
+        </span>
+        <span class="g-cap"><span>Pricing</span><span class="g-dim">/pricing/</span></span>
+      </a>
+      <a class="g-card" href="/security/">
+        <span class="g-shot" style="height:300px">
+          <iframe src="/security/" scrolling="no" tabindex="-1" aria-hidden="true" loading="lazy"
+            style="width:1280px;height:1000px;transform:scale(0.3281)"></iframe>
+        </span>
+        <span class="g-cap"><span>Security</span><span class="g-dim">/security/</span></span>
+      </a>
+      <a class="g-card" href="/docs/">
+        <span class="g-shot" style="height:263px">
+          <iframe src="/docs/" scrolling="no" tabindex="-1" aria-hidden="true" loading="lazy"
+            style="width:1280px;height:800px;transform:scale(0.3281)"></iframe>
+        </span>
+        <span class="g-cap"><span>Docs</span><span class="g-dim">/docs/</span></span>
+      </a>
+      <a class="g-card" href="/changelog/">
+        <span class="g-shot" style="height:230px">
+          <iframe src="/changelog/" scrolling="no" tabindex="-1" aria-hidden="true" loading="lazy"
+            style="width:1280px;height:700px;transform:scale(0.3281)"></iframe>
+        </span>
+        <span class="g-cap"><span>Changelog</span><span class="g-dim">/changelog/</span></span>
+      </a>
+      <a class="g-card" href="/status/">
+        <span class="g-shot" style="height:263px">
+          <iframe src="/status/" scrolling="no" tabindex="-1" aria-hidden="true" loading="lazy"
+            style="width:1280px;height:800px;transform:scale(0.3281)"></iframe>
+        </span>
+        <span class="g-cap"><span>Status</span><span class="g-dim">/status/</span></span>
+      </a>
+      <a class="g-card" href="/privacy/">
+        <span class="g-shot" style="height:295px">
+          <iframe src="/privacy/" scrolling="no" tabindex="-1" aria-hidden="true" loading="lazy"
+            style="width:1280px;height:900px;transform:scale(0.3281)"></iframe>
+        </span>
+        <span class="g-cap"><span>Privacy</span><span class="g-dim">/privacy/</span></span>
+      </a>
+      <a class="g-card" href="/terms/">
+        <span class="g-shot" style="height:230px">
+          <iframe src="/terms/" scrolling="no" tabindex="-1" aria-hidden="true" loading="lazy"
+            style="width:1280px;height:700px;transform:scale(0.3281)"></iframe>
+        </span>
+        <span class="g-cap"><span>Terms</span><span class="g-dim">/terms/</span></span>
+      </a>
+      <a class="g-card" href="/signin/">
+        <span class="g-shot" style="height:263px">
+          <iframe src="/signin/" scrolling="no" tabindex="-1" aria-hidden="true" loading="lazy"
+            style="width:1280px;height:800px;transform:scale(0.3281)"></iframe>
+        </span>
+        <span class="g-cap"><span>Sign in</span><span class="g-dim">/signin/</span></span>
+      </a>
+      <a class="g-card" href="/404.html">
+        <span class="g-shot" style="height:230px">
+          <iframe src="/404.html" scrolling="no" tabindex="-1" aria-hidden="true" loading="lazy"
+            style="width:1280px;height:700px;transform:scale(0.3281)"></iframe>
+        </span>
+        <span class="g-cap"><span>Not found</span><span class="g-dim">/404.html</span></span>
+      </a>
       </div>
-      <div class="cap"><span>Permission request</span><span class="dim">1440&times;900</span></div>
-    </a>
-    <a class="card" href="/screens/WsReview.html">
-      <div class="shot" style="height:250px">
-        <iframe src="/screens/WsReview.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
-      </div>
-      <div class="cap"><span>Change review, drawer open</span><span class="dim">1440&times;900</span></div>
-    </a>
-    <a class="card" href="/screens/WsFailed.html">
-      <div class="shot" style="height:250px">
-        <iframe src="/screens/WsFailed.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
-      </div>
-      <div class="cap"><span>Stopped, no progress</span><span class="dim">1440&times;900</span></div>
-    </a>
-    <a class="card" href="/screens/ModelPicker.html">
-      <div class="shot" style="height:300px">
-        <iframe src="/screens/ModelPicker.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:760px;height:700px;transform:scale(0.5263)"></iframe>
-      </div>
-      <div class="cap"><span>Model picker</span><span class="dim">760&times;700</span></div>
-    </a>
-    <a class="card" href="/screens/ModelsExplore.html">
-      <div class="shot" style="height:250px">
-        <iframe src="/screens/ModelsExplore.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
-      </div>
-      <div class="cap"><span>Models, explore</span><span class="dim">1440&times;900</span></div>
-    </a>
-    <a class="card" href="/screens/ModelsMine.html">
-      <div class="shot" style="height:250px">
-        <iframe src="/screens/ModelsMine.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
-      </div>
-      <div class="cap"><span>Models, my models</span><span class="dim">1440&times;900</span></div>
-    </a>
-    </div>
-  </section>
-  <section>
-    <h2>Onboarding</h2>
-    <p class="pagenote">Five steps in the same dark shell as the workspace, down from eleven light ones.<br>Step 2 replaces the three equal recommendation cards with one recommended profile, a plain-language reason, and alternatives behind Compare other options. Model family, quantization and context stay behind Advanced.<br>Step 3 folds runtime install, model download and the capability self-test into one screen; the seven technical checks sit behind View details.<br>Step 5 is the real workspace, not a congratulations page.</p>
-    <div class="grid">
-    <a class="card" href="/screens/Ob1Welcome.html">
-      <div class="shot" style="height:261px">
-        <iframe src="/screens/Ob1Welcome.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1380px;height:900px;transform:scale(0.2899)"></iframe>
-      </div>
-      <div class="cap"><span>1. Welcome and scan</span><span class="dim">1380&times;900</span></div>
-    </a>
-    <a class="card" href="/screens/Ob2Recommendation.html">
-      <div class="shot" style="height:261px">
-        <iframe src="/screens/Ob2Recommendation.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1380px;height:900px;transform:scale(0.2899)"></iframe>
-      </div>
-      <div class="cap"><span>2. Hardware and recommendation</span><span class="dim">1380&times;900</span></div>
-    </a>
-    <a class="card" href="/screens/Ob3Install.html">
-      <div class="shot" style="height:261px">
-        <iframe src="/screens/Ob3Install.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1380px;height:900px;transform:scale(0.2899)"></iframe>
-      </div>
-      <div class="cap"><span>3. Install runtime and model</span><span class="dim">1380&times;900</span></div>
-    </a>
-    <a class="card" href="/screens/Ob4Project.html">
-      <div class="shot" style="height:261px">
-        <iframe src="/screens/Ob4Project.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1380px;height:900px;transform:scale(0.2899)"></iframe>
-      </div>
-      <div class="cap"><span>4. Project and permissions</span><span class="dim">1380&times;900</span></div>
-    </a>
-    <a class="card" href="/screens/Ob5FirstChat.html">
-      <div class="shot" style="height:261px">
-        <iframe src="/screens/Ob5FirstChat.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1380px;height:900px;transform:scale(0.2899)"></iframe>
-      </div>
-      <div class="cap"><span>5. First chat, the real workspace</span><span class="dim">1380&times;900</span></div>
-    </a>
-    </div>
-  </section>
-  <section>
-    <h2>Marketing site</h2>
-    <p class="pagenote">Light surface. One primary Download action and one secondary See how it works; no fake prompt box in the hero.<br>The hero shows the actual dark workspace built from the same components and tokens as the app, not a placeholder panel. The three editorial sections alternate text with real interface, again built from live components rather than images.<br>Still undrawn: Product, Model detail, Download, Pricing as a full route, Sign in, Account, Docs, Changelog.</p>
-    <div class="grid">
-    <a class="card" href="/screens/Homepage.html">
-      <div class="shot" style="height:300px">
-        <iframe src="/screens/Homepage.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1280px;height:3400px;transform:scale(0.3125)"></iframe>
-      </div>
-      <div class="cap"><span>Marketing home</span><span class="dim">1280&times;3400</span></div>
-    </a>
-    <a class="card" href="/screens/ModelsPage.html">
-      <div class="shot" style="height:300px">
-        <iframe src="/screens/ModelsPage.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1280px;height:1550px;transform:scale(0.3125)"></iframe>
-      </div>
-      <div class="cap"><span>Model catalog</span><span class="dim">1280&times;1550</span></div>
-    </a>
-    <a class="card" href="/screens/SecurityPage.html">
-      <div class="shot" style="height:300px">
-        <iframe src="/screens/SecurityPage.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1280px;height:1950px;transform:scale(0.3125)"></iframe>
-      </div>
-      <div class="cap"><span>Security</span><span class="dim">1280&times;1950</span></div>
-    </a>
-    </div>
-  </section>
-  <section>
-    <h2>Superseded</h2>
-    <p class="pagenote">Do not build from this page.<br>The first six are the original three-panel IDE layout, replaced when the screen map locked the workspace as conversation-first. The ten light onboarding screens are replaced by the five-step dark flow.<br>Kept only because some content is worth porting: the recovery-state anatomy, the profile evidence table, the settings privacy pane and the cloud-boost consent screen.</p>
-    <div class="grid">
-    <a class="card" href="/screens/Main.html">
-      <div class="shot" style="height:250px">
-        <iframe src="/screens/Main.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
-      </div>
-      <div class="cap"><span>OLD Main</span><span class="dim">1440&times;900</span></div>
-    </a>
-    <a class="card" href="/screens/DiffReview.html">
-      <div class="shot" style="height:250px">
-        <iframe src="/screens/DiffReview.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
-      </div>
-      <div class="cap"><span>OLD DiffReview</span><span class="dim">1440&times;900</span></div>
-    </a>
-    <a class="card" href="/screens/PlanReview.html">
-      <div class="shot" style="height:250px">
-        <iframe src="/screens/PlanReview.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
-      </div>
-      <div class="cap"><span>OLD PlanReview</span><span class="dim">1440&times;900</span></div>
-    </a>
-    <a class="card" href="/screens/Home.html">
-      <div class="shot" style="height:250px">
-        <iframe src="/screens/Home.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
-      </div>
-      <div class="cap"><span>OLD Home</span><span class="dim">1440&times;900</span></div>
-    </a>
-    <a class="card" href="/screens/ModelManager.html">
-      <div class="shot" style="height:250px">
-        <iframe src="/screens/ModelManager.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
-      </div>
-      <div class="cap"><span>OLD ModelManager</span><span class="dim">1440&times;900</span></div>
-    </a>
-    <a class="card" href="/screens/ProfileDetail.html">
-      <div class="shot" style="height:250px">
-        <iframe src="/screens/ProfileDetail.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
-      </div>
-      <div class="cap"><span>OLD ProfileDetail</span><span class="dim">1440&times;900</span></div>
-    </a>
-    <a class="card" href="/screens/Settings.html">
-      <div class="shot" style="height:250px">
-        <iframe src="/screens/Settings.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
-      </div>
-      <div class="cap"><span>OLD Settings</span><span class="dim">1440&times;900</span></div>
-    </a>
-    <a class="card" href="/screens/Recovery.html">
-      <div class="shot" style="height:250px">
-        <iframe src="/screens/Recovery.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
-      </div>
-      <div class="cap"><span>OLD Recovery</span><span class="dim">1440&times;900</span></div>
-    </a>
-    <a class="card" href="/screens/CloudBoost.html">
-      <div class="shot" style="height:250px">
-        <iframe src="/screens/CloudBoost.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
-      </div>
-      <div class="cap"><span>OLD CloudBoost</span><span class="dim">1440&times;900</span></div>
-    </a>
-    <a class="card" href="/screens/ApprovalCard.html">
-      <div class="shot" style="height:250px">
-        <iframe src="/screens/ApprovalCard.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
-      </div>
-      <div class="cap"><span>OLD ApprovalCard</span><span class="dim">1440&times;900</span></div>
-    </a>
-    <a class="card" href="/screens/NarrowWorkspace.html">
-      <div class="shot" style="height:250px">
-        <iframe src="/screens/NarrowWorkspace.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
-      </div>
-      <div class="cap"><span>OLD NarrowWorkspace</span><span class="dim">1440&times;900</span></div>
-    </a>
-    <a class="card" href="/screens/Welcome.html">
-      <div class="shot" style="height:250px">
-        <iframe src="/screens/Welcome.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
-      </div>
-      <div class="cap"><span>OLD Welcome</span><span class="dim">1440&times;900</span></div>
-    </a>
-    <a class="card" href="/screens/Intent.html">
-      <div class="shot" style="height:250px">
-        <iframe src="/screens/Intent.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
-      </div>
-      <div class="cap"><span>OLD Intent</span><span class="dim">1440&times;900</span></div>
-    </a>
-    <a class="card" href="/screens/Permissions.html">
-      <div class="shot" style="height:250px">
-        <iframe src="/screens/Permissions.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
-      </div>
-      <div class="cap"><span>OLD Permissions</span><span class="dim">1440&times;900</span></div>
-    </a>
-    <a class="card" href="/screens/HardwareScan.html">
-      <div class="shot" style="height:250px">
-        <iframe src="/screens/HardwareScan.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
-      </div>
-      <div class="cap"><span>OLD HardwareScan</span><span class="dim">1440&times;900</span></div>
-    </a>
-    <a class="card" href="/screens/Recommendation.html">
-      <div class="shot" style="height:250px">
-        <iframe src="/screens/Recommendation.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
-      </div>
-      <div class="cap"><span>OLD Recommendation</span><span class="dim">1440&times;900</span></div>
-    </a>
-    <a class="card" href="/screens/Download.html">
-      <div class="shot" style="height:250px">
-        <iframe src="/screens/Download.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
-      </div>
-      <div class="cap"><span>OLD Download</span><span class="dim">1440&times;900</span></div>
-    </a>
-    <a class="card" href="/screens/SelfTest.html">
-      <div class="shot" style="height:250px">
-        <iframe src="/screens/SelfTest.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
-      </div>
-      <div class="cap"><span>OLD SelfTest</span><span class="dim">1440&times;900</span></div>
-    </a>
-    <a class="card" href="/screens/NewProject.html">
-      <div class="shot" style="height:250px">
-        <iframe src="/screens/NewProject.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
-      </div>
-      <div class="cap"><span>OLD NewProject</span><span class="dim">1440&times;900</span></div>
-    </a>
-    <a class="card" href="/screens/CloneRepo.html">
-      <div class="shot" style="height:250px">
-        <iframe src="/screens/CloneRepo.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
-      </div>
-      <div class="cap"><span>OLD CloneRepo</span><span class="dim">1440&times;900</span></div>
-    </a>
-    <a class="card" href="/screens/SafetyMode.html">
-      <div class="shot" style="height:250px">
-        <iframe src="/screens/SafetyMode.html#bare" scrolling="no" tabindex="-1" aria-hidden="true"
-          style="width:1440px;height:900px;transform:scale(0.2778)"></iframe>
-      </div>
-      <div class="cap"><span>OLD SafetyMode</span><span class="dim">1440&times;900</span></div>
-    </a>
-    </div>
-  </section>
+    </section>
 </div>
 </body>
 </html>

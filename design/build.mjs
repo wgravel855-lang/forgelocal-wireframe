@@ -68,8 +68,19 @@ writeFileSync(out("assets/mark.svg"), MARK_SVG);
 // browsers ask for /favicon.ico whatever the page declares
 writeFileSync(out("favicon.ico"), MARK_SVG);
 
+const OG_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+<rect width="1200" height="630" fill="#0E0F10"/>
+<g transform="translate(88,232) scale(3.4)"><rect x="2.4" y="2.4" width="19.2" height="19.2" rx="5.6" stroke="#EDEDEB" stroke-width="1.7" fill="none"/><path d="M8.6 8.9 11.7 12l-3.1 3.1" stroke="#EDEDEB" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M13.6 15.1h3.3" stroke="#EDEDEB" stroke-width="1.9" stroke-linecap="round" fill="none"/></g>
+<text x="88" y="360" font-family="Inter,Segoe UI,system-ui,sans-serif" font-size="68" font-weight="600" fill="#EDEDEB" letter-spacing="-1.6">Build on your PC.</text>
+<text x="88" y="440" font-family="Inter,Segoe UI,system-ui,sans-serif" font-size="68" font-weight="600" fill="#EDEDEB" letter-spacing="-1.6">Skip the model setup.</text>
+<text x="88" y="512" font-family="Inter,Segoe UI,system-ui,sans-serif" font-size="27" fill="#A2A39F">A coding agent that runs on your own hardware.</text>
+</svg>`;
+writeFileSync(out("assets/og.svg"), OG_SVG);
+
 // ----------------------------------------------------------------- shell ---
-function doc({ title, desc = "", body, cls = "", bodyStyle = "", nav = "" }) {
+const SITE = "https://forgelocal-wireframe.vercel.app";
+
+function doc({ title, desc = "", body, cls = "", bodyStyle = "", canonical = "", jsonld = null }) {
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -80,9 +91,18 @@ function doc({ title, desc = "", body, cls = "", bodyStyle = "", nav = "" }) {
 <meta property="og:title" content="${esc(title)}">
 <meta property="og:description" content="${esc(desc)}">
 <meta property="og:type" content="website">
+<meta property="og:site_name" content="ForgeLocal">
+<meta property="og:image" content="${SITE}/assets/og.svg">
+<meta property="og:url" content="${SITE}${canonical || "/"}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="${esc(title)}">
+<meta name="twitter:description" content="${esc(desc)}">
+<meta name="twitter:image" content="${SITE}/assets/og.svg">
+<link rel="canonical" href="${SITE}${canonical || "/"}">
 <link rel="icon" href="/assets/mark.svg" type="image/svg+xml">
 <link rel="alternate icon" href="/favicon.ico">
-<link rel="stylesheet" href="/assets/forgelocal.css">
+<link rel="stylesheet" href="/assets/forgelocal.css">${jsonld ? `
+<script type="application/ld+json">${JSON.stringify(jsonld)}</script>` : ""}
 </head>
 <body class="${cls}" style="${bodyStyle}">
 <a class="vh" href="#main">Skip to content</a>
@@ -98,8 +118,11 @@ const header = (current) =>
     .replace(`href="${current}"`, `href="${current}" aria-current="page"`);
 const footer = () => inc(readFileSync(join(here, "partials/site-footer.html"), "utf8"));
 
-const marketing = ({ path, title, desc, main }) =>
-  doc({ title, desc, cls: "site", body: `${header(path)}\n<main id="main">\n${main}\n</main>\n${footer()}` });
+const marketing = ({ path, title, desc, main, canonical, jsonld }) =>
+  doc({
+    title, desc, cls: "site", canonical: canonical ?? path, jsonld,
+    body: `${header(path)}\n<main id="main">\n${main}\n</main>\n${footer()}`,
+  });
 
 const appPage = ({ title, body }) =>
   doc({ title, cls: "app", bodyStyle: "height:100%;overflow:hidden", body: `<main id="main" style="height:100%">${body}</main>` });
@@ -148,6 +171,16 @@ write("index.html", marketing({
   path: "/", title: "ForgeLocal — a coding agent that runs on your PC",
   desc: "ForgeLocal reads your hardware, installs a coding model that will actually run on it, and gives that model reviewable tools for files, commands and tests.",
   main: part("Homepage"),
+  jsonld: {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: "ForgeLocal",
+    applicationCategory: "DeveloperApplication",
+    operatingSystem: "Windows 10, Windows 11",
+    description: "A coding agent that runs a local model on your own hardware, with reviewable file, command and test tools.",
+    offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+    url: SITE,
+  },
 }));
 
 /* /models/ ----------------------------------------------------------- */
@@ -210,7 +243,7 @@ for (const m of models) {
   const speed = F.speedFor(m);
   const kv = F.kvCacheBytes(m, fit.context);
   const contexts = m.contextOptions.map((c) => {
-    const f = F.fitFor(m, F.thisPC, c);
+    const f = F.fitAtContext(m, F.thisPC, c);
     return `<tr>
       <td class="num">${F.fmtCtx(c)}</td>
       <td class="num">${F.gb(F.kvCacheBytes(m, c), 2)} GB</td>
@@ -220,8 +253,20 @@ for (const m of models) {
   }).join("\n");
 
   write(`models/${m.id}/index.html`, marketing({
-    path: "/models/", title: `${m.displayName} — ForgeLocal`,
+    path: "/models/", canonical: `/models/${m.id}/`,
+    title: `${m.displayName} — ForgeLocal`,
     desc: `${m.displayName} ${m.quantization}: ${m.strength}`,
+    jsonld: {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      name: m.displayName,
+      applicationCategory: "DeveloperApplication",
+      author: { "@type": "Organization", name: m.publisher },
+      license: m.licenseId,
+      softwareVersion: m.quantization,
+      fileSize: `${F.gb(m.downloadBytes, 2)} GB`,
+      url: `${SITE}/models/${m.id}/`,
+    },
     main: `
 <section class="mwrap msec" style="padding-top:56px;padding-bottom:24px">
   <a href="/models/" style="font-size:13px">&larr; All models</a>

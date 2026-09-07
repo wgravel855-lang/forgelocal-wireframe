@@ -101,8 +101,21 @@
       add("no-textarea", "workspace must contain a real textarea");
     if (/\/models\/$|\/app\/models\//.test(route) && !d.querySelector('input[type="search"], input'))
       add("no-input", "model surface must contain a real input");
-    for (const a of d.querySelectorAll('.mhead a[href="#"], .mfoot a[href="#"]'))
-      add("nav-href-hash", (a.textContent || "").trim().slice(0, 24));
+    for (const a of d.querySelectorAll('a[href="#"]'))
+      add("href-hash", (a.textContent || "").trim().slice(0, 24));
+
+    // Round-three failure modes, now guarded:
+    // a template marker that reached the page, a number rendered without its
+    // value, or a duplicated application shell.
+    if (/<!--[A-Z_]+-->/.test(d.body.innerHTML)) add("unbound-marker", "template marker reached the page");
+    // A unit with no number in front of it: "of  GB", "· GB free".
+    // The lookbehind keeps "13.67 GB" from matching on its own space.
+    const text = d.body.innerText || "";
+    const orphan = text.match(/(?<![\d.])\s+(GB|MB|%|tokens\/s)\b/);
+    if (orphan) add("incomplete-number", `unit with no value: "${text.slice(Math.max(0, orphan.index - 24), orphan.index + 12).replace(/\s+/g, " ")}"`);
+    if (d.querySelectorAll("h1").length > 1) add("duplicate-h1", String(d.querySelectorAll("h1").length));
+    if (d.querySelectorAll(".topbar").length > 1) add("duplicate-topbar", "");
+    if (d.querySelectorAll(".composer").length > 1) add("duplicate-composer", "");
 
     return fail;
   }

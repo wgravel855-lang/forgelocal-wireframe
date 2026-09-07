@@ -424,20 +424,59 @@
 
   /* -------------------------------------------------------------- platform */
   function wirePlatform() {
-    const el = $("[data-platform-cta]");
-    if (!el) return;
+    // The CTA label is stable and never changes after paint. Only the note
+    // below it gains a detected-platform sentence, and it never promises a
+    // build that does not exist.
     const ua = navigator.userAgent;
     const os = /Mac/.test(ua) ? "macOS" : /Linux|X11/.test(ua) ? "Linux" : "Windows";
-    if (os !== "Windows") {
-      el.textContent = `Download for ${os}`;
-      const note = $("[data-platform-note]");
-      if (note) note.textContent = `Detected ${os}. Windows is the only build available today.`;
-    }
+    if (os === "Windows") return;
+    $$("[data-platform-note]").forEach((note) => {
+      note.textContent = `Detected ${os}. Only a Windows build exists today; ${os} is not available yet.`;
+    });
+  }
+
+  /* -------------------------------------------------------------- sign in */
+  function wireSignin() {
+    const form = $("[data-signin]");
+    if (!form) return;
+    const input = $("input[type=email]", form);
+    const submit = $("[data-signin-submit]", form);
+    const error = $("[data-signin-error]", form);
+    // Deliberately permissive: reject what is obviously not an address rather
+    // than trying to out-clever the RFC.
+    const looksLikeEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim());
+
+    const setError = (msg) => {
+      if (!error) return;
+      error.textContent = msg || "";
+      error.hidden = !msg;
+      input.setAttribute("aria-invalid", msg ? "true" : "false");
+    };
+
+    input.addEventListener("input", () => {
+      submit.disabled = !looksLikeEmail(input.value);
+      if (error && !error.hidden && looksLikeEmail(input.value)) setError("");
+    });
+    input.addEventListener("blur", () => {
+      const v = input.value.trim();
+      if (v && !looksLikeEmail(v)) setError("That does not look like an email address.");
+    });
+
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const v = input.value.trim();
+      if (!v) return setError("Enter an email address.");
+      if (!looksLikeEmail(v)) return setError("That does not look like an email address.");
+      setError("");
+      submit.disabled = true;
+      submit.textContent = "Noted";
+      toast("Accounts are not open yet. Nothing was sent and nothing was stored.");
+    });
   }
 
   const boot = () => {
     wireSidebar(); wireComposer(); wireModelPicker(); wireTabs(); wireDrawer();
-    wireReview(); wireFilters(); wireNav(); wirePricing(); wirePlatform(); wireInert();
+    wireReview(); wireFilters(); wireNav(); wirePricing(); wirePlatform(); wireSignin(); wireInert();
     document.documentElement.dataset.reducedMotion = String(reduced);
   };
   document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", boot) : boot();

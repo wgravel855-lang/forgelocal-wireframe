@@ -8,6 +8,14 @@
 <meta property="og:title" content="Models — ForgeLocal">
 <meta property="og:description" content="">
 <meta property="og:type" content="website">
+<meta property="og:site_name" content="ForgeLocal">
+<meta property="og:image" content="https://forgelocal-wireframe.vercel.app/assets/og.svg">
+<meta property="og:url" content="https://forgelocal-wireframe.vercel.app/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Models — ForgeLocal">
+<meta name="twitter:description" content="">
+<meta name="twitter:image" content="https://forgelocal-wireframe.vercel.app/assets/og.svg">
+<link rel="canonical" href="https://forgelocal-wireframe.vercel.app/">
 <link rel="icon" href="/assets/mark.svg" type="image/svg+xml">
 <link rel="alternate icon" href="/favicon.ico">
 <link rel="stylesheet" href="/assets/forgelocal.css">
@@ -190,7 +198,7 @@
                   <span class="pill ok">Loaded</span>
                 </div>
                 <p class="mut" style="margin:0;font-size:14px;line-height:21px">Multi-file edits, running commands, tests and previews.</p>
-                <p class="faint" style="margin:0;font-size:13px;line-height:19px">Fits at a 8k context (11.1 GB). A 16k context would need 12.6 GB against 12 GB.</p>
+                <p class="faint" style="margin:0;font-size:13px;line-height:19px">Needs 11.1 GB of the 12 GB available. It fits, but leaves little room for anything else on the GPU.</p>
                 <div style="display:flex;gap:18px;flex-wrap:wrap;padding-top:2px">
                   <span class="lab num">Alibaba Qwen</span>
                   <span class="lab num">Q4_K_M &middot; 15B</span>
@@ -214,7 +222,7 @@
                   
                 </div>
                 <p class="mut" style="margin:0;font-size:14px;line-height:21px">Reading an unfamiliar codebase and explaining it back.</p>
-                <p class="faint" style="margin:0;font-size:13px;line-height:19px">10.4 GB of weights against 12 GB of video memory, so most layers run on the CPU. It works, but expect it to be slow.</p>
+                <p class="faint" style="margin:0;font-size:13px;line-height:19px">14.3 GB needed against 12 GB of video memory. The weights fit but the 16k key-value cache does not, so it spills to system memory and slows down.</p>
                 <div style="display:flex;gap:18px;flex-wrap:wrap;padding-top:2px">
                   <span class="lab num">DeepSeek</span>
                   <span class="lab num">Q4_K_M &middot; 16B</span>
@@ -286,7 +294,7 @@
                   
                 </div>
                 <p class="mut" style="margin:0;font-size:14px;line-height:21px">Writing and explanation.</p>
-                <p class="faint" style="margin:0;font-size:13px;line-height:19px">Weights, a 8k context and runtime overhead come to 9 GB, inside 12 GB of video memory.</p>
+                <p class="faint" style="margin:0;font-size:13px;line-height:19px">Weights, an 8k context and runtime overhead come to 9 GB, inside 12 GB of video memory.</p>
                 <div style="display:flex;gap:18px;flex-wrap:wrap;padding-top:2px">
                   <span class="lab num">Google</span>
                   <span class="lab num">Q4_K_M &middot; 9.2B</span>

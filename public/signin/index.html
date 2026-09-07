@@ -8,6 +8,14 @@
 <meta property="og:title" content="Sign in — ForgeLocal">
 <meta property="og:description" content="An account is only needed for paid plans and syncing settings.">
 <meta property="og:type" content="website">
+<meta property="og:site_name" content="ForgeLocal">
+<meta property="og:image" content="https://forgelocal-wireframe.vercel.app/assets/og.svg">
+<meta property="og:url" content="https://forgelocal-wireframe.vercel.appsignin/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Sign in — ForgeLocal">
+<meta name="twitter:description" content="An account is only needed for paid plans and syncing settings.">
+<meta name="twitter:image" content="https://forgelocal-wireframe.vercel.app/assets/og.svg">
+<link rel="canonical" href="https://forgelocal-wireframe.vercel.appsignin/">
 <link rel="icon" href="/assets/mark.svg" type="image/svg+xml">
 <link rel="alternate icon" href="/favicon.ico">
 <link rel="stylesheet" href="/assets/forgelocal.css">
@@ -46,20 +54,25 @@
     <h1 class="mh2">Sign in</h1>
     <p class="mlede">An account is only needed for paid plans and syncing settings.</p>
   </div></section><section class="mwrap msec" style="padding-bottom:96px">
-        <div class="stack" style="gap:12px;max-width:76ch"><div class="box" style="padding:24px;max-width:420px;display:flex;flex-direction:column;gap:14px">
-      <label class="stack" style="gap:6px"><span class="h3">Email</span>
-        <input type="email" class="field" placeholder="you@example.com" style="width:100%;color:var(--fg)"></label>
-      <button class="btn btnp btnl" data-inert="Authentication is not connected in this prototype.">Email me a sign-in link</button>
-      <p class="faint" style="margin:0;font-size:12.5px;line-height:18px">No password. ForgeLocal works locally without any of this; signing in only affects billing and settings sync.</p>
-    </div></div></section>
+        <div class="stack" style="gap:12px;max-width:76ch"><form class="box" data-signin novalidate style="padding:24px;max-width:440px;display:flex;flex-direction:column;gap:16px">
+      <div class="stack" style="gap:8px">
+        <label class="h3" for="signin-email">Email</label>
+        <span class="field"><input id="signin-email" name="email" type="email" autocomplete="email"
+          placeholder="you@example.com" aria-describedby="signin-help signin-error" required></span>
+        <p class="faint" id="signin-help" style="margin:0;font-size:13px;line-height:19px">No password. We send a one-time link.</p>
+        <p id="signin-error" role="alert" data-signin-error hidden style="margin:0;font-size:13px;line-height:19px;color:var(--bad)"></p>
+      </div>
+      <button class="btn btnp btnl" type="submit" data-signin-submit disabled>Email me a sign-in link</button>
+      <p class="faint" style="margin:0;font-size:13px;line-height:19px">ForgeLocal works locally without an account. Accounts are not open yet, so this records interest rather than creating one.</p>
+    </form></div></section>
 </main>
 <footer class="mfoot">
   <div class="mwrap mfoot-top">
     <div class="mfoot-cta">
       <h2>See what your PC can build</h2>
       <div class="row">
-        <a href="/download/" class="btn btnp btnl" data-platform-cta>Download for Windows</a>
-        <span class="faint" style="font-size:13px" data-platform-note>Windows 10 and 11, 64-bit. Free for local use.</span>
+        <a href="/download/" class="btn btnp btnl">View downloads</a>
+        <span class="faint" style="font-size:13px" data-platform-note>Windows 10 and 11, 64-bit is the only build. Free for local use.</span>
       </div>
     </div>
     <nav class="mfoot-nav" aria-label="Footer">

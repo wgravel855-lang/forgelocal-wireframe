@@ -1,8 +1,12 @@
 // Hardware fit, computed rather than asserted.
 //
-// Fit states: great | tradeoffs | offload | nofit | unverified
-// Every state carries a short reason built from the same arithmetic that
-// model details show the user, so a page can never disagree with the maths.
+// Two levels, deliberately separate:
+//   fitAtContext(p, pc, ctx)  honest verdict for ONE context length
+//   fitFor(p, pc)             the model's best achievable verdict, i.e. the
+//                             largest context that fits, or offload/no-fit
+//
+// Keeping them apart matters: a per-context table row must never inherit the
+// verdict of a different, smaller context.
 
 import { kvCacheBytes, requiredBytes, RUNTIME_OVERHEAD_BYTES } from "../data/models.mjs";
 export { requiredBytes, kvCacheBytes, RUNTIME_OVERHEAD_BYTES };
@@ -32,32 +36,34 @@ export const FIT = {
   unverified: { label: "Unverified", tone: "mut", rank: 4 },
 };
 
+export function fmtCtx(n) {
+  return n >= 1024 ? `${Math.round(n / 1024)}k` : String(n);
+}
+/** "an 8k", "a 16k" — read aloud, 8k starts with a vowel sound. */
+export const ctxArticle = (n) => (/^(8|11|18|8k|11k|18k)/.test(fmtCtx(n)) ? "an" : "a");
+
 /**
- * @returns {{state:keyof FIT, label:string, tone:string, reason:string,
- *            required:number, kv:number, context:number, headroom:number}}
+ * Honest verdict for one specific context length. No silent fallback.
  */
-export function fitFor(profile, pc = thisPC, context = profile.recommendedContext) {
+export function fitAtContext(profile, pc = thisPC, context = profile.recommendedContext) {
   const kv = kvCacheBytes(profile, context);
   const required = requiredBytes(profile, context);
   const vram = pc.vramBytes;
-  const headroom = vram - required;
-
-  // Try a smaller context before declaring tradeoffs.
-  const smallest = Math.min(...profile.contextOptions);
-  const requiredAtSmallest = requiredBytes(profile, smallest);
+  const weightsPlusOverhead = profile.downloadBytes + RUNTIME_OVERHEAD_BYTES;
 
   let state, reason;
 
   if (required <= vram * 0.92) {
     state = "great";
-    reason = `Weights, a ${fmtCtx(context)} context and runtime overhead come to ${gb(required)} GB, inside ${gb(vram)} GB of video memory.`;
+    reason = `Weights, ${ctxArticle(context)} ${fmtCtx(context)} context and runtime overhead come to ${gb(required)} GB, inside ${gb(vram)} GB of video memory.`;
   } else if (required <= vram) {
     state = "tradeoffs";
     reason = `Needs ${gb(required)} GB of the ${gb(vram)} GB available. It fits, but leaves little room for anything else on the GPU.`;
-  } else if (requiredAtSmallest <= vram) {
-    state = "tradeoffs";
-    reason = `Fits at a ${fmtCtx(smallest)} context (${gb(requiredAtSmallest)} GB). A ${fmtCtx(context)} context would need ${gb(required)} GB against ${gb(vram)} GB.`;
-  } else if (profile.downloadBytes + RUNTIME_OVERHEAD_BYTES <= vram + pc.ramFreeBytes) {
+  } else if (weightsPlusOverhead <= vram) {
+    // weights fit, the KV cache does not: part of it spills to system memory
+    state = "offload";
+    reason = `${gb(required)} GB needed against ${gb(vram)} GB of video memory. The weights fit but the ${fmtCtx(context)} key-value cache does not, so it spills to system memory and slows down.`;
+  } else if (weightsPlusOverhead <= vram + pc.ramFreeBytes) {
     state = "offload";
     reason = `${gb(profile.downloadBytes)} GB of weights against ${gb(vram)} GB of video memory, so most layers run on the CPU. It works, but expect it to be slow.`;
   } else {
@@ -65,11 +71,24 @@ export function fitFor(profile, pc = thisPC, context = profile.recommendedContex
     reason = `${gb(profile.downloadBytes)} GB of weights will not fit in ${gb(vram)} GB of video memory plus ${gb(pc.ramFreeBytes)} GB of free system memory.`;
   }
 
-  return { state, ...FIT[state], reason, required, kv, context, headroom };
+  return { state, ...FIT[state], reason, required, kv, context, headroom: vram - required };
 }
 
-export function fmtCtx(n) {
-  return n >= 1024 ? `${Math.round(n / 1024)}k` : String(n);
+/**
+ * The model's best achievable verdict on this machine: the largest context
+ * that actually fits in video memory, otherwise the honest offload/no-fit
+ * verdict at its recommended context.
+ */
+export function fitFor(profile, pc = thisPC) {
+  // Prefer the profile's own recommended context when it fits, so the headline
+  // figure is the one the product would actually load.
+  if (requiredBytes(profile, profile.recommendedContext) <= pc.vramBytes) {
+    return fitAtContext(profile, pc, profile.recommendedContext);
+  }
+  const best = [...profile.contextOptions]
+    .sort((a, b) => b - a)
+    .find((c) => requiredBytes(profile, c) <= pc.vramBytes);
+  return fitAtContext(profile, pc, best ?? profile.recommendedContext);
 }
 
 /** Speed is never asserted. Nothing here has been benchmarked. */
@@ -82,27 +101,20 @@ export function speedFor(profile, pc = thisPC) {
 
 /**
  * The one recommendation: the most capable coding model that actually fits,
- * evaluated at the largest context that fits, plus the runner-up so the UI can
- * say what is being traded.
+ * plus the lighter runner-up so the UI can say what is being traded.
  */
 export function recommendFor(pc = thisPC) {
   const candidates = models_coding()
     .map((m) => {
-      // Largest context whose own arithmetic fits in video memory. Checking the
-      // fit *state* here would be wrong: the state can fall back to a smaller
-      // context internally, which would let us advertise a context that does
-      // not actually fit.
-      const ctx = [...m.contextOptions]
-        .sort((a, b) => b - a)
-        .find((c) => requiredBytes(m, c) <= pc.vramBytes);
-      return ctx ? { m, f: fitFor(m, pc, ctx) } : null;
+      const ctx = [...m.contextOptions].sort((a, b) => b - a).find((c) => requiredBytes(m, c) <= pc.vramBytes);
+      return ctx ? { m, f: fitAtContext(m, pc, ctx) } : null;
     })
     .filter(Boolean)
     .sort((a, b) => b.m.parameterCount - a.m.parameterCount);
 
   if (!candidates.length) return null;
   const pick = candidates[0];
-  const lighter = candidates.slice(1).find((c) => fitFor(c.m, pc).state === "great");
+  const lighter = candidates.slice(1).find((c) => c.f.state === "great");
   return { ...pick, lighter: lighter ?? null };
 }
 
@@ -114,8 +126,5 @@ function models_coding() {
 
 export function storageTotals(list) {
   const installed = list.filter((m) => m.installed);
-  return {
-    installed,
-    installedBytes: installed.reduce((a, m) => a + m.installedBytes, 0),
-  };
+  return { installed, installedBytes: installed.reduce((a, m) => a + m.installedBytes, 0) };
 }

@@ -8,9 +8,18 @@
 <meta property="og:title" content="DeepSeek-Coder-V2 Lite 16B — ForgeLocal">
 <meta property="og:description" content="DeepSeek-Coder-V2 Lite 16B Q4_K_M: Reading an unfamiliar codebase and explaining it back.">
 <meta property="og:type" content="website">
+<meta property="og:site_name" content="ForgeLocal">
+<meta property="og:image" content="https://forgelocal-wireframe.vercel.app/assets/og.svg">
+<meta property="og:url" content="https://forgelocal-wireframe.vercel.app/models/deepseek-coder-v2-lite-q4km/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="DeepSeek-Coder-V2 Lite 16B — ForgeLocal">
+<meta name="twitter:description" content="DeepSeek-Coder-V2 Lite 16B Q4_K_M: Reading an unfamiliar codebase and explaining it back.">
+<meta name="twitter:image" content="https://forgelocal-wireframe.vercel.app/assets/og.svg">
+<link rel="canonical" href="https://forgelocal-wireframe.vercel.app/models/deepseek-coder-v2-lite-q4km/">
 <link rel="icon" href="/assets/mark.svg" type="image/svg+xml">
 <link rel="alternate icon" href="/favicon.ico">
 <link rel="stylesheet" href="/assets/forgelocal.css">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"DeepSeek-Coder-V2 Lite 16B","applicationCategory":"DeveloperApplication","author":{"@type":"Organization","name":"DeepSeek"},"license":"DeepSeek License","softwareVersion":"Q4_K_M","fileSize":"10.36 GB","url":"https://forgelocal-wireframe.vercel.app/models/deepseek-coder-v2-lite-q4km/"}</script>
 </head>
 <body class="site" style="">
 <a class="vh" href="#main">Skip to content</a>
@@ -69,7 +78,7 @@
 
 <section class="mwrap msec" style="padding-bottom:40px">
   <h2 class="h2" style="font-size:20px;margin-bottom:10px">Hardware fit on RTX 4070 12 GB, 32 GB RAM</h2>
-  <p class="mut" style="margin:0 0 16px;font-size:14px;line-height:21px;max-width:70ch">10.4 GB of weights against 12 GB of video memory, so most layers run on the CPU. It works, but expect it to be slow.</p>
+  <p class="mut" style="margin:0 0 16px;font-size:14px;line-height:21px;max-width:70ch">14.3 GB needed against 12 GB of video memory. The weights fit but the 16k key-value cache does not, so it spills to system memory and slows down.</p>
   <div style="overflow-x:auto">
     <table class="tbl" style="min-width:520px">
       <caption class="vh">Memory required at each context length</caption>
@@ -162,8 +171,8 @@
     <div class="mfoot-cta">
       <h2>See what your PC can build</h2>
       <div class="row">
-        <a href="/download/" class="btn btnp btnl" data-platform-cta>Download for Windows</a>
-        <span class="faint" style="font-size:13px" data-platform-note>Windows 10 and 11, 64-bit. Free for local use.</span>
+        <a href="/download/" class="btn btnp btnl">View downloads</a>
+        <span class="faint" style="font-size:13px" data-platform-note>Windows 10 and 11, 64-bit is the only build. Free for local use.</span>
       </div>
     </div>
     <nav class="mfoot-nav" aria-label="Footer">

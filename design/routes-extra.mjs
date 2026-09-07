@@ -46,7 +46,7 @@ export function extraRoutes({ write, marketing, appPage, part, esc, models, F, g
       <span class="h2" style="font-size:18px">Windows 10 and 11, 64-bit</span>
       <span class="mut" style="font-size:13.5px">x64 and ARM64. Version and checksum appear here once the first signed build is published.</span>
     </div>
-    <button class="btn btnp btnl" data-inert="No installer has been published yet. This prototype has no build to serve.">Download for Windows</button>
+    <button class="btn btnp btnl" data-inert="No installer has been published yet, so there is nothing to serve.">No build published yet</button>
   </div>
   <p class="faint" style="margin:14px 2px 0;font-size:12.5px" data-platform-note>
     Detected platform appears here. macOS and Linux builds are not available yet.
@@ -80,20 +80,22 @@ export function extraRoutes({ write, marketing, appPage, part, esc, models, F, g
       signature, hash or version is shown. When there is one, it will be here rather than in a
       marketing claim.
     </p>
-    <p style="margin:0"><a href="/changelog/">Release notes</a> &middot; <a href="/status/">Service status</a></p>
+    <p style="margin:0;display:flex;gap:20px;flex-wrap:wrap">
+      <a class="link" href="/changelog/">Release notes</a>
+      <a class="link" href="/status/">Service status</a></p>
   </div>
 </section>`,
   }));
 
   /* ------------------------------------------------------------ /pricing/ */
-  const plan = (name, monthly, blurb, feats, cta, primary) => `
+  const plan = (name, monthly, blurb, feats, cta, primary, unit = "") => `
   <div class="box" style="padding:24px;display:flex;flex-direction:column;gap:16px${primary ? ";border-color:var(--acc)" : ""}">
     <div class="stack" style="gap:6px">
       <div style="display:flex;align-items:center;gap:9px"><span class="h2">${esc(name)}</span>
         ${primary ? '<span class="pill acc">Most people</span>' : ""}</div>
       <div style="display:flex;align-items:baseline;gap:4px">
         <span class="num" style="font-size:32px;font-weight:600"${monthly ? ` data-price-monthly="${monthly}"` : ""}>${monthly ? `$${monthly}` : "$0"}</span>
-        ${monthly ? '<span class="mut" data-price-period>/month</span>' : '<span class="mut">forever</span>'}
+        ${monthly ? `<span class="mut"><span data-price-unit>${unit}</span><span data-price-period>/month</span></span>` : '<span class="mut">forever</span>'}
       </div>
       ${monthly ? '<span class="faint" style="font-size:12.5px" data-price-note hidden>Billed yearly, two months free</span>' : ""}
       <p class="mut" style="margin:4px 0 0;font-size:13.5px;line-height:20px">${esc(blurb)}</p>
@@ -135,13 +137,13 @@ export function extraRoutes({ write, marketing, appPage, part, esc, models, F, g
         "Full verified profile matrix and updates",
         "Automations and background tasks",
         "Advanced recovery and diagnostics",
-      ], `<button class="btn btnp btnl" data-inert="Billing is not connected in this prototype.">Start Pro</button>`, true)}
+      ], `<a class="btn btnp btnl" href="/signin/">Pro is not open yet &middot; get notified</a>`, true)}
     ${plan("Team", 30, "Per user. Shared standards across a team.", [
         "Shared profiles and project policies",
         "Permission presets and an audit trail",
         "Centralized billing",
         "Private blueprint library",
-      ], `<a class="btn btnl" href="/signin/">Talk to us</a>`, false)}
+      ], `<a class="btn btnl" href="/signin/?team=1">Join the team waitlist</a>`, false, " / user")}
   </div>
 </section>
 <section class="mwrap msec" style="padding-bottom:96px">
@@ -221,12 +223,17 @@ export function extraRoutes({ write, marketing, appPage, part, esc, models, F, g
 
   simple("signin/", "Sign in", "Account", "Sign in",
     "An account is only needed for paid plans and syncing settings.",
-    `<div class="box" style="padding:24px;max-width:420px;display:flex;flex-direction:column;gap:14px">
-      <label class="stack" style="gap:6px"><span class="h3">Email</span>
-        <input type="email" class="field" placeholder="you@example.com" style="width:100%;color:var(--fg)"></label>
-      <button class="btn btnp btnl" data-inert="Authentication is not connected in this prototype.">Email me a sign-in link</button>
-      <p class="faint" style="margin:0;font-size:12.5px;line-height:18px">No password. ForgeLocal works locally without any of this; signing in only affects billing and settings sync.</p>
-    </div>`);
+    `<form class="box" data-signin novalidate style="padding:24px;max-width:440px;display:flex;flex-direction:column;gap:16px">
+      <div class="stack" style="gap:8px">
+        <label class="h3" for="signin-email">Email</label>
+        <span class="field"><input id="signin-email" name="email" type="email" autocomplete="email"
+          placeholder="you@example.com" aria-describedby="signin-help signin-error" required></span>
+        <p class="faint" id="signin-help" style="margin:0;font-size:13px;line-height:19px">No password. We send a one-time link.</p>
+        <p id="signin-error" role="alert" data-signin-error hidden style="margin:0;font-size:13px;line-height:19px;color:var(--bad)"></p>
+      </div>
+      <button class="btn btnp btnl" type="submit" data-signin-submit disabled>Email me a sign-in link</button>
+      <p class="faint" style="margin:0;font-size:13px;line-height:19px">ForgeLocal works locally without an account. Accounts are not open yet, so this records interest rather than creating one.</p>
+    </form>`);
 
   /* ---------------------------------------------------------------- /404 */
   write("404.html", marketing({

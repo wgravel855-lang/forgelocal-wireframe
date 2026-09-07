@@ -6,9 +6,10 @@
     <div class="ob-col">
 
       <div style="display:flex;flex-direction:column;gap:10px">
-        <h1 class="h1" style="font-size:24px;line-height:30px">Which folder should it work in?</h1>
+        <h1 class="h1">Which folder should it work in?</h1>
         <p class="mut" style="margin:0;font-size:13.5px;line-height:20px">
-          This is the only place ForgeLocal can read or write. Anything outside it is refused.
+          Project file access is limited to this folder by default. System checks and approved tools
+          are shown separately, and a permission prompt is not the same thing as sandbox isolation.
         </p>
       </div>
 
@@ -56,7 +57,7 @@
             <span style="width:16px;height:16px;border-radius:50%;border:1.5px solid var(--line-strong);flex-shrink:0;margin-top:2px" aria-hidden="true"></span>
             <span style="flex:1;min-width:0">
               <span style="display:block;font-size:13.5px;font-weight:600">Autopilot</span>
-              <span class="mut" style="display:block;font-size:13px;line-height:19px;margin-top:2px">Most project work runs without asking. Deletes outside the project and system-wide changes stay blocked in every preset.</span>
+              <span class="mut" style="display:block;font-size:13px;line-height:19px;margin-top:2px">Edits, the project's own build and test commands, package installs and Git writes run without asking. Network access beyond the package registry, reads of files matching a secret pattern, deletes outside the project and system-wide changes still stop and ask, in every preset.</span>
             </span>
           </label>
 
@@ -64,7 +65,7 @@
 
         <p class="faint" style="margin:0;font-size:13px;line-height:18px">
           You can change this per project later, and a permission prompt is not the same as sandbox isolation.
-          <a href="#">How the boundary works</a>
+          <a class="link" href="/security/">How the boundary works</a>
         </p>
       </div>
 
