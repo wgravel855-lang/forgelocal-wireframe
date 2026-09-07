@@ -11,7 +11,8 @@
  *   - horizontal page overflow, composer below the fold
  *   - missing semantic textarea / inputs
  *   - primary navigation pointing at "#"
- *   - text below WCAG AA contrast
+ *   - text below WCAG AA contrast (inactive components are exempt per 1.4.3,
+ *     but still held to a 3.0 floor so a disabled label stays readable)
  */
 (() => {
   const ROUTES = {
@@ -85,7 +86,13 @@
         if (c && !/rgba\(0, 0, 0, 0\)|transparent/.test(c)) { bg = c; break; }
         bgEl = bgEl.parentElement;
       }
-      if (ratio(cs.color, bg) < need) add("contrast", `${ratio(cs.color, bg).toFixed(2)} "${txt}"`);
+      const r = ratio(cs.color, bg);
+      // WCAG 1.4.3 exempts text that is part of an inactive component. It still
+      // has to be readable orientation, so hold it to a 3.0 floor of our own
+      // rather than to AA or to nothing at all.
+      const inactive = el.closest('[disabled], [aria-disabled="true"]');
+      if (inactive) { if (r < 3) add("disabled-contrast<3", `${r.toFixed(2)} "${txt}"`); }
+      else if (r < need) add("contrast", `${r.toFixed(2)} "${txt}"`);
     }
 
     // ---- control sizing ----

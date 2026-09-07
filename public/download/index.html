@@ -53,22 +53,24 @@
     <span class="lab">Download</span>
     <h1 class="mh2">Get ForgeLocal</h1>
     <p class="mlede">One installer. Free for local use, and it does not need an account.</p>
-  </div></section><section class="mwrap msec" style="padding-bottom:40px">
-  <div class="box" style="padding:24px;display:flex;gap:24px;flex-wrap:wrap;align-items:center">
-    <div class="stack" style="flex:1;min-width:260px;gap:8px">
-      <span class="h2" style="font-size:18px">Windows 10 and 11, 64-bit</span>
-      <span class="mut" style="font-size:13.5px">x64 and ARM64. Version and checksum appear here once the first signed build is published.</span>
+  </div></section><section class="mwrap msec" style="padding-bottom:44px">
+  <div class="index">
+    <div class="strow" style="grid-template-columns:minmax(0,1fr) auto;align-items:center;padding:22px 2px">
+      <div>
+        <span class="t" style="font-size:17px;line-height:25px">Windows 10 and 11, 64-bit</span>
+        <p class="d" style="margin-top:5px;max-width:62ch">x64 and ARM64. Version and checksum
+          appear here once the first signed build is published.</p>
+        <p class="d" style="margin-top:6px;color:var(--faint)" data-platform-note>
+          Detected platform appears here. macOS and Linux builds are not available yet.</p>
+      </div>
+      <button class="btn btnl" style="justify-self:end" data-inert="No installer has been published yet, so there is nothing to serve.">No build published yet</button>
     </div>
-    <button class="btn btnp btnl" data-inert="No installer has been published yet, so there is nothing to serve.">No build published yet</button>
   </div>
-  <p class="faint" style="margin:14px 2px 0;font-size:12.5px" data-platform-note>
-    Detected platform appears here. macOS and Linux builds are not available yet.
-  </p>
 </section>
 
-<section class="mwrap msec" style="padding-bottom:40px">
+<section class="mwrap msec" style="padding-bottom:44px">
   <h2 class="h2" style="font-size:20px;margin-bottom:12px">System requirements</h2>
-  <div style="overflow-x:auto"><table class="tbl" style="min-width:560px">
+  <div style="overflow-x:auto"><table class="tbl flat" style="min-width:560px">
     <thead><tr><th>Component</th><th>Minimum</th><th>Comfortable</th></tr></thead>
     <tbody>
       <tr><td>System memory</td><td class="num">16 GB</td><td class="num">32 GB</td></tr>
@@ -77,25 +79,27 @@
       <tr><td>OS</td><td>Windows 10 22H2</td><td>Windows 11</td></tr>
     </tbody>
   </table></div>
-  <p class="mut" style="margin:14px 0 0;font-size:13.5px;max-width:70ch">
+  <p class="mut" style="margin:16px 0 0;font-size:14.5px;line-height:23px;max-width:70ch">
     A machine with no discrete GPU still works. It runs smaller profiles on the CPU, and the app
     says so plainly rather than recommending something that will crawl.
     <a href="/models/">See what fits which machine</a>.
   </p>
 </section>
 
-<section class="mwrap msec" style="padding-bottom:96px">
-  <h2 class="h2" style="font-size:20px;margin-bottom:12px">Verifying what you downloaded</h2>
-  <div class="box" style="padding:20px;display:flex;flex-direction:column;gap:10px">
-    <p class="mut" style="margin:0;font-size:13.5px;line-height:20px;max-width:70ch">
-      Releases will be signed and published with a SHA-256 checksum next to the installer, and the
-      current signing certificate will be named on this page. None of that exists yet, so no
-      signature, hash or version is shown. When there is one, it will be here rather than in a
-      marketing claim.
-    </p>
-    <p style="margin:0;display:flex;gap:20px;flex-wrap:wrap">
-      <a class="link" href="/changelog/">Release notes</a>
-      <a class="link" href="/status/">Service status</a></p>
+<section class="mwrap msec" style="padding-bottom:72px">
+  <div style="border-top:1px solid var(--line);padding-top:24px;display:grid;grid-template-columns:220px minmax(0,1fr);gap:8px 32px">
+    <h2 class="h2" style="font-size:17px;line-height:25px">Verifying what you downloaded</h2>
+    <div>
+      <p class="mut" style="margin:0;font-size:14.5px;line-height:23px;max-width:68ch">
+        Releases will be signed and published with a SHA-256 checksum next to the installer, and the
+        current signing certificate will be named on this page. None of that exists yet, so no
+        signature, hash or version is shown. When there is one, it will be here rather than in a
+        marketing claim.
+      </p>
+      <p style="margin:14px 0 0;display:flex;gap:22px;flex-wrap:wrap">
+        <a class="link" href="/changelog/">Release notes</a>
+        <a class="link" href="/status/">Service status</a></p>
+    </div>
   </div>
 </section>
 </main>

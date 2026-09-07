@@ -16,6 +16,7 @@
   --bad:#9B3A33; --bad-line:#C2564D; --bad-soft:#FBEFEE;
   --focus:#5457CE;
   --flow-head:#2F7DEB; --flow-tail:#4F52C9; --flow-far:#38BDF8;
+  --dis-fg:#78797C; --dis-bd:#E0DCD3; --dis-bg:#EFEDE7; --dis-icon:#93918B;
   --shadow-menu:0 10px 30px rgba(23,24,26,.14), 0 1px 3px rgba(23,24,26,.10);
 }
 .app {
@@ -28,6 +29,7 @@
   --bad:#E08A82; --bad-line:#8E4A44; --bad-soft:#211413;
   --focus:#9698F2;
   --flow-head:#38BDF8; --flow-tail:#6366D9; --flow-far:#3B82F6;
+  --dis-fg:#85878A; --dis-bd:#2A2D31; --dis-bg:#141518; --dis-icon:#6C6F73;
   --shadow-menu:0 16px 40px rgba(0,0,0,.55), 0 2px 6px rgba(0,0,0,.4);
 }
 
@@ -172,7 +174,11 @@ a.link,
 .rnums { display: flex; gap: 22px; }
 .rchev { color: var(--faint); justify-self: end; }
 /* a row that carries its own action button is targeted by that button */
-.rrow.has-action { grid-template-columns: minmax(0, 1fr) 148px 210px auto; }
+/* the action column is a fixed track, not auto: "Use", "Install" and
+   "In use" are different widths, and an auto track let every row put its
+   fit state and numbers in a slightly different place */
+.rrow.has-action { grid-template-columns: minmax(0, 1fr) 148px 210px 112px; }
+.rrow.has-action > .btn { justify-self: end; }
 .rrow.has-action .rname::after { content: none; }
 /* Between 980 and 1120 the publisher column is gone but the row is still a
    row: the name keeps column one and picks the metadata up underneath it. */
@@ -387,6 +393,99 @@ button.pill, a.pill { height: 40px; border-radius: 20px; padding: 0 15px; font-s
 .mfoot-legal { padding:0 32px 28px; display:flex; align-items:center; gap:16px;
   flex-wrap:wrap; font-size:13px; }
 
+/* two editorial columns with a rule between them on desktop only */
+.seclower { padding: 44px clamp(20px, 5vw, 56px); border-top: 1px solid var(--line);
+  background: var(--panel); display: grid; grid-template-columns: 1fr 1fr; gap: 0 44px; }
+.seclower > div + div { border-left: 1px solid var(--line); padding-left: 44px; }
+@media (max-width: 900px) {
+  .seclower { grid-template-columns: 1fr; gap: 36px; }
+  .seclower > div + div { border-left: 0; padding-left: 0; }
+}
+
+/* ---- process band -------------------------------------------------- */
+/* Four stages of one process on a shared surface, divided by a rule and a
+   chevron rather than four mini-cards floating inside a larger card. */
+.band-p { display: grid; grid-template-columns: repeat(4, 1fr);
+  border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+  background: var(--raised); }
+.band-p > .stage { position: relative; padding: 16px 18px;
+  border-left: 1px solid var(--line-soft); display: flex; flex-direction: column; gap: 5px; }
+.band-p > .stage:first-child { border-left: 0; }
+/* the chevron sits on the divider so the stages read as one flow */
+.band-p > .stage + .stage::before { content: ""; position: absolute; left: -5px; top: 50%;
+  width: 9px; height: 9px; margin-top: -5px; border-top: 1.6px solid var(--line-strong);
+  border-right: 1.6px solid var(--line-strong); transform: rotate(45deg);
+  background: var(--raised); }
+.band-p > .stage.is-key { background: color-mix(in srgb, var(--acc) 5%, var(--raised));
+  box-shadow: inset 0 2px 0 var(--acc); }
+.band-p .h3 { font-size: 14.5px; line-height: 21px; }
+.band-p .why { font-size: 13px; line-height: 19px; color: var(--mut); }
+@media (max-width: 900px) {
+  .band-p { grid-template-columns: 1fr; }
+  .band-p > .stage { border-left: 0; border-top: 1px solid var(--line-soft); padding: 14px 16px; }
+  .band-p > .stage:first-child { border-top: 0; }
+  .band-p > .stage + .stage::before { left: 50%; top: -5px; margin: 0 0 0 -5px;
+    transform: rotate(135deg); }
+  .band-p > .stage.is-key { box-shadow: inset 2px 0 0 var(--acc); }
+}
+
+/* ---- editorial index ---------------------------------------------- */
+/* Sparse informational pages share this: a readable measure, rules top and
+   bottom, rows divided by 1px. No outer radius, no shadow, no card per row.
+   The rules sit on the rows so a hidden row never doubles a divider up. */
+.measure { max-width: 900px; }
+.measure-doc { max-width: 740px; }
+.index { border-bottom: 1px solid var(--line); }
+.index > * { border-top: 1px solid var(--line); }
+.irow { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto;
+  gap: 0 24px; align-items: baseline; padding: 20px 2px; min-height: 44px; }
+.irow .n { grid-column: 1; grid-row: 1; font-size: 13px; line-height: 24px;
+  color: var(--faint); font-variant-numeric: tabular-nums; }
+.irow .t { grid-column: 2; grid-row: 1; font-size: 16px; line-height: 24px;
+  font-weight: 600; letter-spacing: -.01em; }
+.irow .d { grid-column: 2; grid-row: 2; margin: 5px 0 0; font-size: 14.5px;
+  line-height: 23px; color: var(--mut); max-width: 68ch; }
+.irow .s { grid-column: 3; grid-row: 1; justify-self: end; font-size: 13.5px;
+  line-height: 24px; color: var(--faint); white-space: nowrap; }
+/* an interactive row gets the hover and focus treatment; a status-only row
+   must not, because nothing happens when you click it */
+a.irow, button.irow { width: 100%; text-align: left; cursor: pointer;
+  transition: background 140ms ease-out; }
+a.irow:hover, button.irow:hover { background: var(--sunk); text-decoration: none; }
+/* status table: service, what it affects, state */
+.strow { display: grid; grid-template-columns: 210px minmax(0, 1fr) 150px;
+  gap: 4px 24px; align-items: baseline; padding: 18px 2px; min-height: 44px; }
+.strow .t { font-size: 15px; line-height: 23px; font-weight: 600; }
+.strow .d { margin: 0; font-size: 14px; line-height: 22px; color: var(--mut); }
+.strow .s { justify-self: end; display: inline-flex; align-items: center; gap: 8px;
+  font-size: 14px; line-height: 22px; color: var(--mut); white-space: nowrap; }
+/* changelog: a release timeline that happens to be empty */
+.tlrow { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 6px 24px;
+  padding: 22px 2px; }
+.tlrow .when { font-size: 14px; line-height: 24px; color: var(--faint);
+  font-variant-numeric: tabular-nums; }
+.tlrow .t { font-size: 16px; line-height: 24px; font-weight: 600; letter-spacing: -.01em; }
+.tlrow .d { margin: 6px 0 0; font-size: 14.5px; line-height: 23px; color: var(--mut);
+  max-width: 68ch; }
+@media (max-width: 720px) {
+  .irow { grid-template-columns: minmax(0, 1fr) auto; gap: 0 16px; }
+  .irow .n { display: none; }
+  .irow .t { grid-column: 1; }
+  .irow .d { grid-column: 1 / -1; }
+  .strow, .tlrow { grid-template-columns: minmax(0, 1fr); }
+  .strow .s { justify-self: start; margin-top: 6px; }
+  /* a column header means nothing once the columns have stacked */
+  .strow-head { display: none; }
+  .tlrow .when { order: -1; }
+}
+
+/* a plain-language document: sections separated by space and a rule */
+.doc > section { padding: 26px 0; border-top: 1px solid var(--line-soft); }
+.doc > section:first-child { padding-top: 0; border-top: 0; }
+.doc h2 { margin: 0 0 8px; font-size: 17px; line-height: 25px; font-weight: 600;
+  letter-spacing: -.01em; }
+.doc p { margin: 0; font-size: 15.5px; line-height: 26px; color: var(--mut); }
+
 /* ---- technical document ------------------------------------------- */
 /* Sections divided by a rule rather than each one sitting in its own
    rounded box. Used by the model detail pages. */
@@ -529,7 +628,26 @@ button.pill, a.pill { height: 40px; border-radius: 20px; padding: 0 15px; font-s
 .diff-split > * { min-width: 0; overflow-x: auto; }
 
 button[aria-pressed="true"].pill, .pill.is-on { border-color: var(--acc); color: var(--acc-text); }
-[aria-disabled="true"], button:disabled { opacity: .45; cursor: not-allowed; }
+[aria-disabled="true"], button:disabled, a[aria-disabled="true"] {
+  cursor: not-allowed; color: var(--dis-fg); }
+/* only the icon dims; the label keeps its own contrast */
+[aria-disabled="true"] svg, button:disabled svg { opacity: .5; }
+[aria-disabled="true"] .lab, button:disabled .lab { color: var(--dis-icon); }
+/* a control with a surface keeps one, so it still reads as a control */
+.btn:disabled, .btn[aria-disabled="true"], .field:disabled, .field[aria-disabled="true"] {
+  background: var(--dis-bg); border-color: var(--dis-bd); color: var(--dis-fg); }
+.btn:disabled:hover, .btn[aria-disabled="true"]:hover { background: var(--dis-bg); }
+/* an unavailable primary must not still read as the primary action */
+.btnp:disabled, .btnp[aria-disabled="true"] {
+  background: var(--dis-bg); border-color: var(--dis-bd); color: var(--dis-fg); }
+.btnq:disabled, .btnq[aria-disabled="true"] { background: transparent; border-color: transparent; }
+.btnq:disabled:hover, .btnq[aria-disabled="true"]:hover { background: transparent; }
+/* a navigation or session row goes quiet without losing its label */
+.srow:disabled, .srow[aria-disabled="true"] { background: transparent; box-shadow: none;
+  color: var(--dis-fg); }
+.srow:disabled:hover, .srow[aria-disabled="true"]:hover { background: transparent;
+  color: var(--dis-fg); }
+.seg > button:disabled, .seg > button[aria-disabled="true"] { color: var(--dis-fg); }
 [data-review-file][data-reviewed="true"] .review-mark { opacity: 1; }
 .review-mark { opacity: 0; }
 

@@ -22,14 +22,14 @@ export function extraRoutes({ write, marketing, appPage, part, esc, models, F, g
     main: head("How it works", "Five steps, then you are working",
       "There is no configuration file to learn and no inference vocabulary to pick up. The parts that matter are shown when they matter.") +
       `<section class="mwrap msec" style="padding-bottom:96px">
-  <ol style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden">
+  <ol class="index" style="list-style:none;margin:0;padding:0">
     ${[
         ["Read the machine", "CPU, memory, video memory, free disk and any runtime already installed. It happens inside the app, after you agree to it, and the reading stays on the device."],
         ["Pick one profile", "Not a catalog to guess through. One recommendation with the arithmetic shown, and alternatives behind a disclosure."],
         ["Install runtime and weights", "Runtime, model download and a capability self-test in one step, with pause, resume and a clear interrupted state."],
         ["Choose a folder and a permission preset", "Project file access is limited to that folder by default. The preset decides how often the agent stops to ask."],
         ["Work, then review", "Plan, edits, commands and tests appear as one quiet activity group. Changes arrive as a diff you keep or revert per file and per hunk."],
-      ].map(([t, d], i) => `<li style="background:var(--bg);padding:24px;display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap">
+      ].map(([t, d], i) => `<li style="padding:26px 2px;display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap">
         <span class="lab num" style="width:24px;flex-shrink:0;padding-top:2px">0${i + 1}</span>
         <div class="stack" style="gap:6px;flex:1;min-width:280px"><span class="h2">${esc(t)}</span>
         <p class="mut" style="margin:0;font-size:14px;line-height:21px;max-width:62ch">${esc(d)}</p></div>
@@ -47,22 +47,24 @@ export function extraRoutes({ write, marketing, appPage, part, esc, models, F, g
     path: "/download/", title: "Download ForgeLocal",
     desc: "Windows build, system requirements, checksum and release notes.",
     main: head("Download", "Get ForgeLocal", "One installer. Free for local use, and it does not need an account.") +
-      `<section class="mwrap msec" style="padding-bottom:40px">
-  <div class="box" style="padding:24px;display:flex;gap:24px;flex-wrap:wrap;align-items:center">
-    <div class="stack" style="flex:1;min-width:260px;gap:8px">
-      <span class="h2" style="font-size:18px">Windows 10 and 11, 64-bit</span>
-      <span class="mut" style="font-size:13.5px">x64 and ARM64. Version and checksum appear here once the first signed build is published.</span>
+      `<section class="mwrap msec" style="padding-bottom:44px">
+  <div class="index">
+    <div class="strow" style="grid-template-columns:minmax(0,1fr) auto;align-items:center;padding:22px 2px">
+      <div>
+        <span class="t" style="font-size:17px;line-height:25px">Windows 10 and 11, 64-bit</span>
+        <p class="d" style="margin-top:5px;max-width:62ch">x64 and ARM64. Version and checksum
+          appear here once the first signed build is published.</p>
+        <p class="d" style="margin-top:6px;color:var(--faint)" data-platform-note>
+          Detected platform appears here. macOS and Linux builds are not available yet.</p>
+      </div>
+      <button class="btn btnl" style="justify-self:end" data-inert="No installer has been published yet, so there is nothing to serve.">No build published yet</button>
     </div>
-    <button class="btn btnp btnl" data-inert="No installer has been published yet, so there is nothing to serve.">No build published yet</button>
   </div>
-  <p class="faint" style="margin:14px 2px 0;font-size:12.5px" data-platform-note>
-    Detected platform appears here. macOS and Linux builds are not available yet.
-  </p>
 </section>
 
-<section class="mwrap msec" style="padding-bottom:40px">
+<section class="mwrap msec" style="padding-bottom:44px">
   <h2 class="h2" style="font-size:20px;margin-bottom:12px">System requirements</h2>
-  <div style="overflow-x:auto"><table class="tbl" style="min-width:560px">
+  <div style="overflow-x:auto"><table class="tbl flat" style="min-width:560px">
     <thead><tr><th>Component</th><th>Minimum</th><th>Comfortable</th></tr></thead>
     <tbody>
       <tr><td>System memory</td><td class="num">16 GB</td><td class="num">32 GB</td></tr>
@@ -71,25 +73,27 @@ export function extraRoutes({ write, marketing, appPage, part, esc, models, F, g
       <tr><td>OS</td><td>Windows 10 22H2</td><td>Windows 11</td></tr>
     </tbody>
   </table></div>
-  <p class="mut" style="margin:14px 0 0;font-size:13.5px;max-width:70ch">
+  <p class="mut" style="margin:16px 0 0;font-size:14.5px;line-height:23px;max-width:70ch">
     A machine with no discrete GPU still works. It runs smaller profiles on the CPU, and the app
     says so plainly rather than recommending something that will crawl.
     <a href="/models/">See what fits which machine</a>.
   </p>
 </section>
 
-<section class="mwrap msec" style="padding-bottom:96px">
-  <h2 class="h2" style="font-size:20px;margin-bottom:12px">Verifying what you downloaded</h2>
-  <div class="box" style="padding:20px;display:flex;flex-direction:column;gap:10px">
-    <p class="mut" style="margin:0;font-size:13.5px;line-height:20px;max-width:70ch">
-      Releases will be signed and published with a SHA-256 checksum next to the installer, and the
-      current signing certificate will be named on this page. None of that exists yet, so no
-      signature, hash or version is shown. When there is one, it will be here rather than in a
-      marketing claim.
-    </p>
-    <p style="margin:0;display:flex;gap:20px;flex-wrap:wrap">
-      <a class="link" href="/changelog/">Release notes</a>
-      <a class="link" href="/status/">Service status</a></p>
+<section class="mwrap msec" style="padding-bottom:72px">
+  <div style="border-top:1px solid var(--line);padding-top:24px;display:grid;grid-template-columns:220px minmax(0,1fr);gap:8px 32px">
+    <h2 class="h2" style="font-size:17px;line-height:25px">Verifying what you downloaded</h2>
+    <div>
+      <p class="mut" style="margin:0;font-size:14.5px;line-height:23px;max-width:68ch">
+        Releases will be signed and published with a SHA-256 checksum next to the installer, and the
+        current signing certificate will be named on this page. None of that exists yet, so no
+        signature, hash or version is shown. When there is one, it will be here rather than in a
+        marketing claim.
+      </p>
+      <p style="margin:14px 0 0;display:flex;gap:22px;flex-wrap:wrap">
+        <a class="link" href="/changelog/">Release notes</a>
+        <a class="link" href="/status/">Service status</a></p>
+    </div>
   </div>
 </section>`,
   }));
@@ -174,60 +178,123 @@ export function extraRoutes({ write, marketing, appPage, part, esc, models, F, g
   }));
 
   /* -------------------------------------------------- small honest routes */
-  const simple = (path, title, kicker, h1, lede, blocks) =>
+  /* These pages are mostly one honest sentence each. They share the ruled
+     editorial index rather than each getting a white card stranded in a wide
+     empty page: rules top and bottom, rows divided by 1px, and a measure that
+     matches the amount of text actually on the page. */
+  const page = (path, title, kicker, h1, lede, body, measure = "measure") =>
     write(`${path}index.html`, marketing({
       path, title: `${title} — ForgeLocal`, desc: lede,
-      main: head(kicker, h1, esc(lede)) + `<section class="mwrap msec" style="padding-bottom:96px">
-        <div class="stack" style="gap:12px;max-width:76ch">${blocks}</div></section>`,
+      main: head(kicker, h1, esc(lede)) +
+        `<section class="mwrap msec" style="padding-bottom:72px">
+        <div class="${measure}">${body}</div></section>`,
     }));
 
-  const notice = (t, d) => `<div class="box" style="padding:20px"><p class="h3" style="margin:0 0 6px">${esc(t)}</p>
-    <p class="mut" style="margin:0;font-size:13.5px;line-height:21px">${esc(d)}</p></div>`;
-
-  simple("docs/", "Docs", "Documentation", "Docs",
+  /* /docs/ — one ruled index. Nothing is published, so no row pretends to be
+     a link: each carries its plain-text unpublished state instead. */
+  page("docs/", "Docs", "Documentation", "Docs",
     "Install, first project, model profiles, permissions and troubleshooting.",
-    [["Getting started", "Installing, the hardware scan, and finishing your first task."],
-     ["Model profiles", "What a profile pins, how fit is calculated, and how to pin a revision."],
-     ["Permissions", "The three presets, what each command class does, and how to revoke a durable rule."],
-     ["Troubleshooting", "Out of memory, runtime offline, interrupted downloads, and how to export a redacted diagnostic."]]
-      .map(([t, d]) => notice(t, d)).join("\n") +
-      `<p class="mut" style="margin:8px 0 0;font-size:13.5px">Docs are written alongside the features they describe. Nothing is published here yet, because there is no shipped build for it to describe.</p>`);
+    `<div class="index">
+      ${[["Getting started", "Installing, the hardware scan, and finishing your first task."],
+         ["Model profiles", "What a profile pins, how fit is calculated, and how to pin a revision."],
+         ["Permissions", "The three presets, what each command class does, and how to revoke a durable rule."],
+         ["Troubleshooting", "Out of memory, runtime offline, interrupted downloads, and how to export a redacted diagnostic."]]
+        .map(([t, d], i) => `<div class="irow">
+          <span class="n">${String(i + 1).padStart(2, "0")}</span>
+          <span class="t">${esc(t)}</span>
+          <span class="s">Not written yet</span>
+          <p class="d">${esc(d)}</p>
+        </div>`).join("\n")}
+    </div>
+    <p class="mut" style="margin:20px 0 0;font-size:14.5px;line-height:23px;max-width:70ch">
+      Docs are written alongside the features they describe. Nothing is published here yet,
+      because there is no shipped build for it to describe.</p>`);
 
-  simple("changelog/", "Changelog", "Releases", "Changelog",
+  /* /changelog/ — an empty release timeline, deliberately empty rather than a
+     placeholder component. */
+  page("changelog/", "Changelog", "Releases", "Changelog",
     "Versions, changes, fixes and known issues.",
-    notice("No releases yet", "There is no published build, so there are no release notes. Each release will list version, date, changes, fixes, known issues and a download link with its checksum."));
+    `<div class="index">
+      <div class="tlrow">
+        <span class="when">&mdash;</span>
+        <div>
+          <span class="t">No releases yet</span>
+          <p class="d">There is no published build, so there are no release notes. Each release will
+            list version, date, changes, fixes, known issues and a download link with its checksum.</p>
+        </div>
+      </div>
+    </div>
+    <p style="margin:20px 0 0;display:flex;gap:22px;flex-wrap:wrap">
+      <a class="link" href="/download/">Download</a>
+      <a class="link" href="/status/">Service status</a></p>`);
 
-  simple("status/", "Status", "Status", "Service status",
+  /* /status/ — a real status table. State is a dot plus its own words, so the
+     meaning does not depend on colour, and four identical capsules are gone. */
+  page("status/", "Status", "Status", "Service status",
     "Account, downloads and optional cloud providers.",
-    `<div class="box" style="padding:20px;display:flex;flex-direction:column;gap:12px">
-      ${[["Local app", "Works offline. Nothing on this page can stop it."],
-         ["Profile registry", "Serves signed profile manifests. Cached locally, so an outage does not block work."],
-         ["Downloads", "Weights come from the publisher, not from us."],
-         ["Accounts and billing", "Only needed for paid plans."]]
-        .map(([n, d]) => `<div style="display:flex;gap:12px;align-items:flex-start">
-          <span class="pill" style="flex-shrink:0">Not deployed</span>
-          <div class="stack" style="gap:2px"><span class="h3">${esc(n)}</span>
-          <span class="mut" style="font-size:13px;line-height:19px">${esc(d)}</span></div></div>`).join("")}
+    `<p class="mut" style="margin:0 0 22px;font-size:15px;line-height:24px;max-width:70ch">
+      The local app works offline and nothing on this page can stop it. No hosted service is
+      deployed yet.</p>
+    <div class="index">
+      <div class="strow strow-head" style="padding-top:12px;padding-bottom:12px;min-height:0">
+        <span class="lab-fn" style="color:var(--faint)">Service</span>
+        <span class="lab-fn" style="color:var(--faint)">What it affects</span>
+        <span class="lab-fn" style="justify-self:end;color:var(--faint)">State</span>
+      </div>
+      ${[["Local app", "Works offline. Nothing on this page can stop it.", "ok", "Operational, on your machine"],
+         ["Profile registry", "Serves signed profile manifests. Cached locally, so an outage does not block work.", "", "Not deployed"],
+         ["Downloads", "Weights come from the publisher, not from us.", "", "Not deployed"],
+         ["Accounts and billing", "Only needed for paid plans.", "", "Not deployed"]]
+        .map(([n, d, tone, state]) => `<div class="strow">
+          <span class="t">${esc(n)}</span>
+          <p class="d">${esc(d)}</p>
+          <span class="s"><span class="dot ${tone}" aria-hidden="true"></span>${esc(state)}</span>
+        </div>`).join("\n")}
     </div>
-    <p class="mut" style="margin:0;font-size:13.5px">No services are deployed yet, so there is no uptime history to show. This page will carry live component status and incident history once there is something running.</p>`);
+    <p class="mut" style="margin:20px 0 0;font-size:14.5px;line-height:23px;max-width:70ch">
+      No services are deployed yet, so there is no uptime history to show. This page will carry
+      live component status and incident history once there is something running.</p>`);
 
-  simple("privacy/", "Privacy", "Legal", "Privacy",
+  /* /privacy/ — a plain-language document, not content inside a card. */
+  page("privacy/", "Privacy", "Legal", "Privacy",
     "What stays on your machine, and what does not.",
-    `<div class="box" style="padding:20px;display:flex;flex-direction:column;gap:14px">
-      <div><p class="h3" style="margin:0 0 6px">What stays local</p>
-      <p class="mut" style="margin:0;font-size:13.5px;line-height:21px">Your project files, your prompts and the model's replies are processed on your machine while you are using a local model. They are not transmitted to us.</p></div>
-      <div><p class="h3" style="margin:0 0 6px">What is optional</p>
-      <p class="mut" style="margin:0;font-size:13.5px;line-height:21px">Crash reports, anonymous usage counts and contributed profile test results are three separate switches, all off on a fresh install. The diagnostics report is built on demand, shown to you in full, and redacted before it can be sent anywhere.</p></div>
-      <div><p class="h3" style="margin:0 0 6px">What changes if you connect a cloud provider</p>
-      <p class="mut" style="margin:0;font-size:13.5px;line-height:21px">Then the task summary and the file contents it names go to that provider under their terms. It is asked per task, never once at setup.</p></div>
+    `<div class="doc">
+      ${[["What stays local", "Your project files, your prompts and the model's replies are processed on your machine while you are using a local model. They are not transmitted to us."],
+         ["What is optional", "Crash reports, anonymous usage counts and contributed profile test results are three separate switches, all off on a fresh install. The diagnostics report is built on demand, shown to you in full, and redacted before it can be sent anywhere."],
+         ["What changes if you connect a cloud provider", "Then the task summary and the file contents it names go to that provider under their terms. It is asked per task, never once at setup."]]
+        .map(([t, d]) => `<section>
+          <h2>${esc(t)}</h2>
+          <p>${esc(d)}</p>
+        </section>`).join("\n")}
     </div>
-    <p class="mut" style="margin:0;font-size:13.5px">This is a plain-language summary of intended behavior, not a legal policy. A reviewed policy will be published before any build ships, and it will describe what the code actually does rather than what the design hoped for.</p>`);
+    <p class="mut" style="margin:0;padding-top:22px;border-top:1px solid var(--line);font-size:14px;line-height:23px">
+      This is a plain-language summary of intended behavior, not a legal policy. A reviewed policy
+      will be published before any build ships, and it will describe what the code actually does
+      rather than what the design hoped for.</p>`,
+    "measure-doc");
 
-  simple("terms/", "Terms", "Legal", "Terms",
+  /* /terms/ — a deliberate unpublished state, not a card and not fake legal
+     text. Same ruled document language as Privacy, one row instead of three. */
+  page("terms/", "Terms", "Legal", "Terms",
     "The agreement covering use of ForgeLocal.",
-    notice("Not published yet", "Terms will be published before the first build ships. Writing placeholder legal text would be worse than saying it is not ready."));
+    `<dl class="index" style="margin:0">
+      <div class="strow" style="grid-template-columns:180px minmax(0,1fr)">
+        <dt class="t" style="font-weight:400;color:var(--faint);font-size:14px">Status</dt>
+        <dd style="margin:0"><span class="t" style="display:block">Not published yet</span>
+          <p class="d" style="margin-top:6px">Terms will be published before the first build ships.
+            Writing placeholder legal text would be worse than saying it is not ready.</p></dd>
+      </div>
+      <div class="strow" style="grid-template-columns:180px minmax(0,1fr)">
+        <dt class="t" style="font-weight:400;color:var(--faint);font-size:14px">In the meantime</dt>
+        <dd style="margin:0"><p class="d" style="margin:0">What ForgeLocal does with your data is
+          described in plain language on the <a href="/privacy/">privacy page</a>, and the boundary
+          the agent runs inside is described on the <a href="/security/">security page</a>.</p></dd>
+      </div>
+    </dl>`,
+    "measure-doc");
 
-  simple("signin/", "Sign in", "Account", "Sign in",
+  /* The sign-in form stays a contained card: it is a genuinely separate form. */
+  page("signin/", "Sign in", "Account", "Sign in",
     "An account is only needed for paid plans and syncing settings.",
     `<form class="box" data-signin novalidate style="padding:24px;max-width:440px;display:flex;flex-direction:column;gap:16px">
       <div class="stack" style="gap:8px">
