@@ -6,7 +6,17 @@
   "trailingSlash": true,
   "redirects": [
     {
-      "source": "/screens/:path*",
+      "source": "/screens",
+      "destination": "/gallery/",
+      "permanent": false
+    },
+    {
+      "source": "/screens/",
+      "destination": "/gallery/",
+      "permanent": false
+    },
+    {
+      "source": "/screens/:path+",
       "destination": "/gallery/",
       "permanent": false
     }
