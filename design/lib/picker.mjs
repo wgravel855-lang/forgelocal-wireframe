@@ -41,7 +41,7 @@ export function pickerHtml(models, selectedId) {
   return `<div class="menu popover" id="model-pop" role="menu" aria-label="Choose a model" hidden
   style="bottom:calc(100% + 8px);left:0;width:min(420px,calc(100vw - 48px));max-height:60vh;overflow-y:auto;padding:6px">
   <div style="padding:4px 4px 6px">
-    <label class="field" style="height:32px">
+    <label class="field">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="flex-shrink:0"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>
       <span class="vh">Search models</span>
       <input data-model-search data-autofocus type="search" placeholder="Search models"

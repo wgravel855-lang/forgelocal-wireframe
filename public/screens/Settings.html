@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OLD Settings · ForgeLocal wireframe</title>
+<link rel="stylesheet" href="/assets/forgelocal.css">
+<style>
+
+  body { margin:0; background:#E4E0D8;
+    display:flex; flex-direction:column; align-items:center; }
+  .bar { position:sticky; top:0; z-index:2; width:100%; height:44px; display:flex;
+    align-items:center; gap:14px; padding:0 18px;
+    background:#F1EDE5;
+    border-bottom:1px solid #DAD5CB;
+    color:#161719; font-size:13px; }
+  .bar a { color:#5B5CF0; }
+  #bare:target { display:none; }
+  #bare:target ~ .stage { padding:0; }
+  .stage { padding:28px 20px 56px; }
+  .frame { width:1440px; box-shadow:0 18px 48px rgba(0,0,0,.18); }
+  @media (max-width: 1500px) {
+    .stage { padding:16px 0 40px; }
+    .frame { transform-origin: top left; }
+  }
+</style>
+</head>
+<body>
+<div class="bar" id="bare">
+  <a href="/gallery/">&larr; Gallery</a>
+  <a href="/" style="opacity:.6">Site</a>
+  <span style="opacity:.5">/</span>
+  <span>OLD Settings</span>
+  <span style="flex-grow:1"></span>
+  <span style="opacity:.5;font-size:12px">1440 &times; 900</span>
+</div>
+<div class="stage"><div class="frame">
+<div class="win" style="width:1440px;height:900px">
+
+  <div class="chrome">
+    <div class="xbox" style="width:16px;height:16px"></div>
+    <span style="font-size:13px;font-weight:600">ForgeLocal</span>
+    <span class="mut" style="font-size:13px">Settings</span>
+    <div style="flex-grow:1"></div>
+    <div style="display:flex;align-items:center;gap:16px">
+      <div class="ph" style="width:11px;height:2px"></div>
+      <div class="ph" style="width:9px;height:9px;border-radius:1px"></div>
+      <div class="ph" style="width:10px;height:10px;border-radius:1px"></div>
+    </div>
+  </div>
+
+  <div style="flex-grow:1;min-height:0;display:flex;background:#FFFFFF">
+
+    <div style="width:240px;flex-shrink:0;border-right:1px solid #DAD5CB;background:#F1EDE5;padding:12px 10px;display:flex;flex-direction:column;gap:3px">
+      <div style="display:flex;align-items:center;gap:8px;padding:7px 8px;margin-bottom:6px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5B5CF0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        <a href="#" style="font-size:13px">Back to task-tracker</a>
+      </div>
+      <span class="lab" style="padding:0 8px 8px">Settings</span>
+      <div style="padding:8px 10px;font-size:13px;color:#6E6A62">Runtime</div>
+      <div style="padding:8px 10px;font-size:13px;color:#6E6A62">Models and profiles</div>
+      <div style="padding:8px 10px;font-size:13px;color:#6E6A62">Safety and permissions</div>
+      <div style="padding:8px 10px;font-size:13px;font-weight:600;border-radius:4px;background:#FFFFFF;border:1px solid #C9C6BE">Privacy and diagnostics</div>
+      <div style="padding:8px 10px;font-size:13px;color:#6E6A62">Project memory</div>
+      <div style="padding:8px 10px;font-size:13px;color:#6E6A62">Cloud boost and billing</div>
+      <div style="padding:8px 10px;font-size:13px;color:#6E6A62">Advanced</div>
+      <div style="flex-grow:1"></div>
+      <div class="box soft" style="padding:11px;display:flex;flex-direction:column;gap:5px">
+        <span class="lab">Uninstall</span>
+        <span class="mut" style="font-size:13px">Removing the app never silently deletes downloaded models. You are asked, with the size.</span>
+      </div>
+    </div>
+
+    <div style="flex-grow:1;min-width:0;padding:24px 28px;display:flex;flex-direction:column;gap:18px;overflow:hidden">
+
+      <div style="display:flex;flex-direction:column;gap:5px">
+        <h1 class="h1" style="font-size:22px">Privacy and diagnostics</h1>
+        <span class="mut" style="font-size:13px">Everything below is off until you turn it on. The app works with all of it off.</span>
+      </div>
+
+      <div style="display:flex;gap:18px;flex-grow:1;min-height:0">
+
+        <div style="flex-grow:1;min-width:0;display:flex;flex-direction:column;gap:16px">
+
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <span class="lab">What leaves this device</span>
+            <div class="box" style="display:flex;flex-direction:column">
+              <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid #E4DFD5">
+                <div style="display:flex;flex-direction:column;gap:2px;flex-grow:1">
+                  <span class="h3">Crash reports</span>
+                  <span class="mut" style="font-size:13px">Stack traces and app version. No file contents, no prompts.</span>
+                </div>
+                <div style="width:34px;height:19px;border-radius:10px;background:#DFDAD0;padding:2px;flex-shrink:0"><div style="width:15px;height:15px;border-radius:50%;background:#FFFFFF;border:1px solid #C9C6BE"></div></div>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid #E4DFD5">
+                <div style="display:flex;flex-direction:column;gap:2px;flex-grow:1">
+                  <span class="h3">Anonymous usage counts</span>
+                  <span class="mut" style="font-size:13px">Which screens are used, and how often a task completes.</span>
+                </div>
+                <div style="width:34px;height:19px;border-radius:10px;background:#DFDAD0;padding:2px;flex-shrink:0"><div style="width:15px;height:15px;border-radius:50%;background:#FFFFFF;border:1px solid #C9C6BE"></div></div>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px;padding:12px 14px">
+                <div style="display:flex;flex-direction:column;gap:2px;flex-grow:1">
+                  <span class="h3">Contribute profile test results</span>
+                  <span class="mut" style="font-size:13px">Pass, fail and timings from the self-test, plus the hardware class. Improves the matrix for machines like yours.</span>
+                </div>
+                <div style="width:34px;height:19px;border-radius:10px;background:#DFDAD0;padding:2px;flex-shrink:0"><div style="width:15px;height:15px;border-radius:50%;background:#FFFFFF;border:1px solid #C9C6BE"></div></div>
+              </div>
+            </div>
+            <a href="#" style="font-size:13px">Exactly what is collected, field by field</a>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:8px;flex-grow:1;min-height:0">
+            <span class="lab">Diagnostics report</span>
+            <div class="box" style="padding:14px;display:flex;flex-direction:column;gap:11px;flex-grow:1;min-height:0">
+              <span class="mut" style="font-size:13px">Built on demand, shown in full before it goes anywhere, and redacted by rule rather than by best effort.</span>
+              <div class="box m" style="padding:10px 12px;font-size:13px;background:#F1EDE5;display:flex;flex-direction:column;gap:4px;flex-grow:1;min-height:0;overflow:hidden">
+                <div>runtime      ollama [x.y.z]  healthy</div>
+                <div>profile      [model:tag] rev [n]</div>
+                <div>hardware     12 GB VRAM / 32 GB RAM / 16 cores</div>
+                <div>last error   tool_call.schema_repair_failed</div>
+                <div>project      &lt;redacted path&gt;</div>
+                <div>env          &lt;redacted: 4 keys matched secret patterns&gt;</div>
+                <div>prompt       &lt;not included&gt;</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:9px">
+                <div class="btn btns" style="height:36px">Copy</div>
+                <div class="btn btns" style="height:36px">Save to a file</div>
+                <div style="flex-grow:1"></div>
+                <span class="mut" style="font-size:13px">Nothing is sent automatically.</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div style="width:300px;flex-shrink:0;display:flex;flex-direction:column;gap:16px">
+
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <span class="lab">Where your data lives</span>
+            <div class="box" style="display:flex;flex-direction:column">
+              <div style="padding:10px 13px;border-bottom:1px solid #E4DFD5;display:flex;flex-direction:column;gap:2px">
+                <span class="mut" style="font-size:13px">Projects</span>
+                <span class="m" style="font-size:13px">folders you chose, untouched</span>
+              </div>
+              <div style="padding:10px 13px;border-bottom:1px solid #E4DFD5;display:flex;flex-direction:column;gap:2px">
+                <span class="mut" style="font-size:13px">Model weights</span>
+                <span class="m" style="font-size:13px">C:\Users\[you]\.ollama\models</span>
+              </div>
+              <div style="padding:10px 13px;border-bottom:1px solid #E4DFD5;display:flex;flex-direction:column;gap:2px">
+                <span class="mut" style="font-size:13px">Tasks, checkpoints, settings</span>
+                <span class="m" style="font-size:13px">%APPDATA%\ForgeLocal\local.db</span>
+              </div>
+              <div style="padding:10px 13px;display:flex;flex-direction:column;gap:2px">
+                <span class="mut" style="font-size:13px">Cloud keys, if any</span>
+                <span class="m" style="font-size:13px">Windows Credential Manager</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <span class="lab">Redaction rules</span>
+            <div class="box" style="padding:13px;display:flex;flex-direction:column;gap:7px">
+              <span class="mut" style="font-size:13px">.env files and credential patterns are stripped from model context unless you approve them one at a time.</span>
+              <div style="display:flex;gap:6px;flex-wrap:wrap">
+                <span class="pill" >.env</span>
+                <span class="pill" >*.pem</span>
+                <span class="pill" >API keys</span>
+                <span class="pill" >tokens</span>
+              </div>
+              <a href="#" style="font-size:13px">Edit patterns</a>
+            </div>
+          </div>
+
+          <div style="flex-grow:1"></div>
+
+          <div class="box soft" style="padding:12px;display:flex;flex-direction:column;gap:6px">
+            <span class="lab">Delete everything</span>
+            <span class="mut" style="font-size:13px">Removes tasks, checkpoints and settings. Your project folders and downloaded models are listed separately, with sizes, before anything is removed.</span>
+            <div class="btn btns" style="height:36px;border-color:#B4514A;color:#8E4A44">Review what would be deleted</div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <div style="height:30px;flex-shrink:0;border-top:1px solid #DAD5CB;background:#EFEBE3;display:flex;align-items:center;padding:0 14px;font-size:13px">
+    <div style="display:flex;align-items:center;gap:7px;padding-right:14px;border-right:1px solid #DAD5CB">
+      <div class="dot" style="width:7px;height:7px;background:#5F7F63"></div>
+      <span>Balanced</span>
+      <span class="m mut">[model:tag]</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:7px;padding:0 14px;border-right:1px solid #DAD5CB"><span>Local</span></div>
+    <div style="display:flex;align-items:center;gap:7px;padding:0 14px;border-right:1px solid #DAD5CB">
+      <span class="mut">RAM</span>
+      <div class="track" style="width:52px;height:5px"><div class="fillbar" style="width:31%;background:#8B867C"></div></div>
+      <span class="mut">31%</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:7px;padding:0 14px;border-right:1px solid #DAD5CB">
+      <span class="mut">Context</span>
+      <div class="track" style="width:52px;height:5px"><div class="fillbar" style="width:0%"></div></div>
+      <span class="mut">idle</span>
+    </div>
+    <div style="flex-grow:1"></div>
+    <div style="display:flex;align-items:center;gap:7px"><span class="mut">Safety</span><span>Balanced</span></div>
+  </div>
+
+</div>
+
+</div></div>
+</body>
+</html>

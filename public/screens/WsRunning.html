@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Workspace, agent running · ForgeLocal wireframe</title>
+<link rel="stylesheet" href="/assets/forgelocal.css">
+<style>
+
+  html, body { height:100%; overflow:hidden; }
+  body { margin:0; display:flex; flex-direction:column; }
+  .bar { flex-shrink:0; height:40px; display:flex; align-items:center; gap:14px; padding:0 16px;
+    background:#121315; border-bottom:1px solid #26282C; color:#EDEDEB; font-size:13px; }
+  .bar a { color:#9698F2; }
+  #bare:target { display:none; }
+  .stage { flex:1; min-height:0; display:flex; }
+  .stage > * { flex:1; min-width:0; }
+  
+</style>
+</head>
+<body>
+<div class="bar" id="bare">
+  <a href="/gallery/">&larr; Gallery</a>
+  <a href="/" style="opacity:.6">Site</a>
+  <span style="opacity:.5">/</span>
+  <span>Workspace, agent running</span>
+  <span style="flex-grow:1"></span>
+  <span style="opacity:.5;font-size:12px">1440 &times; 900</span>
+</div>
+<div class="stage"><div class="frame">
+<div class="app" style="height:100%;position:relative">
+  <div class="shell">
+
+    <style>
+  .sidebar[data-active="s1"] .srow[data-id="s1"],
+  .sidebar[data-active="s2"] .srow[data-id="s2"],
+  .sidebar[data-active="s3"] .srow[data-id="s3"],
+  .sidebar[data-active="new"] .srow[data-id="new"],
+  .sidebar[data-active="models"] .srow[data-id="models"],
+  .sidebar[data-active="settings"] .srow[data-id="settings"] {
+    background: var(--raised); color: var(--fg); box-shadow: inset 0 0 0 1px var(--line);
+  }
+</style>
+<aside class="sidebar" data-active="s1" aria-label="Projects and sessions">
+
+  <div style="height:48px;flex-shrink:0;display:flex;align-items:center;gap:4px;padding:0 8px 0 10px">
+    <button class="btn btnq ico btns" type="button" data-sidebar-toggle aria-expanded="true" aria-label="Hide sidebar">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M9.5 4v16"/></svg>
+    </button>
+    <span class="grow"></span>
+    <button class="btn btnq ico btns" type="button" aria-label="New session" data-inert="Sessions are not persisted in this prototype.">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.6 3.6a2.1 2.1 0 0 1 3 3L7.4 18.8 3.5 20l1.2-3.9z"/></svg>
+    </button>
+  </div>
+
+  <div style="padding:0 8px 8px">
+    <button class="srow" data-id="new" style="height:36px;border:1px solid var(--line-strong);background:var(--raised);color:var(--fg)">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+      <span class="t">New session</span>
+    </button>
+  </div>
+
+  <div style="padding:0 8px 10px">
+    <button class="field" style="width:100%;height:36px" aria-label="Switch project">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M3 7.5A2 2 0 0 1 5 5.5h3.6l1.8 2H19a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+      <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--fg);text-align:left">task-tracker</span>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="m6 9.5 6 6 6-6"/></svg>
+    </button>
+  </div>
+
+  <nav class="scroll" style="padding:0 8px" aria-label="Recent sessions">
+    <div class="sgroup">Today</div>
+    <button class="srow" data-id="s1">
+      <span class="dot acc" aria-hidden="true"></span>
+      <span class="t">Persist tasks to localStorage</span>
+    </button>
+    <button class="srow" data-id="s2">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M20 6 9 17l-5-5"/></svg>
+      <span class="t">Add a filter bar to the list</span>
+    </button>
+    <button class="srow" data-id="s3">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--bad)" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      <span class="t">Switch the date helper to Temporal</span>
+    </button>
+
+    <div class="sgroup" style="margin-top:8px">Yesterday</div>
+    <button class="srow">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M20 6 9 17l-5-5"/></svg>
+      <span class="t">Scaffold the project</span>
+    </button>
+    <button class="srow">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M20 6 9 17l-5-5"/></svg>
+      <span class="t">Set up Vitest</span>
+    </button>
+    <button class="srow"><span class="t faint">Show more</span></button>
+  </nav>
+
+  <div style="flex-shrink:0;border-top:1px solid var(--line-soft);padding:8px">
+    <button class="srow" data-id="models">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true" style="flex-shrink:0"><rect x="3" y="3" width="18" height="18" rx="3.5"/><rect x="8" y="8" width="8" height="8" rx="1.8"/></svg>
+      <span class="t">Models</span>
+    </button>
+    <button class="srow">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 1.8"/></svg>
+      <span class="t">Automations</span>
+    </button>
+    <button class="srow">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M14.8 6.4a4 4 0 0 1 4.8 4.8L9.6 21.2 4 22l.8-5.6z"/><path d="m3.5 3.5 5.5 5.5"/></svg>
+      <span class="t">Tools</span>
+    </button>
+    <button class="srow" data-id="settings">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true" style="flex-shrink:0"><circle cx="12" cy="12" r="3.2"/><circle cx="12" cy="12" r="8.5"/></svg>
+      <span class="t">Settings</span>
+    </button>
+  </div>
+
+</aside>
+
+    <div class="main">
+
+      <header class="topbar">
+  <button class="btn btnq ico btns" type="button" data-sidebar-toggle aria-expanded="true" aria-label="Hide sidebar">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M9.5 4v16"/></svg>
+  </button>
+
+  <button class="hit" style="gap:7px;padding:0 8px;border-radius:7px;min-width:0" aria-label="Project and session details">
+    <span style="font-size:13.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Persist tasks to localStorage</span>
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="m6 9.5 6 6 6-6"/></svg>
+  </button>
+
+  <span class="grow"></span>
+
+  <span class="pill acc pulse" style="gap:7px"><span class="dot acc" aria-hidden="true"></span>Working &middot; 14s</span>
+<button class="btn btns" type="button">Stop</button>
+
+  <span class="pill hide-sm" title="Everything is running on this computer">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--ok-line)" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3.5"/><rect x="8" y="8" width="8" height="8" rx="1.8"/></svg>
+    Local
+  </span>
+
+  <button class="btn btns btnq" type="button" style="gap:7px" data-drawer-open>
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 6.5A2 2 0 0 1 5.5 4.5h3.4l1.6 2h8A2 2 0 0 1 20.5 8.5v9a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/></svg>
+  Artifacts
+  <span class="pill" style="padding:0 6px">2</span>
+</button>
+
+  <button class="btn btnq ico btns" type="button" aria-label="More options" data-inert="The overflow menu is not built in this prototype.">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r=".8"/><circle cx="12" cy="12" r=".8"/><circle cx="19" cy="12" r=".8"/></svg>
+  </button>
+</header>
+
+      <div class="scroll" style="overflow-y:auto">
+        <div class="col" style="display:flex;flex-direction:column;gap:20px;padding-top:26px;padding-bottom:20px">
+
+          <div style="display:flex;justify-content:flex-end">
+            <div class="soft" style="max-width:520px;padding:10px 14px;border-radius:14px;font-size:15px;line-height:22px">
+              Save the task list to localStorage so it survives a refresh, and add a test for it.
+            </div>
+          </div>
+
+          <div class="prose">
+            <p>I will move state into a small hook so the components stay unaware of storage, then cover the reload behaviour with one test.</p>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:2px">
+            <div class="lab" style="padding:0 0 4px">Plan</div>
+            <div style="display:flex;align-items:center;gap:10px;min-height:26px">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M20 6 9 17l-5-5"/></svg>
+              <span class="mut" style="font-size:14px">Read how state is handled today</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;min-height:26px">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M20 6 9 17l-5-5"/></svg>
+              <span class="mut" style="font-size:14px">Extract a useTasks hook backed by localStorage</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;min-height:26px">
+              <span class="dot acc" style="margin:0 3px" aria-hidden="true"></span>
+              <span style="font-size:14px;font-weight:600">Add a test that survives a reload</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;min-height:26px">
+              <span style="width:14px;height:14px;border-radius:4px;border:1px solid var(--line-strong);flex-shrink:0" aria-hidden="true"></span>
+              <span class="faint" style="font-size:14px">Run the suite and report</span>
+            </div>
+          </div>
+
+          <section class="act" aria-label="Activity">
+            <div class="hd">
+              <span class="dot acc pulse" aria-hidden="true"></span>
+              <span class="h3" style="flex:1">Working</span>
+              <span class="lab">14s</span>
+              <button class="btn btnq btns" type="button" aria-expanded="true">Hide</button>
+            </div>
+            <div class="sep"></div>
+
+            <div class="arow">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="m9 18 6-6-6-6"/></svg>
+              <span class="t">Read 4 files</span>
+              <span class="lab">1.2s</span>
+            </div>
+            <div class="arow">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="m9 18 6-6-6-6"/></svg>
+              <span class="t">Searched 21 files for localStorage</span>
+              <span class="lab">0.4s</span>
+            </div>
+            <div class="arow">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="m9 18 6-6-6-6"/></svg>
+              <span class="t">Edited 2 files</span>
+              <span class="m" style="color:var(--ok)">+46</span>
+              <span class="m" style="color:var(--bad)">&minus;12</span>
+            </div>
+
+            <div class="arow now" style="align-items:flex-start;padding-top:8px">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--fg)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0;margin-top:4px"><path d="m6 9 6 6 6-6"/></svg>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:8px">
+                <div style="display:flex;align-items:center;gap:10px">
+                  <span class="m" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">npm test -- --run</span>
+                  <span class="lab pulse">running</span>
+                </div>
+                <pre class="m soft" style="margin:0;padding:9px 11px;border-radius:6px;color:var(--mut);font-size:13px;line-height:19px;overflow-x:auto">&gt; vitest --run
+
+ &#10003; src/App.test.jsx (3)
+ &middot; src/useTasks.test.js</pre>
+              </div>
+            </div>
+          </section>
+
+        </div>
+      </div>
+
+      <div style="flex-shrink:0;padding-bottom:14px">
+        <div class="col">
+          <form class="composer" style="" data-composer data-running="true" aria-label="Message ForgeLocal">
+  <label class="vh" for="composer-input">Describe a change or ask a question</label>
+  <textarea id="composer-input" class="ta" rows="1" placeholder="Add to the plan, or ask a question"></textarea>
+
+  <div class="cbar">
+    <button class="btn btnq ico btns" type="button" aria-label="Attach a file or add context"
+      data-inert="Attachments are not implemented in this prototype.">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M12 5.5v13M5.5 12h13"/></svg>
+    </button>
+
+    <div style="position:relative">
+      <button class="btn btnq btns" type="button" data-popover="model-pop" aria-expanded="false" aria-haspopup="menu">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3.5"/><rect x="8" y="8" width="8" height="8" rx="1.8"/></svg>
+        <span data-model-label>Qwen2.5 Coder 14B</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9.5 6 6 6-6"/></svg>
+      </button>
+      <!--MODEL_PICKER-->
+    </div>
+
+    <div style="position:relative">
+      <button class="btn btnq btns" type="button" data-popover="mode-pop" aria-expanded="false" aria-haspopup="menu">
+        <span data-mode-label>Build</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9.5 6 6 6-6"/></svg>
+      </button>
+      <div class="menu popover" id="mode-pop" role="menu" hidden
+        style="bottom:calc(100% + 8px);left:0;width:300px;padding:6px">
+        <button role="menuitemradio" aria-checked="false" class="srow" data-mode="Ask" style="height:auto;padding:9px;align-items:flex-start">
+          <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+            <span style="font-size:13.5px;font-weight:600">Ask</span>
+            <span class="faint" style="font-size:13px;line-height:17px">Answers questions and reads files. Changes nothing.</span>
+          </span>
+        </button>
+        <button role="menuitemradio" aria-checked="false" class="srow" data-mode="Plan" style="height:auto;padding:9px;align-items:flex-start">
+          <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+            <span style="font-size:13.5px;font-weight:600">Plan</span>
+            <span class="faint" style="font-size:13px;line-height:17px">Writes a plan for you to approve before anything runs.</span>
+          </span>
+        </button>
+        <button role="menuitemradio" aria-checked="true" class="srow on" data-mode="Build" style="height:auto;padding:9px;align-items:flex-start">
+          <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+            <span style="font-size:13.5px;font-weight:600">Build</span>
+            <span class="faint" style="font-size:13px;line-height:17px">Edits files and runs the project's own commands, asking per your permission preset.</span>
+          </span>
+        </button>
+      </div>
+    </div>
+
+    <div style="position:relative">
+      <button class="btn btnq ico btns" type="button" data-popover="opts-pop" aria-expanded="false"
+        aria-haspopup="menu" aria-label="More options">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
+      </button>
+      <div class="menu popover" id="opts-pop" role="menu" hidden
+        style="bottom:calc(100% + 8px);left:0;width:300px;padding:10px 12px">
+        <div class="stack" style="gap:12px">
+          <div class="stack" style="gap:5px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span class="lab" style="flex:1">Context used</span>
+              <span class="m num">34%</span>
+            </div>
+            <div class="track"><div class="fillbar" style="width:34%"></div></div>
+            <span class="faint" style="font-size:13px">5.6k of 16k tokens. You are warned before it becomes a problem.</span>
+          </div>
+          <div class="sep"></div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="flex:1;font-size:13px">Permission preset</span>
+            <span class="pill">Balanced</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="flex:1;font-size:13px">Reasoning effort</span>
+            <span class="pill">High</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="flex:1;font-size:13px">Runs on</span>
+            <span class="pill ok">This device</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <span class="grow"></span>
+
+    <button class="btn ico" type="button" data-send style="border-radius:16px" aria-label="Stop generating">
+  <span style="width:10px;height:10px;border-radius:2px;background:var(--fg)" aria-hidden="true"></span>
+</button>
+  </div>
+</form>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+</div></div>
+</body>
+</html>

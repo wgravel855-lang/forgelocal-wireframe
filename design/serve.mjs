@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 import { join, extname, normalize, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const root = join(dirname(fileURLToPath(import.meta.url)), "..");
+const root = join(dirname(fileURLToPath(import.meta.url)), "..", "public");
 const types = { ".html": "text/html; charset=utf-8", ".css": "text/css", ".js": "text/javascript",
   ".png": "image/png", ".jpg": "image/jpeg", ".svg": "image/svg+xml", ".json": "application/json" };
 

@@ -43,23 +43,41 @@
     html, body { height: 100%; }
     body { margin: 0; background: var(--bg); color: var(--fg);
       font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
-      font-size: 14px; line-height: 20px; -webkit-font-smoothing: antialiased;
+      font-size: 14px; line-height: 21px; -webkit-font-smoothing: antialiased;
       text-rendering: optimizeLegibility; }
     button, input, textarea, select { font: inherit; color: inherit; }
     button { background: none; border: 0; padding: 0; cursor: pointer; }
     a { color: var(--acc-text); text-decoration: none; }
     a:hover { text-decoration: underline; }
+    /* A standalone link is a control and needs a hit area. Links inside a
+       paragraph keep the paragraph line-height and are exempt. */
+    /* A standalone link is a control. Links written inside a paragraph, list
+       item or definition keep the paragraph line-height and are excluded. */
+    /* A standalone link is a control. Only links written inside running prose
+       are exempt, so the exclusion is <p> and <dd>, not every list item: a
+       catalog row is an <li> and its title link is very much a control. */
+    a.link,
+    .msec a:not(p a):not(dd a):not(.btn):not(.brand),
+    .mfoot a:not(p a):not(.btn):not(.brand),
+    .mhead [data-nav] a:not(.btn) {
+      display: inline-flex; align-items: center; min-height: 36px; }
+    .mfoot a:not(.btn), .mhead [data-nav] a:not(.btn) { font-size: 14px; }
+    .brand { min-height: 40px; }
     :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
     ::selection { background: var(--acc); color: #fff; }
 
     /* ---- type -------------------------------------------------------- */
     .m { font-family: "Geist Mono", "Cascadia Mono", ui-monospace, Consolas, monospace;
-      font-size: 12.5px; }
+      font-size: 13px; line-height: 19px; }
+    /* .lab is the optional-metadata floor at 12px. Functional labels use
+       .lab-fn at 13px. Nothing customer-facing goes below 12px. */
     .lab { font-family: "Geist Mono", "Cascadia Mono", ui-monospace, Consolas, monospace;
-      font-size: 11.5px; letter-spacing: .01em; color: var(--faint); }
+      font-size: 12px; line-height: 18px; letter-spacing: .01em; color: var(--faint); }
+    .lab-fn { font-size: 13px; line-height: 19px; }
     .h1 { font-size: 28px; line-height: 34px; font-weight: 600; letter-spacing: -.015em; margin: 0; }
-    .h2 { font-size: 15px; line-height: 21px; font-weight: 600; margin: 0; }
-    .h3 { font-size: 14px; line-height: 20px; font-weight: 600; margin: 0; }
+    .h2 { font-size: 16px; line-height: 22px; font-weight: 600; margin: 0; }
+    .h3 { font-size: 15px; line-height: 22px; font-weight: 600; margin: 0; }
+    .h-sec { font-size: 18px; line-height: 26px; font-weight: 600; margin: 0; }
     .mut { color: var(--mut); }
     .faint { color: var(--faint); }
     .prose { font-size: 15px; line-height: 24px; }
@@ -78,29 +96,29 @@
     .sidebar { width: 248px; flex-shrink: 0; border-right: 1px solid var(--line);
       background: var(--panel); display: flex; flex-direction: column; min-height: 0; }
     .main { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--bg); }
-    .topbar { height: 48px; flex-shrink: 0; display: flex; align-items: center; gap: 10px;
-      padding: 0 12px 0 10px; border-bottom: 1px solid var(--line-soft); }
+    .topbar { height: 52px; flex-shrink: 0; display: flex; align-items: center; gap: 10px;
+      padding: 0 16px 0 12px; border-bottom: 1px solid var(--line-soft); }
     .scroll { flex: 1; min-height: 0; overflow: hidden; }
-    .col { width: 100%; max-width: 792px; margin: 0 auto; padding: 0 24px; }
+    .col { width: 100%; max-width: 792px; margin: 0 auto; padding: 0 28px; }
     .drawer { width: 480px; flex-shrink: 0; border-left: 1px solid var(--line);
       background: var(--panel); display: flex; flex-direction: column; min-height: 0; }
 
     /* sidebar rows */
-    .srow { display: flex; align-items: center; gap: 10px; height: 34px; padding: 0 9px;
-      border-radius: 7px; font-size: 13.5px; color: var(--mut); cursor: pointer;
+    .srow { display: flex; align-items: center; gap: 10px; min-height: 38px; padding: 4px 10px;
+      border-radius: 8px; font-size: 14px; color: var(--mut); cursor: pointer;
       transition: background 140ms ease, color 140ms ease; width: 100%; text-align: left; }
     .srow:hover { background: var(--sunk); color: var(--fg); }
     .srow[aria-current="true"], .srow.on { background: var(--raised); color: var(--fg);
       box-shadow: inset 0 0 0 1px var(--line); }
     .srow .t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .sgroup { font-family: "Geist Mono", "Cascadia Mono", ui-monospace, Consolas, monospace;
-      font-size: 11px; color: var(--faint); padding: 0 9px; height: 26px;
+      font-size: 12px; color: var(--faint); padding: 0 10px; height: 30px;
       display: flex; align-items: center; letter-spacing: .02em; }
 
     /* ---- controls ---------------------------------------------------- */
-    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px;
-      height: 32px; padding: 0 13px; border: 1px solid var(--line-strong); background: var(--raised);
-      border-radius: 7px; font-size: 13px; color: var(--fg); white-space: nowrap;
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      height: 36px; padding: 0 14px; border: 1px solid var(--line-strong); background: var(--raised);
+      border-radius: 8px; font-size: 14px; line-height: 20px; color: var(--fg); white-space: nowrap;
       transition: background 140ms ease, border-color 140ms ease, color 140ms ease; }
     .btn:hover { background: var(--sunk); }
     .btnp { background: var(--acc); border-color: var(--acc); color: #fff; }
@@ -108,14 +126,19 @@
     .btnq { background: transparent; border-color: transparent; color: var(--mut); }
     .btnq:hover { background: var(--sunk); color: var(--fg); }
     .btnd { border-color: var(--bad-line); color: var(--bad); }
-    .btns { height: 28px; padding: 0 10px; font-size: 12.5px; border-radius: 6px; }
-    .btnl { height: 38px; padding: 0 18px; font-size: 14px; border-radius: 8px; }
-    .ico { width: 32px; padding: 0; }
-    .ico.btns { width: 28px; }
+    /* dense variant keeps the 36px standard height, trading padding not size */
+    .btns { height: 36px; padding: 0 12px; font-size: 13px; border-radius: 7px; }
+    .btnl { height: 42px; padding: 0 20px; font-size: 15px; border-radius: 9px; }
+    .ico { width: 36px; min-width: 36px; padding: 0; flex-shrink: 0; }
+    .ico.btns { width: 36px; min-width: 36px; }
 
-    .pill { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 9px;
-      border-radius: 11px; border: 1px solid var(--line); background: transparent;
-      font-size: 11.5px; color: var(--mut); white-space: nowrap; }
+    /* a pill is a status badge */
+    .pill { display: inline-flex; align-items: center; gap: 6px; min-height: 26px; padding: 2px 10px;
+      border-radius: 13px; border: 1px solid var(--line); background: transparent;
+      font-size: 13px; line-height: 19px; color: var(--mut); white-space: nowrap; }
+    /* a pill that is a control gets a control's hit area */
+    button.pill, a.pill { height: 36px; border-radius: 18px; padding: 0 14px; font-size: 13px;
+      color: var(--fg); cursor: pointer; }
     .pill.ok { border-color: var(--ok-line); color: var(--ok); }
     .pill.warn { border-color: var(--warn-line); color: var(--warn); }
     .pill.bad { border-color: var(--bad-line); color: var(--bad); }
@@ -130,9 +153,12 @@
     .track { height: 5px; border-radius: 3px; background: var(--line); overflow: hidden; }
     .fillbar { height: 100%; background: var(--acc); border-radius: 3px; }
 
-    .field { height: 34px; border: 1px solid var(--line); background: var(--sunk);
-      border-radius: 7px; display: flex; align-items: center; gap: 9px; padding: 0 11px;
-      font-size: 13px; color: var(--mut); }
+    .field { height: 40px; border: 1px solid var(--line); background: var(--sunk);
+      border-radius: 8px; display: flex; align-items: center; gap: 10px; padding: 0 12px;
+      font-size: 14px; color: var(--mut); }
+    .field:focus-within { border-color: var(--acc); }
+    .field input { border: 0; background: transparent; outline: none; flex: 1; min-width: 0;
+      color: var(--fg); font-size: 14px; align-self: stretch; height: auto; }
 
     /* ---- composer ---------------------------------------------------- */
     .composer { border: 1px solid var(--line-strong); background: var(--raised);
@@ -140,19 +166,21 @@
       display: flex; flex-direction: column; gap: 12px;
       transition: border-color 140ms ease; }
     .composer:focus-within { border-color: var(--acc); }
-    .composer .ph { font-size: 15px; line-height: 22px; color: var(--mut); min-height: 22px; }
-    .cbar { display: flex; align-items: center; gap: 6px; }
+    .cbar { display: flex; align-items: center; gap: 8px; }
 
     /* ---- activity group ---------------------------------------------- */
     .act { border: 1px solid var(--line); border-radius: 8px; background: var(--raised);
       overflow: hidden; }
-    .act > .hd { display: flex; align-items: center; gap: 9px; height: 36px; padding: 0 12px; }
-    .arow { display: flex; align-items: center; gap: 10px; min-height: 30px; padding: 4px 12px;
-      font-size: 13px; color: var(--mut); }
+    .act > .hd { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 4px 16px; }
+    .arow { display: flex; align-items: center; gap: 12px; min-height: 36px; padding: 6px 16px;
+      font-size: 14px; color: var(--mut); }
     .arow .t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .arow.now { color: var(--fg); }
 
     /* ---- misc -------------------------------------------------------- */
+    /* floor for controls that are not one of the named primitives */
+    .hit { display: inline-flex; align-items: center; min-height: 36px; }
+
     .sep { height: 1px; background: var(--line-soft); }
     .grow { flex-grow: 1; }
     .ph { background: var(--line); border-radius: 2px; }
@@ -169,10 +197,10 @@
     .pulse { animation: fl-pulse 2s ease-in-out infinite; }
 
     /* ---- tables ------------------------------------------------------- */
-    .tbl { width:100%; border-collapse:collapse; font-size:13.5px; }
-    .tbl th, .tbl td { text-align:left; padding:11px 14px; border-bottom:1px solid var(--line-soft); }
+    .tbl { width:100%; border-collapse:collapse; font-size:14px; }
+    .tbl th, .tbl td { text-align:left; padding:14px 16px; border-bottom:1px solid var(--line-soft); }
     .tbl thead th { font-family:"Geist Mono","Cascadia Mono",ui-monospace,Consolas,monospace;
-      font-size:11.5px; color:var(--faint); font-weight:400; background:var(--panel); }
+      font-size:13px; color:var(--faint); font-weight:400; background:var(--panel); }
     .tbl tbody tr:last-child td { border-bottom:0; }
     .tbl { border:1px solid var(--line); border-radius:8px; overflow:hidden; }
     .tbl td.num, .tbl th.num { font-variant-numeric:tabular-nums; }
@@ -196,9 +224,9 @@
     .brand.small { font-size:13px; gap:7px; }
     .mhead { border-bottom:1px solid var(--line); position:sticky; top:0; z-index:50;
       background:var(--bg); }
-    .mhead-in { height:68px; display:flex; align-items:center; gap:20px; }
+    .mhead-in { height:72px; display:flex; align-items:center; gap:22px; }
     .mhead [data-nav] { display:flex; align-items:center; gap:22px; flex:1; }
-    .mhead [data-nav] a { color:var(--mut); font-size:13.5px; }
+    .mhead [data-nav] a { color:var(--mut); font-size:14px; font-weight:500; }
     .mhead [data-nav] a:hover { color:var(--fg); text-decoration:none; }
     .mhead [data-nav] a[aria-current="page"] { color:var(--fg); font-weight:500; }
     .mhead [data-nav] a.btn { color:var(--fg); }
@@ -212,16 +240,20 @@
     .mfoot-cta .row { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
     .mfoot-nav { display:flex; gap:56px; flex-wrap:wrap; }
     .mfoot-nav > div { display:flex; flex-direction:column; gap:9px; }
-    .mfoot-nav a { color:var(--mut); font-size:13px; }
+    .mfoot-nav a { color:var(--mut); font-size:14px; }
     .mfoot-legal { padding:0 32px 40px; display:flex; align-items:center; gap:16px;
-      flex-wrap:wrap; font-size:12.5px; }
+      flex-wrap:wrap; font-size:13px; }
 
     .msec { padding:0 32px; }
-    .mhero h1 { margin:0; font-size:clamp(38px,5.2vw,60px); line-height:1.04;
+    .mhero h1 { margin:0; font-size:clamp(40px,4.4vw,60px); line-height:1.03;
       font-weight:600; letter-spacing:-.028em; max-width:15ch; }
     .mlede { margin:0; font-size:17px; line-height:27px; color:var(--mut); max-width:62ch; }
-    .mh2 { margin:0; font-size:clamp(28px,3.2vw,40px); line-height:1.1; font-weight:600;
+    .mbody { font-size:16px; line-height:26px; }
+    .msmall { font-size:13px; line-height:20px; }
+    .mh2 { margin:0; font-size:clamp(32px,3vw,40px); line-height:1.12; font-weight:600;
       letter-spacing:-.022em; }
+    .mh1 { margin:0; font-size:clamp(36px,3.6vw,48px); line-height:1.14; font-weight:600;
+      letter-spacing:-.024em; }
     .stack { display:flex; flex-direction:column; }
 
     @media (max-width: 860px) {
@@ -276,7 +308,7 @@
 
     textarea.ta { width: 100%; border: 0; background: transparent; resize: none;
       font-size: 15px; line-height: 22px; color: var(--fg); outline: none;
-      min-height: 22px; max-height: 200px; padding: 0; font-family: inherit; }
+      min-height: 44px; max-height: 220px; padding: 0; font-family: inherit; }
     textarea.ta::placeholder { color: var(--mut); }
 
     .num { font-variant-numeric: tabular-nums; }

@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Model picker · ForgeLocal wireframe</title>
+<link rel="stylesheet" href="/assets/forgelocal.css">
+<style>
+
+  html, body { height:100%; overflow:hidden; }
+  body { margin:0; display:flex; flex-direction:column; }
+  .bar { flex-shrink:0; height:40px; display:flex; align-items:center; gap:14px; padding:0 16px;
+    background:#121315; border-bottom:1px solid #26282C; color:#EDEDEB; font-size:13px; }
+  .bar a { color:#9698F2; }
+  #bare:target { display:none; }
+  .stage { flex:1; min-height:0; display:flex; }
+  .stage > * { flex:1; min-width:0; }
+  
+</style>
+</head>
+<body>
+<div class="bar" id="bare">
+  <a href="/gallery/">&larr; Gallery</a>
+  <a href="/" style="opacity:.6">Site</a>
+  <span style="opacity:.5">/</span>
+  <span>Model picker</span>
+  <span style="flex-grow:1"></span>
+  <span style="opacity:.5;font-size:12px">760 &times; 700</span>
+</div>
+<div class="stage"><div class="frame">
+<div class="app" style="height:100%;display:flex;flex-direction:column;justify-content:flex-end;padding:24px">
+  <div style="width:100%;max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:10px">
+
+    <div class="menu" role="menu" aria-label="Choose a model" style="padding:6px;max-height:70vh;overflow-y:auto">
+
+      <div style="padding:4px 4px 6px">
+        <div class="field" style="height:36px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="flex-shrink:0"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>Search models</div>
+      </div>
+
+      <div class="sgroup">Recommended</div>
+      <button role="menuitemradio" aria-checked="true" class="srow on" style="height:auto;padding:8px 9px;align-items:flex-start">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true" style="flex-shrink:0;margin-top:2px"><rect x="3" y="3" width="18" height="18" rx="3.5"/><rect x="8" y="8" width="8" height="8" rx="1.8"/></svg>
+        <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+          <span style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+            <span style="font-size:13.5px;font-weight:600">Qwen2.5 Coder 32B</span>
+            <span class="pill ok" style="padding:0 6px">Loaded</span>
+          </span>
+          <span class="faint" style="font-size:13px;line-height:17px">Multi-file edits, commands and tests &middot; runs well on this PC</span>
+        </span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--acc-text)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0;margin-top:3px"><path d="M20 6 9 17l-5-5"/></svg>
+      </button>
+
+      <div class="sgroup" style="margin-top:6px">On this device</div>
+      <button role="menuitemradio" aria-checked="false" class="srow" style="height:auto;padding:8px 9px;align-items:flex-start">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true" style="flex-shrink:0;margin-top:2px"><rect x="3" y="3" width="18" height="18" rx="3.5"/><rect x="8" y="8" width="8" height="8" rx="1.8"/></svg>
+        <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+          <span style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+            <span style="font-size:13.5px">Qwen2.5 Coder 7B</span>
+            <span class="pill" style="padding:0 6px">Installed</span>
+          </span>
+          <span class="faint" style="font-size:13px;line-height:17px">Quick single-file edits &middot; about twice as fast here</span>
+        </span>
+      </button>
+      <button role="menuitemradio" aria-checked="false" class="srow" style="height:auto;padding:8px 9px;align-items:flex-start">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true" style="flex-shrink:0;margin-top:2px"><rect x="3" y="3" width="18" height="18" rx="3.5"/><rect x="8" y="8" width="8" height="8" rx="1.8"/></svg>
+        <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+          <span style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+            <span style="font-size:13.5px">Llama 3.3 70B</span>
+            <span class="pill warn" style="padding:0 6px">Tight fit</span>
+          </span>
+          <span class="faint" style="font-size:13px;line-height:17px">Needs about 14 GB of VRAM, this PC has 12</span>
+        </span>
+      </button>
+      <button class="srow" style="height:auto;padding:8px 9px;align-items:flex-start">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true" style="flex-shrink:0;margin-top:2px"><rect x="3" y="3" width="18" height="18" rx="3.5"/><rect x="8" y="8" width="8" height="8" rx="1.8"/></svg>
+        <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+          <span style="font-size:13.5px">DeepSeek-Coder-V2 Lite 16B</span>
+          <span class="faint" style="font-size:13px;line-height:17px">Not installed &middot; 9.4 GB download</span>
+        </span>
+        <span class="btn btns" style="flex-shrink:0">Install</span>
+      </button>
+
+      <div class="sgroup" style="margin-top:6px">Cloud</div>
+      <button class="srow" style="height:auto;padding:8px 9px;align-items:flex-start">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0;margin-top:2px"><path d="M17.5 19.5a4.5 4.5 0 0 0 .4-9 6 6 0 0 0-11.5-1.7A4 4 0 0 0 6.5 19.5z"/></svg>
+        <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+          <span style="font-size:13.5px">Connect a provider</span>
+          <span class="faint" style="font-size:13px;line-height:17px">Your own key, or metered with a spend cap. Off by default.</span>
+        </span>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0;margin-top:4px"><path d="m9 18 6-6-6-6"/></svg>
+      </button>
+
+      <div class="sgroup" style="margin-top:6px">Recently used</div>
+      <button class="srow" style="height:36px">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true" style="flex-shrink:0"><rect x="3" y="3" width="18" height="18" rx="3.5"/><rect x="8" y="8" width="8" height="8" rx="1.8"/></svg>
+        <span class="t" style="font-size:13.5px">Qwen2.5 Coder 7B</span>
+        <span class="lab">2h ago</span>
+      </button>
+
+      <div class="sep" style="margin:6px 4px"></div>
+
+      <button class="srow" style="height:36px">
+        <span class="t" style="font-size:13.5px">Reasoning effort</span>
+        <span style="font-size:13px;color:var(--fg)">High</span>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="m9 18 6-6-6-6"/></svg>
+      </button>
+
+    </div>
+
+    <form class="composer" style="" data-composer  aria-label="Message ForgeLocal">
+  <label class="vh" for="composer-input">Describe a change or ask a question</label>
+  <textarea id="composer-input" class="ta" rows="1" placeholder="Describe a change, or ask about this project"></textarea>
+
+  <div class="cbar">
+    <button class="btn btnq ico btns" type="button" aria-label="Attach a file or add context"
+      data-inert="Attachments are not implemented in this prototype.">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M12 5.5v13M5.5 12h13"/></svg>
+    </button>
+
+    <div style="position:relative">
+      <button class="btn btnq btns" type="button" data-popover="model-pop" aria-expanded="false" aria-haspopup="menu">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3.5"/><rect x="8" y="8" width="8" height="8" rx="1.8"/></svg>
+        <span data-model-label>Qwen2.5 Coder 14B</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9.5 6 6 6-6"/></svg>
+      </button>
+      <!--MODEL_PICKER-->
+    </div>
+
+    <div style="position:relative">
+      <button class="btn btnq btns" type="button" data-popover="mode-pop" aria-expanded="false" aria-haspopup="menu">
+        <span data-mode-label>Build</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9.5 6 6 6-6"/></svg>
+      </button>
+      <div class="menu popover" id="mode-pop" role="menu" hidden
+        style="bottom:calc(100% + 8px);left:0;width:300px;padding:6px">
+        <button role="menuitemradio" aria-checked="false" class="srow" data-mode="Ask" style="height:auto;padding:9px;align-items:flex-start">
+          <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+            <span style="font-size:13.5px;font-weight:600">Ask</span>
+            <span class="faint" style="font-size:13px;line-height:17px">Answers questions and reads files. Changes nothing.</span>
+          </span>
+        </button>
+        <button role="menuitemradio" aria-checked="false" class="srow" data-mode="Plan" style="height:auto;padding:9px;align-items:flex-start">
+          <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+            <span style="font-size:13.5px;font-weight:600">Plan</span>
+            <span class="faint" style="font-size:13px;line-height:17px">Writes a plan for you to approve before anything runs.</span>
+          </span>
+        </button>
+        <button role="menuitemradio" aria-checked="true" class="srow on" data-mode="Build" style="height:auto;padding:9px;align-items:flex-start">
+          <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+            <span style="font-size:13.5px;font-weight:600">Build</span>
+            <span class="faint" style="font-size:13px;line-height:17px">Edits files and runs the project's own commands, asking per your permission preset.</span>
+          </span>
+        </button>
+      </div>
+    </div>
+
+    <div style="position:relative">
+      <button class="btn btnq ico btns" type="button" data-popover="opts-pop" aria-expanded="false"
+        aria-haspopup="menu" aria-label="More options">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
+      </button>
+      <div class="menu popover" id="opts-pop" role="menu" hidden
+        style="bottom:calc(100% + 8px);left:0;width:300px;padding:10px 12px">
+        <div class="stack" style="gap:12px">
+          <div class="stack" style="gap:5px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span class="lab" style="flex:1">Context used</span>
+              <span class="m num">34%</span>
+            </div>
+            <div class="track"><div class="fillbar" style="width:34%"></div></div>
+            <span class="faint" style="font-size:13px">5.6k of 16k tokens. You are warned before it becomes a problem.</span>
+          </div>
+          <div class="sep"></div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="flex:1;font-size:13px">Permission preset</span>
+            <span class="pill">Balanced</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="flex:1;font-size:13px">Reasoning effort</span>
+            <span class="pill">High</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="flex:1;font-size:13px">Runs on</span>
+            <span class="pill ok">This device</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <span class="grow"></span>
+
+    <button class="btn btnp ico" type="submit" data-send style="border-radius:16px" aria-label="Send">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5.5M5.5 12 12 5.5 18.5 12"/></svg>
+</button>
+  </div>
+</form>
+
+  </div>
+</div>
+
+</div></div>
+</body>
+</html>

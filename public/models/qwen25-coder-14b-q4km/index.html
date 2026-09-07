@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Qwen2.5 Coder 14B — ForgeLocal</title>
+<meta name="description" content="Qwen2.5 Coder 14B Q4_K_M: Multi-file edits, running commands, tests and previews.">
+<meta property="og:title" content="Qwen2.5 Coder 14B — ForgeLocal">
+<meta property="og:description" content="Qwen2.5 Coder 14B Q4_K_M: Multi-file edits, running commands, tests and previews.">
+<meta property="og:type" content="website">
+<link rel="icon" href="/assets/mark.svg" type="image/svg+xml">
+<link rel="alternate icon" href="/favicon.ico">
+<link rel="stylesheet" href="/assets/forgelocal.css">
+</head>
+<body class="site" style="">
+<a class="vh" href="#main">Skip to content</a>
+<header class="mhead">
+  <div class="mwrap mhead-in">
+    <a class="brand" href="/">
+      <svg viewBox="0 0 24 24" fill="none" width="22" height="22" aria-hidden="true" focusable="false" style="flex-shrink:0">
+  <rect x="2.4" y="2.4" width="19.2" height="19.2" rx="5.6" stroke="currentColor" stroke-width="1.7"/>
+  <path d="M8.6 8.9 11.7 12l-3.1 3.1" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M13.6 15.1h3.3" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+</svg>
+      <span>ForgeLocal</span>
+    </a>
+    <button class="btn btnq ico" type="button" data-nav-toggle aria-expanded="false" aria-controls="site-nav" aria-label="Menu">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+    <nav id="site-nav" data-nav aria-label="Main">
+      <a href="/product/">Product</a>
+      <a href="/models/" aria-current="page">Models</a>
+      <a href="/security/">Security</a>
+      <a href="/pricing/">Pricing</a>
+      <a href="/docs/">Docs</a>
+      <span class="mhead-sp"></span>
+      <a href="/signin/">Sign in</a>
+      <a href="/download/" class="btn btns">Download</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+
+<section class="mwrap msec" style="padding-top:56px;padding-bottom:24px">
+  <a href="/models/" style="font-size:13px">&larr; All models</a>
+  <div class="stack" style="gap:14px;max-width:760px;margin-top:16px">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <h1 class="mh2" style="font-size:34px">Qwen2.5 Coder 14B</h1>
+      <span class="pill warn">Runs with tradeoffs</span>
+    </div>
+    <p class="mlede">Multi-file edits, running commands, tests and previews.</p>
+    <p class="mut" style="margin:0;font-size:14px;line-height:21px">Slower than the 7B on trivial one-line changes.</p>
+  </div>
+</section>
+
+<section class="mwrap msec" style="padding-bottom:40px">
+  <div class="box" style="padding:20px;display:flex;gap:32px;flex-wrap:wrap;align-items:center">
+    <div class="stack" style="gap:4px"><span class="lab">Publisher</span><span>Alibaba Qwen</span></div>
+    <div class="stack" style="gap:4px"><span class="lab">Parameters</span><span class="num">15B</span></div>
+    <div class="stack" style="gap:4px"><span class="lab">Quantization</span><span class="num">Q4_K_M &middot; GGUF</span></div>
+    <div class="stack" style="gap:4px"><span class="lab">Download</span><span class="num">8.99 GB</span></div>
+    <div class="stack" style="gap:4px"><span class="lab">On disk</span><span class="num">8.99 GB</span></div>
+    <div class="stack" style="gap:4px"><span class="lab">License</span><span>Apache-2.0</span></div>
+    <span class="grow"></span>
+    <a class="btn btnp" href="/download/">Get ForgeLocal to install this</a>
+  </div>
+</section>
+
+<section class="mwrap msec" style="padding-bottom:40px">
+  <h2 class="h2" style="font-size:20px;margin-bottom:10px">Hardware fit on RTX 4070 12 GB, 32 GB RAM</h2>
+  <p class="mut" style="margin:0 0 16px;font-size:14px;line-height:21px;max-width:70ch">Fits at a 8k context (11.1 GB). A 16k context would need 12.6 GB against 12 GB.</p>
+  <div style="overflow-x:auto">
+    <table class="tbl" style="min-width:520px">
+      <caption class="vh">Memory required at each context length</caption>
+      <thead><tr><th>Context</th><th>KV cache</th><th>Total needed</th><th>Fit</th></tr></thead>
+      <tbody><tr>
+      <td class="num">8k</td>
+      <td class="num">1.50 GB</td>
+      <td class="num">11.1 GB</td>
+      <td><span class="pill warn">Runs with tradeoffs</span></td>
+    </tr>
+<tr>
+      <td class="num">16k</td>
+      <td class="num">3.00 GB</td>
+      <td class="num">12.6 GB</td>
+      <td><span class="pill warn">Runs with tradeoffs</span></td>
+    </tr>
+<tr>
+      <td class="num">32k</td>
+      <td class="num">6.00 GB</td>
+      <td class="num">15.6 GB</td>
+      <td><span class="pill warn">Runs with tradeoffs</span></td>
+    </tr></tbody>
+    </table>
+  </div>
+  <details class="box" style="margin-top:14px">
+    <summary style="padding:12px 16px;cursor:pointer;font-size:13.5px">How this is calculated</summary>
+    <div style="padding:0 16px 16px" class="mut">
+      <p style="margin:0 0 8px;font-size:13.5px;line-height:20px">
+        Total = quantized weights + KV cache + runtime overhead.
+      </p>
+      <p class="m" style="margin:0 0 8px;font-size:12.5px;line-height:19px">
+        KV = 2 &times; layers(48) &times; kv_heads(8) &times;
+        head_dim(128) &times; context &times; 2 bytes (f16)
+      </p>
+      <p style="margin:0;font-size:13px;line-height:19px">
+        Runtime overhead is taken as a flat 0.6 GB for llama.cpp.
+        These are planning figures. Real usage varies with the runtime build, batch size and
+        offload split, which is why ForgeLocal re-measures on your machine.
+      </p>
+    </div>
+  </details>
+</section>
+
+<section class="mwrap msec" style="padding-bottom:40px">
+  <h2 class="h2" style="font-size:20px;margin-bottom:10px">Measured performance</h2>
+  <div class="box" style="padding:20px;display:flex;gap:14px;align-items:flex-start">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="8.5"/><path d="M12 16v-4.5M12 8.2h.01"/></svg>
+    <div>
+      <p style="margin:0 0 6px;font-size:14px;font-weight:600">Not measured on this PC yet</p>
+      <p class="mut" style="margin:0;font-size:13.5px;line-height:20px;max-width:66ch">Run a local benchmark to record throughput for this exact profile.
+        Publishing a tokens-per-second figure without the hardware, runtime build, context and
+        offload split it came from would not be useful, so this page shows nothing until there is
+        a real measurement to show.</p>
+    </div>
+  </div>
+</section>
+
+<section class="mwrap msec" style="padding-bottom:40px">
+  <h2 class="h2" style="font-size:20px;margin-bottom:10px">Test evidence</h2>
+  <div class="box" style="padding:20px">
+    <p class="mut" style="margin:0 0 12px;font-size:13.5px;line-height:20px;max-width:70ch">
+      ForgeLocal runs an agent check suite against each profile: streaming, typed tool calls,
+      schema-guided repair, a bounded write, a patch, a command and its output. A profile is
+      only marked verified once that suite has passed on a named machine class.
+    </p>
+    <p style="margin:0;display:flex;align-items:center;gap:9px;font-size:13.5px">
+      <span class="pill">Not yet verified</span>
+      <span class="mut">No suite run has been recorded for this profile.</span>
+    </p>
+  </div>
+</section>
+
+<section class="mwrap msec" style="padding-bottom:40px">
+  <h2 class="h2" style="font-size:20px;margin-bottom:10px">Source and license</h2>
+  <div class="box" style="padding:20px;display:flex;flex-direction:column;gap:10px">
+    <div style="display:flex;gap:14px;flex-wrap:wrap"><span class="lab" style="width:110px">Source</span>
+      <a href="https://huggingface.co/Qwen/Qwen2.5-Coder-14B-Instruct-GGUF" rel="noreferrer noopener" target="_blank">https://huggingface.co/Qwen/Qwen2.5-Coder-14B-Instruct-GGUF</a></div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap"><span class="lab" style="width:110px">Revision</span><span class="m">main</span></div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap"><span class="lab" style="width:110px">License</span><span>Apache-2.0</span></div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap"><span class="lab" style="width:110px">Checksum</span>
+      <span class="mut">Recorded at download time and re-verified on load.</span></div>
+    <p class="faint" style="margin:4px 0 0;font-size:12.5px">
+      Weights are fetched from the publisher. ForgeLocal distributes a signed profile manifest, not the model.
+    </p>
+  </div>
+</section>
+</main>
+<footer class="mfoot">
+  <div class="mwrap mfoot-top">
+    <div class="mfoot-cta">
+      <h2>See what your PC can build</h2>
+      <div class="row">
+        <a href="/download/" class="btn btnp btnl" data-platform-cta>Download for Windows</a>
+        <span class="faint" style="font-size:13px" data-platform-note>Windows 10 and 11, 64-bit. Free for local use.</span>
+      </div>
+    </div>
+    <nav class="mfoot-nav" aria-label="Footer">
+      <div>
+        <span class="lab">Product</span>
+        <a href="/product/">How it works</a>
+        <a href="/models/">Models</a>
+        <a href="/pricing/">Pricing</a>
+        <a href="/download/">Download</a>
+      </div>
+      <div>
+        <span class="lab">Resources</span>
+        <a href="/docs/">Docs</a>
+        <a href="/changelog/">Changelog</a>
+        <a href="/status/">Status</a>
+      </div>
+      <div>
+        <span class="lab">Trust</span>
+        <a href="/security/">Security</a>
+        <a href="/privacy/">Privacy</a>
+        <a href="/terms/">Terms</a>
+      </div>
+    </nav>
+  </div>
+  <div class="mwrap mfoot-legal">
+    <span class="brand small"><svg viewBox="0 0 24 24" fill="none" width="16" height="16" aria-hidden="true" focusable="false" style="flex-shrink:0">
+  <rect x="2.4" y="2.4" width="19.2" height="19.2" rx="5.6" stroke="currentColor" stroke-width="1.7"/>
+  <path d="M8.6 8.9 11.7 12l-3.1 3.1" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M13.6 15.1h3.3" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+</svg> ForgeLocal</span>
+    <span class="faint">Independent project. Not affiliated with any model publisher.</span>
+    <span class="grow"></span>
+    <a href="/security/#disclosure" class="faint">Report a vulnerability</a>
+  </div>
+</footer>
+
+<script src="/assets/forgelocal.js" defer></script>
+</body>
+</html>

@@ -116,8 +116,8 @@ export function extraRoutes({ write, marketing, appPage, part, esc, models, F, g
   <div style="display:flex;align-items:center;gap:12px">
     <span class="mut" style="font-size:13.5px">Monthly</span>
     <button type="button" role="switch" aria-checked="false" data-billing-toggle aria-label="Bill yearly"
-      style="width:44px;height:24px;border-radius:12px;border:1px solid var(--line-strong);background:var(--sunk);position:relative;padding:0">
-      <span style="position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:var(--fg);transition:transform 160ms ease"></span>
+      style="width:64px;height:36px;border-radius:18px;border:1px solid var(--line-strong);background:var(--sunk);position:relative;padding:0;flex-shrink:0">
+      <span style="position:absolute;top:4px;left:4px;width:26px;height:26px;border-radius:50%;background:var(--fg);transition:transform 160ms ease"></span>
     </button>
     <span class="mut" style="font-size:13.5px">Yearly <span class="faint">(two months free)</span></span>
   </div>

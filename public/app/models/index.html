@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Models — ForgeLocal</title>
+<meta name="description" content="">
+<meta property="og:title" content="Models — ForgeLocal">
+<meta property="og:description" content="">
+<meta property="og:type" content="website">
+<link rel="icon" href="/assets/mark.svg" type="image/svg+xml">
+<link rel="alternate icon" href="/favicon.ico">
+<link rel="stylesheet" href="/assets/forgelocal.css">
+</head>
+<body class="app" style="height:100%;overflow:hidden">
+<a class="vh" href="#main">Skip to content</a>
+<main id="main" style="height:100%"><div class="app" style="height:100%;position:relative">
+  <div class="shell">
+
+    <style>
+  .sidebar[data-active="s1"] .srow[data-id="s1"],
+  .sidebar[data-active="s2"] .srow[data-id="s2"],
+  .sidebar[data-active="s3"] .srow[data-id="s3"],
+  .sidebar[data-active="new"] .srow[data-id="new"],
+  .sidebar[data-active="models"] .srow[data-id="models"],
+  .sidebar[data-active="settings"] .srow[data-id="settings"] {
+    background: var(--raised); color: var(--fg); box-shadow: inset 0 0 0 1px var(--line);
+  }
+</style>
+<aside class="sidebar" data-active="models" aria-label="Projects and sessions">
+
+  <div style="height:48px;flex-shrink:0;display:flex;align-items:center;gap:4px;padding:0 8px 0 10px">
+    <button class="btn btnq ico btns" type="button" data-sidebar-toggle aria-expanded="true" aria-label="Hide sidebar">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M9.5 4v16"/></svg>
+    </button>
+    <span class="grow"></span>
+    <button class="btn btnq ico btns" type="button" aria-label="New session" data-inert="Sessions are not persisted in this prototype.">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.6 3.6a2.1 2.1 0 0 1 3 3L7.4 18.8 3.5 20l1.2-3.9z"/></svg>
+    </button>
+  </div>
+
+  <div style="padding:0 8px 8px">
+    <button class="srow" data-id="new" style="height:36px;border:1px solid var(--line-strong);background:var(--raised);color:var(--fg)">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+      <span class="t">New session</span>
+    </button>
+  </div>
+
+  <div style="padding:0 8px 10px">
+    <button class="field" style="width:100%;height:36px" aria-label="Switch project">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M3 7.5A2 2 0 0 1 5 5.5h3.6l1.8 2H19a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+      <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--fg);text-align:left">task-tracker</span>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="m6 9.5 6 6 6-6"/></svg>
+    </button>
+  </div>
+
+  <nav class="scroll" style="padding:0 8px" aria-label="Recent sessions">
+    <div class="sgroup">Today</div>
+    <button class="srow" data-id="s1">
+      <span class="dot acc" aria-hidden="true"></span>
+      <span class="t">Persist tasks to localStorage</span>
+    </button>
+    <button class="srow" data-id="s2">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M20 6 9 17l-5-5"/></svg>
+      <span class="t">Add a filter bar to the list</span>
+    </button>
+    <button class="srow" data-id="s3">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--bad)" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      <span class="t">Switch the date helper to Temporal</span>
+    </button>
+
+    <div class="sgroup" style="margin-top:8px">Yesterday</div>
+    <button class="srow">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M20 6 9 17l-5-5"/></svg>
+      <span class="t">Scaffold the project</span>
+    </button>
+    <button class="srow">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M20 6 9 17l-5-5"/></svg>
+      <span class="t">Set up Vitest</span>
+    </button>
+    <button class="srow"><span class="t faint">Show more</span></button>
+  </nav>
+
+  <div style="flex-shrink:0;border-top:1px solid var(--line-soft);padding:8px">
+    <button class="srow" data-id="models">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true" style="flex-shrink:0"><rect x="3" y="3" width="18" height="18" rx="3.5"/><rect x="8" y="8" width="8" height="8" rx="1.8"/></svg>
+      <span class="t">Models</span>
+    </button>
+    <button class="srow">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 1.8"/></svg>
+      <span class="t">Automations</span>
+    </button>
+    <button class="srow">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M14.8 6.4a4 4 0 0 1 4.8 4.8L9.6 21.2 4 22l.8-5.6z"/><path d="m3.5 3.5 5.5 5.5"/></svg>
+      <span class="t">Tools</span>
+    </button>
+    <button class="srow" data-id="settings">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true" style="flex-shrink:0"><circle cx="12" cy="12" r="3.2"/><circle cx="12" cy="12" r="8.5"/></svg>
+      <span class="t">Settings</span>
+    </button>
+  </div>
+
+</aside>
+
+    <div class="main">
+
+      <header class="topbar">
+  <button class="btn btnq ico btns" type="button" data-sidebar-toggle aria-expanded="true" aria-label="Hide sidebar">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M9.5 4v16"/></svg>
+  </button>
+
+  <button class="hit" style="gap:7px;padding:0 8px;border-radius:7px;min-width:0" aria-label="Project and session details">
+    <span style="font-size:13.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Models</span>
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="m6 9.5 6 6 6-6"/></svg>
+  </button>
+
+  <span class="grow"></span>
+
+  
+
+  <span class="pill hide-sm" title="Everything is running on this computer">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--ok-line)" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3.5"/><rect x="8" y="8" width="8" height="8" rx="1.8"/></svg>
+    Local
+  </span>
+
+  
+
+  <button class="btn btnq ico btns" type="button" aria-label="More options" data-inert="The overflow menu is not built in this prototype.">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r=".8"/><circle cx="12" cy="12" r=".8"/><circle cx="19" cy="12" r=".8"/></svg>
+  </button>
+</header>
+
+      <div class="scroll" style="overflow-y:auto">
+        <div style="width:100%;max-width:960px;margin:0 auto;padding:26px 24px 32px;display:flex;flex-direction:column;gap:18px">
+
+          <div style="display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap">
+            <div style="flex:1;min-width:260px;display:flex;flex-direction:column;gap:6px">
+              <h1 class="h1">Models</h1>
+              <p class="mut" style="margin:0;font-size:13.5px">Everything here runs on this PC unless it says otherwise.</p>
+            </div>
+            <label class="field" style="width:240px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="flex-shrink:0"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg><span class="vh">Search models</span><input type="search" data-filter-search placeholder="Search models"></label>
+          </div>
+
+          <div role="tablist" style="display:flex;gap:2px;border-bottom:1px solid var(--line-soft)">
+            <button role="tab" aria-selected="true" style="padding:9px 12px;font-size:13.5px;font-weight:600;border-bottom:2px solid var(--acc);margin-bottom:-1px">Explore</button>
+            <button role="tab" style="padding:9px 12px;font-size:13.5px;color:var(--mut)">My models</button>
+            <button role="tab" style="padding:9px 12px;font-size:13.5px;color:var(--mut)">Downloads</button>
+          </div>
+
+          <div style="display:flex;gap:7px;flex-wrap:wrap" role="group" aria-label="Filters">
+            <button class="pill" style="border-color:var(--acc);color:var(--acc-text)">Fits this PC</button>
+            <button class="pill" >Coding</button>
+            <button class="pill" >General</button>
+            <button class="pill" >Vision</button>
+            <button class="pill" >Tool use</button>
+            <button class="pill" >Installed</button>
+          </div>
+
+          <ul data-filter-root style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px"><li class="box" data-filter-item data-name="Qwen2.5 Coder 7B Alibaba Qwen"
+              data-tags="coding tool-use installed fits"
+              style="padding:18px;display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
+              <div style="flex:1;min-width:260px;display:flex;flex-direction:column;gap:8px">
+                <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">
+                  <span class="h2">Qwen2.5 Coder 7B</span>
+                  <span class="pill ok">Great fit</span>
+                  <span class="pill">Installed</span>
+                </div>
+                <p class="mut" style="margin:0;font-size:14px;line-height:21px">Quick single-file edits, short scripts and focused fixes.</p>
+                <p class="faint" style="margin:0;font-size:13px;line-height:19px">Weights, a 16k context and runtime overhead come to 6.1 GB, inside 12 GB of video memory.</p>
+                <div style="display:flex;gap:18px;flex-wrap:wrap;padding-top:2px">
+                  <span class="lab num">Alibaba Qwen</span>
+                  <span class="lab num">Q4_K_M &middot; 7.6B</span>
+                  <span class="lab num">4.7 GB download</span>
+                  <span class="lab">Apache-2.0</span>
+                  <span class="lab">Speed not measured</span>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;flex-shrink:0">
+                <button class="btn btnp btns" type="button">Use</button>
+                <a class="link" href="/models/qwen25-coder-7b-q4km/">Details</a>
+              </div>
+            </li>
+<li class="box" data-filter-item data-name="Qwen2.5 Coder 14B Alibaba Qwen"
+              data-tags="coding tool-use installed fits"
+              style="padding:18px;display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
+              <div style="flex:1;min-width:260px;display:flex;flex-direction:column;gap:8px">
+                <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">
+                  <span class="h2">Qwen2.5 Coder 14B</span>
+                  <span class="pill warn">Runs with tradeoffs</span>
+                  <span class="pill ok">Loaded</span>
+                </div>
+                <p class="mut" style="margin:0;font-size:14px;line-height:21px">Multi-file edits, running commands, tests and previews.</p>
+                <p class="faint" style="margin:0;font-size:13px;line-height:19px">Fits at a 8k context (11.1 GB). A 16k context would need 12.6 GB against 12 GB.</p>
+                <div style="display:flex;gap:18px;flex-wrap:wrap;padding-top:2px">
+                  <span class="lab num">Alibaba Qwen</span>
+                  <span class="lab num">Q4_K_M &middot; 15B</span>
+                  <span class="lab num">9 GB download</span>
+                  <span class="lab">Apache-2.0</span>
+                  <span class="lab">Speed not measured</span>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;flex-shrink:0">
+                <button class="btn btns" type="button" data-inert="Already loaded.">In use</button>
+                <a class="link" href="/models/qwen25-coder-14b-q4km/">Details</a>
+              </div>
+            </li>
+<li class="box" data-filter-item data-name="DeepSeek-Coder-V2 Lite 16B DeepSeek"
+              data-tags="coding tool-use  "
+              style="padding:18px;display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
+              <div style="flex:1;min-width:260px;display:flex;flex-direction:column;gap:8px">
+                <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">
+                  <span class="h2">DeepSeek-Coder-V2 Lite 16B</span>
+                  <span class="pill warn">CPU offload required</span>
+                  
+                </div>
+                <p class="mut" style="margin:0;font-size:14px;line-height:21px">Reading an unfamiliar codebase and explaining it back.</p>
+                <p class="faint" style="margin:0;font-size:13px;line-height:19px">10.4 GB of weights against 12 GB of video memory, so most layers run on the CPU. It works, but expect it to be slow.</p>
+                <div style="display:flex;gap:18px;flex-wrap:wrap;padding-top:2px">
+                  <span class="lab num">DeepSeek</span>
+                  <span class="lab num">Q4_K_M &middot; 16B</span>
+                  <span class="lab num">10.4 GB download</span>
+                  <span class="lab">DeepSeek License</span>
+                  <span class="lab">Speed not measured</span>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;flex-shrink:0">
+                <button class="btn btns" type="button">Install</button>
+                <a class="link" href="/models/deepseek-coder-v2-lite-q4km/">Details</a>
+              </div>
+            </li>
+<li class="box" data-filter-item data-name="Qwen2.5 Coder 32B Alibaba Qwen"
+              data-tags="coding tool-use  "
+              style="padding:18px;display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
+              <div style="flex:1;min-width:260px;display:flex;flex-direction:column;gap:8px">
+                <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">
+                  <span class="h2">Qwen2.5 Coder 32B</span>
+                  <span class="pill warn">CPU offload required</span>
+                  
+                </div>
+                <p class="mut" style="margin:0;font-size:14px;line-height:21px">Longer plans and wider context on a machine with room for it.</p>
+                <p class="faint" style="margin:0;font-size:13px;line-height:19px">19.8 GB of weights against 12 GB of video memory, so most layers run on the CPU. It works, but expect it to be slow.</p>
+                <div style="display:flex;gap:18px;flex-wrap:wrap;padding-top:2px">
+                  <span class="lab num">Alibaba Qwen</span>
+                  <span class="lab num">Q4_K_M &middot; 33B</span>
+                  <span class="lab num">19.8 GB download</span>
+                  <span class="lab">Apache-2.0</span>
+                  <span class="lab">Speed not measured</span>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;flex-shrink:0">
+                <button class="btn btns" type="button">Install</button>
+                <a class="link" href="/models/qwen25-coder-32b-q4km/">Details</a>
+              </div>
+            </li>
+<li class="box" data-filter-item data-name="Llama 3.3 70B Meta"
+              data-tags="general coding  "
+              style="padding:18px;display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
+              <div style="flex:1;min-width:260px;display:flex;flex-direction:column;gap:8px">
+                <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">
+                  <span class="h2">Llama 3.3 70B</span>
+                  <span class="pill bad">Does not fit</span>
+                  
+                </div>
+                <p class="mut" style="margin:0;font-size:14px;line-height:21px">Reasoning over long, tangled tasks.</p>
+                <p class="faint" style="margin:0;font-size:13px;line-height:19px">42.5 GB of weights will not fit in 12 GB of video memory plus 19 GB of free system memory.</p>
+                <div style="display:flex;gap:18px;flex-wrap:wrap;padding-top:2px">
+                  <span class="lab num">Meta</span>
+                  <span class="lab num">Q4_K_M &middot; 71B</span>
+                  <span class="lab num">42.5 GB download</span>
+                  <span class="lab">Llama 3.3 Community License</span>
+                  <span class="lab">Speed not measured</span>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;flex-shrink:0">
+                <button class="btn btns" type="button">Install</button>
+                <a class="link" href="/models/llama33-70b-q4km/">Details</a>
+              </div>
+            </li>
+<li class="box" data-filter-item data-name="Gemma 2 9B Google"
+              data-tags="general  fits"
+              style="padding:18px;display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
+              <div style="flex:1;min-width:260px;display:flex;flex-direction:column;gap:8px">
+                <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">
+                  <span class="h2">Gemma 2 9B</span>
+                  <span class="pill ok">Great fit</span>
+                  
+                </div>
+                <p class="mut" style="margin:0;font-size:14px;line-height:21px">Writing and explanation.</p>
+                <p class="faint" style="margin:0;font-size:13px;line-height:19px">Weights, a 8k context and runtime overhead come to 9 GB, inside 12 GB of video memory.</p>
+                <div style="display:flex;gap:18px;flex-wrap:wrap;padding-top:2px">
+                  <span class="lab num">Google</span>
+                  <span class="lab num">Q4_K_M &middot; 9.2B</span>
+                  <span class="lab num">5.8 GB download</span>
+                  <span class="lab">Gemma Terms of Use</span>
+                  <span class="lab">Speed not measured</span>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;flex-shrink:0">
+                <button class="btn btns" type="button">Install</button>
+                <a class="link" href="/models/gemma2-9b-q4km/">Details</a>
+              </div>
+            </li></ul>
+
+          <p class="faint" style="margin:0;font-size:13px;line-height:19px;max-width:70ch">
+            Fit is arithmetic: quantized weights, plus the key-value cache at the stated context,
+            plus runtime overhead, against this machine's video memory. Throughput is only shown
+            once it has been measured here.
+          </p>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+</main>
+<script src="/assets/forgelocal.js" defer></script>
+</body>
+</html>

@@ -16,7 +16,7 @@ import { fileURLToPath } from "node:url";
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
 const partsDir = join(here, "parts");
-const outDir = join(root, "screens");
+const outDir = join(root, "public", "screens");
 
 const css = readFileSync(join(here, "head.part"), "utf8")
   .match(/<style>([\s\S]*?)<\/style>/)[1];
@@ -187,7 +187,7 @@ const indexBody = `<div class="wrap">
 ${sections}
 </div>`;
 
-mkdirSync(join(root, "gallery"), { recursive: true });
-writeFileSync(join(root, "gallery", "index.html"), shell("Screen gallery (internal) - ForgeLocal", indexHead, indexBody));
+mkdirSync(join(root, "public", "gallery"), { recursive: true });
+writeFileSync(join(root, "public", "gallery", "index.html"), shell("Screen gallery (internal) - ForgeLocal", indexHead, indexBody));
 
 console.log(`gallery + ${names.length} screens`);

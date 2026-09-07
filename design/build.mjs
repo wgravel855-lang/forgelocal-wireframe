@@ -13,20 +13,41 @@ import { expand } from "./lib/assemble.mjs";
 import { models } from "./data/models.mjs";
 import * as F from "./lib/fit.mjs";
 import { pickerHtml } from "./lib/picker.mjs";
+import { recommendationBlock, installBlock, exploreList, myModelsList } from "./lib/appviews.mjs";
 
 F.registerModels(models);
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
 const partsDir = join(here, "parts");
-const out = (p) => join(root, p);
+// Vercel serves the build output directory, not the repo, so nothing under
+// design/ or refs/ is published.
+const out = (p) => join(root, "public", p);
 
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const write = (rel, html) => { mkdirSync(dirname(out(rel)), { recursive: true }); writeFileSync(out(rel), html); };
 const SELECTED = "qwen25-coder-14b-q4km";
-const part = (name) =>
-  expand(readFileSync(join(partsDir, `${name}.body.html`), "utf8"))
-    .replace("<!--MODEL_PICKER-->", () => pickerHtml(models, SELECTED));
+const inst = installBlock();
+const mine = myModelsList(models);
+const BIND = {
+  "<!--MODEL_PICKER-->": () => pickerHtml(models, SELECTED),
+  "<!--RECOMMENDATION-->": () => recommendationBlock(models),
+  "<!--EXPLORE_LIST-->": () => exploreList(models),
+  "<!--MINE_LIST-->": () => mine.rows,
+  "<!--MINE_TOTAL-->": () => mine.totalGB,
+  "<!--MINE_FREE-->": () => mine.freeGB,
+  "<!--REC_NAME-->": () => inst.name,
+  "<!--REC_TOTAL-->": () => inst.total,
+  "<!--REC_DONE-->": () => inst.done,
+  "<!--REC_FREE-->": () => inst.freeAfter,
+};
+const part = (name) => {
+  let html = expand(readFileSync(join(partsDir, `${name}.body.html`), "utf8"));
+  for (const [marker, render] of Object.entries(BIND)) {
+    if (html.includes(marker)) html = html.split(marker).join(render());
+  }
+  return html;
+};
 const inc = (s) => expand(s);
 
 // ---------------------------------------------------------------- assets ---

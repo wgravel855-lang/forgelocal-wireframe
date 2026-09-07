@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Model catalog · ForgeLocal wireframe</title>
+<link rel="stylesheet" href="/assets/forgelocal.css">
+<style>
+
+  body { margin:0; }
+  .bar { position:sticky; top:0; z-index:5; height:40px; display:flex; align-items:center;
+    gap:14px; padding:0 16px; background:var(--panel);
+    border-bottom:1px solid var(--line); color:var(--fg); font-size:13px; }
+  #bare:target { display:none; }
+  
+</style>
+</head>
+<body>
+<div class="bar" id="bare">
+  <a href="/gallery/">&larr; Gallery</a>
+  <a href="/" style="opacity:.6">Site</a>
+  <span style="opacity:.5">/</span>
+  <span>Model catalog</span>
+  <span style="flex-grow:1"></span>
+  <span style="opacity:.5;font-size:12px">responsive</span>
+</div>
+<div class="stage">
+<div class="site" style="width:100%;min-height:100%;display:flex;flex-direction:column">
+
+  <div style="height:66px;flex-shrink:0;border-bottom:1px solid #DAD5CB;display:flex;align-items:center;gap:28px;padding:0 clamp(20px, 5vw, 56px)">
+    <div style="display:flex;align-items:center;gap:9px">
+      <div class="xbox" style="width:22px;height:22px"></div>
+      <span style="font-size:14px;font-weight:600">ForgeLocal</span>
+    </div>
+    <div style="display:flex;gap:22px">
+      <span style="font-size:13px;font-weight:600;border-bottom:2px solid #5B5CF0;padding-bottom:2px">Models</span>
+      <span class="mut" style="font-size:13px">Security</span>
+      <span class="mut" style="font-size:13px">Pricing</span>
+      <span class="mut" style="font-size:13px">Docs</span>
+    </div>
+    <div style="flex-grow:1"></div>
+    <div class="btn btnp btns" style="height:36px;padding:0 16px">Download for Windows</div>
+  </div>
+
+  <div style="padding:56px clamp(20px, 5vw, 56px) 32px;display:flex;flex-direction:column;gap:14px">
+    <span class="lab">Verified profiles</span>
+    <h1 class="h1" style="font-size:38px;max-width:760px">What passed, what failed, and on which machine.</h1>
+    <p class="mut" style="margin:0;font-size:15px;max-width:640px;text-wrap:pretty">A profile is a runtime version, a model tag, a quantization, a context size, a tool schema and a prompt, tested as one unit. Change any of them and it is a different row in this table.</p>
+  </div>
+
+  <div style="padding:0 clamp(20px, 5vw, 56px) 24px;display:flex;flex-direction:column;gap:14px">
+    <div class="box" style="padding:14px 16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+      <span class="lab" style="flex-shrink:0">Show fit for</span>
+      <span class="pill" style="background:#5B5CF0;border-color:#5B5CF0;color:#FFFFFF">12 GB VRAM, 32 GB RAM</span>
+      <span class="pill" >8 GB VRAM, 16 GB RAM</span>
+      <span class="pill" >CPU only, 32 GB RAM</span>
+      <span class="pill" >Detect my PC</span>
+      <div style="flex-grow:1"></div>
+      <div class="box soft" style="height:30px;width:200px;display:flex;align-items:center;gap:8px;padding:0 10px">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <span class="mut" style="font-size:13px">Filter by name</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="padding:0 clamp(20px, 5vw, 56px) 44px;display:flex;flex-direction:column;gap:12px">
+    <div style="overflow-x:auto"><div class="box" style="display:flex;flex-direction:column;min-width:740px">
+
+      <div style="display:flex;align-items:center;gap:14px;padding:11px 16px;border-bottom:1px solid #E4DFD5;background:#F1EDE5">
+        <span class="lab" style="flex-grow:1">Profile</span>
+        <span class="lab" style="width:96px">Fit here</span>
+        <span class="lab" style="width:110px">Speed here</span>
+        <span class="lab" style="width:80px">On disk</span>
+        <span class="lab" style="width:100px">Checks</span>
+        <span class="lab" style="width:96px">Verified</span>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:14px;padding:14px 16px;border-bottom:1px solid #E4DFD5">
+        <div style="display:flex;align-items:center;gap:9px;flex-grow:1;min-width:0">
+          <span class="pill" style="background:#5B5CF0;border-color:#5B5CF0;color:#FFFFFF">Balanced</span>
+          <span style="font-size:13px;font-weight:600">Everyday building</span>
+          <span class="m mut" style="font-size:13px">[model:tag]</span>
+        </div>
+        <span style="width:96px;font-size:13px;color:#41603F">Excellent</span>
+        <span class="m mut" style="width:110px;font-size:13px">22 to 34 tok/s</span>
+        <span class="m mut" style="width:80px;font-size:13px">9.0 GB</span>
+        <span class="m mut" style="width:100px;font-size:13px">[N] of [N]</span>
+        <span class="m mut" style="width:96px;font-size:13px">[date]</span>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:14px;padding:14px 16px;border-bottom:1px solid #E4DFD5">
+        <div style="display:flex;align-items:center;gap:9px;flex-grow:1;min-width:0">
+          <span class="pill" >Fast</span>
+          <span style="font-size:13px;font-weight:600">Quick edits</span>
+          <span class="m mut" style="font-size:13px">[model:tag]</span>
+        </div>
+        <span style="width:96px;font-size:13px;color:#41603F">Excellent</span>
+        <span class="m mut" style="width:110px;font-size:13px">40 to 60 tok/s</span>
+        <span class="m mut" style="width:80px;font-size:13px">4.1 GB</span>
+        <span class="m mut" style="width:100px;font-size:13px">[N] of [N]</span>
+        <span class="m mut" style="width:96px;font-size:13px">[date]</span>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:14px;padding:14px 16px;border-bottom:1px solid #E4DFD5">
+        <div style="display:flex;align-items:center;gap:9px;flex-grow:1;min-width:0">
+          <span class="pill" >Best</span>
+          <span style="font-size:13px;font-weight:600">Higher quality</span>
+          <span class="m mut" style="font-size:13px">[model:tag]</span>
+        </div>
+        <span style="width:96px;font-size:13px;color:#8A5F14">Marginal</span>
+        <span class="m mut" style="width:110px;font-size:13px">9 to 15 tok/s</span>
+        <span class="m mut" style="width:80px;font-size:13px">18.1 GB</span>
+        <span class="m mut" style="width:100px;font-size:13px">[N] of [N]</span>
+        <span class="m mut" style="width:96px;font-size:13px">[date]</span>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:14px;padding:14px 16px;border-bottom:1px solid #E4DFD5">
+        <div style="display:flex;align-items:center;gap:9px;flex-grow:1;min-width:0">
+          <span class="pill" >Fast</span>
+          <span style="font-size:13px;font-weight:600">Low memory</span>
+          <span class="m mut" style="font-size:13px">[model:tag]</span>
+        </div>
+        <span style="width:96px;font-size:13px;color:#41603F">Excellent</span>
+        <span class="m mut" style="width:110px;font-size:13px">18 to 26 tok/s</span>
+        <span class="m mut" style="width:80px;font-size:13px">2.4 GB</span>
+        <span class="m mut" style="width:100px;font-size:13px">[N] of [N]</span>
+        <span class="m mut" style="width:96px;font-size:13px">[date]</span>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:#FBFAF7">
+        <div style="display:flex;align-items:center;gap:9px;flex-grow:1;min-width:0">
+          <span class="pill" style="color:var(--faint)">Retired</span>
+          <span class="mut" style="font-size:13px">Everyday building, rev [n-1]</span>
+          <span class="m mut" style="font-size:13px">[model:tag]</span>
+        </div>
+        <span class="mut" style="width:96px;font-size:13px">Superseded</span>
+        <span class="m mut" style="width:110px;font-size:13px">-</span>
+        <span class="m mut" style="width:80px;font-size:13px">8.8 GB</span>
+        <span class="m mut" style="width:100px;font-size:13px">[N] of [N]</span>
+        <span class="m mut" style="width:96px;font-size:13px">[date]</span>
+      </div>
+
+    </div>
+    </div>
+    <span class="mut" style="font-size:13px">Retired revisions stay listed so a pinned profile never disappears from under a project.</span>
+  </div>
+
+  <div style="padding:44px clamp(20px, 5vw, 56px);border-top:1px solid #DAD5CB;background:#F1EDE5;display:flex;gap:44px">
+    <div style="width:380px;flex-shrink:0;display:flex;flex-direction:column;gap:12px">
+      <h2 class="h1" style="font-size:24px">How a row gets here</h2>
+      <span class="mut" style="font-size:14px;text-wrap:pretty">A profile is admitted only after the full agent loop passes on real hardware. Failures are published on the row rather than removed from the catalog.</span>
+      <a href="#" style="font-size:13px">Read the test harness notes</a>
+    </div>
+    <div style="flex-grow:1;display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:14px">
+      <div class="box" style="padding:16px;display:flex;flex-direction:column;gap:6px">
+        <span class="lab">01</span>
+        <span class="h3">Pin the whole unit</span>
+        <span class="mut" style="font-size:13px">Runtime build, model tag, quantization, context, sampling, tool schema, prompt.</span>
+      </div>
+      <div class="box" style="padding:16px;display:flex;flex-direction:column;gap:6px">
+        <span class="lab">02</span>
+        <span class="h3">Run the agent suite</span>
+        <span class="mut" style="font-size:13px">Edits, patches, shell, Git reads, schema repair, compaction, recovery.</span>
+      </div>
+      <div class="box" style="padding:16px;display:flex;flex-direction:column;gap:6px">
+        <span class="lab">03</span>
+        <span class="h3">Repeat per machine class</span>
+        <span class="mut" style="font-size:13px">Fit is stated per hardware envelope, never as a single global claim.</span>
+      </div>
+      <div class="box" style="padding:16px;display:flex;flex-direction:column;gap:6px">
+        <span class="lab">04</span>
+        <span class="h3">Publish the failures too</span>
+        <span class="mut" style="font-size:13px">Each failed check becomes the known limit shown on the card in the app.</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="padding:56px clamp(20px, 5vw, 56px);border-top:1px solid #DAD5CB;background:#161719;display:flex;align-items:center;gap:40px">
+    <div style="flex-grow:1;display:flex;flex-direction:column;gap:10px">
+      <h2 class="h1" style="font-size:30px;color:#F6F4EF">Find out which row is yours.</h2>
+      <span style="color:#A9A49B;font-size:14px">The app scans your PC and picks from this table in about a minute.</span>
+    </div>
+    <div class="btn btnp" style="height:44px;padding:0 24px;font-weight:600">Download for Windows</div>
+  </div>
+
+  <div style="padding:28px clamp(20px, 5vw, 56px);background:#161719;border-top:1px solid #2A2B2E;display:flex;align-items:center;gap:24px">
+    <span style="color:#A9A49B;font-size:13px;flex-grow:1">[Company] &middot; [year]</span>
+    <span style="color:#A9A49B;font-size:13px">Models</span>
+    <span style="color:#A9A49B;font-size:13px">Security</span>
+    <span style="color:#A9A49B;font-size:13px">Privacy</span>
+    <span style="color:#A9A49B;font-size:13px">Docs</span>
+    <span style="color:#A9A49B;font-size:13px">Status</span>
+  </div>
+
+  <div style="flex-grow:1;min-height:0;background:#161719"></div>
+
+</div>
+
+</div>
+</body>
+</html>

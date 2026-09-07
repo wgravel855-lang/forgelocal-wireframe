@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>How ForgeLocal works</title>
+<meta name="description" content="Detect hardware, choose a model that fits, open a project, run tools with reviewable permissions.">
+<meta property="og:title" content="How ForgeLocal works">
+<meta property="og:description" content="Detect hardware, choose a model that fits, open a project, run tools with reviewable permissions.">
+<meta property="og:type" content="website">
+<link rel="icon" href="/assets/mark.svg" type="image/svg+xml">
+<link rel="alternate icon" href="/favicon.ico">
+<link rel="stylesheet" href="/assets/forgelocal.css">
+</head>
+<body class="site" style="">
+<a class="vh" href="#main">Skip to content</a>
+<header class="mhead">
+  <div class="mwrap mhead-in">
+    <a class="brand" href="/">
+      <svg viewBox="0 0 24 24" fill="none" width="22" height="22" aria-hidden="true" focusable="false" style="flex-shrink:0">
+  <rect x="2.4" y="2.4" width="19.2" height="19.2" rx="5.6" stroke="currentColor" stroke-width="1.7"/>
+  <path d="M8.6 8.9 11.7 12l-3.1 3.1" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M13.6 15.1h3.3" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+</svg>
+      <span>ForgeLocal</span>
+    </a>
+    <button class="btn btnq ico" type="button" data-nav-toggle aria-expanded="false" aria-controls="site-nav" aria-label="Menu">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+    <nav id="site-nav" data-nav aria-label="Main">
+      <a href="/product/" aria-current="page">Product</a>
+      <a href="/models/">Models</a>
+      <a href="/security/">Security</a>
+      <a href="/pricing/">Pricing</a>
+      <a href="/docs/">Docs</a>
+      <span class="mhead-sp"></span>
+      <a href="/signin/">Sign in</a>
+      <a href="/download/" class="btn btns">Download</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+<section class="mwrap msec" style="padding-top:64px;padding-bottom:24px"><div class="stack" style="gap:16px;max-width:720px">
+    <span class="lab">How it works</span>
+    <h1 class="mh2">Five steps, then you are working</h1>
+    <p class="mlede">There is no configuration file to learn and no inference vocabulary to pick up. The parts that matter are shown when they matter.</p>
+  </div></section><section class="mwrap msec" style="padding-bottom:96px">
+  <ol style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden">
+    <li style="background:var(--bg);padding:22px;display:flex;gap:18px">
+        <span class="lab num" style="width:24px;flex-shrink:0;padding-top:2px">01</span>
+        <div class="stack" style="gap:6px"><span class="h2">Read the machine</span>
+        <p class="mut" style="margin:0;font-size:14px;line-height:21px;max-width:68ch">CPU, memory, video memory, free disk and any runtime already installed. It happens inside the app, after you agree to it, and the reading stays on the device.</p></div></li>
+<li style="background:var(--bg);padding:22px;display:flex;gap:18px">
+        <span class="lab num" style="width:24px;flex-shrink:0;padding-top:2px">02</span>
+        <div class="stack" style="gap:6px"><span class="h2">Pick one profile</span>
+        <p class="mut" style="margin:0;font-size:14px;line-height:21px;max-width:68ch">Not a catalog to guess through. One recommendation with the arithmetic shown, and alternatives behind a disclosure.</p></div></li>
+<li style="background:var(--bg);padding:22px;display:flex;gap:18px">
+        <span class="lab num" style="width:24px;flex-shrink:0;padding-top:2px">03</span>
+        <div class="stack" style="gap:6px"><span class="h2">Install runtime and weights</span>
+        <p class="mut" style="margin:0;font-size:14px;line-height:21px;max-width:68ch">Runtime, model download and a capability self-test in one step, with pause, resume and a clear interrupted state.</p></div></li>
+<li style="background:var(--bg);padding:22px;display:flex;gap:18px">
+        <span class="lab num" style="width:24px;flex-shrink:0;padding-top:2px">04</span>
+        <div class="stack" style="gap:6px"><span class="h2">Choose a folder and a permission preset</span>
+        <p class="mut" style="margin:0;font-size:14px;line-height:21px;max-width:68ch">Project file access is limited to that folder by default. The preset decides how often the agent stops to ask.</p></div></li>
+<li style="background:var(--bg);padding:22px;display:flex;gap:18px">
+        <span class="lab num" style="width:24px;flex-shrink:0;padding-top:2px">05</span>
+        <div class="stack" style="gap:6px"><span class="h2">Work, then review</span>
+        <p class="mut" style="margin:0;font-size:14px;line-height:21px;max-width:68ch">Plan, edits, commands and tests appear as one quiet activity group. Changes arrive as a diff you keep or revert per file and per hunk.</p></div></li>
+  </ol>
+  <div style="margin-top:32px;display:flex;gap:14px;flex-wrap:wrap">
+    <a class="btn btnp btnl" href="/download/">Download for Windows</a>
+    <a class="btn btnl" href="/models/">Browse models first</a>
+  </div>
+</section>
+</main>
+<footer class="mfoot">
+  <div class="mwrap mfoot-top">
+    <div class="mfoot-cta">
+      <h2>See what your PC can build</h2>
+      <div class="row">
+        <a href="/download/" class="btn btnp btnl" data-platform-cta>Download for Windows</a>
+        <span class="faint" style="font-size:13px" data-platform-note>Windows 10 and 11, 64-bit. Free for local use.</span>
+      </div>
+    </div>
+    <nav class="mfoot-nav" aria-label="Footer">
+      <div>
+        <span class="lab">Product</span>
+        <a href="/product/">How it works</a>
+        <a href="/models/">Models</a>
+        <a href="/pricing/">Pricing</a>
+        <a href="/download/">Download</a>
+      </div>
+      <div>
+        <span class="lab">Resources</span>
+        <a href="/docs/">Docs</a>
+        <a href="/changelog/">Changelog</a>
+        <a href="/status/">Status</a>
+      </div>
+      <div>
+        <span class="lab">Trust</span>
+        <a href="/security/">Security</a>
+        <a href="/privacy/">Privacy</a>
+        <a href="/terms/">Terms</a>
+      </div>
+    </nav>
+  </div>
+  <div class="mwrap mfoot-legal">
+    <span class="brand small"><svg viewBox="0 0 24 24" fill="none" width="16" height="16" aria-hidden="true" focusable="false" style="flex-shrink:0">
+  <rect x="2.4" y="2.4" width="19.2" height="19.2" rx="5.6" stroke="currentColor" stroke-width="1.7"/>
+  <path d="M8.6 8.9 11.7 12l-3.1 3.1" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M13.6 15.1h3.3" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+</svg> ForgeLocal</span>
+    <span class="faint">Independent project. Not affiliated with any model publisher.</span>
+    <span class="grow"></span>
+    <a href="/security/#disclosure" class="faint">Report a vulnerability</a>
+  </div>
+</footer>
+
+<script src="/assets/forgelocal.js" defer></script>
+</body>
+</html>

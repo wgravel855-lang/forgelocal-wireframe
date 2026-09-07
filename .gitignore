@@ -9,3 +9,6 @@ node_modules/
 .DS_Store
 Thumbs.db
 .vercel
+
+# QA harness is copied into public/ only while auditing locally
+public/qa-audit.js
