@@ -10,16 +10,40 @@
       <div class="scroll" style="display:flex;flex-direction:column;justify-content:center">
         <div class="col" style="display:flex;flex-direction:column;gap:22px;padding-top:24px;padding-bottom:24px">
 
-          <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;flex-direction:column;gap:10px" data-new-heading>
             <h1 class="h1">What do you want to build or change?</h1>
-            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-              <span class="m faint">~/projects/task-tracker</span>
-              <span class="faint" aria-hidden="true">&middot;</span>
-              <span class="mut" style="font-size:13px">Git repo, on main</span>
-              <span class="faint" aria-hidden="true">&middot;</span>
-              <span class="mut" style="font-size:13px">Vite + React detected</span>
-            </div>
           </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:-12px">
+            <span class="m faint" data-project-path>~/projects/task-tracker</span>
+            <span class="faint" aria-hidden="true">&middot;</span>
+            <span class="mut" style="font-size:13px" data-project-branch>Git repo, on main</span>
+            <span class="faint" aria-hidden="true">&middot;</span>
+            <span class="mut" style="font-size:13px" data-project-stack>Vite + React detected</span>
+          </div>
+
+          <!-- A historical chat renders its saved state here instead of the
+               new-session screen. Built from the primitives already in use. -->
+          <section class="sview" data-session-view hidden aria-label="Session">
+            <div class="sview-msg"><p data-sview-prompt></p></div>
+            <div class="prose" style="margin-top:18px"><p data-sview-reply></p></div>
+            <section class="act" style="margin-top:18px">
+              <div class="hd">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+                <span class="h3" style="flex:1">Done</span>
+                <span class="lab" data-sview-exit></span>
+              </div>
+              <div class="sep"></div>
+              <div data-sview-steps></div>
+            </section>
+            <div class="box" style="margin-top:14px;overflow:hidden">
+              <div style="padding:12px 14px;display:flex;align-items:center;gap:10px">
+                <span class="h3" style="flex:1" data-sview-count></span>
+                <span class="m" style="color:var(--ok)" data-sview-tests></span>
+              </div>
+              <div class="sep"></div>
+              <div data-sview-files></div>
+            </div>
+          </section>
 
           <!--#include composer.html {"placeholder":"Describe a change, or ask about this project","mode":"Build","send":"<!--#include send-arrow.html -->"} -->
 

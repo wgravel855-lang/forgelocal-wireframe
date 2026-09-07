@@ -183,13 +183,28 @@
   }
 
   /* ----------------------------------------------------------- chat list */
-  /* The selector is stateful across reloads: selection, renames, pins, project
-     moves, archives, deletes and the collapsed groups all live in one stored
-     object. Nothing is fabricated at runtime; every row starts from the markup
-     the build emitted. */
+  /* One state model drives the selector and the workspace together:
+   *
+   *   activeProjectId   the project the sidebar is scoped to
+   *   activeSessionId   the open chat, or null for a new session
+   *   over[id]          per-chat overrides: title, project, pinned, archived, deleted
+   *   groups[id]        collapsed group state
+   *
+   * Every render goes through reconcile() -> paint(), so the sidebar, the
+   * header, the project path and the workspace body can never disagree. On a
+   * project switch the rule is always the same: open a clean new session,
+   * because carrying a selection across projects is what left one project's
+   * content under another project's name.
+   */
   function wireChats() {
     const list = $(".chat-list");
     if (!list) return;
+
+    const raw = $("#fl-sessions");
+    const data = raw ? JSON.parse(raw.textContent) : { projects: [], chats: [] };
+    const projectById = Object.fromEntries(data.projects.map((p) => [p.id, p]));
+    const chatById = Object.fromEntries(data.chats.map((c) => [c.id, c]));
+
     const rows = () => $$(".chat", list);
     const menu = $("#chat-menu");
     const search = $("[data-chat-search]");
@@ -198,55 +213,133 @@
     const archWrap = $("[data-archived-wrap]");
     const archToggle = $("[data-archived-toggle]");
     const archLabel = $("[data-archived-label]");
+    const view = $("[data-session-view]");
+    const newHeading = $("[data-new-heading]");
+    const starters = $(".starters");
 
     const st = store.get("chats", {});
     st.over ??= {};
     st.groups ??= {};
+    st.activeProjectId ??= data.projects[0]?.id || "";
+    if (!("activeSessionId" in st)) st.activeSessionId = null;
     const save = () => store.set("chats", st);
     const of = (id) => (st.over[id] ??= {});
 
-    const titleOf = (row) => $("[data-chat-title]", row).textContent.trim();
+    const titleOf = (id) => st.over[id]?.title || chatById[id]?.title || "";
+    const projectOf = (id) => st.over[id]?.project || chatById[id]?.project || "";
+    const isGone = (id) => !!(st.over[id]?.deleted);
+    const isArchived = (id) => !!(st.over[id]?.archived);
     let showArchived = false;
     let openFor = null;
 
-    /* ---- paint ---------------------------------------------------------- */
+    /* ---- reconcile ------------------------------------------------------ */
+    /* The route wins: landing on a chat's own screen makes that chat active and
+       drags the project with it. Otherwise an active session that this project
+       can no longer show is dropped rather than left open behind the scenes. */
+    const reconcile = () => {
+      const claimed = data.chats.find((c) => c.route && c.route === location.pathname);
+      if (claimed && !isGone(claimed.id)) {
+        st.activeSessionId = claimed.id;
+        st.activeProjectId = projectOf(claimed.id);
+      } else {
+        const id = st.activeSessionId;
+        const ok = id && chatById[id] && !isGone(id) && !isArchived(id) &&
+          projectOf(id) === st.activeProjectId &&
+          // a chat with its own screen is only "open" on that screen
+          !(chatById[id].route && chatById[id].route !== location.pathname);
+        if (!ok) st.activeSessionId = null;
+      }
+      if (!projectById[st.activeProjectId]) st.activeProjectId = data.projects[0]?.id || "";
+    };
+
+    /* ---- workspace ------------------------------------------------------ */
+    const setHeader = (t) => { $$("[data-ws-title]").forEach((el) => { el.textContent = t; }); };
+
+    const paintProject = () => {
+      const p = projectById[st.activeProjectId];
+      if (!p) return;
+      $$("[data-project-label]").forEach((el) => { el.textContent = p.name; });
+      $$("[data-project-path]").forEach((el) => { el.textContent = p.path; });
+      $$("[data-project-branch]").forEach((el) => { el.textContent = p.branch; });
+      $$("[data-project-stack]").forEach((el) => { el.textContent = p.stack; });
+      $$("[data-project-pick]").forEach((b) =>
+        b.setAttribute("aria-checked", String(b.dataset.projectPick === st.activeProjectId)));
+    };
+
+    const paintWorkspace = () => {
+      // only the new-session screen swaps; the built screens are their own routes
+      if (!view) { setHeader(st.activeSessionId ? titleOf(st.activeSessionId) : "New session"); return; }
+      const id = st.activeSessionId;
+      const v = id && chatById[id]?.view;
+      if (!v) {
+        view.hidden = true;
+        if (newHeading) newHeading.hidden = false;
+        if (starters) starters.hidden = false;
+        setHeader(id ? titleOf(id) : "New session");
+        return;
+      }
+      view.hidden = false;
+      if (newHeading) newHeading.hidden = true;
+      if (starters) starters.hidden = true;
+      setHeader(titleOf(id));
+      $("[data-sview-prompt]", view).textContent = v.prompt;
+      $("[data-sview-reply]", view).textContent = v.reply;
+      $("[data-sview-exit]", view).textContent = v.exit || "";
+      $("[data-sview-tests]", view).textContent = v.tests || "";
+      const files = v.files || [];
+      const changed = files.filter((f) => f[1] !== "new").length;
+      $("[data-sview-count]", view).textContent =
+        `${files.length} file${files.length === 1 ? "" : "s"} ${changed === files.length ? "changed" : "touched"}`;
+      $("[data-sview-steps]", view).replaceChildren(...(v.steps || []).map((s) => {
+        const d = document.createElement("div");
+        d.className = "arow";
+        d.textContent = s;
+        return d;
+      }));
+      $("[data-sview-files]", view).replaceChildren(...files.map(([n, a, d]) => {
+        const row = document.createElement("div");
+        row.className = "sview-file";
+        const name = document.createElement("span");
+        name.className = "n m";
+        name.textContent = n;
+        row.append(name);
+        if (a) { const s = document.createElement("span"); s.className = a === "new" ? "lab" : "a m"; s.textContent = a; row.append(s); }
+        if (d) { const s = document.createElement("span"); s.className = "d m"; s.textContent = d; row.append(s); }
+        return row;
+      }));
+    };
+
+    /* ---- sidebar -------------------------------------------------------- */
     const paint = () => {
       const q = (search?.value || "").trim().toLowerCase();
-      const project = store.get("project", rows()[0]?.dataset.project || "");
       let shown = 0, archived = 0;
 
       rows().forEach((row) => {
         const id = row.dataset.chat;
-        const o = st.over[id] || {};
-        if (o.deleted) { row.remove(); return; }
+        if (isGone(id)) { row.remove(); return; }
+        const inProject = projectOf(id) === st.activeProjectId;
+        const hit = !q || titleOf(id).toLowerCase().includes(q);
+        if (isArchived(id) && inProject) archived++;
 
-        // a moved chat keeps its markup and changes its project
-        const proj = o.project || row.dataset.project;
-        const inProject = !project || proj === project;
-        const hit = !q || titleOf(row).toLowerCase().includes(q);
-        const isArchived = !!o.archived;
-        if (isArchived && inProject) archived++;
-
-        const visible = inProject && hit && (showArchived ? isArchived : !isArchived);
+        const visible = inProject && hit && (showArchived ? isArchived(id) : !isArchived(id));
         row.hidden = !visible;
         if (visible) shown++;
 
-        // pinning moves the row between the Pinned group and its date group
-        const wantPinned = o.pinned ?? row.hasAttribute("data-pinned");
-        const home = wantPinned ? pinnedGroup
-          : $(`.cgroup[data-group="${row.dataset.bucket}"]`, list);
+        const wantPinned = st.over[id]?.pinned ?? row.hasAttribute("data-pinned");
+        const home = wantPinned ? pinnedGroup : $(`.cgroup[data-group="${row.dataset.bucket}"]`, list);
         const body = $(".cgroup-body", home);
         if (row.parentElement !== body) body.appendChild(row);
 
-        const on = st.selected === id;
+        // aria-current marks the open chat and only when it is on screen
+        const on = visible && st.activeSessionId === id;
         row.classList.toggle("is-on", on);
-        $(".chat-open", row).setAttribute("aria-current", on ? "true" : "false");
+        const btn = $(".chat-open", row);
+        if (on) btn.setAttribute("aria-current", "true");
+        else btn.removeAttribute("aria-current");
       });
 
-      // a group with nothing visible in it is not a group
       $$(".cgroup", list).forEach((g) => {
-        const any = $$(".chat", g).some((r) => !r.hidden);
-        g.hidden = !any;
+        g.hidden = !$$(".chat", g).some((r) => !r.hidden);
         const btn = $("[data-group-toggle]", g);
         const openState = st.groups[g.dataset.group] !== false;
         btn.setAttribute("aria-expanded", String(openState));
@@ -257,30 +350,36 @@
       if (archWrap) {
         archWrap.hidden = archived === 0 && !showArchived;
         archToggle.setAttribute("aria-expanded", String(showArchived));
-        archLabel.textContent = showArchived
-          ? "Back to active chats" : `Archived (${archived})`;
+        archLabel.textContent = showArchived ? "Back to active chats" : `Archived (${archived})`;
       }
     };
 
-    /* ---- selection ------------------------------------------------------ */
-    const setTitle = (t) => { $$("[data-ws-title]").forEach((el) => { el.textContent = t; }); };
+    const render = () => { reconcile(); save(); paintProject(); paint(); paintWorkspace(); };
 
-    const select = (row, navigate) => {
-      st.selected = row.dataset.chat;
+    /* ---- selection ------------------------------------------------------ */
+    const openChat = (id) => {
+      const c = chatById[id];
+      if (!c) return;
+      st.activeSessionId = id;
+      st.activeProjectId = projectOf(id);
       save();
-      paint();
-      setTitle(titleOf(row));
-      // a chat that has a built screen opens it; the rest change the title in
-      // place, which is all this prototype can honestly do
-      const route = row.dataset.route;
-      if (navigate && route && location.pathname !== route) {
-        setTimeout(() => { location.href = route; }, 120);
-      }
+      // a chat with a built screen opens that screen; the rest render in place,
+      // and if we are not on the screen that can render them, go there first
+      if (c.route && c.route !== location.pathname) { location.href = c.route; return; }
+      if (!c.route && !view) { location.href = "/app/"; return; }
+      render();
+    };
+
+    const newSession = () => {
+      st.activeSessionId = null;
+      save();
+      if (!view) { location.href = "/app/"; return; }
+      render();
     };
 
     list.addEventListener("click", (e) => {
       const open = e.target.closest(".chat-open");
-      if (open) { select(open.closest(".chat"), true); return; }
+      if (open) { openChat(open.closest(".chat").dataset.chat); return; }
       const g = e.target.closest("[data-group-toggle]");
       if (g) {
         const sec = g.closest(".cgroup");
@@ -288,6 +387,12 @@
         save(); paint();
       }
     });
+
+    // New chat keeps the project and clears the session
+    $$('a[aria-label="New chat"]').forEach((a) => a.addEventListener("click", (e) => {
+      if (view) { e.preventDefault(); newSession(); }
+      else { st.activeSessionId = null; save(); }
+    }));
 
     /* ---- search --------------------------------------------------------- */
     if (search) {
@@ -300,21 +405,16 @@
 
     /* ---- project scope -------------------------------------------------- */
     $$("[data-project-pick]").forEach((b) => b.addEventListener("click", () => {
-      store.set("project", b.dataset.projectPick);
-      $$("[data-project-label]").forEach((l) => { l.textContent = $(".t", b).textContent; });
-      $$("[data-project-pick]").forEach((o) =>
-        o.setAttribute("aria-checked", String(o === b)));
+      st.activeProjectId = b.dataset.projectPick;
+      st.activeSessionId = null;          // one rule: a project switch opens a new session
+      save();
       closePop();
-      paint();
+      if (search) search.value = "";
+      showArchived = false;
+      // a built screen belongs to one project, so leaving that project leaves it
+      if (data.chats.some((c) => c.route === location.pathname)) { location.href = "/app/"; return; }
+      render();
     }));
-    (() => {
-      const saved = store.get("project", null);
-      const b = saved && $(`[data-project-pick="${saved}"]`);
-      if (b) {
-        $$("[data-project-label]").forEach((l) => { l.textContent = $(".t", b).textContent; });
-        $$("[data-project-pick]").forEach((o) => o.setAttribute("aria-checked", String(o === b)));
-      }
-    })();
 
     /* ---- row menu ------------------------------------------------------- */
     const closeMenu = (restore = true) => {
@@ -322,21 +422,18 @@
       const trigger = $(".chat-more", openFor);
       menu.hidden = true;
       trigger.setAttribute("aria-expanded", "false");
-      const t = trigger;
       openFor = null;
-      if (restore) t.focus();
+      if (restore) trigger.focus();
     };
 
     const openMenu = (row) => {
       closeMenu(false);
       openFor = row;
       const id = row.dataset.chat;
-      const o = st.over[id] || {};
-      const pinned = o.pinned ?? row.hasAttribute("data-pinned");
+      const pinned = st.over[id]?.pinned ?? row.hasAttribute("data-pinned");
       $('[data-chat-action="pin"]', menu).textContent = pinned ? "Unpin" : "Pin to top";
-      const proj = o.project || row.dataset.project;
       $$("[data-move-to]", menu).forEach((b) =>
-        b.setAttribute("aria-checked", String(b.dataset.moveTo === proj)));
+        b.setAttribute("aria-checked", String(b.dataset.moveTo === projectOf(id))));
 
       menu.hidden = false;
       const r = row.getBoundingClientRect();
@@ -376,7 +473,8 @@
     const rename = (row) => {
       const span = $("[data-chat-title]", row);
       if ($(".chat-rename", row)) return;
-      const was = span.textContent.trim();
+      const id = row.dataset.chat;
+      const was = titleOf(id);
       const input = document.createElement("input");
       input.className = "chat-rename";
       input.value = was;
@@ -393,13 +491,13 @@
         span.textContent = next;
         input.replaceWith(span);
         if (next !== was) {
-          of(row.dataset.chat).title = next;
+          of(id).title = next;
           save();
           const open = $(".chat-open", row);
           open.title = next;
           open.setAttribute("aria-label", next);
           $(".chat-more", row).setAttribute("aria-label", `Actions for ${next}`);
-          if (st.selected === row.dataset.chat) setTitle(next);
+          if (st.activeSessionId === id) paintWorkspace();
           toast("Chat renamed.");
         }
         $(".chat-more", row).focus();
@@ -412,15 +510,29 @@
     };
 
     /* ---- menu actions --------------------------------------------------- */
+    /* Anything that hides or removes the open chat has to hand the workspace
+       back to a new session rather than leave it showing a chat that is no
+       longer in this project's list. */
+    const afterMutation = (id) => {
+      const stillHere = !isGone(id) && !isArchived(id) && projectOf(id) === st.activeProjectId;
+      if (st.activeSessionId === id && !stillHere) {
+        st.activeSessionId = null;
+        if (!view) { save(); location.href = "/app/"; return true; }
+      }
+      return false;
+    };
+
     menu.addEventListener("click", (e) => {
       const b = e.target.closest("button");
       if (!b || !openFor) return;
-      const row = openFor, id = row.dataset.chat, o = of(id);
-      const title = titleOf(row);
+      const row = openFor, id = row.dataset.chat;
+      const title = titleOf(id);
 
       if (b.dataset.moveTo) {
-        o.project = b.dataset.moveTo;
-        save(); closeMenu(); paint();
+        of(id).project = b.dataset.moveTo;
+        closeMenu();
+        if (afterMutation(id)) return;
+        render();
         toast(`Moved "${title}" to ${b.dataset.moveTo}.`);
         return;
       }
@@ -430,20 +542,23 @@
           rename(row);
           break;
         case "pin":
-          o.pinned = !(o.pinned ?? row.hasAttribute("data-pinned"));
-          save(); closeMenu(); paint();
-          toast(o.pinned ? `Pinned "${title}".` : `Unpinned "${title}".`);
+          of(id).pinned = !(st.over[id]?.pinned ?? row.hasAttribute("data-pinned"));
+          closeMenu(); render();
+          toast(st.over[id].pinned ? `Pinned "${title}".` : `Unpinned "${title}".`);
           break;
         case "archive":
-          o.archived = true;
-          save(); closeMenu(); paint();
+          of(id).archived = true;
+          closeMenu();
+          if (afterMutation(id)) return;
+          render();
           toast(`Archived "${title}". It is under Archived at the end of the list.`);
           break;
         case "delete":
           if (!confirm(`Delete "${title}"? This prototype cannot bring it back.`)) return;
-          o.deleted = true;
-          if (st.selected === id) delete st.selected;
-          save(); closeMenu(false); paint();
+          of(id).deleted = true;
+          closeMenu(false);
+          if (afterMutation(id)) return;
+          render();
           toast(`Deleted "${title}".`);
           break;
       }
@@ -451,30 +566,17 @@
 
     if (archToggle) archToggle.addEventListener("click", () => { showArchived = !showArchived; paint(); });
 
-    /* ---- restore stored titles, then paint ------------------------------ */
+    /* ---- boot ----------------------------------------------------------- */
     rows().forEach((row) => {
-      const o = st.over[row.dataset.chat];
-      if (o?.title) {
-        $("[data-chat-title]", row).textContent = o.title;
-        const open = $(".chat-open", row);
-        open.title = o.title;
-        open.setAttribute("aria-label", o.title);
-        $(".chat-more", row).setAttribute("aria-label", `Actions for ${o.title}`);
-      }
+      const t = st.over[row.dataset.chat]?.title;
+      if (!t) return;
+      $("[data-chat-title]", row).textContent = t;
+      const open = $(".chat-open", row);
+      open.title = t;
+      open.setAttribute("aria-label", t);
+      $(".chat-more", row).setAttribute("aria-label", `Actions for ${t}`);
     });
-    // The route decides which chat is open. /app/ is a new chat, so a stored
-    // selection is only restored there when that chat has no screen of its own
-    // and was therefore being viewed in place.
-    const claimed = rows().find((r) => r.dataset.route === location.pathname);
-    if (claimed) st.selected = claimed.dataset.chat;
-    else {
-      const stored = rows().find((r) => r.dataset.chat === st.selected);
-      if (!stored || stored.dataset.route) delete st.selected;
-    }
-    save();
-    paint();
-    const sel = rows().find((r) => r.dataset.chat === st.selected);
-    if (sel) setTitle(titleOf(sel));
+    render();
   }
 
   /* --------------------------------------------------------------- composer */

@@ -114,6 +114,21 @@ a.link,
   font-size: 12px; color: var(--faint); padding: 0 10px; height: 30px;
   display: flex; align-items: center; letter-spacing: .02em; }
 
+/* ---- saved session view -------------------------------------------- */
+/* A historical chat renders here. It reuses .prose, .act, .arow and .box so
+   it introduces no new visual language of its own. */
+.sview-msg { display: flex; justify-content: flex-end; }
+.sview-msg p { margin: 0; max-width: 78%; padding: 11px 14px; border-radius: 12px;
+  background: var(--raised); border: 1px solid var(--line);
+  font-size: 15px; line-height: 23px; }
+.sview .arow { padding-left: 16px; padding-right: 16px; }
+.sview-file { display: flex; align-items: center; gap: 12px; min-height: 38px;
+  padding: 5px 14px; font-size: 13px; }
+.sview-file .n { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; }
+.sview-file .a { color: var(--ok); font-variant-numeric: tabular-nums; }
+.sview-file .d { color: var(--bad); font-variant-numeric: tabular-nums; }
+
 /* ---- chat selector ------------------------------------------------ */
 /* The sidebar is a chat selector scoped to one project. Rows are 42px, the
    row menu appears on hover, focus and selection, and nothing here borrows

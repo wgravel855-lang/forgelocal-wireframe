@@ -55,6 +55,21 @@ export function chatList() {
     </div>`;
 }
 
+// The state the workspace needs, emitted once per app page. No fetch, no new
+// dependency: the controller reads it out of the DOM at boot.
+export function sessionData() {
+  const payload = {
+    projects,
+    chats: chats.map((c) => ({
+      id: c.id, title: c.title, project: c.project, state: c.state,
+      route: c.route || null, view: c.view || null,
+    })),
+  };
+  // a literal < is escaped so no payload value can close the element early
+  const json = JSON.stringify(payload).split(String.fromCharCode(60)).join("\\u003c");
+  return `<script type="application/json" id="fl-sessions">${json}</script>`;
+}
+
 export function projectOptions() {
   return projects.map((p, i) =>
     `<button role="menuitemradio" class="srow" type="button" data-project-pick="${esc(p.id)}"

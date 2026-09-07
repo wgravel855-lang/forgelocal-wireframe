@@ -279,6 +279,7 @@
     </button>
   </div>
 
+  <script type="application/json" id="fl-sessions">{"projects":[{"id":"task-tracker","name":"task-tracker","path":"~/projects/task-tracker","branch":"Git repo, on main","stack":"Vite + React detected"},{"id":"portfolio-site","name":"portfolio-site","path":"~/projects/portfolio-site","branch":"Git repo, on redesign","stack":"Astro + Tailwind detected"},{"id":"api-gateway","name":"api-gateway","path":"~/projects/api-gateway","branch":"Git repo, on main","stack":"Node + Fastify detected"}],"chats":[{"id":"c1","title":"Persist tasks to localStorage","project":"task-tracker","state":"running","route":"/app/running/","view":null},{"id":"c2","title":"Add a filter bar to the list","project":"task-tracker","state":"done","route":null,"view":{"prompt":"Add a filter bar above the list so I can show all, active or done.","reply":"Added a filter bar as a controlled component above the list. The filter is a single piece of state in App, so the list stays the only thing that knows how to render a task.","steps":["Read 3 files","Edited 2 files","npm test -- --run"],"files":[["src/App.jsx","+34","−21"],["src/FilterBar.jsx","new",""]],"tests":"3 tests passed","exit":"exit 0"}},{"id":"c3","title":"Switch the date helper to Temporal","project":"task-tracker","state":"failed","route":"/app/stopped/","view":null},{"id":"c4","title":"Scaffold the project","project":"task-tracker","state":"done","route":null,"view":{"prompt":"Set up a Vite React project called task-tracker with a basic list.","reply":"Created the project with Vite's react template and a single App component holding an in-memory list. No state library and no router: neither is needed yet.","steps":["npm create vite@latest","Installed 2 packages","Edited 4 files"],"files":[["package.json","new",""],["src/App.jsx","new",""],["index.html","new",""]],"tests":"No tests yet","exit":"exit 0"}},{"id":"c5","title":"Set up Vitest","project":"task-tracker","state":"done","route":null,"view":{"prompt":"Add Vitest and one test that proves adding a task works.","reply":"Added Vitest with jsdom and a single test that renders App, adds a task and asserts it is listed. The test script runs in watch mode locally and once in CI.","steps":["Install 3 packages","Edited 2 files","npm test -- --run"],"files":[["package.json","+4",""],["src/App.test.jsx","new",""]],"tests":"1 test passed","exit":"exit 0"}},{"id":"c6","title":"Move request logging behind a flag","project":"task-tracker","state":"done","route":null,"view":{"prompt":"Request logging is noisy in development. Put it behind a flag.","reply":"Logging now reads a DEBUG_HTTP flag and is off unless it is set. The call sites are unchanged, so nothing else had to move.","steps":["Searched 14 files","Edited 3 files"],"files":[["src/log.js","+12","−4"],["src/server.js","+2","−2"]],"tests":"4 tests passed","exit":"exit 0"}},{"id":"c7","title":"Extract the card grid into a component","project":"portfolio-site","state":"done","route":null,"view":{"prompt":"The card grid is copied on three pages. Pull it into one component.","reply":"Extracted the grid into CardGrid.astro and replaced all three copies. The markup was identical apart from the heading, so that is the only prop it takes.","steps":["Read 6 files","Edited 4 files","npm run build"],"files":[["src/components/CardGrid.astro","new",""],["src/pages/index.astro","+3","−28"],["src/pages/work.astro","+3","−28"],["src/pages/writing.astro","+3","−26"]],"tests":"Build succeeded","exit":"exit 0"}},{"id":"c8","title":"Fix the contrast on the dark header","project":"portfolio-site","state":"done","route":null,"view":{"prompt":"The nav links fail contrast on the dark header. Fix them.","reply":"Raised the muted link colour until it clears 4.5:1 against the header background, and left the hover state alone because it already passed.","steps":["Read 2 files","Edited 1 file"],"files":[["src/styles/tokens.css","+2","−2"]],"tests":"Build succeeded","exit":"exit 0"}},{"id":"c9","title":"Rate limit the public endpoints","project":"api-gateway","state":"done","route":null,"view":{"prompt":"Add rate limiting to the public routes, 60 requests a minute.","reply":"Registered @fastify/rate-limit on the public route prefix only. The internal prefix is untouched, so service-to-service calls are not throttled.","steps":["Install 1 package","Edited 2 files","npm test -- --run"],"files":[["src/server.js","+9",""],["src/routes/public.js","+3","−1"]],"tests":"11 tests passed","exit":"exit 0"}}]}</script>
 </aside>
 
     <div class="main">
@@ -312,16 +313,40 @@
       <div class="scroll" style="display:flex;flex-direction:column;justify-content:center">
         <div class="col" style="display:flex;flex-direction:column;gap:22px;padding-top:24px;padding-bottom:24px">
 
-          <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;flex-direction:column;gap:10px" data-new-heading>
             <h1 class="h1">What do you want to build or change?</h1>
-            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-              <span class="m faint">~/projects/task-tracker</span>
-              <span class="faint" aria-hidden="true">&middot;</span>
-              <span class="mut" style="font-size:13px">Git repo, on main</span>
-              <span class="faint" aria-hidden="true">&middot;</span>
-              <span class="mut" style="font-size:13px">Vite + React detected</span>
-            </div>
           </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:-12px">
+            <span class="m faint" data-project-path>~/projects/task-tracker</span>
+            <span class="faint" aria-hidden="true">&middot;</span>
+            <span class="mut" style="font-size:13px" data-project-branch>Git repo, on main</span>
+            <span class="faint" aria-hidden="true">&middot;</span>
+            <span class="mut" style="font-size:13px" data-project-stack>Vite + React detected</span>
+          </div>
+
+          <!-- A historical chat renders its saved state here instead of the
+               new-session screen. Built from the primitives already in use. -->
+          <section class="sview" data-session-view hidden aria-label="Session">
+            <div class="sview-msg"><p data-sview-prompt></p></div>
+            <div class="prose" style="margin-top:18px"><p data-sview-reply></p></div>
+            <section class="act" style="margin-top:18px">
+              <div class="hd">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+                <span class="h3" style="flex:1">Done</span>
+                <span class="lab" data-sview-exit></span>
+              </div>
+              <div class="sep"></div>
+              <div data-sview-steps></div>
+            </section>
+            <div class="box" style="margin-top:14px;overflow:hidden">
+              <div style="padding:12px 14px;display:flex;align-items:center;gap:10px">
+                <span class="h3" style="flex:1" data-sview-count></span>
+                <span class="m" style="color:var(--ok)" data-sview-tests></span>
+              </div>
+              <div class="sep"></div>
+              <div data-sview-files></div>
+            </div>
+          </section>
 
           <form class="composer" style="" data-composer  aria-label="Message ForgeLocal">
   <label class="vh" for="composer-input">Describe a change or ask a question</label>
