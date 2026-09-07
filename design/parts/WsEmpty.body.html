@@ -23,10 +23,19 @@
 
           <!--#include composer.html {"placeholder":"Describe a change, or ask about this project","mode":"Build","send":"<!--#include send-arrow.html -->"} -->
 
-          <div style="display:flex;flex-wrap:wrap;gap:8px">
-            <button class="btn btns btnq" type="button" style="border-color:var(--line)" data-starter="Explain how this project is organised">Explain how this project is organised</button>
-            <button class="btn btns btnq" type="button" style="border-color:var(--line)" data-starter="Fix a bug">Fix a bug</button>
-            <button class="btn btns btnq" type="button" style="border-color:var(--line)" data-starter="Add a small feature">Add a small feature</button>
+          <div class="starters">
+            <button type="button" data-starter="Explain how this project is organised">
+              <span class="s-t">Explain how this project is organised</span>
+              <span class="s-d">Reads the tree and the entry points. Changes nothing.</span>
+            </button>
+            <button type="button" data-starter="Fix the failing test in src/App.test.jsx">
+              <span class="s-t">Fix a failing test</span>
+              <span class="s-d">Runs the suite first, then edits behind a checkpoint.</span>
+            </button>
+            <button type="button" data-starter="Add a small feature">
+              <span class="s-t">Add a small feature</span>
+              <span class="s-d">Plans it, asks before installing anything.</span>
+            </button>
           </div>
 
         </div>

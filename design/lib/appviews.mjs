@@ -29,11 +29,10 @@ export function recommendationBlock(models) {
     .filter((x) => x.tasks.includes("coding") && x.parameterCount > m.parameterCount)
     .sort((a, b) => a.parameterCount - b.parameterCount)[0];
 
-  return `<div style="display:flex;flex-direction:column;gap:12px">
-        <span class="lab">Recommended for this PC</span>
-
-        <div class="box" style="border-color:var(--acc);overflow:hidden">
-          <div style="padding:18px 20px;display:flex;flex-direction:column;gap:14px">
+  return `<div>
+        <div style="box-shadow:inset 2px 0 0 var(--acc)">
+          <div style="padding:18px 20px 20px;display:flex;flex-direction:column;gap:14px">
+            <span class="lab">Recommended for this PC</span>
             <div style="display:flex;align-items:flex-start;gap:12px">
               <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px">
                 <h2 class="h-sec">${esc(m.displayName)}</h2>
@@ -41,21 +40,15 @@ export function recommendationBlock(models) {
                   ${esc(m.strength)} Running at ${esc(F.fmtCtx(fit.context))} context, ${esc(m.quantization)}.
                 </p>
               </div>
-              <span class="pill ${tone[fit.tone]}" style="flex-shrink:0">${esc(fit.label)}</span>
+              <span class="rfit" style="flex-shrink:0"><span class="dot ${tone[fit.tone]}" aria-hidden="true"></span>${esc(fit.label)}</span>
             </div>
 
-            <p class="faint" style="margin:0;font-size:13px;line-height:19px">${esc(fit.reason)}</p>
+            <p class="faint" style="margin:0;font-size:13.5px;line-height:20px">${esc(fit.reason)}</p>
 
-            <div style="display:flex;gap:24px;flex-wrap:wrap">
-              <div style="display:flex;flex-direction:column;gap:3px">
-                <span class="lab">Download</span><span class="m num">${F.gb(m.downloadBytes, 2)} GB</span>
-              </div>
-              <div style="display:flex;flex-direction:column;gap:3px">
-                <span class="lab">Video memory needed</span><span class="m num">${F.gb(fit.required, 1)} GB of ${F.gb(F.thisPC.vramBytes, 0)} GB</span>
-              </div>
-              <div style="display:flex;flex-direction:column;gap:3px">
-                <span class="lab">Speed</span><span class="m">${esc(speed.text)}</span>
-              </div>
+            <div class="specs" style="border:0;margin:0;padding:0;gap:14px 28px;grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">
+              <div><span class="k">Download</span><span class="v">${F.gb(m.downloadBytes, 2)} GB</span></div>
+              <div><span class="k">Video memory needed</span><span class="v">${F.gb(fit.required, 1)} GB of ${F.gb(F.thisPC.vramBytes, 0)} GB</span></div>
+              <div><span class="k">Speed</span><span class="v" style="font-size:14px">${esc(speed.text)}</span></div>
             </div>
           </div>
 
@@ -77,13 +70,13 @@ export function recommendationBlock(models) {
           </details>
         </div>
 
-        <details class="box">
-          <summary class="hit" style="padding:0 16px;cursor:pointer;font-size:14px;list-style:none;gap:9px">
+        <div class="sep"></div>
+        <details>
+          <summary class="hit" style="padding:0 20px;cursor:pointer;font-size:14px;list-style:none;gap:9px">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
             Compare other options
           </summary>
-          <div class="sep"></div>
-          <div style="padding:6px 8px 10px">
+          <div style="padding:0 12px 12px">
             ${alt ? altRow("Faster, more headroom", alt.m, "smaller and quicker, weaker on multi-file work") : ""}
             ${heavier ? altRow("More capable", heavier, heavier.limitation) : ""}
           </div>
@@ -105,37 +98,32 @@ export function installBlock() {
 }
 
 /* ------------------------------------------------------------- Explore --- */
+const fitDot = (fit) =>
+  `<span class="rfit"><span class="dot ${tone[fit.tone] || ""}" aria-hidden="true"></span>${esc(fit.label)}</span>`;
+
 export function exploreList(models) {
   return models.map((m) => {
     const fit = F.fitFor(m);
-    const speed = F.speedFor(m);
     const action = m.loaded
-      ? `<button class="btn btns" type="button" data-inert="Already loaded.">In use</button>`
+      ? `<button class="btn btns" type="button" data-inert="This model is already loaded.">In use</button>`
       : m.installed
         ? `<button class="btn btnp btns" type="button" data-model-use="${esc(m.displayName)}" data-model-id="${esc(m.id)}">Use</button>`
         : `<button class="btn btns" type="button" data-model-install="${esc(m.displayName)}">Install</button>`;
-    return `<li class="box" data-filter-item data-name="${esc(m.displayName + " " + m.publisher)}"
-              data-tags="${m.tasks.join(" ")} ${m.installed ? "installed" : ""} ${fit.rank <= 1 ? "fits" : ""}"
-              style="padding:18px;display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
-              <div style="flex:1;min-width:260px;display:flex;flex-direction:column;gap:8px">
-                <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">
-                  <span class="h2">${esc(m.displayName)}</span>
-                  <span class="pill ${tone[fit.tone]}">${esc(fit.label)}</span>
-                  ${m.loaded ? '<span class="pill ok">Loaded</span>' : m.installed ? '<span class="pill">Installed</span>' : ""}
+    return `<li data-filter-item data-name="${esc(m.displayName + " " + m.publisher)}"
+              data-tags="${m.tasks.join(" ")} ${m.installed ? "installed" : ""} ${fit.rank <= 1 ? "fits" : ""}"${m.loaded ? ' class="is-current"' : ""}>
+              <div class="rrow has-action">
+                <div style="min-width:0">
+                  <a class="rname" href="/models/${m.id}/">${esc(m.displayName)}</a>
+                  <p class="ruse">${esc(m.strength)}</p>
+                  <p class="rmeta">${esc(m.publisher)} &middot; ${esc(m.quantization)} ${params(m.parameterCount)} &middot; ${esc(m.licenseId)}</p>
                 </div>
-                <p class="mut" style="margin:0;font-size:14px;line-height:21px">${esc(m.strength)}</p>
-                <p class="faint" style="margin:0;font-size:13px;line-height:19px">${esc(fit.reason)}</p>
-                <div style="display:flex;gap:18px;flex-wrap:wrap;padding-top:2px">
-                  <span class="lab num">${esc(m.publisher)}</span>
-                  <span class="lab num">${esc(m.quantization)} &middot; ${params(m.parameterCount)}</span>
-                  <span class="lab num">${F.gb(m.downloadBytes, 1)} GB download</span>
-                  <span class="lab">${esc(m.licenseId)}</span>
-                  <span class="lab">${esc(speed.measured ? speed.text : "Speed not measured")}</span>
+                ${fitDot(fit)}
+                <div class="rnums">
+                  <span class="rnum"><b>${F.gb(fit.required, 1)} GB</b><span>video memory</span></span>
+                  <span class="rnum"><b>${F.gb(m.downloadBytes, 1)} GB</b><span>download</span></span>
+                  <span class="rnum"><b>${esc(F.fmtCtx(fit.context))}</b><span>context</span></span>
                 </div>
-              </div>
-              <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;flex-shrink:0">
                 ${action}
-                <a class="link" href="/models/${m.id}/">Details</a>
               </div>
             </li>`;
   }).join("\n");
@@ -146,25 +134,21 @@ export function myModelsList(models) {
   const t = F.storageTotals(models);
   const rows = t.installed.map((m) => {
     const fit = F.fitFor(m);
-    return `<li class="box" data-filter-item data-name="${esc(m.displayName)} ${esc(m.publisher)}"
-              data-tags="${m.tasks.join(" ")} installed${fit.rank <= 1 ? " fits" : ""}"
-              style="padding:18px;display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap${m.loaded ? ";border-color:var(--acc)" : ""}">
-              <div style="flex:1;min-width:260px;display:flex;flex-direction:column;gap:9px">
-                <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">
-                  <span class="h2">${esc(m.displayName)}</span>
-                  <span class="pill ${m.loaded ? "ok" : ""}" data-load-pill>${m.loaded ? "Loaded" : "Idle"}</span>
-                  ${m.recommended ? '<span class="pill">Default for coding</span>' : ""}
+    return `<li data-filter-item data-name="${esc(m.displayName)} ${esc(m.publisher)}"
+              data-tags="${m.tasks.join(" ")} installed${fit.rank <= 1 ? " fits" : ""}"${m.loaded ? ' class="is-current"' : ""}>
+              <div class="rrow has-action">
+                <div style="min-width:0">
+                  <a class="rname" href="/models/${m.id}/">${esc(m.displayName)}</a>
+                  <p class="ruse">${esc(m.strength)}</p>
+                  <p class="rmeta"><span data-load-pill>${m.loaded ? "Loaded" : "Idle"}</span> &middot; ${esc(m.quantization)}${m.recommended ? " &middot; Default for coding" : ""}</p>
                 </div>
-                <div style="display:flex;gap:22px;flex-wrap:wrap">
-                  <div style="display:flex;flex-direction:column;gap:3px"><span class="lab">On disk</span><span class="m num">${F.gb(m.installedBytes, 2)} GB</span></div>
-                  <div style="display:flex;flex-direction:column;gap:3px"><span class="lab">Video memory when loaded</span><span class="m num">${F.gb(fit.required, 1)} GB</span></div>
-                  <div style="display:flex;flex-direction:column;gap:3px"><span class="lab">Context</span><span class="m num">${esc(F.fmtCtx(fit.context))}</span></div>
-                  <div style="display:flex;flex-direction:column;gap:3px"><span class="lab">Quantization</span><span class="m">${esc(m.quantization)}</span></div>
+                <span class="rfit"><span class="dot ${m.loaded ? "ok" : ""}" aria-hidden="true"></span>${m.loaded ? "In video memory" : "On disk only"}</span>
+                <div class="rnums">
+                  <span class="rnum"><b>${F.gb(m.installedBytes, 2)} GB</b><span>on disk</span></span>
+                  <span class="rnum"><b>${F.gb(fit.required, 1)} GB</b><span>when loaded</span></span>
+                  <span class="rnum"><b>${esc(F.fmtCtx(fit.context))}</b><span>context</span></span>
                 </div>
-              </div>
-              <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;flex-shrink:0">
                 <button class="btn btns" type="button" data-load-toggle data-model="${esc(m.displayName)}">${m.loaded ? "Eject" : "Load"}</button>
-                <a class="link" href="/models/${m.id}/">Details</a>
               </div>
             </li>`;
   }).join("\n");

@@ -6,8 +6,8 @@
  * Fails on:
  *   - customer-facing text below 12px
  *   - functional text (label/button/tab/filter/link/status/help) below 13px
- *   - dense icon/action targets below 32px
- *   - standard controls and nav links below 36px (true inline links exempt)
+ *   - dense icon/action targets below 36px
+ *   - standard controls and nav links below 40px (true inline links exempt)
  *   - horizontal page overflow, composer below the fold
  *   - missing semantic textarea / inputs
  *   - primary navigation pointing at "#"
@@ -28,7 +28,13 @@
   };
 
   const lum = (c) => { const [r, g, b] = c.map((v) => { v /= 255; return v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4; }); return .2126 * r + .7152 * g + .0722 * b; };
-  const rgb = (s) => (s.match(/[\d.]+/g) || [0, 0, 0]).slice(0, 3).map(Number);
+  // color-mix() computes to color(srgb r g b) with 0-1 components. Reading
+  // those as 0-255 made every mixed surface look almost black and reported
+  // contrast failures that were not there.
+  const rgb = (s) => {
+    const n = (s.match(/[\d.]+/g) || [0, 0, 0]).slice(0, 3).map(Number);
+    return /^color\(/.test(s) ? n.map((v) => v * 255) : n;
+  };
   const ratio = (f, b) => { const a = lum(rgb(f)), z = lum(rgb(b)); const [h, l] = a > z ? [a, z] : [z, a]; return (h + .05) / (l + .05); };
 
   // A control is anything a user is meant to click. An <a> inside a paragraph
@@ -96,10 +102,21 @@
         const lab = el.closest("label");
         if (lab && Math.round(lab.getBoundingClientRect().height) >= 36) continue;
       }
-      const iconOnly = !el.textContent.trim() && wd <= 44;
-      const min = iconOnly ? 32 : 36;
+      // A registry row's title link is stretched over the whole row, so the
+      // row is the hit target, not the text box.
+      // .field inputs are align-self:stretch, so the input covers its wrapper's
+      // whole content box: only the 1px border is not the input. The wrapper is
+      // the honest measure of the target.
+      const field = el.closest(".field");
+      if (field && /^(INPUT|TEXTAREA)$/.test(el.tagName) &&
+          Math.round(field.getBoundingClientRect().height) >= 40) continue;
+      const rowTarget = el.closest("[data-row-target]");
+      if (rowTarget && el.tagName === "A" &&
+          Math.round(rowTarget.getBoundingClientRect().height) >= 40) continue;
+      const iconOnly = !el.textContent.trim() && wd <= 48;
+      const min = iconOnly ? 36 : 40;
       if (h < min) add(`control<${min}`, `${wd}x${h} "${label}"`);
-      if (iconOnly && wd < 32) add("icon-width<32", `${wd}x${h} "${label}"`);
+      if (iconOnly && wd < 36) add("icon-width<36", `${wd}x${h} "${label}"`);
     }
 
     // ---- semantics ----

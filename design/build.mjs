@@ -133,35 +133,32 @@ const appPage = ({ title, body }) =>
 const fmtParams = (n) => `${(n / 1e9).toFixed(n >= 1e10 ? 0 : 1).replace(/\.0$/, "")}B`;
 const toneClass = { ok: "ok", warn: "warn", bad: "bad", mut: "" };
 
-function fitPill(fit) {
-  return `<span class="pill ${toneClass[fit.tone] || ""}">${esc(fit.label)}</span>`;
+function fitDot(fit) {
+  const cls = { ok: "ok", warn: "warn", bad: "bad", mut: "" }[fit.tone] || "";
+  return `<span class="rfit"><span class="dot ${cls}" aria-hidden="true"></span>${esc(fit.label)}</span>`;
 }
 
+// One registry row. Name and use case lead, then fit, then the three numbers
+// that decide whether it will run. The title link is stretched over the row so
+// the whole row is the target without wrapping the metadata in an anchor.
 function modelRow(m, { href = `/models/${m.id}/`, action = "" } = {}) {
   const fit = F.fitFor(m);
-  const speed = F.speedFor(m);
-  return `<li class="box" data-filter-item data-name="${esc(m.displayName + " " + m.publisher)}"
-    data-tags="${m.tasks.join(" ")} ${m.installed ? "installed" : ""} ${fit.state === "great" || fit.state === "tradeoffs" ? "fits" : ""}"
-    style="padding:16px;display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
-  <div style="flex:1;min-width:240px;display:flex;flex-direction:column;gap:7px">
-    <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">
-      <a class="h2" href="${href}" style="color:var(--fg)">${esc(m.displayName)}</a>
-      ${fitPill(fit)}
-      ${m.installed ? '<span class="pill">Installed</span>' : ""}
-      ${m.loaded ? '<span class="pill ok">Loaded</span>' : ""}
+  const current = m.loaded || m.recommended;
+  return `<li data-filter-item data-name="${esc(m.displayName + " " + m.publisher)}"
+    data-tags="${m.tasks.join(" ")} ${m.installed ? "installed" : ""} ${fit.state === "great" || fit.state === "tradeoffs" ? "fits" : ""}"${current ? ' class="is-current"' : ""}>
+  <div class="rrow" data-row-target>
+    <div style="min-width:0">
+      <a class="rname" href="${href}">${esc(m.displayName)}</a>
+      <p class="ruse">${esc(m.strength)}</p>
     </div>
-    <p class="mut" style="margin:0;font-size:13.5px;line-height:20px">${esc(m.strength)}</p>
-    <p class="faint" style="margin:0;font-size:12.5px;line-height:18px">${esc(fit.reason)}</p>
-    <div style="display:flex;gap:16px;flex-wrap:wrap;padding-top:2px">
-      <span class="lab num">${esc(m.publisher)}</span>
-      <span class="lab num">${esc(m.quantization)} &middot; ${fmtParams(m.parameterCount)}</span>
-      <span class="lab num">${F.gb(m.downloadBytes, 1)} GB download</span>
-      <span class="lab">${esc(m.licenseId)}</span>
-      <span class="lab">${speed.measured ? esc(speed.text) : "Speed not measured"}</span>
+    ${fitDot(fit)}
+    <div class="rnums">
+      <span class="rnum"><b>${F.gb(fit.required, 1)} GB</b><span>video memory</span></span>
+      <span class="rnum"><b>${F.gb(m.downloadBytes, 1)} GB</b><span>download</span></span>
+      <span class="rnum"><b>${esc(F.fmtCtx(fit.context))}</b><span>context</span></span>
     </div>
-  </div>
-  <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
-    ${action || `<a class="btn btns" href="${href}">View details</a>`}
+    <p class="rmeta">${esc(m.publisher)}<br>${esc(m.licenseId)}${m.installed ? " &middot; Installed" : ""}${m.loaded ? " &middot; In use" : ""}</p>
+    ${action || `<svg class="rchev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>`}
   </div>
 </li>`;
 }
@@ -204,7 +201,7 @@ write("models/index.html", marketing({
   </div>
 </section>
 
-<section class="mwrap msec" style="padding-bottom:96px" data-filter-root>
+<section class="mwrap msec" style="padding-bottom:56px" data-filter-root>
   <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:16px">
     <label class="field" style="flex:1;min-width:220px;max-width:320px">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="flex-shrink:0"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>
@@ -212,25 +209,25 @@ write("models/index.html", marketing({
       <input data-filter-search type="search" placeholder="Search models"
         style="border:0;background:transparent;outline:none;flex:1;min-width:0;color:var(--fg);font-size:13px">
     </label>
-    <div style="display:flex;gap:7px;flex-wrap:wrap">
-      <button class="pill" type="button" data-filter="coding" aria-pressed="false">Coding</button>
-      <button class="pill" type="button" data-filter="general" aria-pressed="false">General</button>
-      <button class="pill" type="button" data-filter="tool-use" aria-pressed="false">Tool use</button>
-      <button class="pill" type="button" data-filter="fits" aria-pressed="false">Fits this reference PC</button>
+    <div class="seg" role="group" aria-label="Filter by capability">
+      <button type="button" data-filter="coding" aria-pressed="false">Coding</button>
+      <button type="button" data-filter="general" aria-pressed="false">General</button>
+      <button type="button" data-filter="tool-use" aria-pressed="false">Tool use</button>
+      <button type="button" data-filter="fits" aria-pressed="false">Fits this PC</button>
     </div>
     <span class="grow"></span>
-    <span class="lab num" data-filter-count>${models.length} models</span>
-    <button class="btn btnq btns" type="button" data-filter-clear hidden>Clear all</button>
+    <span class="msmall num" style="color:var(--faint)" data-filter-count>${models.length} models</span>
+    <button class="btn btnq btns" type="button" data-filter-clear hidden>Clear</button>
   </div>
 
-  <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px">
+  <ul class="reg">
 ${catalogRows}
   </ul>
-  <p class="box" data-filter-empty hidden style="padding:24px;text-align:center;color:var(--mut);margin:12px 0 0">
-    No models match those filters.
+  <p data-filter-empty hidden style="padding:36px 16px;text-align:center;color:var(--mut);margin:0;border-bottom:1px solid var(--line)">
+    No model matches those filters.
   </p>
 
-  <p class="faint" style="margin:24px 0 0;font-size:12.5px;max-width:70ch">
+  <p class="faint" style="margin:22px 0 0;font-size:13px;line-height:20px;max-width:72ch">
     No throughput figures are published here. Nothing in this catalog has been benchmarked yet,
     and a tokens-per-second number is meaningless without stating the exact quantization, context,
     runtime build and offload split it was measured with. ForgeLocal measures throughput on your
@@ -250,7 +247,7 @@ for (const m of models) {
       <td class="num">${F.fmtCtx(c)}</td>
       <td class="num">${F.gb(F.kvCacheBytes(m, c), 2)} GB</td>
       <td class="num">${F.gb(F.requiredBytes(m, c), 1)} GB</td>
-      <td>${fitPill(f)}</td>
+      <td><span class="rfit"><span class="dot ${toneClass[f.tone] || ''}" aria-hidden="true"></span>${esc(f.label)}</span></td>
     </tr>`;
   }).join("\n");
 
@@ -270,102 +267,86 @@ for (const m of models) {
       url: `${SITE}/models/${m.id}/`,
     },
     main: `
-<section class="mwrap msec" style="padding-top:56px;padding-bottom:24px">
-  <a href="/models/" style="font-size:13px">&larr; All models</a>
-  <div class="stack" style="gap:14px;max-width:760px;margin-top:16px">
-    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-      <h1 class="mh2" style="font-size:34px">${esc(m.displayName)}</h1>
-      ${fitPill(fit)}
-    </div>
-    <p class="mlede">${esc(m.strength)}</p>
-    <p class="mut" style="margin:0;font-size:14px;line-height:21px">${esc(m.limitation)}</p>
-  </div>
-</section>
+<section class="mwrap msec" style="padding-top:48px;padding-bottom:56px">
+  <a href="/models/" style="font-size:14px">&larr; All models</a>
 
-<section class="mwrap msec" style="padding-bottom:40px">
-  <div class="box" style="padding:20px;display:flex;gap:32px;flex-wrap:wrap;align-items:center">
-    <div class="stack" style="gap:4px"><span class="lab">Publisher</span><span>${esc(m.publisher)}</span></div>
-    <div class="stack" style="gap:4px"><span class="lab">Parameters</span><span class="num">${fmtParams(m.parameterCount)}</span></div>
-    <div class="stack" style="gap:4px"><span class="lab">Quantization</span><span class="num">${esc(m.quantization)} &middot; ${esc(m.format)}</span></div>
-    <div class="stack" style="gap:4px"><span class="lab">Download</span><span class="num">${F.gb(m.downloadBytes, 2)} GB</span></div>
-    <div class="stack" style="gap:4px"><span class="lab">On disk</span><span class="num">${F.gb(m.installedBytes, 2)} GB</span></div>
-    <div class="stack" style="gap:4px"><span class="lab">License</span><span>${esc(m.licenseId)}</span></div>
-    <span class="grow"></span>
-    <a class="btn btnp" href="/download/">Get ForgeLocal to install this</a>
-  </div>
-</section>
-
-<section class="mwrap msec" style="padding-bottom:40px">
-  <h2 class="h2" style="font-size:20px;margin-bottom:10px">Hardware fit on ${esc(F.thisPC.label)}</h2>
-  <p class="mut" style="margin:0 0 16px;font-size:14px;line-height:21px;max-width:70ch">${esc(fit.reason)}</p>
-  <div style="overflow-x:auto">
-    <table class="tbl" style="min-width:520px">
-      <caption class="vh">Memory required at each context length</caption>
-      <thead><tr><th>Context</th><th>KV cache</th><th>Total needed</th><th>Fit</th></tr></thead>
-      <tbody>${contexts}</tbody>
-    </table>
-  </div>
-  <details class="box" style="margin-top:14px">
-    <summary style="padding:12px 16px;cursor:pointer;font-size:13.5px">How this is calculated</summary>
-    <div style="padding:0 16px 16px" class="mut">
-      <p style="margin:0 0 8px;font-size:13.5px;line-height:20px">
-        Total = quantized weights + KV cache + runtime overhead.
-      </p>
-      <p class="m" style="margin:0 0 8px;font-size:12.5px;line-height:19px">
-        KV = 2 &times; layers(${m.attention.layers}) &times; kv_heads(${m.attention.kvHeads}) &times;
-        head_dim(${m.attention.headDim}) &times; context &times; 2 bytes (f16)
-      </p>
-      <p style="margin:0;font-size:13px;line-height:19px">
-        Runtime overhead is taken as a flat ${F.gb(F.RUNTIME_OVERHEAD_BYTES, 1)} GB for ${esc(m.runtime)}.
-        These are planning figures. Real usage varies with the runtime build, batch size and
-        offload split, which is why ForgeLocal re-measures on your machine.
-      </p>
-    </div>
-  </details>
-</section>
-
-<section class="mwrap msec" style="padding-bottom:40px">
-  <h2 class="h2" style="font-size:20px;margin-bottom:10px">Measured performance</h2>
-  <div class="box" style="padding:20px;display:flex;gap:14px;align-items:flex-start">
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="8.5"/><path d="M12 16v-4.5M12 8.2h.01"/></svg>
-    <div>
-      <p style="margin:0 0 6px;font-size:14px;font-weight:600">${esc(speed.text)}</p>
-      <p class="mut" style="margin:0;font-size:13.5px;line-height:20px;max-width:66ch">${esc(speed.detail)}
-        Publishing a tokens-per-second figure without the hardware, runtime build, context and
-        offload split it came from would not be useful, so this page shows nothing until there is
-        a real measurement to show.</p>
-    </div>
-  </div>
-</section>
-
-<section class="mwrap msec" style="padding-bottom:40px">
-  <h2 class="h2" style="font-size:20px;margin-bottom:10px">Test evidence</h2>
-  <div class="box" style="padding:20px">
-    <p class="mut" style="margin:0 0 12px;font-size:13.5px;line-height:20px;max-width:70ch">
-      ForgeLocal runs an agent check suite against each profile: streaming, typed tool calls,
-      schema-guided repair, a bounded write, a patch, a command and its output. A profile is
-      only marked verified once that suite has passed on a named machine class.
+  <div class="stack" style="gap:12px;max-width:780px;margin-top:10px">
+    <h1 class="mh2" style="font-size:34px">${esc(m.displayName)}</h1>
+    <p style="margin:0;display:flex;align-items:center;gap:8px;font-size:15px;line-height:23px">
+      <span class="dot ${toneClass[fit.tone] || ""}" aria-hidden="true"></span>${esc(fit.label)}
+      <span class="mut">on ${esc(F.thisPC.label)}</span>
     </p>
-    <p style="margin:0;display:flex;align-items:center;gap:9px;font-size:13.5px">
-      <span class="pill">Not yet verified</span>
+    <p class="mlede">${esc(m.strength)}</p>
+    <p class="mut" style="margin:0;font-size:15px;line-height:24px">${esc(m.limitation)}</p>
+  </div>
+
+  <dl class="specs">
+    <div><dt>Publisher</dt><dd>${esc(m.publisher)}</dd></div>
+    <div><dt>Parameters</dt><dd>${fmtParams(m.parameterCount)}</dd></div>
+    <div><dt>Quantization</dt><dd>${esc(m.quantization)} &middot; ${esc(m.format)}</dd></div>
+    <div><dt>Download</dt><dd>${F.gb(m.downloadBytes, 2)} GB</dd></div>
+    <div><dt>On disk</dt><dd>${F.gb(m.installedBytes, 2)} GB</dd></div>
+    <div><dt>License</dt><dd>${esc(m.licenseId)}</dd></div>
+  </dl>
+  <div style="margin-top:20px"><a class="btn btnp btnl" href="/download/">Get ForgeLocal to install this</a></div>
+
+  <section class="docsec">
+    <h2>Hardware fit</h2>
+    <p>${esc(fit.reason)}</p>
+    <div style="overflow-x:auto">
+      <table class="tbl flat" style="min-width:520px">
+        <caption class="vh">Memory required at each context length</caption>
+        <thead><tr><th>Context</th><th>KV cache</th><th>Total needed</th><th>Fit</th></tr></thead>
+        <tbody>${contexts}</tbody>
+      </table>
+    </div>
+    <div class="faq" style="margin-top:4px;max-width:76ch">
+      <details>
+        <summary>How this is calculated<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9.5 6 6 6-6"/></svg></summary>
+        <p>Total = quantized weights + KV cache + runtime overhead.</p>
+        <p class="m" style="padding-top:0;font-size:13px;line-height:20px">KV = 2 &times; layers(${m.attention.layers}) &times; kv_heads(${m.attention.kvHeads}) &times; head_dim(${m.attention.headDim}) &times; context &times; 2 bytes (f16)</p>
+        <p style="padding-top:0">Runtime overhead is taken as a flat ${F.gb(F.RUNTIME_OVERHEAD_BYTES, 1)} GB for ${esc(m.runtime)}. These are planning figures. Real usage varies with the runtime build, batch size and offload split, which is why ForgeLocal re-measures on your machine.</p>
+      </details>
+    </div>
+  </section>
+
+  <section class="docsec">
+    <h2>Measured performance</h2>
+    <div class="callout">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 16v-4.5M12 8.2h.01"/></svg>
+      <div>
+        <p style="margin:0 0 6px;font-size:15px;line-height:23px;font-weight:600">${esc(speed.text)}</p>
+        <p class="mut" style="margin:0;font-size:14px;line-height:22px;max-width:66ch">${esc(speed.detail)}
+          Publishing a tokens-per-second figure without the hardware, runtime build, context and
+          offload split it came from would not be useful, so this page shows nothing until there is
+          a real measurement to show.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="docsec">
+    <h2>Test evidence</h2>
+    <p>ForgeLocal runs an agent check suite against each profile: streaming, typed tool calls,
+      schema-guided repair, a bounded write, a patch, a command and its output. A profile is
+      only marked verified once that suite has passed on a named machine class.</p>
+    <p style="margin:0;display:flex;align-items:center;gap:9px;font-size:15px;line-height:23px">
+      <span class="dot" aria-hidden="true"></span>Not yet verified
       <span class="mut">No suite run has been recorded for this profile.</span>
     </p>
-  </div>
-</section>
+  </section>
 
-<section class="mwrap msec" style="padding-bottom:40px">
-  <h2 class="h2" style="font-size:20px;margin-bottom:10px">Source and license</h2>
-  <div class="box" style="padding:20px;display:flex;flex-direction:column;gap:10px">
-    <div style="display:flex;gap:14px;flex-wrap:wrap"><span class="lab" style="width:110px">Source</span>
-      <a href="${esc(m.sourceUrl)}" rel="noreferrer noopener" target="_blank">${esc(m.sourceUrl)}</a></div>
-    <div style="display:flex;gap:14px;flex-wrap:wrap"><span class="lab" style="width:110px">Revision</span><span class="m">${esc(m.sourceRevision)}</span></div>
-    <div style="display:flex;gap:14px;flex-wrap:wrap"><span class="lab" style="width:110px">License</span><span>${esc(m.licenseId)}</span></div>
-    <div style="display:flex;gap:14px;flex-wrap:wrap"><span class="lab" style="width:110px">Checksum</span>
-      <span class="mut">Recorded at download time and re-verified on load.</span></div>
-    <p class="faint" style="margin:4px 0 0;font-size:12.5px">
+  <section class="docsec">
+    <h2>Source and license</h2>
+    <dl class="specs" style="border-bottom:0;margin-top:0;padding-bottom:0;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))">
+      <div><dt>Source</dt><dd><a href="${esc(m.sourceUrl)}" rel="noreferrer noopener" target="_blank">${esc(m.sourceUrl.replace("https://huggingface.co/", ""))}</a></dd></div>
+      <div><dt>Revision</dt><dd class="m">${esc(m.sourceRevision)}</dd></div>
+      <div><dt>License</dt><dd>${esc(m.licenseId)}</dd></div>
+      <div><dt>Checksum</dt><dd style="font-size:14px;color:var(--mut)">Recorded at download time and re-verified on load.</dd></div>
+    </dl>
+    <p class="faint" style="margin:18px 0 0;font-size:13px;line-height:20px">
       Weights are fetched from the publisher. ForgeLocal distributes a signed profile manifest, not the model.
     </p>
-  </div>
+  </section>
 </section>`,
   }));
 }

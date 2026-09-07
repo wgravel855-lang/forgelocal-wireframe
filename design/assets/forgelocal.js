@@ -418,24 +418,21 @@
 
   /* -------------------------------------------------------------- pricing */
   function wirePricing() {
-    const t = $("[data-billing-toggle]");
-    if (!t) return;
-    const knob = t.querySelector("span");
-    const apply = () => {
-      const yearly = t.getAttribute("aria-checked") === "true";
-      if (knob) knob.style.transform = yearly ? "translateX(26px)" : "";
-      t.style.background = yearly ? "var(--acc)" : "var(--sunk)";
-      t.style.borderColor = yearly ? "var(--acc)" : "var(--line-strong)";
+    const btns = $$("[data-billing]");
+    if (!btns.length) return;
+    const apply = (period) => {
+      btns.forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.billing === period)));
+      const yearly = period === "yearly";
       $$("[data-price-monthly]").forEach((el) => {
         const m = Number(el.dataset.priceMonthly);
         el.textContent = yearly ? `$${Math.round(m * 10)}` : `$${m}`;
       });
       $$("[data-price-period]").forEach((el) => { el.textContent = yearly ? "/year" : "/month"; });
-      $$("[data-price-note]").forEach((el) => { el.hidden = !yearly; });
+      $$("[data-price-note]").forEach((el) => { el.style.visibility = yearly ? "visible" : "hidden"; });
+      store.set("billing", period);
     };
-    t.addEventListener("click", () => { t.setAttribute("aria-checked", String(t.getAttribute("aria-checked") !== "true")); apply(); });
-    t.addEventListener("keydown", (e) => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); t.click(); } });
-    apply();
+    btns.forEach((b) => b.addEventListener("click", () => apply(b.dataset.billing)));
+    apply(store.get("billing", "monthly"));
   }
 
   /* -------------------------------------------------------------- platform */

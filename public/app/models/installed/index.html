@@ -48,14 +48,14 @@
   </div>
 
   <div style="padding:0 8px 8px">
-    <a class="srow" data-id="new" href="/app/" aria-label="New session" title="New session" style="height:36px;border:1px solid var(--line-strong);background:var(--raised);color:var(--fg)">
+    <a class="srow" data-id="new" href="/app/" aria-label="New session" title="New session" style="height:40px;border:1px solid var(--line-strong);background:var(--raised);color:var(--fg)">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
       <span class="t">New session</span>
     </a>
   </div>
 
   <div style="padding:0 8px 10px">
-    <button class="field" type="button" style="width:100%;height:36px" aria-label="Switch project" title="One example project is included in this prototype." data-inert="One example project is included in this prototype.">
+    <button class="field" type="button" style="width:100%" aria-label="Switch project" title="One example project is included in this prototype." data-inert="One example project is included in this prototype.">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M3 7.5A2 2 0 0 1 5 5.5h3.6l1.8 2H19a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
       <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--fg);text-align:left">task-tracker</span>
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="m6 9.5 6 6 6-6"/></svg>
@@ -176,46 +176,38 @@
             <button class="btn btns" type="button" data-filter-clear hidden>Clear</button>
           </div>
 
-          <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px"><li class="box" data-filter-item data-name="Qwen2.5 Coder 7B Alibaba Qwen"
-              data-tags="coding tool-use installed fits"
-              style="padding:18px;display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
-              <div style="flex:1;min-width:260px;display:flex;flex-direction:column;gap:9px">
-                <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">
-                  <span class="h2">Qwen2.5 Coder 7B</span>
-                  <span class="pill " data-load-pill>Idle</span>
-                  
+          <ul class="reg"><li data-filter-item data-name="Qwen2.5 Coder 7B Alibaba Qwen"
+              data-tags="coding tool-use installed fits">
+              <div class="rrow has-action">
+                <div style="min-width:0">
+                  <a class="rname" href="/models/qwen25-coder-7b-q4km/">Qwen2.5 Coder 7B</a>
+                  <p class="ruse">Quick single-file edits, short scripts and focused fixes.</p>
+                  <p class="rmeta"><span data-load-pill>Idle</span> &middot; Q4_K_M</p>
                 </div>
-                <div style="display:flex;gap:22px;flex-wrap:wrap">
-                  <div style="display:flex;flex-direction:column;gap:3px"><span class="lab">On disk</span><span class="m num">4.68 GB</span></div>
-                  <div style="display:flex;flex-direction:column;gap:3px"><span class="lab">Video memory when loaded</span><span class="m num">6.1 GB</span></div>
-                  <div style="display:flex;flex-direction:column;gap:3px"><span class="lab">Context</span><span class="m num">16k</span></div>
-                  <div style="display:flex;flex-direction:column;gap:3px"><span class="lab">Quantization</span><span class="m">Q4_K_M</span></div>
+                <span class="rfit"><span class="dot " aria-hidden="true"></span>On disk only</span>
+                <div class="rnums">
+                  <span class="rnum"><b>4.68 GB</b><span>on disk</span></span>
+                  <span class="rnum"><b>6.1 GB</b><span>when loaded</span></span>
+                  <span class="rnum"><b>16k</b><span>context</span></span>
                 </div>
-              </div>
-              <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;flex-shrink:0">
                 <button class="btn btns" type="button" data-load-toggle data-model="Qwen2.5 Coder 7B">Load</button>
-                <a class="link" href="/models/qwen25-coder-7b-q4km/">Details</a>
               </div>
             </li>
-<li class="box" data-filter-item data-name="Qwen2.5 Coder 14B Alibaba Qwen"
-              data-tags="coding tool-use installed fits"
-              style="padding:18px;display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;border-color:var(--acc)">
-              <div style="flex:1;min-width:260px;display:flex;flex-direction:column;gap:9px">
-                <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">
-                  <span class="h2">Qwen2.5 Coder 14B</span>
-                  <span class="pill ok" data-load-pill>Loaded</span>
-                  <span class="pill">Default for coding</span>
+<li data-filter-item data-name="Qwen2.5 Coder 14B Alibaba Qwen"
+              data-tags="coding tool-use installed fits" class="is-current">
+              <div class="rrow has-action">
+                <div style="min-width:0">
+                  <a class="rname" href="/models/qwen25-coder-14b-q4km/">Qwen2.5 Coder 14B</a>
+                  <p class="ruse">Multi-file edits, running commands, tests and previews.</p>
+                  <p class="rmeta"><span data-load-pill>Loaded</span> &middot; Q4_K_M &middot; Default for coding</p>
                 </div>
-                <div style="display:flex;gap:22px;flex-wrap:wrap">
-                  <div style="display:flex;flex-direction:column;gap:3px"><span class="lab">On disk</span><span class="m num">8.99 GB</span></div>
-                  <div style="display:flex;flex-direction:column;gap:3px"><span class="lab">Video memory when loaded</span><span class="m num">11.1 GB</span></div>
-                  <div style="display:flex;flex-direction:column;gap:3px"><span class="lab">Context</span><span class="m num">8k</span></div>
-                  <div style="display:flex;flex-direction:column;gap:3px"><span class="lab">Quantization</span><span class="m">Q4_K_M</span></div>
+                <span class="rfit"><span class="dot ok" aria-hidden="true"></span>In video memory</span>
+                <div class="rnums">
+                  <span class="rnum"><b>8.99 GB</b><span>on disk</span></span>
+                  <span class="rnum"><b>11.1 GB</b><span>when loaded</span></span>
+                  <span class="rnum"><b>8k</b><span>context</span></span>
                 </div>
-              </div>
-              <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;flex-shrink:0">
                 <button class="btn btns" type="button" data-load-toggle data-model="Qwen2.5 Coder 14B">Eject</button>
-                <a class="link" href="/models/qwen25-coder-14b-q4km/">Details</a>
               </div>
             </li></ul>
 

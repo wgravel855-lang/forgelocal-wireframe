@@ -8,7 +8,7 @@
       <div class="scroll" style="overflow-y:auto">
         <div class="col" style="max-width:720px;display:flex;flex-direction:column;gap:18px;padding-top:24px;padding-bottom:20px">
 
-          <section class="act" aria-label="Activity">
+          <section class="act is-flat" aria-label="Activity">
             <div class="hd">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
               <span class="h3" style="flex:1">Done</span>
@@ -54,9 +54,15 @@
             </div>
           </section>
 
-          <div style="display:flex;flex-wrap:wrap;gap:8px">
-            <button class="btn btns btnq" type="button" style="border-color:var(--line)" data-suggest="Also cover a corrupt stored value">Also cover a corrupt stored value</button>
-            <button class="btn btns btnq" type="button" style="border-color:var(--line)" data-suggest="Add a clear-all button">Add a clear-all button</button>
+          <div class="starters" style="grid-template-columns:repeat(2,1fr)">
+            <button type="button" data-suggest="Also cover a corrupt stored value">
+              <span class="s-t">Also cover a corrupt stored value</span>
+              <span class="s-d">One more test on the hook that just changed.</span>
+            </button>
+            <button type="button" data-suggest="Add a clear-all button">
+              <span class="s-t">Add a clear-all button</span>
+              <span class="s-d">A small feature on top of what was just kept.</span>
+            </button>
           </div>
 
         </div>
@@ -127,7 +133,7 @@
       <div style="flex:1;min-height:0;display:flex;flex-direction:column;background:var(--bg);overflow:hidden">
         <div style="flex-shrink:0;padding:7px 12px;border-bottom:1px solid var(--line-soft);background:var(--panel);display:flex;align-items:center;gap:10px">
           <span class="lab" style="flex:1">@@ -1,18 +1,14 @@</span>
-          <button class="btn btnq btns" type="button" style="height:36px" data-review-action="revert-hunk">Revert hunk</button>
+          <button class="btn btnq btns" type="button" data-review-action="revert-hunk">Revert hunk</button>
         </div>
         <div data-diff-view data-mode="unified" style="flex:1;min-height:0;overflow:auto">
         <div class="m diff-unified" style="font-size:13px;line-height:20px;padding:6px 0">

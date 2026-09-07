@@ -48,14 +48,14 @@
   </div>
 
   <div style="padding:0 8px 8px">
-    <a class="srow" data-id="new" href="/app/" aria-label="New session" title="New session" style="height:36px;border:1px solid var(--line-strong);background:var(--raised);color:var(--fg)">
+    <a class="srow" data-id="new" href="/app/" aria-label="New session" title="New session" style="height:40px;border:1px solid var(--line-strong);background:var(--raised);color:var(--fg)">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
       <span class="t">New session</span>
     </a>
   </div>
 
   <div style="padding:0 8px 10px">
-    <button class="field" type="button" style="width:100%;height:36px" aria-label="Switch project" title="One example project is included in this prototype." data-inert="One example project is included in this prototype.">
+    <button class="field" type="button" style="width:100%" aria-label="Switch project" title="One example project is included in this prototype." data-inert="One example project is included in this prototype.">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M3 7.5A2 2 0 0 1 5 5.5h3.6l1.8 2H19a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
       <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--fg);text-align:left">task-tracker</span>
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="m6 9.5 6 6 6-6"/></svg>
@@ -159,159 +159,119 @@
             <button type="button" style="padding:9px 12px;font-size:13.5px;color:var(--mut)" data-inert="There is no download queue in this prototype. Step 3 of setup shows a download in progress.">Downloads</button>
           </nav>
 
-          <div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center" role="group" aria-label="Filters">
-            <button class="pill" type="button" data-filter="fits" aria-pressed="false">Fits this PC</button>
-            <button class="pill" type="button" data-filter="coding" aria-pressed="false">Coding</button>
-            <button class="pill" type="button" data-filter="general" aria-pressed="false">General</button>
-            <button class="pill" type="button" data-filter="tool-use" aria-pressed="false">Tool use</button>
-            <button class="pill" type="button" data-filter="installed" aria-pressed="false">Installed</button>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+            <div class="seg" role="group" aria-label="Filter models">
+              <button type="button" data-filter="fits" aria-pressed="false">Fits this PC</button>
+              <button type="button" data-filter="coding" aria-pressed="false">Coding</button>
+              <button type="button" data-filter="general" aria-pressed="false">General</button>
+              <button type="button" data-filter="tool-use" aria-pressed="false">Tool use</button>
+              <button type="button" data-filter="installed" aria-pressed="false">Installed</button>
+            </div>
             <span class="grow"></span>
             <span class="lab-fn mut" data-filter-count>6 models</span>
             <button class="btn btns" type="button" data-filter-clear hidden>Clear</button>
           </div>
 
-          <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px"><li class="box" data-filter-item data-name="Qwen2.5 Coder 7B Alibaba Qwen"
-              data-tags="coding tool-use installed fits"
-              style="padding:18px;display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
-              <div style="flex:1;min-width:260px;display:flex;flex-direction:column;gap:8px">
-                <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">
-                  <span class="h2">Qwen2.5 Coder 7B</span>
-                  <span class="pill ok">Great fit</span>
-                  <span class="pill">Installed</span>
+          <ul class="reg"><li data-filter-item data-name="Qwen2.5 Coder 7B Alibaba Qwen"
+              data-tags="coding tool-use installed fits">
+              <div class="rrow has-action">
+                <div style="min-width:0">
+                  <a class="rname" href="/models/qwen25-coder-7b-q4km/">Qwen2.5 Coder 7B</a>
+                  <p class="ruse">Quick single-file edits, short scripts and focused fixes.</p>
+                  <p class="rmeta">Alibaba Qwen &middot; Q4_K_M 7.6B &middot; Apache-2.0</p>
                 </div>
-                <p class="mut" style="margin:0;font-size:14px;line-height:21px">Quick single-file edits, short scripts and focused fixes.</p>
-                <p class="faint" style="margin:0;font-size:13px;line-height:19px">Weights, a 16k context and runtime overhead come to 6.1 GB, inside 12 GB of video memory.</p>
-                <div style="display:flex;gap:18px;flex-wrap:wrap;padding-top:2px">
-                  <span class="lab num">Alibaba Qwen</span>
-                  <span class="lab num">Q4_K_M &middot; 7.6B</span>
-                  <span class="lab num">4.7 GB download</span>
-                  <span class="lab">Apache-2.0</span>
-                  <span class="lab">Speed not measured</span>
+                <span class="rfit"><span class="dot ok" aria-hidden="true"></span>Great fit</span>
+                <div class="rnums">
+                  <span class="rnum"><b>6.1 GB</b><span>video memory</span></span>
+                  <span class="rnum"><b>4.7 GB</b><span>download</span></span>
+                  <span class="rnum"><b>16k</b><span>context</span></span>
                 </div>
-              </div>
-              <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;flex-shrink:0">
                 <button class="btn btnp btns" type="button" data-model-use="Qwen2.5 Coder 7B" data-model-id="qwen25-coder-7b-q4km">Use</button>
-                <a class="link" href="/models/qwen25-coder-7b-q4km/">Details</a>
               </div>
             </li>
-<li class="box" data-filter-item data-name="Qwen2.5 Coder 14B Alibaba Qwen"
-              data-tags="coding tool-use installed fits"
-              style="padding:18px;display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
-              <div style="flex:1;min-width:260px;display:flex;flex-direction:column;gap:8px">
-                <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">
-                  <span class="h2">Qwen2.5 Coder 14B</span>
-                  <span class="pill warn">Runs with tradeoffs</span>
-                  <span class="pill ok">Loaded</span>
+<li data-filter-item data-name="Qwen2.5 Coder 14B Alibaba Qwen"
+              data-tags="coding tool-use installed fits" class="is-current">
+              <div class="rrow has-action">
+                <div style="min-width:0">
+                  <a class="rname" href="/models/qwen25-coder-14b-q4km/">Qwen2.5 Coder 14B</a>
+                  <p class="ruse">Multi-file edits, running commands, tests and previews.</p>
+                  <p class="rmeta">Alibaba Qwen &middot; Q4_K_M 15B &middot; Apache-2.0</p>
                 </div>
-                <p class="mut" style="margin:0;font-size:14px;line-height:21px">Multi-file edits, running commands, tests and previews.</p>
-                <p class="faint" style="margin:0;font-size:13px;line-height:19px">Needs 11.1 GB of the 12 GB available. It fits, but leaves little room for anything else on the GPU.</p>
-                <div style="display:flex;gap:18px;flex-wrap:wrap;padding-top:2px">
-                  <span class="lab num">Alibaba Qwen</span>
-                  <span class="lab num">Q4_K_M &middot; 15B</span>
-                  <span class="lab num">9 GB download</span>
-                  <span class="lab">Apache-2.0</span>
-                  <span class="lab">Speed not measured</span>
+                <span class="rfit"><span class="dot warn" aria-hidden="true"></span>Runs with tradeoffs</span>
+                <div class="rnums">
+                  <span class="rnum"><b>11.1 GB</b><span>video memory</span></span>
+                  <span class="rnum"><b>9 GB</b><span>download</span></span>
+                  <span class="rnum"><b>8k</b><span>context</span></span>
                 </div>
-              </div>
-              <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;flex-shrink:0">
-                <button class="btn btns" type="button" data-inert="Already loaded.">In use</button>
-                <a class="link" href="/models/qwen25-coder-14b-q4km/">Details</a>
+                <button class="btn btns" type="button" data-inert="This model is already loaded.">In use</button>
               </div>
             </li>
-<li class="box" data-filter-item data-name="DeepSeek-Coder-V2 Lite 16B DeepSeek"
-              data-tags="coding tool-use  "
-              style="padding:18px;display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
-              <div style="flex:1;min-width:260px;display:flex;flex-direction:column;gap:8px">
-                <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">
-                  <span class="h2">DeepSeek-Coder-V2 Lite 16B</span>
-                  <span class="pill warn">CPU offload required</span>
-                  
+<li data-filter-item data-name="DeepSeek-Coder-V2 Lite 16B DeepSeek"
+              data-tags="coding tool-use  ">
+              <div class="rrow has-action">
+                <div style="min-width:0">
+                  <a class="rname" href="/models/deepseek-coder-v2-lite-q4km/">DeepSeek-Coder-V2 Lite 16B</a>
+                  <p class="ruse">Reading an unfamiliar codebase and explaining it back.</p>
+                  <p class="rmeta">DeepSeek &middot; Q4_K_M 16B &middot; DeepSeek License</p>
                 </div>
-                <p class="mut" style="margin:0;font-size:14px;line-height:21px">Reading an unfamiliar codebase and explaining it back.</p>
-                <p class="faint" style="margin:0;font-size:13px;line-height:19px">14.3 GB needed against 12 GB of video memory. The weights fit but the 16k key-value cache does not, so it spills to system memory and slows down.</p>
-                <div style="display:flex;gap:18px;flex-wrap:wrap;padding-top:2px">
-                  <span class="lab num">DeepSeek</span>
-                  <span class="lab num">Q4_K_M &middot; 16B</span>
-                  <span class="lab num">10.4 GB download</span>
-                  <span class="lab">DeepSeek License</span>
-                  <span class="lab">Speed not measured</span>
+                <span class="rfit"><span class="dot warn" aria-hidden="true"></span>CPU offload required</span>
+                <div class="rnums">
+                  <span class="rnum"><b>14.3 GB</b><span>video memory</span></span>
+                  <span class="rnum"><b>10.4 GB</b><span>download</span></span>
+                  <span class="rnum"><b>16k</b><span>context</span></span>
                 </div>
-              </div>
-              <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;flex-shrink:0">
                 <button class="btn btns" type="button" data-model-install="DeepSeek-Coder-V2 Lite 16B">Install</button>
-                <a class="link" href="/models/deepseek-coder-v2-lite-q4km/">Details</a>
               </div>
             </li>
-<li class="box" data-filter-item data-name="Qwen2.5 Coder 32B Alibaba Qwen"
-              data-tags="coding tool-use  "
-              style="padding:18px;display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
-              <div style="flex:1;min-width:260px;display:flex;flex-direction:column;gap:8px">
-                <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">
-                  <span class="h2">Qwen2.5 Coder 32B</span>
-                  <span class="pill warn">CPU offload required</span>
-                  
+<li data-filter-item data-name="Qwen2.5 Coder 32B Alibaba Qwen"
+              data-tags="coding tool-use  ">
+              <div class="rrow has-action">
+                <div style="min-width:0">
+                  <a class="rname" href="/models/qwen25-coder-32b-q4km/">Qwen2.5 Coder 32B</a>
+                  <p class="ruse">Longer plans and wider context on a machine with room for it.</p>
+                  <p class="rmeta">Alibaba Qwen &middot; Q4_K_M 33B &middot; Apache-2.0</p>
                 </div>
-                <p class="mut" style="margin:0;font-size:14px;line-height:21px">Longer plans and wider context on a machine with room for it.</p>
-                <p class="faint" style="margin:0;font-size:13px;line-height:19px">19.8 GB of weights against 12 GB of video memory, so most layers run on the CPU. It works, but expect it to be slow.</p>
-                <div style="display:flex;gap:18px;flex-wrap:wrap;padding-top:2px">
-                  <span class="lab num">Alibaba Qwen</span>
-                  <span class="lab num">Q4_K_M &middot; 33B</span>
-                  <span class="lab num">19.8 GB download</span>
-                  <span class="lab">Apache-2.0</span>
-                  <span class="lab">Speed not measured</span>
+                <span class="rfit"><span class="dot warn" aria-hidden="true"></span>CPU offload required</span>
+                <div class="rnums">
+                  <span class="rnum"><b>24.4 GB</b><span>video memory</span></span>
+                  <span class="rnum"><b>19.8 GB</b><span>download</span></span>
+                  <span class="rnum"><b>16k</b><span>context</span></span>
                 </div>
-              </div>
-              <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;flex-shrink:0">
                 <button class="btn btns" type="button" data-model-install="Qwen2.5 Coder 32B">Install</button>
-                <a class="link" href="/models/qwen25-coder-32b-q4km/">Details</a>
               </div>
             </li>
-<li class="box" data-filter-item data-name="Llama 3.3 70B Meta"
-              data-tags="general coding  "
-              style="padding:18px;display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
-              <div style="flex:1;min-width:260px;display:flex;flex-direction:column;gap:8px">
-                <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">
-                  <span class="h2">Llama 3.3 70B</span>
-                  <span class="pill bad">Does not fit</span>
-                  
+<li data-filter-item data-name="Llama 3.3 70B Meta"
+              data-tags="general coding  ">
+              <div class="rrow has-action">
+                <div style="min-width:0">
+                  <a class="rname" href="/models/llama33-70b-q4km/">Llama 3.3 70B</a>
+                  <p class="ruse">Reasoning over long, tangled tasks.</p>
+                  <p class="rmeta">Meta &middot; Q4_K_M 71B &middot; Llama 3.3 Community License</p>
                 </div>
-                <p class="mut" style="margin:0;font-size:14px;line-height:21px">Reasoning over long, tangled tasks.</p>
-                <p class="faint" style="margin:0;font-size:13px;line-height:19px">42.5 GB of weights will not fit in 12 GB of video memory plus 19 GB of free system memory.</p>
-                <div style="display:flex;gap:18px;flex-wrap:wrap;padding-top:2px">
-                  <span class="lab num">Meta</span>
-                  <span class="lab num">Q4_K_M &middot; 71B</span>
-                  <span class="lab num">42.5 GB download</span>
-                  <span class="lab">Llama 3.3 Community License</span>
-                  <span class="lab">Speed not measured</span>
+                <span class="rfit"><span class="dot bad" aria-hidden="true"></span>Does not fit</span>
+                <div class="rnums">
+                  <span class="rnum"><b>45.6 GB</b><span>video memory</span></span>
+                  <span class="rnum"><b>42.5 GB</b><span>download</span></span>
+                  <span class="rnum"><b>8k</b><span>context</span></span>
                 </div>
-              </div>
-              <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;flex-shrink:0">
                 <button class="btn btns" type="button" data-model-install="Llama 3.3 70B">Install</button>
-                <a class="link" href="/models/llama33-70b-q4km/">Details</a>
               </div>
             </li>
-<li class="box" data-filter-item data-name="Gemma 2 9B Google"
-              data-tags="general  fits"
-              style="padding:18px;display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
-              <div style="flex:1;min-width:260px;display:flex;flex-direction:column;gap:8px">
-                <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">
-                  <span class="h2">Gemma 2 9B</span>
-                  <span class="pill ok">Great fit</span>
-                  
+<li data-filter-item data-name="Gemma 2 9B Google"
+              data-tags="general  fits">
+              <div class="rrow has-action">
+                <div style="min-width:0">
+                  <a class="rname" href="/models/gemma2-9b-q4km/">Gemma 2 9B</a>
+                  <p class="ruse">Writing and explanation.</p>
+                  <p class="rmeta">Google &middot; Q4_K_M 9.2B &middot; Gemma Terms of Use</p>
                 </div>
-                <p class="mut" style="margin:0;font-size:14px;line-height:21px">Writing and explanation.</p>
-                <p class="faint" style="margin:0;font-size:13px;line-height:19px">Weights, an 8k context and runtime overhead come to 9 GB, inside 12 GB of video memory.</p>
-                <div style="display:flex;gap:18px;flex-wrap:wrap;padding-top:2px">
-                  <span class="lab num">Google</span>
-                  <span class="lab num">Q4_K_M &middot; 9.2B</span>
-                  <span class="lab num">5.8 GB download</span>
-                  <span class="lab">Gemma Terms of Use</span>
-                  <span class="lab">Speed not measured</span>
+                <span class="rfit"><span class="dot ok" aria-hidden="true"></span>Great fit</span>
+                <div class="rnums">
+                  <span class="rnum"><b>9 GB</b><span>video memory</span></span>
+                  <span class="rnum"><b>5.8 GB</b><span>download</span></span>
+                  <span class="rnum"><b>8k</b><span>context</span></span>
                 </div>
-              </div>
-              <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;flex-shrink:0">
                 <button class="btn btns" type="button" data-model-install="Gemma 2 9B">Install</button>
-                <a class="link" href="/models/gemma2-9b-q4km/">Details</a>
               </div>
             </li></ul>
 

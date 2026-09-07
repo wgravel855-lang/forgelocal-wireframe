@@ -25,18 +25,20 @@
             <button type="button" style="padding:9px 12px;font-size:13.5px;color:var(--mut)" data-inert="There is no download queue in this prototype. Step 3 of setup shows a download in progress.">Downloads</button>
           </nav>
 
-          <div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center" role="group" aria-label="Filters">
-            <button class="pill" type="button" data-filter="fits" aria-pressed="false">Fits this PC</button>
-            <button class="pill" type="button" data-filter="coding" aria-pressed="false">Coding</button>
-            <button class="pill" type="button" data-filter="general" aria-pressed="false">General</button>
-            <button class="pill" type="button" data-filter="tool-use" aria-pressed="false">Tool use</button>
-            <button class="pill" type="button" data-filter="installed" aria-pressed="false">Installed</button>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+            <div class="seg" role="group" aria-label="Filter models">
+              <button type="button" data-filter="fits" aria-pressed="false">Fits this PC</button>
+              <button type="button" data-filter="coding" aria-pressed="false">Coding</button>
+              <button type="button" data-filter="general" aria-pressed="false">General</button>
+              <button type="button" data-filter="tool-use" aria-pressed="false">Tool use</button>
+              <button type="button" data-filter="installed" aria-pressed="false">Installed</button>
+            </div>
             <span class="grow"></span>
             <span class="lab-fn mut" data-filter-count><!--EXPLORE_COUNT--></span>
             <button class="btn btns" type="button" data-filter-clear hidden>Clear</button>
           </div>
 
-          <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px"><!--EXPLORE_LIST--></ul>
+          <ul class="reg"><!--EXPLORE_LIST--></ul>
 
           <div class="box" data-filter-empty hidden style="padding:26px 20px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center">
             <span class="h3">No model matches those filters</span>

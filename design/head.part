@@ -24,6 +24,7 @@
       --warn:#7A5310; --warn-line:#BF8B2C; --warn-soft:#FBF4E6;
       --bad:#9B3A33; --bad-line:#C2564D; --bad-soft:#FBEFEE;
       --focus:#5457CE;
+      --flow-head:#2F7DEB; --flow-tail:#4F52C9; --flow-far:#38BDF8;
       --shadow-menu:0 10px 30px rgba(23,24,26,.14), 0 1px 3px rgba(23,24,26,.10);
     }
     .app {
@@ -35,6 +36,7 @@
       --warn:#D6A85C; --warn-line:#8A6A2E; --warn-soft:#1F1A10;
       --bad:#E08A82; --bad-line:#8E4A44; --bad-soft:#211413;
       --focus:#9698F2;
+      --flow-head:#38BDF8; --flow-tail:#6366D9; --flow-far:#3B82F6;
       --shadow-menu:0 16px 40px rgba(0,0,0,.55), 0 2px 6px rgba(0,0,0,.4);
     }
 
@@ -64,7 +66,7 @@
     .msec a:not(p a):not(dd a):not(.btn):not(.brand),
     .mfoot a:not(p a):not(.btn):not(.brand),
     .mhead [data-nav] a:not(.btn) {
-      display: inline-flex; align-items: center; min-height: 36px; }
+      display: inline-flex; align-items: center; min-height: 40px; }
     .mfoot a:not(.btn), .mhead [data-nav] a:not(.btn) { font-size: 14px; }
     .brand { min-height: 40px; }
     :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
@@ -108,7 +110,7 @@
       background: var(--panel); display: flex; flex-direction: column; min-height: 0; }
 
     /* sidebar rows */
-    .srow { display: flex; align-items: center; gap: 10px; min-height: 38px; padding: 4px 10px;
+    .srow { display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 4px 10px;
       border-radius: 8px; font-size: 14px; color: var(--mut); cursor: pointer;
       transition: background 140ms ease, color 140ms ease; width: 100%; text-align: left; }
     .srow:hover { background: var(--sunk); color: var(--fg); }
@@ -120,28 +122,98 @@
       display: flex; align-items: center; letter-spacing: .02em; }
 
     /* ---- controls ---------------------------------------------------- */
+    /* 40px is the floor for every control; 44px for primary actions. The dense
+       variant trades padding, never height. */
     .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-      height: 36px; padding: 0 14px; border: 1px solid var(--line-strong); background: var(--raised);
+      height: 40px; padding: 0 14px; border: 1px solid var(--line-strong); background: var(--raised);
       border-radius: 8px; font-size: 14px; line-height: 20px; color: var(--fg); white-space: nowrap;
-      transition: background 140ms ease, border-color 140ms ease, color 140ms ease; }
+      transition: background 140ms ease-out, border-color 140ms ease-out, color 140ms ease-out; }
     .btn:hover { background: var(--sunk); }
     .btnp { background: var(--acc); border-color: var(--acc); color: #fff; }
     .btnp:hover { background: var(--acc-hi); border-color: var(--acc-hi); }
     .btnq { background: transparent; border-color: transparent; color: var(--mut); }
     .btnq:hover { background: var(--sunk); color: var(--fg); }
     .btnd { border-color: var(--bad-line); color: var(--bad); }
-    /* dense variant keeps the 36px standard height, trading padding not size */
-    .btns { height: 36px; padding: 0 12px; font-size: 13px; border-radius: 7px; }
-    .btnl { height: 42px; padding: 0 20px; font-size: 15px; border-radius: 9px; }
-    .ico { width: 36px; min-width: 36px; padding: 0; flex-shrink: 0; }
-    .ico.btns { width: 36px; min-width: 36px; }
+    .btns { height: 40px; padding: 0 12px; font-size: 13px; border-radius: 8px; }
+    .btnl { height: 44px; padding: 0 20px; font-size: 15px; border-radius: 10px; }
+    .ico { width: 40px; min-width: 40px; padding: 0; flex-shrink: 0; }
+    .ico.btns { width: 40px; min-width: 40px; }
+
+    /* ---- segmented control ------------------------------------------- */
+    /* One object instead of a row of loose pills. Children keep whatever
+       pressed/unpressed behaviour the page already wired. */
+    .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px;
+      background: var(--raised); overflow: hidden; }
+    .seg > button { height: 40px; padding: 0 13px; font-size: 13.5px; color: var(--mut);
+      border-left: 1px solid var(--line); white-space: nowrap;
+      transition: background 140ms ease-out, color 140ms ease-out; }
+    .seg > button:first-child { border-left: 0; }
+    .seg > button:hover { background: var(--sunk); color: var(--fg); }
+    .seg > button[aria-pressed="true"] { background: var(--sunk); color: var(--fg); font-weight: 500;
+      box-shadow: inset 0 -2px 0 var(--acc); }
+
+    /* ---- registry list ------------------------------------------------ */
+    /* A list of comparable things is one surface with rules between rows, not
+       a stack of cards. The rules live on the rows so filtering a row out
+       never leaves a stray divider or doubles one up. */
+    .reg { list-style: none; margin: 0; padding: 0; border-bottom: 1px solid var(--line); }
+    .reg > li { border-top: 1px solid var(--line); }
+    .rrow { position: relative; display: grid; align-items: center; gap: 6px 28px;
+      grid-template-columns: minmax(0, 1fr) 132px 208px 148px 32px;
+      padding: 16px; box-shadow: inset 2px 0 0 transparent;
+      transition: background 140ms ease-out; }
+    .rrow:hover { background: var(--sunk); }
+    /* the current row is marked by the rule at its edge, not by a coloured block */
+    .reg > li.is-current .rrow { background: color-mix(in srgb, var(--acc) 4%, var(--raised));
+      box-shadow: inset 2px 0 0 var(--acc); }
+    .reg > li.is-current .rrow:hover { background: color-mix(in srgb, var(--acc) 7%, var(--raised)); }
+    .rname { font-size: 15.5px; line-height: 22px; font-weight: 600; color: var(--fg); }
+    .rname:hover { text-decoration: none; }
+    /* the whole row is the target; the title is the only link in it */
+    .rname::after { content: ""; position: absolute; inset: 0; }
+    .ruse { font-size: 14px; line-height: 21px; color: var(--mut); margin: 2px 0 0; }
+    .rmeta { font-size: 13px; line-height: 19px; color: var(--faint);
+      font-variant-numeric: tabular-nums; margin: 0; }
+    .rfit { display: inline-flex; align-items: center; gap: 7px; font-size: 13.5px; line-height: 20px; }
+    .rnum { display: flex; flex-direction: column; gap: 2px; font-variant-numeric: tabular-nums; }
+    .rnum b { font-size: 14px; line-height: 20px; font-weight: 500; color: var(--fg); }
+    .rnum span { font-size: 12.5px; line-height: 17px; color: var(--faint); }
+    .rnums { display: flex; gap: 22px; }
+    .rchev { color: var(--faint); justify-self: end; }
+    /* a row that carries its own action button is targeted by that button */
+    .rrow.has-action { grid-template-columns: minmax(0, 1fr) 148px 210px auto; }
+    .rrow.has-action .rname::after { content: none; }
+    /* Between 980 and 1120 the publisher column is gone but the row is still a
+       row: the name keeps column one and picks the metadata up underneath it. */
+    @media (min-width: 981px) and (max-width: 1120px) {
+      .rrow { grid-template-columns: minmax(0, 1fr) 132px 208px 32px; }
+      .rrow > div:first-child { grid-column: 1; grid-row: 1; }
+      .rrow .rmeta { grid-column: 1; grid-row: 2; margin-top: 4px; }
+      .rrow .rfit { grid-column: 2; grid-row: 1; }
+      .rrow .rnums { grid-column: 3; grid-row: 1; }
+      .rrow .rchev { grid-column: 4; grid-row: 1; }
+    }
+    /* Below 980 the row stacks, but stays a row of one list rather than
+       becoming a card: name, then status, then the numbers underneath. */
+    @media (max-width: 980px) {
+      .rrow { grid-template-columns: minmax(0, 1fr) auto; gap: 10px 20px; padding: 16px; }
+      .rrow > div:first-child { grid-column: 1; grid-row: 1; }
+      .rrow .rfit { grid-column: 2; grid-row: 1; justify-self: end; align-self: start; }
+      .rrow .rmeta { grid-column: 1 / -1; grid-row: 2; }
+      .rrow .rnums { grid-column: 1 / -1; grid-row: 3; }
+      .rrow .btn { grid-column: 1 / -1; grid-row: 4; justify-self: start; }
+      .rchev { display: none; }
+    }
+    @media (max-width: 560px) {
+      .rnums { gap: 16px; flex-wrap: wrap; }
+    }
 
     /* a pill is a status badge */
     .pill { display: inline-flex; align-items: center; gap: 6px; min-height: 26px; padding: 2px 10px;
       border-radius: 13px; border: 1px solid var(--line); background: transparent;
       font-size: 13px; line-height: 19px; color: var(--mut); white-space: nowrap; }
     /* a pill that is a control gets a control's hit area */
-    button.pill, a.pill { height: 36px; border-radius: 18px; padding: 0 14px; font-size: 13px;
+    button.pill, a.pill { height: 40px; border-radius: 20px; padding: 0 15px; font-size: 13px;
       color: var(--fg); cursor: pointer; }
     .pill.ok { border-color: var(--ok-line); color: var(--ok); }
     .pill.warn { border-color: var(--warn-line); color: var(--warn); }
@@ -165,11 +237,58 @@
       color: var(--fg); font-size: 14px; align-self: stretch; height: auto; }
 
     /* ---- composer ---------------------------------------------------- */
-    .composer { border: 1px solid var(--line-strong); background: var(--raised);
+    /* One short light travels the perimeter. About three quarters of the ring
+       is transparent at any moment, so it reads as a passing light rather than
+       a rotating ring. Only opacity responds to hover and focus, so the light
+       never restarts or jumps position when focus moves. */
+    @property --flow-angle {
+      syntax: "<angle>";
+      inherits: false;
+      initial-value: 0deg;
+    }
+    .composer { position: relative; isolation: isolate;
+      border: 1px solid var(--line-strong); background: var(--raised);
       border-radius: 16px; padding: 12px 12px 10px;
       display: flex; flex-direction: column; gap: 12px;
-      transition: border-color 140ms ease; }
-    .composer:focus-within { border-color: var(--acc); }
+      transition: border-color 160ms ease-out, background-color 160ms ease-out; }
+
+    .composer::before, .composer::after {
+      content: ""; position: absolute; border-radius: inherit; pointer-events: none;
+      background: conic-gradient(from var(--flow-angle),
+        transparent 0deg 265deg,
+        color-mix(in srgb, var(--flow-far) 8%, transparent) 278deg,
+        var(--flow-head) 302deg,
+        color-mix(in srgb, var(--flow-tail) 72%, transparent) 322deg,
+        transparent 342deg 360deg);
+      /* the ring is the difference between the padded box and its content box */
+      -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor;
+      mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      mask-composite: exclude;
+      animation: flow-edge 8.5s linear infinite;
+      transition: opacity 160ms ease-out;
+    }
+    .composer::before { inset: -1px; padding: 1px; opacity: .24; z-index: 2; }
+    .composer::after { inset: -3px; padding: 3px; opacity: .11; filter: blur(9px); z-index: -1; }
+
+    .composer:hover::before { opacity: .35; }
+    .composer:focus-within { border-color: color-mix(in srgb, var(--line-strong) 55%, var(--flow-head)); }
+    .composer:focus-within::before { opacity: .84; }
+    .composer:focus-within::after { opacity: .22; }
+
+    @keyframes flow-edge { to { --flow-angle: 360deg; } }
+
+    /* Static equivalent: the light parks on the upper-left arc. */
+    @media (prefers-reduced-motion: reduce) {
+      .composer::before, .composer::after { animation: none; --flow-angle: 302deg; }
+    }
+    /* Without mask compositing there is no ring to draw, so fall back to the
+       neutral border and a plain focus ring. */
+    @supports not ((-webkit-mask-composite: xor) or (mask-composite: exclude)) {
+      .composer::before, .composer::after { display: none; }
+      .composer:focus-within { border-color: var(--flow-head);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--flow-head) 16%, transparent); }
+    }
     /* The control row must wrap rather than push Send past the viewport on a
        narrow window, and the model name truncates before it does. */
     .cbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; row-gap: 8px; }
@@ -177,6 +296,23 @@
     .cbar [data-model-label] { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     @media (max-width: 560px) {
       .cbar [data-model-label] { max-width: 9ch; }
+    }
+
+    /* ---- starter suggestions ------------------------------------------ */
+    /* An aligned grid of equal cards rather than three pills of different
+       widths. Each one says what it will actually do. */
+    .starters { display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; }
+    .starters > button { display:flex; flex-direction:column; align-items:flex-start; gap:3px;
+      min-height:64px; padding:12px 14px; border:1px solid var(--line); border-radius:10px;
+      background:transparent; text-align:left;
+      transition:background 140ms ease-out, border-color 140ms ease-out; }
+    .starters > button:hover { background:var(--sunk); border-color:var(--line-strong); }
+    .starters .s-t { font-size:14px; line-height:20px; color:var(--fg); font-weight:500; }
+    .starters .s-d { font-size:13px; line-height:19px; color:var(--faint); }
+    @media (max-width: 720px) {
+      .starters { grid-template-columns:1fr; }
+      .starters > button { min-height:0; }
+      .starters .s-d { display:none; }
     }
 
     /* ---- activity group ---------------------------------------------- */
@@ -187,10 +323,15 @@
       font-size: 14px; color: var(--mut); }
     .arow .t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .arow.now { color: var(--fg); }
+    /* A finished run is a status line, not a second surface competing with the
+       result it introduces. */
+    .act.is-flat { border: 0; background: transparent; border-radius: 0; }
+    .act.is-flat > .hd { padding: 0; min-height: 32px; }
+    .act.is-flat .arow { padding-left: 0; padding-right: 0; }
 
     /* ---- misc -------------------------------------------------------- */
     /* floor for controls that are not one of the named primitives */
-    .hit { display: inline-flex; align-items: center; min-height: 36px; }
+    .hit { display: inline-flex; align-items: center; min-height: 40px; }
 
     .sep { height: 1px; background: var(--line-soft); }
     .grow { flex-grow: 1; }
@@ -244,16 +385,100 @@
     .mhead-sp { flex:1; }
     .mhead [data-nav-toggle] { display:none; }
 
-    .mfoot { border-top:1px solid var(--line); margin-top:96px; }
-    .mfoot-top { padding:48px 32px; display:flex; gap:48px; flex-wrap:wrap; align-items:flex-start; }
+    .mfoot { border-top:1px solid var(--line); margin-top:64px; }
+    .mfoot-top { padding:40px 32px 32px; display:flex; gap:40px; flex-wrap:wrap; align-items:flex-start; }
     .mfoot-cta { flex:1; min-width:280px; display:flex; flex-direction:column; gap:14px; }
     .mfoot-cta h2 { margin:0; font-size:22px; line-height:30px; font-weight:600; }
     .mfoot-cta .row { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
-    .mfoot-nav { display:flex; gap:56px; flex-wrap:wrap; }
-    .mfoot-nav > div { display:flex; flex-direction:column; gap:9px; }
+    .mfoot-nav { display:flex; gap:44px; flex-wrap:wrap; }
+    .mfoot-nav > div { display:flex; flex-direction:column; gap:2px; }
     .mfoot-nav a { color:var(--mut); font-size:14px; }
-    .mfoot-legal { padding:0 32px 40px; display:flex; align-items:center; gap:16px;
+    .mfoot-legal { padding:0 32px 28px; display:flex; align-items:center; gap:16px;
       flex-wrap:wrap; font-size:13px; }
+
+    /* ---- technical document ------------------------------------------- */
+    /* Sections divided by a rule rather than each one sitting in its own
+       rounded box. Used by the model detail pages. */
+    .docsec { border-top:1px solid var(--line); padding:34px 0 0; margin-top:34px; }
+    .docsec > h2 { margin:0 0 12px; font-size:20px; line-height:28px; font-weight:600;
+      letter-spacing:-.012em; }
+    .docsec > p { margin:0 0 16px; font-size:15px; line-height:24px; color:var(--mut);
+      max-width:72ch; }
+    /* the metadata band under a title: values on a grid, rules top and bottom */
+    .specs { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+      gap:20px 32px; padding:20px 0; border-top:1px solid var(--line);
+      border-bottom:1px solid var(--line); margin:28px 0 0; }
+    .specs > div { display:flex; flex-direction:column; gap:3px; min-width:0; }
+    .specs dt, .specs .k { font-size:13px; line-height:19px; color:var(--faint); }
+    .specs dd, .specs .v { margin:0; font-size:15px; line-height:22px;
+      font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+    /* a table inside a document reads as rules, not as another outlined box */
+    .tbl.flat { border:0; border-radius:0; border-top:1px solid var(--line);
+      border-bottom:1px solid var(--line); }
+    .tbl.flat thead th { background:transparent; font-family:inherit; font-size:13px;
+      letter-spacing:0; border-bottom:1px solid var(--line); }
+    .tbl.flat th, .tbl.flat td { padding:12px 12px 12px 0; }
+    .tbl.flat tbody tr:last-child td { border-bottom:0; }
+    /* one contained callout, reserved for a genuinely exceptional state */
+    .callout { border:1px solid var(--line); border-radius:10px; background:var(--panel);
+      padding:18px 20px; display:flex; gap:14px; align-items:flex-start; }
+    .callout svg { flex-shrink:0; margin-top:2px; }
+
+    /* ---- pricing ------------------------------------------------------ */
+    /* One surface split by rules, not three floating cards. Every column
+       shares the same baselines, so the eye compares rows rather than boxes. */
+    .billing { display:flex; align-items:center; gap:14px; margin-bottom:22px; }
+    .billing > span { font-size:13.5px; color:var(--mut); }
+    .plans { display:grid; grid-template-columns:repeat(3, 1fr);
+      /* eyebrow, name, price, note, blurb, features, cta: one row line per
+         band, so every column shares the same baselines */
+      grid-template-rows:auto auto auto auto auto 1fr auto;
+      border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
+    .plan { display:grid; grid-template-rows:subgrid; grid-row:span 7;
+      padding:24px 26px; border-left:1px solid var(--line-soft); align-content:start; }
+    .plan:first-child { border-left:0; }
+    .plan.is-rec { background:color-mix(in srgb, var(--acc) 4%, var(--raised));
+      box-shadow: inset 0 2px 0 var(--acc); }
+    .plan-eyebrow { font-size:12.5px; line-height:18px; color:var(--acc-text); font-weight:500; }
+    .plan-price { display:flex; align-items:baseline; gap:5px; margin-top:8px; }
+    .plan-price .num { font-size:34px; line-height:40px; font-weight:600; letter-spacing:-.02em; }
+    .plan-price .mut { font-size:14px; }
+    .plan-note { font-size:12.5px; line-height:18px; min-height:18px; display:block; }
+    .plan-blurb { margin:12px 0 0; font-size:14px; line-height:21px; color:var(--mut); }
+    .plan-feats { list-style:none; margin:20px 0 0; padding:0;
+      display:flex; flex-direction:column; gap:10px; }
+    .plan-feats li { display:flex; gap:9px; align-items:flex-start;
+      font-size:14px; line-height:21px; }
+    .plan-feats svg { flex-shrink:0; margin-top:4px; }
+    .plan-cta { margin-top:24px; align-self:end; }
+    /* Without subgrid the columns stack their own rows; they no longer share
+       baselines, but nothing overlaps or clips. */
+    @supports not (grid-template-rows: subgrid) {
+      .plan { display:flex; flex-direction:column; }
+      .plan-cta { margin-top:auto; padding-top:24px; }
+    }
+    @media (max-width: 900px) {
+      .plans { grid-template-columns:1fr; grid-template-rows:none; }
+      .plan { grid-row:auto; grid-template-rows:none; border-left:0;
+        border-top:1px solid var(--line-soft); }
+      .plan:first-child { border-top:0; }
+      .plan.is-rec { box-shadow: inset 2px 0 0 var(--acc); }
+    }
+
+    /* ---- disclosure list ---------------------------------------------- */
+    /* Questions are rows in one list, not a stack of rounded cards. */
+    .faq > details { border-top:1px solid var(--line); }
+    .faq > details:last-child { border-bottom:1px solid var(--line); }
+    .faq summary { display:flex; align-items:center; gap:12px; cursor:pointer;
+      list-style:none; padding:16px 2px; min-height:40px;
+      font-size:15px; line-height:23px; font-weight:500; }
+    .faq summary::-webkit-details-marker { display:none; }
+    .faq summary svg { margin-left:auto; flex-shrink:0; color:var(--faint);
+      transition:transform 160ms ease-out; }
+    .faq details[open] summary svg { transform:rotate(180deg); }
+    .faq summary:hover { color:var(--acc-text); }
+    .faq p { margin:0; padding:0 2px 18px; font-size:14.5px; line-height:23px;
+      color:var(--mut); max-width:72ch; }
 
     .msec { padding:0 32px; }
     .mhero h1 { margin:0; font-size:clamp(40px,4.4vw,60px); line-height:1.03;

@@ -95,25 +95,24 @@ export function extraRoutes({ write, marketing, appPage, part, esc, models, F, g
   }));
 
   /* ------------------------------------------------------------ /pricing/ */
+  /* One surface, three columns, shared baselines. The recommended plan is
+     marked by a tonal column and an eyebrow, not by an outline. */
   const plan = (name, monthly, blurb, feats, cta, primary, unit = "") => `
-  <div class="box" style="padding:24px;display:flex;flex-direction:column;gap:16px${primary ? ";border-color:var(--acc)" : ""}">
-    <div class="stack" style="gap:6px">
-      <div style="display:flex;align-items:center;gap:9px"><span class="h2">${esc(name)}</span>
-        ${primary ? '<span class="pill acc">Most people</span>' : ""}</div>
-      <div style="display:flex;align-items:baseline;gap:4px">
-        <span class="num" style="font-size:32px;font-weight:600"${monthly ? ` data-price-monthly="${monthly}"` : ""}>${monthly ? `$${monthly}` : "$0"}</span>
-        ${monthly ? `<span class="mut"><span data-price-unit>${unit}</span><span data-price-period>/month</span></span>` : '<span class="mut">forever</span>'}
-      </div>
-      ${monthly ? '<span class="faint" style="font-size:12.5px" data-price-note hidden>Billed yearly, two months free</span>' : ""}
-      <p class="mut" style="margin:4px 0 0;font-size:13.5px;line-height:20px">${esc(blurb)}</p>
+  <div class="plan${primary ? " is-rec" : ""}">
+    <span class="plan-eyebrow">${primary ? "Most people choose this" : "&nbsp;"}</span>
+    <span class="h2">${esc(name)}</span>
+    <div class="plan-price">
+      <span class="num"${monthly ? ` data-price-monthly="${monthly}"` : ""}>${monthly ? `$${monthly}` : "$0"}</span>
+      ${monthly ? `<span class="mut"><span data-price-unit>${unit}</span><span data-price-period>/month</span></span>` : `<span class="mut">forever</span>`}
     </div>
-    <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:9px">
-      ${feats.map((f) => `<li style="display:flex;gap:9px;align-items:flex-start;font-size:13.5px;line-height:20px">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0;margin-top:3px"><path d="M20 6 9 17l-5-5"/></svg>
+    <span class="faint plan-note"${monthly ? ` data-price-note style="visibility:hidden"` : ``}>${monthly ? "Billed yearly, two months free" : "No account needed"}</span>
+    <p class="plan-blurb">${esc(blurb)}</p>
+    <ul class="plan-feats">
+      ${feats.map((f) => `<li>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
         <span>${esc(f)}</span></li>`).join("")}
     </ul>
-    <span class="grow"></span>
-    ${cta}
+    <div class="plan-cta">${cta}</div>
   </div>`;
 
   write("pricing/index.html", marketing({
@@ -121,48 +120,48 @@ export function extraRoutes({ write, marketing, appPage, part, esc, models, F, g
     desc: "Local use is free and unmetered. Paid plans cover the compatibility work, not your GPU.",
     main: head("Pricing", "Your compute is never metered",
       "Running a model on your own hardware is free and always will be. What you can pay for is the compatibility work: profiles that stay tested as runtimes and model releases move.") +
-      `<section class="mwrap msec" style="padding-bottom:32px">
-  <div style="display:flex;align-items:center;gap:12px">
-    <span class="mut" style="font-size:13.5px">Monthly</span>
-    <button type="button" role="switch" aria-checked="false" data-billing-toggle aria-label="Bill yearly"
-      style="width:64px;height:36px;border-radius:18px;border:1px solid var(--line-strong);background:var(--sunk);position:relative;padding:0;flex-shrink:0">
-      <span style="position:absolute;top:4px;left:4px;width:26px;height:26px;border-radius:50%;background:var(--fg);transition:transform 160ms ease"></span>
-    </button>
-    <span class="mut" style="font-size:13.5px">Yearly <span class="faint">(two months free)</span></span>
+      `<section class="mwrap msec" style="padding-bottom:64px">
+  <div class="billing">
+    <span id="billing-label">Billing</span>
+    <div class="seg" role="group" aria-labelledby="billing-label">
+      <button type="button" data-billing="monthly" aria-pressed="true">Monthly</button>
+      <button type="button" data-billing="yearly" aria-pressed="false">Yearly &middot; two months free</button>
+    </div>
   </div>
-</section>
-<section class="mwrap msec" style="padding-bottom:56px">
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;align-items:stretch">
+
+  <div class="plans">
     ${plan("Free", null, "Everything you need to work locally.", [
         "Unlimited local model use, never metered",
         "Hardware scan and one tested recommendation",
         "Files, Git, terminal, diff, preview and rollback",
         "Up to three active projects",
-      ], `<a class="btn btnl" href="/download/">Download</a>`, false)}
+      ], `<a class="btn btnl" href="/download/" style="width:100%">Download</a>`, false)}
     ${plan("Pro", 15, "For people who live in it.", [
         "Unlimited projects",
         "Full verified profile matrix and updates",
         "Automations and background tasks",
         "Advanced recovery and diagnostics",
-      ], `<a class="btn btnp btnl" href="/signin/">Pro is not open yet &middot; get notified</a>`, true)}
+      ], `<a class="btn btnp btnl" href="/signin/" style="width:100%">Pro is not open yet</a>`, true)}
     ${plan("Team", 30, "Per user. Shared standards across a team.", [
         "Shared profiles and project policies",
         "Permission presets and an audit trail",
         "Centralized billing",
         "Private blueprint library",
-      ], `<a class="btn btnl" href="/signin/?team=1">Join the team waitlist</a>`, false, " / user")}
+      ], `<a class="btn btnl" href="/signin/?team=1" style="width:100%">Join the team waitlist</a>`, false, " / user")}
   </div>
 </section>
-<section class="mwrap msec" style="padding-bottom:96px">
-  <h2 class="h2" style="font-size:20px;margin-bottom:14px">Questions people actually ask</h2>
-  <div class="stack" style="gap:8px;max-width:76ch">
-    ${[
+<section class="mwrap msec" style="padding-bottom:24px">
+  <div style="max-width:820px">
+    <h2 class="h2" style="font-size:20px;margin-bottom:6px">Questions people actually ask</h2>
+    <div class="faq">
+      ${[
         ["Do I pay for tokens?", "Not for local use. A model running on your own GPU costs you electricity, not credits. If you later connect a cloud provider, that is billed in real currency against a cap you set, and it is off by default."],
         ["What happens if I stop paying?", "The app keeps working locally with the profiles you already have. You stop receiving new verified profiles and Pro features."],
         ["Is there a refund?", "Cancel any time and the plan runs to the end of the period you paid for. Refund terms will be published with billing when it is connected."],
         ["Do I need an account?", "No, not for local use. An account exists for billing and for syncing settings between machines."],
-      ].map(([q, a]) => `<details class="box"><summary style="padding:14px 16px;cursor:pointer;font-size:14px;font-weight:500">${esc(q)}</summary>
-      <p class="mut" style="margin:0;padding:0 16px 16px;font-size:13.5px;line-height:21px">${esc(a)}</p></details>`).join("\n")}
+      ].map(([q, a]) => `<details><summary>${esc(q)}<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9.5 6 6 6-6"/></svg></summary>
+      <p>${esc(a)}</p></details>`).join("\n")}
+    </div>
   </div>
 </section>`,
   }));

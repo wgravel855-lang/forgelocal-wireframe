@@ -47,8 +47,10 @@
         </p>
       </div>
 
-      <div class="box" style="padding:14px 16px">
-        <dl class="kv">
+      <!-- One decision surface: what was read, then what it means, divided by a
+           rule rather than stacked as three separate cards. -->
+      <div class="box" style="overflow:hidden">
+        <dl class="kv" style="padding:16px">
           <dt>Graphics</dt>
           <dd>NVIDIA GeForce RTX 4070 &middot; <strong>12 GB</strong> usable video memory</dd>
           <dt>Memory</dt>
@@ -60,13 +62,11 @@
             <span class="dot warn" aria-hidden="true"></span> Not installed yet, ForgeLocal will handle it
           </dd>
         </dl>
-      </div>
-
-      <div style="display:flex;flex-direction:column;gap:12px">
-        <span class="lab">Recommended for this PC</span>
-
-        <div class="box" style="border-color:var(--acc);overflow:hidden">
-          <div style="padding:18px 20px;display:flex;flex-direction:column;gap:14px">
+        <div class="sep"></div>
+        <div>
+        <div style="box-shadow:inset 2px 0 0 var(--acc)">
+          <div style="padding:18px 20px 20px;display:flex;flex-direction:column;gap:14px">
+            <span class="lab">Recommended for this PC</span>
             <div style="display:flex;align-items:flex-start;gap:12px">
               <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px">
                 <h2 class="h-sec">Qwen2.5 Coder 14B</h2>
@@ -74,21 +74,15 @@
                   Multi-file edits, running commands, tests and previews. Running at 8k context, Q4_K_M.
                 </p>
               </div>
-              <span class="pill warn" style="flex-shrink:0">Runs with tradeoffs</span>
+              <span class="rfit" style="flex-shrink:0"><span class="dot warn" aria-hidden="true"></span>Runs with tradeoffs</span>
             </div>
 
-            <p class="faint" style="margin:0;font-size:13px;line-height:19px">Needs 11.1 GB of the 12 GB available. It fits, but leaves little room for anything else on the GPU.</p>
+            <p class="faint" style="margin:0;font-size:13.5px;line-height:20px">Needs 11.1 GB of the 12 GB available. It fits, but leaves little room for anything else on the GPU.</p>
 
-            <div style="display:flex;gap:24px;flex-wrap:wrap">
-              <div style="display:flex;flex-direction:column;gap:3px">
-                <span class="lab">Download</span><span class="m num">8.99 GB</span>
-              </div>
-              <div style="display:flex;flex-direction:column;gap:3px">
-                <span class="lab">Video memory needed</span><span class="m num">11.1 GB of 12 GB</span>
-              </div>
-              <div style="display:flex;flex-direction:column;gap:3px">
-                <span class="lab">Speed</span><span class="m">Not measured on this PC yet</span>
-              </div>
+            <div class="specs" style="border:0;margin:0;padding:0;gap:14px 28px;grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">
+              <div><span class="k">Download</span><span class="v">8.99 GB</span></div>
+              <div><span class="k">Video memory needed</span><span class="v">11.1 GB of 12 GB</span></div>
+              <div><span class="k">Speed</span><span class="v" style="font-size:14px">Not measured on this PC yet</span></div>
             </div>
           </div>
 
@@ -110,13 +104,13 @@
           </details>
         </div>
 
-        <details class="box">
-          <summary class="hit" style="padding:0 16px;cursor:pointer;font-size:14px;list-style:none;gap:9px">
+        <div class="sep"></div>
+        <details>
+          <summary class="hit" style="padding:0 20px;cursor:pointer;font-size:14px;list-style:none;gap:9px">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
             Compare other options
           </summary>
-          <div class="sep"></div>
-          <div style="padding:6px 8px 10px">
+          <div style="padding:0 12px 12px">
             
             <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 8px">
               <div style="flex:1;min-width:0">
@@ -135,6 +129,7 @@
             </div>
           </div>
         </details>
+      </div>
       </div>
 
     </div>
