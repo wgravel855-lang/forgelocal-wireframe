@@ -40,6 +40,10 @@
 
     /* ---- reset / base ------------------------------------------------ */
     *, *::before, *::after { box-sizing: border-box; }
+    /* Any author rule that sets display beats the UA [hidden] rule, and most of
+       our rows carry an inline display:flex. Without this, setting .hidden on a
+       row updated the count but left the row painted. */
+    [hidden] { display: none !important; }
     html, body { height: 100%; }
     body { margin: 0; background: var(--bg); color: var(--fg);
       font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
@@ -166,7 +170,14 @@
       display: flex; flex-direction: column; gap: 12px;
       transition: border-color 140ms ease; }
     .composer:focus-within { border-color: var(--acc); }
-    .cbar { display: flex; align-items: center; gap: 8px; }
+    /* The control row must wrap rather than push Send past the viewport on a
+       narrow window, and the model name truncates before it does. */
+    .cbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; row-gap: 8px; }
+    .cbar > .btn { min-width: 0; }
+    .cbar [data-model-label] { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    @media (max-width: 560px) {
+      .cbar [data-model-label] { max-width: 9ch; }
+    }
 
     /* ---- activity group ---------------------------------------------- */
     .act { border: 1px solid var(--line); border-radius: 8px; background: var(--raised);
@@ -338,7 +349,8 @@
       display:flex; flex-direction:column; gap:22px; }
     .ob-foot { flex-shrink:0; border-top:1px solid var(--line-soft); }
     .ob-foot .inner { width:100%; max-width:648px; margin:0 auto; padding:12px 24px;
-      display:flex; align-items:center; gap:10px; }
+      display:flex; align-items:center; gap:10px; flex-wrap:wrap; row-gap:10px; }
+    @media (max-width:520px) { .ob-foot .inner .grow { display:none; } }
     .kv { display:grid; grid-template-columns:132px 1fr; gap:9px 14px; margin:0; }
     .kv dt { color:var(--faint); font-size:12.5px; }
     .kv dd { margin:0; font-size:13.5px; }

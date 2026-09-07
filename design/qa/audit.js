@@ -90,6 +90,12 @@
       const h = Math.round(r.height), wd = Math.round(r.width);
       const label = (el.getAttribute("aria-label") || el.textContent || "").trim().slice(0, 28);
       if (inlineLink(el, W)) continue;
+      // A radio or checkbox inside a <label> is clicked through the whole
+      // label, so the label is the real hit target, not the 18px box.
+      if (/^(radio|checkbox)$/.test(el.type || "")) {
+        const lab = el.closest("label");
+        if (lab && Math.round(lab.getBoundingClientRect().height) >= 36) continue;
+      }
       const iconOnly = !el.textContent.trim() && wd <= 44;
       const min = iconOnly ? 32 : 36;
       if (h < min) add(`control<${min}`, `${wd}x${h} "${label}"`);

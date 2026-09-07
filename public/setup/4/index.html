@@ -62,33 +62,33 @@
       </div>
 
       <div style="display:flex;flex-direction:column;gap:10px">
-        <span class="lab">How much should it ask?</span>
+        <span class="lab" id="preset-legend">How much should it ask?</span>
 
-        <div role="radiogroup" aria-label="Permission preset" style="display:flex;flex-direction:column;gap:8px">
+        <div role="radiogroup" aria-labelledby="preset-legend" data-presets style="display:flex;flex-direction:column;gap:8px">
 
-          <label class="box" style="padding:12px 14px;display:flex;gap:12px;align-items:flex-start;cursor:pointer">
-            <span style="width:16px;height:16px;border-radius:50%;border:1.5px solid var(--line-strong);flex-shrink:0;margin-top:2px" aria-hidden="true"></span>
+          <label class="box preset" style="padding:14px 16px;display:flex;gap:12px;align-items:flex-start;cursor:pointer">
+            <input type="radio" name="preset" id="preset-ask" value="ask"
+              style="width:18px;height:18px;flex-shrink:0;margin:2px 0 0;accent-color:var(--acc)">
             <span style="flex:1;min-width:0">
-              <span style="display:block;font-size:13.5px;font-weight:600">Ask every time</span>
+              <span style="display:block;font-size:14px;font-weight:600">Ask every time</span>
               <span class="mut" style="display:block;font-size:13px;line-height:19px;margin-top:2px">Approve every file write and every command, including reading files.</span>
             </span>
           </label>
 
-          <label class="box" style="padding:12px 14px;display:flex;gap:12px;align-items:flex-start;cursor:pointer;border-color:var(--acc)">
-            <span style="width:16px;height:16px;border-radius:50%;border:5px solid var(--acc);background:var(--bg);flex-shrink:0;margin-top:2px" aria-hidden="true"></span>
+          <label class="box preset" style="padding:14px 16px;display:flex;gap:12px;align-items:flex-start;cursor:pointer;border-color:var(--acc)">
+            <input type="radio" name="preset" id="preset-balanced" value="balanced" checked
+              style="width:18px;height:18px;flex-shrink:0;margin:2px 0 0;accent-color:var(--acc)">
             <span style="flex:1;min-width:0">
-              <span style="display:flex;align-items:center;gap:8px">
-                <span style="font-size:13.5px;font-weight:600">Balanced</span>
-                <span class="pill acc" style="padding:0 7px">Recommended</span>
-              </span>
+              <span style="display:flex;align-items:center;gap:8px"><span style="font-size:14px;font-weight:600">Balanced</span><span class="pill acc">Recommended</span></span>
               <span class="mut" style="display:block;font-size:13px;line-height:19px;margin-top:2px">Edits and the project's own test and build commands run on their own. Installing packages, network access, Git writes and deletes ask first.</span>
             </span>
           </label>
 
-          <label class="box" style="padding:12px 14px;display:flex;gap:12px;align-items:flex-start;cursor:pointer">
-            <span style="width:16px;height:16px;border-radius:50%;border:1.5px solid var(--line-strong);flex-shrink:0;margin-top:2px" aria-hidden="true"></span>
+          <label class="box preset" style="padding:14px 16px;display:flex;gap:12px;align-items:flex-start;cursor:pointer">
+            <input type="radio" name="preset" id="preset-autopilot" value="autopilot"
+              style="width:18px;height:18px;flex-shrink:0;margin:2px 0 0;accent-color:var(--acc)">
             <span style="flex:1;min-width:0">
-              <span style="display:block;font-size:13.5px;font-weight:600">Autopilot</span>
+              <span style="display:block;font-size:14px;font-weight:600">Autopilot</span>
               <span class="mut" style="display:block;font-size:13px;line-height:19px;margin-top:2px">Edits, the project's own build and test commands, package installs and Git writes run without asking. Network access beyond the package registry, reads of files matching a secret pattern, deletes outside the project and system-wide changes still stop and ask, in every preset.</span>
             </span>
           </label>
@@ -106,7 +106,7 @@
 
   <footer class="ob-foot">
     <div class="inner">
-      <button class="btn btnp btnl" type="button">Start building</button>
+      <a class="btn btnp btnl" href="/setup/5/" data-preset-continue>Start building</a>
       <span class="grow"></span>
       <span class="lab">Git repo detected, on main</span>
     </div>

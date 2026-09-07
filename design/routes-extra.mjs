@@ -1,6 +1,12 @@
 // The remaining site routes. Imported by build.mjs, which passes in its
 // helpers so every page shares one shell, one stylesheet and one data source.
 
+const CROPS = {
+  "1": "<div class=\"crop app\">\n          <dl class=\"kv\" style=\"grid-template-columns:110px 1fr;margin-bottom:12px\">\n            <dt>Graphics</dt><dd class=\"num\">RTX 4070 &middot; <strong>12 GB</strong> usable</dd>\n            <dt>Memory</dt><dd class=\"num\">32 GB total, 19 GB free</dd>\n          </dl>\n          <div class=\"box\" style=\"border-color:var(--acc);padding:14px 16px;display:flex;flex-direction:column;gap:10px\">\n            <div style=\"display:flex;align-items:flex-start;gap:12px\">\n              <div class=\"stack\" style=\"flex:1;gap:4px\">\n                <span class=\"h2\">Qwen2.5 Coder 14B</span>\n                <span class=\"mut\" style=\"font-size:13px;line-height:19px\">Q4_K_M at an 8k context</span>\n              </div>\n              <span class=\"pill warn\" style=\"flex-shrink:0\">Runs with tradeoffs</span>\n            </div>\n            <span class=\"faint\" style=\"font-size:13px;line-height:19px\">Needs 11.1 GB of the 12 GB available.</span>\n          </div>\n        </div>",
+  "4": "<div class=\"crop app\">\n          <div class=\"box\" style=\"border-color:var(--warn-line);background:var(--warn-soft);overflow:hidden\">\n            <div style=\"padding:13px 15px;display:flex;align-items:center;gap:10px\">\n              <svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"var(--warn-line)\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\" style=\"flex-shrink:0\"><path d=\"M12 9.5v4.2M12 17.4h.01M10.4 4.2 2.1 18a2 2 0 0 0 1.7 3h16.4a2 2 0 0 0 1.7-3L13.6 4.2a2 2 0 0 0-3.2 0z\"/></svg>\n              <span class=\"h2\" style=\"flex:1\">Install one package</span>\n              <span class=\"pill warn\">Network</span>\n            </div>\n            <pre class=\"m\" style=\"margin:0 15px;padding:9px 11px;border-radius:6px;background:var(--bg);border:1px solid var(--line);font-size:13px\">npm install --save-dev jsdom</pre>\n            <div style=\"padding:12px 15px 14px;display:flex;gap:8px;flex-wrap:wrap\">\n              <span class=\"btn btnp btns\">Allow once</span>\n              <span class=\"btn btns\">Always allow npm install here</span>\n              <span class=\"btn btns\">Deny</span>\n            </div>\n          </div>\n        </div>",
+  "5": "<div class=\"crop app\">\n          <div style=\"display:flex;align-items:center;gap:9px;margin-bottom:10px\">\n            <span class=\"h3\" style=\"flex:1\">2 files changed</span>\n            <span class=\"m num\" style=\"color:var(--ok)\">+46</span>\n            <span class=\"m num\" style=\"color:var(--bad)\">&minus;12</span>\n          </div>\n          <div class=\"m box\" style=\"font-size:13px;line-height:20px;padding:8px 0;overflow:hidden;margin-bottom:10px\">\n            <div style=\"padding:0 12px;color:var(--mut)\">import { useState } from 'react'</div>\n            <div style=\"padding:0 12px;background:var(--bad-soft);border-left:2px solid var(--bad-line);color:var(--bad)\">- const [tasks, setTasks] = useState([])</div>\n            <div style=\"padding:0 12px;background:var(--ok-soft);border-left:2px solid var(--ok-line);color:var(--ok)\">+ import { useTasks } from './useTasks'</div>\n          </div>\n          <div style=\"display:flex;gap:8px\"><span class=\"btn btnp btns\">Keep changes</span><span class=\"btn btns\">Revert all</span></div>\n        </div>"
+};
+
 export function extraRoutes({ write, marketing, appPage, part, esc, models, F, gb }) {
   const wrap = (inner) => `<section class="mwrap msec" style="padding-top:64px;padding-bottom:24px">${inner}</section>`;
   const head = (kicker, h1, lede) => wrap(`<div class="stack" style="gap:16px;max-width:720px">
@@ -23,10 +29,11 @@ export function extraRoutes({ write, marketing, appPage, part, esc, models, F, g
         ["Install runtime and weights", "Runtime, model download and a capability self-test in one step, with pause, resume and a clear interrupted state."],
         ["Choose a folder and a permission preset", "Project file access is limited to that folder by default. The preset decides how often the agent stops to ask."],
         ["Work, then review", "Plan, edits, commands and tests appear as one quiet activity group. Changes arrive as a diff you keep or revert per file and per hunk."],
-      ].map(([t, d], i) => `<li style="background:var(--bg);padding:22px;display:flex;gap:18px">
+      ].map(([t, d], i) => `<li style="background:var(--bg);padding:24px;display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap">
         <span class="lab num" style="width:24px;flex-shrink:0;padding-top:2px">0${i + 1}</span>
-        <div class="stack" style="gap:6px"><span class="h2">${esc(t)}</span>
-        <p class="mut" style="margin:0;font-size:14px;line-height:21px;max-width:68ch">${esc(d)}</p></div></li>`).join("\n")}
+        <div class="stack" style="gap:6px;flex:1;min-width:280px"><span class="h2">${esc(t)}</span>
+        <p class="mut" style="margin:0;font-size:14px;line-height:21px;max-width:62ch">${esc(d)}</p></div>
+        ${CROPS[i + 1] ?? ""}</li>`).join("\n")}
   </ol>
   <div style="margin-top:32px;display:flex;gap:14px;flex-wrap:wrap">
     <a class="btn btnp btnl" href="/download/">Download for Windows</a>
