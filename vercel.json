@@ -3,5 +3,12 @@
   "buildCommand": "npm run build",
   "outputDirectory": "public",
   "cleanUrls": true,
-  "trailingSlash": true
+  "trailingSlash": true,
+  "redirects": [
+    {
+      "source": "/screens/:path*",
+      "destination": "/gallery/",
+      "permanent": false
+    }
+  ]
 }
