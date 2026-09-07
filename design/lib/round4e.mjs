@@ -21,60 +21,9 @@ const subAll = (p, from, to, expect) => {
   files.set(p, s.split(from).join(to));
 };
 
-/* ---- the activity group's Hide / Show actually collapses it ------------- */
-for (const [p, label, expanded] of [
-  ["design/parts/WsRunning.body.html", "Hide", "true"],
-  ["design/parts/WsFailed.body.html", "Hide", "true"],
-  ["design/parts/WsReview.body.html", "Show", "false"],
-]) {
-  sub(p,
-    `<button class="btn btnq btns" type="button" aria-expanded="${expanded}">${label}</button>`,
-    `<button class="btn btnq btns" type="button" data-act-toggle aria-expanded="${expanded}">${label}</button>`);
-}
-
-/* ---- Stop and Retry ----------------------------------------------------- */
-sub("design/partials/status-working.html",
-  `<button class="btn btns" type="button">Stop</button>`,
-  `<button class="btn btns" type="button" data-stop-run>Stop</button>`);
-sub("design/partials/status-failed.html",
-  `<button class="btn btns" type="button">Retry</button>`,
-  `<a class="btn btns" href="/app/running/">Retry</a>`);
-
-/* ---- the permission decision -------------------------------------------- */
-{
-  const p = "design/parts/WsPermission.body.html";
-  sub(p, `<button class="btn btnp" type="button">Allow once</button>`,
-    `<button class="btn btnp" type="button" data-perm="once">Allow once</button>`);
-  sub(p, `<button class="btn" type="button">Always allow this here</button>`,
-    `<button class="btn" type="button" data-perm="always">Always allow this here</button>`);
-  sub(p, `<button class="btn btnq" type="button" style="border-color:var(--line)">Deny</button>`,
-    `<button class="btn btnq" type="button" style="border-color:var(--line)" data-perm="deny">Deny</button>`);
-  sub(p, `<button class="btnq hit" type="button" style="font-size:14px;color:var(--acc-text);padding:0 8px">Edit command</button>`,
-    `<button class="btnq hit" type="button" style="font-size:14px;color:var(--acc-text);padding:0 8px" data-inert="Editing the proposed command is not built in this prototype.">Edit command</button>`);
-}
-
-/* ---- the recovery choices ----------------------------------------------- */
-{
-  const p = "design/parts/WsFailed.body.html";
-  sub(p, `<button class="btn btnp" type="button">Restore checkpoint 2</button>`,
-    `<button class="btn btnp" type="button" data-recover="restore">Restore checkpoint 2</button>`);
-  // installing a package is exactly what the permission screen is for
-  sub(p, `<button class="btn" type="button">Install a polyfill instead</button>`,
-    `<a class="btn" href="/app/permission/">Install a polyfill instead</a>`);
-  sub(p, `<button class="btn btnq" type="button" style="border-color:var(--line)">Keep the edits, stop here</button>`,
-    `<button class="btn btnq" type="button" style="border-color:var(--line)" data-recover="keep">Keep the edits, stop here</button>`);
-  sub(p, `<button class="btnq hit" type="button" style="font-size:14px;color:var(--acc-text);padding:0 8px">Open diagnostics</button>`,
-    `<button class="btnq hit" type="button" style="font-size:14px;color:var(--acc-text);padding:0 8px" data-inert="The diagnostics screen is not built in this prototype.">Open diagnostics</button>`);
-}
-
-/* ---- the review follow-ups drop into the composer ------------------------ */
-{
-  const p = "design/parts/WsReview.body.html";
-  for (const t of ["Also cover a corrupt stored value", "Add a clear-all button"]) {
-    sub(p, `<button class="btn btns btnq" style="border-color:var(--line)">${t}</button>`,
-      `<button class="btn btns btnq" type="button" style="border-color:var(--line)" data-suggest="${t}">${t}</button>`);
-  }
-}
+/* The workspace parts this script used to patch (WsEmpty, WsRunning,
+   WsPermission, WsFailed) were replaced in round eight by one data-driven
+   conversation. Only the edits to surviving files are kept below. */
 
 /* ---- My models: no folder picker in a prototype -------------------------- */
 sub("design/parts/ModelsMine.body.html",

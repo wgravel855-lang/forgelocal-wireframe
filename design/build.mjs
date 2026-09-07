@@ -57,6 +57,19 @@ const part = (name) => {
 };
 const inc = (s) => expand(s);
 
+// One workspace shell for every conversation route.
+const workspace = ({ active, title, thread }) => {
+  let html = readFileSync(join(partsDir, "Workspace.body.html"), "utf8")
+    .split("{{active}}").join(active)
+    .split("{{title}}").join(title)
+    .split("{{thread}}").join(thread);
+  html = expand(html);
+  for (const [marker, render] of Object.entries(BIND)) {
+    if (html.includes(marker)) html = html.split(marker).join(render());
+  }
+  return html;
+};
+
 // ---------------------------------------------------------------- assets ---
 const css = readFileSync(join(here, "head.part"), "utf8").match(/<style>([\s\S]*?)<\/style>/)[1];
 mkdirSync(out("assets"), { recursive: true });
@@ -360,5 +373,5 @@ console.log(`routes: / /models/ + ${models.length} model details`);
 
 // --------------------------------------------------------- extra routes ---
 import { extraRoutes } from "./routes-extra.mjs";
-const extra = extraRoutes({ write, marketing, appPage, part, esc, models, F, gb: F.gb });
+const extra = extraRoutes({ write, marketing, appPage, part, workspace, esc, models, F, gb: F.gb });
 console.log(`app routes: ${extra.appRoutes.length}, setup steps: ${extra.setup.length}`);

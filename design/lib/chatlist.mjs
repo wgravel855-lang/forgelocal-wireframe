@@ -2,6 +2,7 @@
 // once, in its date bucket; the controller moves rows between the Pinned group
 // and their date group at runtime, so pinning survives without a rebuild.
 import { projects, chats, GROUPS } from "../data/chats.mjs";
+import { threads } from "../data/threads.mjs";
 
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;")
   .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -62,8 +63,9 @@ export function sessionData() {
     projects,
     chats: chats.map((c) => ({
       id: c.id, title: c.title, project: c.project, state: c.state,
-      route: c.route || null, view: c.view || null,
+      route: c.route || null, hasThread: !!threads[c.id],
     })),
+    threads,
   };
   // a literal < is escaped so no payload value can close the element early
   const json = JSON.stringify(payload).split(String.fromCharCode(60)).join("\\u003c");

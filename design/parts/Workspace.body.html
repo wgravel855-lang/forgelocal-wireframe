@@ -1,0 +1,30 @@
+<div class="app" style="height:100%;position:relative">
+  <div class="shell">
+
+    <!--#include sidebar.html {"active":"{{active}}"} -->
+
+    <div class="main">
+
+      <!--#include topbar.html {"title":"{{title}}","artifacts":"<a class=\"btn btns btnq\" href=\"/app/review/\" style=\"gap:7px\" data-artifacts hidden><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M3.5 6.5A2 2 0 0 1 5.5 4.5h3.4l1.6 2h8A2 2 0 0 1 20.5 8.5v9a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z\"/></svg>Artifacts<span class=\"pill\" style=\"padding:0 6px\" data-artifacts-n>0</span></a>"} -->
+
+      <!-- One thread, one composer, one geometry. Every app route and every
+           saved chat renders through this shell; nothing about a conversation
+           is written twice. -->
+      <div class="thread-scroll scroll" data-thread-scroll>
+        <div class="thread col" data-thread data-thread-id="{{thread}}"></div>
+        <div class="dock">
+        <div class="col dock-inner">
+          <button class="jump" type="button" data-jump hidden>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5.5 12.5 12 19l6.5-6.5"/></svg>
+            <span data-jump-label>Jump to latest</span>
+          </button>
+          <!--#include composer.html {"placeholder":"Describe a change, or ask about this project","mode":"Build","send":"<!--#include send-arrow.html -->"} -->
+          </div>
+        </div>
+      </div>
+
+      <p class="vh" role="status" aria-live="polite" data-thread-status></p>
+
+    </div>
+  </div>
+</div>

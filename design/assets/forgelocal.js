@@ -204,6 +204,13 @@
     const data = raw ? JSON.parse(raw.textContent) : { projects: [], chats: [] };
     const projectById = Object.fromEntries(data.projects.map((p) => [p.id, p]));
     const chatById = Object.fromEntries(data.chats.map((c) => [c.id, c]));
+    // Conversation routes own a thread, and each thread names the chat it
+    // belongs to. /app/permission/ is c1's screen even though c1's row links
+    // to /app/running/.
+    const ROUTE_THREAD = { "/app/running/": "route:running",
+      "/app/permission/": "route:permission", "/app/stopped/": "route:stopped" };
+    const threadHere = ROUTE_THREAD[location.pathname] || null;
+    const chatHere = threadHere ? (data.threads?.[threadHere]?.chat || null) : null;
 
     const rows = () => $$(".chat", list);
     const menu = $("#chat-menu");
@@ -237,7 +244,7 @@
        drags the project with it. Otherwise an active session that this project
        can no longer show is dropped rather than left open behind the scenes. */
     const reconcile = () => {
-      const claimed = data.chats.find((c) => c.route && c.route === location.pathname);
+      const claimed = chatHere ? chatById[chatHere] : null;
       if (claimed && !isGone(claimed.id)) {
         st.activeSessionId = claimed.id;
         st.activeProjectId = projectOf(claimed.id);
@@ -246,7 +253,7 @@
         const ok = id && chatById[id] && !isGone(id) && !isArchived(id) &&
           projectOf(id) === st.activeProjectId &&
           // a chat with its own screen is only "open" on that screen
-          !(chatById[id].route && chatById[id].route !== location.pathname);
+          !(chatById[id].route && !threadHere);
         if (!ok) st.activeSessionId = null;
       }
       if (!projectById[st.activeProjectId]) st.activeProjectId = data.projects[0]?.id || "";
@@ -266,47 +273,16 @@
         b.setAttribute("aria-checked", String(b.dataset.projectPick === st.activeProjectId)));
     };
 
+    // The conversation renderer owns the thread; this only says which one and
+    // keeps the header in step with it.
     const paintWorkspace = () => {
-      // only the new-session screen swaps; the built screens are their own routes
-      if (!view) { setHeader(st.activeSessionId ? titleOf(st.activeSessionId) : "New session"); return; }
       const id = st.activeSessionId;
-      const v = id && chatById[id]?.view;
-      if (!v) {
-        view.hidden = true;
-        if (newHeading) newHeading.hidden = false;
-        if (starters) starters.hidden = false;
-        setHeader(id ? titleOf(id) : "New session");
-        return;
-      }
-      view.hidden = false;
-      if (newHeading) newHeading.hidden = true;
-      if (starters) starters.hidden = true;
-      setHeader(titleOf(id));
-      $("[data-sview-prompt]", view).textContent = v.prompt;
-      $("[data-sview-reply]", view).textContent = v.reply;
-      $("[data-sview-exit]", view).textContent = v.exit || "";
-      $("[data-sview-tests]", view).textContent = v.tests || "";
-      const files = v.files || [];
-      const changed = files.filter((f) => f[1] !== "new").length;
-      $("[data-sview-count]", view).textContent =
-        `${files.length} file${files.length === 1 ? "" : "s"} ${changed === files.length ? "changed" : "touched"}`;
-      $("[data-sview-steps]", view).replaceChildren(...(v.steps || []).map((s) => {
-        const d = document.createElement("div");
-        d.className = "arow";
-        d.textContent = s;
-        return d;
-      }));
-      $("[data-sview-files]", view).replaceChildren(...files.map(([n, a, d]) => {
-        const row = document.createElement("div");
-        row.className = "sview-file";
-        const name = document.createElement("span");
-        name.className = "n m";
-        name.textContent = n;
-        row.append(name);
-        if (a) { const s = document.createElement("span"); s.className = a === "new" ? "lab" : "a m"; s.textContent = a; row.append(s); }
-        if (d) { const s = document.createElement("span"); s.className = "d m"; s.textContent = d; row.append(s); }
-        return row;
-      }));
+      setHeader(id ? titleOf(id) : "New session");
+      if (!CONVO.load) return;
+      // the route's own thread wins; otherwise the open chat renders its own
+      const c = id ? chatById[id] : null;
+      const threadId = threadHere || (c && !c.route ? id : null);
+      CONVO.load(threadId, projectById[st.activeProjectId]);
     };
 
     /* ---- sidebar -------------------------------------------------------- */
@@ -412,7 +388,7 @@
       if (search) search.value = "";
       showArchived = false;
       // a built screen belongs to one project, so leaving that project leaves it
-      if (data.chats.some((c) => c.route === location.pathname)) { location.href = "/app/"; return; }
+      if (threadHere) { location.href = "/app/"; return; }
       render();
     }));
 
@@ -579,48 +555,553 @@
     render();
   }
 
+  /* --------------------------------------------------------- conversation */
+  /* One renderer for every route and every saved chat.
+   *
+   * Conversation states: idle, submitting, thinking, tool-running, streaming,
+   * complete, stopped, error. The composer, the activity group and the
+   * message actions all read from this one value rather than their own flags.
+   */
+  const CONVO = {
+    el: null, scroll: null, data: null, thread: null,
+    state: "idle", follow: true, open: {},
+  };
+
+  const svg = (d, stroke, w = "2", extra = "") =>
+    `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${stroke}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"${extra}>${d}</svg>`;
+  const ICON = {
+    done: () => svg('<path d="M20 6 9 17l-5-5"/>', "var(--ok)", "2.6"),
+    fail: () => svg('<path d="M18 6 6 18M6 6l12 12"/>', "var(--bad)", "2.3"),
+    running: () => '<span class="spin" aria-hidden="true"></span>',
+    todo: () => '<span class="box-todo" aria-hidden="true"></span>',
+    now: () => '<span class="dot acc" aria-hidden="true"></span>',
+  };
+  const esc = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+  /* ---- pieces --------------------------------------------------------- */
+  const userMessage = (t, i) => `
+    <article class="turn turn-user" data-turn="${i}">
+      <div class="umsg" data-umsg><div class="umsg-body" data-umsg-text>${esc(t.text)}</div></div>
+      <div class="mactions" data-user-actions>
+        <button class="mact" type="button" data-copy="${esc(t.text)}" aria-label="Copy message"><span class="mact-i">${svg('<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5.5A1.5 1.5 0 0 1 6.5 4H15"/>', "currentColor", "1.8")}</span><span class="mact-t">Copy</span></button>
+        <button class="mact" type="button" data-edit-msg aria-label="Edit message"><span class="mact-i">${svg('<path d="M12 20h9"/><path d="M16.6 3.6a2.1 2.1 0 0 1 3 3L7.4 18.8 3.5 20l1.2-3.9z"/>', "currentColor", "1.8")}</span><span class="mact-t">Edit</span></button>
+      </div>
+    </article>`;
+
+  const planBlock = (b) => `
+      <div class="plan">
+        ${b.title ? `<div class="plan-h">${esc(b.title)}</div>` : ""}
+        ${b.items.map((it) => `<div class="plan-row is-${it.state}">
+          <span class="plan-i">${(ICON[it.state] || ICON.todo)()}</span>
+          <span>${esc(it.label)}</span></div>`).join("")}
+      </div>`;
+
+  const codeBlock = (b) => `
+      <figure class="cblock">
+        <figcaption class="cblock-h">
+          <span class="m" title="${esc(b.file || b.lang || "")}">${esc(b.file || b.lang || "code")}</span>
+          <button class="mact" type="button" data-copy="${esc(b.code)}" aria-label="Copy code"><span class="mact-t">Copy</span></button>
+        </figcaption>
+        <pre class="m"><code>${esc(b.code)}</code></pre>
+      </figure>`;
+
+  const noteBlock = (b) => `
+      <p class="tnote is-${esc(b.tone || "ok")}">
+        ${b.tone === "ok" ? ICON.done() : ICON.fail()}<span>${esc(b.text)}</span></p>`;
+
+  const blocks = (list) => (list || []).map((b) =>
+    b.t === "plan" ? planBlock(b)
+      : b.t === "code" ? codeBlock(b)
+        : b.t === "note" ? noteBlock(b)
+          : `<p>${esc(b.text)}</p>`).join("");
+
+  const activityRow = (r) => `
+        <div class="arow2 is-${esc(r.icon)}">
+          <span class="arow2-i">${(ICON[r.icon] || ICON.done)()}</span>
+          <span class="arow2-t${r.mono ? " m" : ""}" title="${esc(r.label)}">${esc(r.label)}</span>
+          ${r.add ? `<span class="num add">${esc(r.add)}</span>` : ""}
+          ${r.del ? `<span class="num del">${esc(r.del)}</span>` : ""}
+          ${r.meta ? `<span class="num arow2-m">${esc(r.meta)}</span>` : ""}
+        </div>${r.output ? `<pre class="m arow2-out">${esc(r.output)}</pre>` : ""}`;
+
+  const fileRows = (files) => (files || []).map(([n, a, d]) => `
+        <div class="frow">
+          <span class="frow-n m" title="${esc(n)}">${esc(n)}</span>
+          ${a === "new" ? '<span class="lab-fn frow-new">new file</span>'
+    : a ? `<span class="num add">${esc(a)}</span>` : ""}
+          ${d ? `<span class="num del">${esc(d)}</span>` : ""}
+        </div>`).join("");
+
+  // "Working · 3 actions · 14s" / "Completed · 4 files changed · tests passed"
+  const summaryOf = (a) => {
+    const bits = [];
+    if (a.state === "running") bits.push(`${a.rows.length} action${a.rows.length === 1 ? "" : "s"}`);
+    if (a.files?.length) bits.push(`${a.files.length} file${a.files.length === 1 ? "" : "s"} changed`);
+    if (a.summary) bits.push(a.summary);
+    if (a.tests) bits.push(a.tests.toLowerCase());
+    if (a.elapsed) bits.push(a.elapsed);
+    return bits.join(" · ");
+  };
+
+  const activityGroup = (a, i) => {
+    if (!a) return "";
+    const open = CONVO.open[i] ?? (a.state === "running" || a.state === "paused" || a.state === "stopped");
+    const mark = { running: ICON.running(), complete: ICON.done(), stopped: ICON.fail(),
+      paused: svg('<path d="M12 9.5v4.2M12 17.4h.01M10.4 4.2 2.1 18a2 2 0 0 0 1.7 3h16.4a2 2 0 0 0 1.7-3L13.6 4.2a2 2 0 0 0-3.2 0z"/>', "var(--warn-line)") }[a.state] || ICON.done();
+    return `
+      <section class="agroup is-${esc(a.state)}" aria-label="Agent activity">
+        <button class="agroup-h" type="button" data-act-toggle="${i}" aria-expanded="${open}">
+          <span class="agroup-i">${mark}</span>
+          <span class="agroup-l">${esc(a.label)}</span>
+          <span class="agroup-s num">${esc(summaryOf(a))}</span>
+          <span class="agroup-c">${svg('<path d="m6 9.5 6 6 6-6"/>', "currentColor", "2")}</span>
+        </button>
+        <div class="agroup-b"${open ? "" : " hidden"}>
+          ${a.rows.map(activityRow).join("")}
+          ${a.files?.length ? `<div class="agroup-files">${fileRows(a.files)}</div>` : ""}
+          ${a.tests || a.exit ? `<div class="arow2 is-done">
+            <span class="arow2-i">${ICON.done()}</span>
+            <span class="arow2-t">${esc(a.tests || "")}</span>
+            <span class="num arow2-m">${esc(a.exit || "")}</span></div>` : ""}
+          ${a.diagnostics ? `<details class="adiag">
+            <summary>${esc(a.diagnostics.label)}</summary>
+            <pre class="m">${esc(a.diagnostics.text)}</pre></details>` : ""}
+        </div>
+      </section>`;
+  };
+
+  const permissionBlock = (p, i) => {
+    if (!p) return "";
+    const done = CONVO.perm?.[i];
+    if (done) {
+      return `<div class="permdone">${done.ok ? ICON.done() : ICON.fail()}
+        <span>${esc(done.text)}</span>
+        <span class="m permdone-c" title="${esc(p.command)}">${esc(p.command)}</span></div>`;
+    }
+    return `
+      <section class="perm" aria-labelledby="perm-h-${i}">
+        <div class="perm-h">
+          ${svg('<path d="M12 9.5v4.2M12 17.4h.01M10.4 4.2 2.1 18a2 2 0 0 0 1.7 3h16.4a2 2 0 0 0 1.7-3L13.6 4.2a2 2 0 0 0-3.2 0z"/>', "var(--warn-line)")}
+          <h3 class="h3" id="perm-h-${i}">${esc(p.title)}</h3>
+          <span class="pill warn">${esc(p.scopeTag)}</span>
+        </div>
+        <pre class="m perm-c">${esc(p.command)}</pre>
+        <dl class="perm-kv">
+          <dt>Why</dt><dd>${esc(p.why)}</dd>
+          <dt>Working dir</dt><dd><span class="m">${esc(p.cwd)}</span></dd>
+          <dt>Scope</dt><dd>${esc(p.scope)}</dd>
+          <dt>Reversible</dt><dd class="perm-rev">${ICON.done()}${esc(p.reversible)}</dd>
+        </dl>
+        <div class="perm-a">
+          <button class="btn btnp" type="button" data-perm="once" data-turn="${i}">Allow once</button>
+          <button class="btn" type="button" data-perm="always" data-turn="${i}">Always allow this here</button>
+          <button class="btn btnq" type="button" style="border-color:var(--line)" data-perm="deny" data-turn="${i}">Deny</button>
+          <span class="grow"></span>
+          <button class="btnq hit perm-x" type="button" data-inert="Editing the proposed command is not built in this prototype.">Edit command</button>
+        </div>
+      </section>`;
+  };
+
+  const recoveryBlock = (r) => r ? `
+      <div class="recover">
+        <button class="btn btnp" type="button" data-recover="${esc(r.primary.action)}">${esc(r.primary.label)}</button>
+        ${r.alternatives.map((a) => a.href
+    ? `<a class="btn" href="${esc(a.href)}">${esc(a.label)}</a>`
+    : `<button class="btn" type="button" data-recover="${esc(a.action)}">${esc(a.label)}</button>`).join("")}
+        <span class="grow"></span>
+        <button class="btnq hit recover-x" type="button" data-inert="${esc(r.text.inert)}">${esc(r.text.label)}</button>
+      </div>` : "";
+
+  const messageActions = (i, text) => `
+      <div class="mactions" data-assistant-actions>
+        <button class="mact" type="button" data-copy="${esc(text)}" aria-label="Copy response"><span class="mact-i">${svg('<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5.5A1.5 1.5 0 0 1 6.5 4H15"/>', "currentColor", "1.8")}</span><span class="mact-t">Copy</span></button>
+        <button class="mact" type="button" data-vote="up" data-turn="${i}" aria-pressed="false" aria-label="Helpful"><span class="mact-i">${svg('<path d="M7 20V10M7 10l4.2-6.2a1.8 1.8 0 0 1 3 1.9L13 10h5.2a2 2 0 0 1 2 2.4l-1.3 6A2 2 0 0 1 17 20H7z"/>', "currentColor", "1.7")}</span></button>
+        <button class="mact" type="button" data-vote="down" data-turn="${i}" aria-pressed="false" aria-label="Not helpful"><span class="mact-i">${svg('<path d="M17 4v10M17 14l-4.2 6.2a1.8 1.8 0 0 1-3-1.9L11 14H5.8a2 2 0 0 1-2-2.4l1.3-6A2 2 0 0 1 7 4h10z"/>', "currentColor", "1.7")}</span></button>
+        <button class="mact" type="button" data-retry aria-label="Retry this response"><span class="mact-i">${svg('<path d="M20 11a8 8 0 1 0-2.3 6.3"/><path d="M20 5v6h-6"/>', "currentColor", "1.8")}</span></button>
+        <button class="mact" type="button" data-inert="A message overflow menu is not built in this prototype." aria-label="More actions"><span class="mact-i">${svg('<circle cx="5" cy="12" r=".9"/><circle cx="12" cy="12" r=".9"/><circle cx="19" cy="12" r=".9"/>', "currentColor", "2.2")}</span></button>
+      </div>`;
+
+  const assistantTurn = (t, i, state) => {
+    const settled = state === "complete" || state === "stopped" || state === "error";
+    const text = (t.blocks || []).filter((b) => b.t === "p" || b.t === "note")
+      .map((b) => b.text).join("\n\n");
+    return `
+    <article class="turn turn-assistant" data-turn="${i}">
+      <div class="prose amsg" data-amsg>${blocks(t.blocks)}</div>
+      ${activityGroup(t.activity, i)}
+      ${permissionBlock(t.permission, i)}
+      ${recoveryBlock(t.recovery)}
+      ${settled && text ? messageActions(i, text) : ""}
+    </article>`;
+  };
+
+  const thinkingTurn = () => `
+    <article class="turn turn-assistant" data-turn="pending">
+      <p class="thinking"><span class="spin" aria-hidden="true"></span><span data-thinking-label>Thinking</span></p>
+    </article>`;
+
+  const emptyState = () => {
+    const p = CONVO.project || {};
+    return `
+    <div class="empty" data-empty>
+      <h1 class="h1">What do you want to build or change?</h1>
+      <p class="empty-meta">
+        <span class="m faint" data-project-path>${esc(p.path || "")}</span>
+        <span class="faint" aria-hidden="true">·</span>
+        <span class="mut" data-project-branch>${esc(p.branch || "")}</span>
+        <span class="faint" aria-hidden="true">·</span>
+        <span class="mut" data-project-stack>${esc(p.stack || "")}</span>
+      </p>
+      <div class="starters">
+        <button type="button" data-starter="Explain how this project is organised">
+          <span class="s-t">Explain how this project is organised</span>
+          <span class="s-d">Reads the tree and the entry points. Changes nothing.</span>
+        </button>
+        <button type="button" data-starter="Fix the failing test in src/App.test.jsx">
+          <span class="s-t">Fix a failing test</span>
+          <span class="s-d">Runs the suite first, then edits behind a checkpoint.</span>
+        </button>
+        <button type="button" data-starter="Add a small feature">
+          <span class="s-t">Add a small feature</span>
+          <span class="s-d">Plans it, asks before installing anything.</span>
+        </button>
+      </div>
+    </div>`;
+  };
+
+  /* ---- render --------------------------------------------------------- */
+  function renderThread() {
+    const el = CONVO.el;
+    if (!el) return;
+    const t = CONVO.thread;
+    if (!t || !t.turns?.length) {
+      el.innerHTML = emptyState();
+      el.classList.add("is-empty");
+      wireStarters(el);
+      return;
+    }
+    el.classList.remove("is-empty");
+    const state = CONVO.state === "idle" ? (t.state || "complete") : CONVO.state;
+    el.innerHTML = t.turns.map((turn, i) =>
+      turn.role === "user" ? userMessage(turn, i) : assistantTurn(turn, i, state)).join("")
+      + (CONVO.state === "thinking" || CONVO.state === "submitting" ? thinkingTurn() : "");
+  }
+
+  function wireStarters(root) {
+    $$("[data-starter]", root).forEach((b) => b.addEventListener("click", () => {
+      const ta = $("[data-composer] textarea");
+      if (!ta) return;
+      ta.value = b.dataset.starter;
+      ta.dispatchEvent(new Event("input", { bubbles: true }));
+      ta.focus();
+    }));
+  }
+
+  function wireConversation() {
+    const el = $("[data-thread]");
+    if (!el) return;
+    CONVO.el = el;
+    CONVO.scroll = $("[data-thread-scroll]");
+    const status = $("[data-thread-status]");
+    const jump = $("[data-jump]");
+    const form = $("[data-composer]");
+    const ta = form && $("textarea", form);
+    const send = form && $("[data-send]", form);
+    const raw = $("#fl-sessions");
+    CONVO.data = raw ? JSON.parse(raw.textContent) : { threads: {}, projects: [] };
+    const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    const say = (msg) => { if (status) status.textContent = msg; };
+
+    /* ---- state ------------------------------------------------------- */
+    const setState = (next) => {
+      CONVO.state = next;
+      el.dataset.state = next;
+      if (form) form.dataset.state = next;
+      const running = next === "submitting" || next === "thinking" ||
+        next === "tool-running" || next === "streaming";
+      if (send) {
+        send.dataset.stop = running ? "true" : "false";
+        send.setAttribute("aria-label", running ? "Stop generating" : "Send");
+        send.type = running ? "button" : "submit";
+        send.disabled = running ? false : !(ta && ta.value.trim());
+      }
+      if (running) say(next === "tool-running" ? "Running a tool" : "Working on it");
+      if (next === "complete") say("Response complete");
+      if (next === "stopped") say("Task stopped");
+    };
+
+    /* ---- scroll ------------------------------------------------------ */
+    const atBottom = () => {
+      const s = CONVO.scroll;
+      return s.scrollHeight - s.scrollTop - s.clientHeight < 48;
+    };
+    const showJump = (on) => { if (jump) jump.hidden = !on; };
+    const toBottom = (smooth) => {
+      CONVO.scroll.scrollTo({ top: CONVO.scroll.scrollHeight,
+        behavior: smooth && !reduced ? "smooth" : "auto" });
+    };
+    const follow = () => { if (CONVO.follow) toBottom(true); };
+
+    let lastTop = CONVO.scroll.scrollTop;
+    CONVO.scroll.addEventListener("scroll", () => {
+      const s = CONVO.scroll;
+      // scrolling up by any real amount hands control back to the reader
+      if (s.scrollTop < lastTop - 4) CONVO.follow = false;
+      if (atBottom()) { CONVO.follow = true; showJump(false); }
+      lastTop = s.scrollTop;
+    }, { passive: true });
+
+    if (jump) jump.addEventListener("click", () => {
+      CONVO.follow = true;
+      showJump(false);
+      toBottom(true);
+      if (ta) ta.focus();
+    });
+
+    /* ---- load a thread ----------------------------------------------- */
+    const load = (id, project) => {
+      CONVO.thread = id ? CONVO.data.threads[id] : null;
+      CONVO.project = project || CONVO.project;
+      CONVO.open = {};
+      CONVO.perm = {};
+      CONVO.state = "idle";
+      renderThread();
+      setState(CONVO.thread?.state || "idle");
+      if (CONVO.thread?.composer && ta) {
+        ta.placeholder = CONVO.thread.composer.placeholder;
+        const mode = $("[data-mode-label]", form);
+        if (mode) mode.textContent = CONVO.thread.composer.mode;
+      }
+      // Artifacts is only offered when the open turn actually produced some
+      const files = (CONVO.thread?.turns || [])
+        .reduce((n, t) => n + (t.activity?.files?.length || 0), 0);
+      $$("[data-artifacts]").forEach((el) => { el.hidden = files === 0; });
+      $$("[data-artifacts-n]").forEach((el) => { el.textContent = String(files); });
+      CONVO.follow = true;
+      showJump(false);
+      requestAnimationFrame(() => toBottom(false));
+    };
+    CONVO.load = load;
+
+    /* ---- activity disclosure ----------------------------------------- */
+    el.addEventListener("click", (e) => {
+      const t = e.target.closest("[data-act-toggle]");
+      if (!t) return;
+      const i = t.dataset.actToggle;
+      const body = t.nextElementSibling;
+      const open = t.getAttribute("aria-expanded") !== "true";
+      // hold the reading position: expanding must not throw the page around
+      const s = CONVO.scroll, before = s.scrollHeight - s.scrollTop;
+      CONVO.open[i] = open;
+      t.setAttribute("aria-expanded", String(open));
+      body.hidden = !open;
+      if (!CONVO.follow) s.scrollTop = s.scrollHeight - before;
+    });
+
+    /* ---- message actions --------------------------------------------- */
+    el.addEventListener("click", (e) => {
+      const copy = e.target.closest("[data-copy]");
+      if (copy) {
+        const label = $(".mact-t", copy);
+        navigator.clipboard?.writeText(copy.dataset.copy).catch(() => {});
+        copy.classList.add("is-done");
+        const was = label ? label.textContent : "";
+        if (label) label.textContent = "Copied";
+        copy.setAttribute("aria-label", "Copied");
+        setTimeout(() => {
+          copy.classList.remove("is-done");
+          if (label) label.textContent = was;
+          copy.setAttribute("aria-label", was ? `${was} message` : "Copy");
+        }, 1500);
+        return;
+      }
+      const vote = e.target.closest("[data-vote]");
+      if (vote) {
+        const on = vote.getAttribute("aria-pressed") !== "true";
+        const row = vote.closest(".mactions");
+        $$("[data-vote]", row).forEach((b) => b.setAttribute("aria-pressed", "false"));
+        vote.setAttribute("aria-pressed", String(on));
+        say(on ? (vote.dataset.vote === "up" ? "Marked helpful" : "Marked not helpful") : "Rating cleared");
+        return;
+      }
+      const retry = e.target.closest("[data-retry]");
+      if (retry) { toast("Retry is not wired to a model in this prototype."); return; }
+    });
+
+    /* ---- inline edit of a user message ------------------------------- */
+    el.addEventListener("click", (e) => {
+      const b = e.target.closest("[data-edit-msg]");
+      if (!b) return;
+      const turn = b.closest(".turn");
+      const body = $("[data-umsg-text]", turn);
+      if ($(".uedit", turn)) return;
+      const was = body.textContent;
+      const wrap = document.createElement("div");
+      wrap.className = "uedit";
+      wrap.innerHTML = `<textarea class="uedit-t" aria-label="Edit message"></textarea>
+        <div class="uedit-a"><button class="btn btns btnp" type="button" data-edit-save>Save</button>
+        <button class="btn btns" type="button" data-edit-cancel>Cancel</button></div>`;
+      const input = $("textarea", wrap);
+      input.value = was;
+      body.hidden = true;
+      body.after(wrap);
+      input.style.height = Math.min(input.scrollHeight + 2, 200) + "px";
+      input.focus();
+      input.setSelectionRange(was.length, was.length);
+
+      const close = (commit) => {
+        if (commit && input.value.trim()) {
+          body.textContent = input.value.trim();
+          const c = $("[data-copy]", turn);
+          if (c) c.dataset.copy = input.value.trim();
+          say("Message updated");
+        }
+        wrap.remove();
+        body.hidden = false;
+        b.focus();
+      };
+      $("[data-edit-save]", wrap).addEventListener("click", () => close(true));
+      $("[data-edit-cancel]", wrap).addEventListener("click", () => close(false));
+      input.addEventListener("keydown", (ev) => {
+        if (ev.key === "Escape") { ev.preventDefault(); ev.stopPropagation(); close(false); }
+        if (ev.key === "Enter" && !ev.shiftKey) { ev.preventDefault(); close(true); }
+      });
+    });
+
+    /* ---- permission resolves into an immutable row ------------------- */
+    el.addEventListener("click", (e) => {
+      const b = e.target.closest("[data-perm]");
+      if (!b) return;
+      const i = b.dataset.turn;
+      const kind = b.dataset.perm;
+      CONVO.perm[i] = kind === "deny"
+        ? { ok: false, text: "Denied. The package was not installed." }
+        : { ok: true, text: kind === "always"
+          ? "Allowed here from now on. Installed" : "Allowed once. Installed" };
+      renderThread();
+      const next = $(".permdone", el);
+      if (next) next.setAttribute("tabindex", "-1"), next.focus();
+      say(CONVO.perm[i].text);
+    });
+
+    /* ---- recovery ----------------------------------------------------- */
+    el.addEventListener("click", (e) => {
+      const b = e.target.closest("[data-recover]");
+      if (!b) return;
+      if (b.dataset.recover === "restore" &&
+        !confirm("Restore checkpoint 2? Every edit made after it is discarded.")) return;
+      const row = b.closest(".recover");
+      row.replaceChildren(Object.assign(document.createElement("span"), {
+        className: "recover-done",
+        textContent: b.dataset.recover === "restore"
+          ? "Restored to checkpoint 2." : "Left as it is. The edits are still on disk.",
+      }), Object.assign(document.createElement("a"),
+        { className: "btn btns", href: "/app/", textContent: "Start a new session" }));
+      say("Recovery applied");
+    });
+
+    /* ---- composer send / stop ---------------------------------------- */
+    if (form && ta) {
+      // a running route starts in its running state
+      const initial = el.dataset.threadId;
+      const proj = CONVO.data.projects?.[0];
+      CONVO.project = proj;
+      CONVO.thread = initial ? CONVO.data.threads[initial] : null;
+      renderThread();
+      setState(CONVO.thread?.state || "idle");
+      requestAnimationFrame(() => toBottom(false));
+
+      let composing = false;
+      ta.addEventListener("compositionstart", () => { composing = true; });
+      ta.addEventListener("compositionend", () => { composing = false; });
+      ta.addEventListener("input", () => {
+        if (!el.dataset.state?.match(/submitting|thinking|tool-running|streaming/))
+          send.disabled = !ta.value.trim();
+      });
+
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        if (composing) return;
+        const text = ta.value.trim();
+        if (!text || CONVO.state === "submitting") return;
+        submit(text);
+      });
+
+      send.addEventListener("click", (e) => {
+        if (send.dataset.stop !== "true") return;
+        e.preventDefault();
+        stop();
+      });
+
+      const submit = (text) => {
+        setState("submitting");
+        CONVO.thread = CONVO.thread || { turns: [], state: "idle" };
+        CONVO.thread.turns = [...CONVO.thread.turns, { role: "user", text }];
+        ta.value = "";
+        ta.style.height = "";
+        ta.focus();
+        CONVO.follow = true;
+        renderThread();
+        toBottom(true);
+        setState("thinking");
+        // the prototype has no model behind it, so it says so rather than
+        // inventing an answer
+        CONVO.timer = setTimeout(() => {
+          CONVO.thread.turns = [...CONVO.thread.turns, { role: "assistant", blocks: [
+            { t: "p", text: "This prototype has no model behind the composer, so there is no reply to stream. The conversation, activity and review surfaces around it are real." },
+          ] }];
+          CONVO.thread.state = "complete";
+          setState("complete");
+          renderThread();
+          follow();
+        }, reduced ? 300 : 1100);
+      };
+
+      const stop = () => {
+        clearTimeout(CONVO.timer);
+        if (CONVO.thread?.turns?.length) CONVO.thread.state = "stopped";
+        setState("stopped");
+        renderThread();
+        say("Stopped");
+      };
+      CONVO.stop = stop;
+    }
+
+    // new content while the reader is away from the bottom offers a way back
+    const io = new MutationObserver(() => {
+      if (CONVO.follow) toBottom(true);
+      else showJump(true);
+    });
+    io.observe(el, { childList: true, subtree: true });
+  }
+
   /* --------------------------------------------------------------- composer */
   function wireComposer() {
+    // Geometry and keys only: the conversation owns send, stop and the
+    // starters, so there is one place that decides what a submit means.
     $$("[data-composer]").forEach((form) => {
       const ta = $("textarea", form);
-      const send = $("[data-send]", form);
       if (!ta) return;
       const grow = () => {
         ta.style.height = "auto";
         ta.style.height = Math.min(ta.scrollHeight, 200) + "px";
       };
-      ta.addEventListener("input", () => {
-        grow();
-        if (send && !form.dataset.running) send.disabled = ta.value.trim() === "";
-      });
+      ta.addEventListener("input", grow);
       grow();
-      if (send && !form.dataset.running) send.disabled = ta.value.trim() === "";
-
+      let composing = false;
+      ta.addEventListener("compositionstart", () => { composing = true; });
+      ta.addEventListener("compositionend", () => { composing = false; });
       ta.addEventListener("keydown", (e) => {
-        if (e.key === "Enter" && !e.shiftKey) {
-          e.preventDefault();
-          form.requestSubmit ? form.requestSubmit() : form.dispatchEvent(new Event("submit", { cancelable: true }));
-        }
-      });
-      form.addEventListener("submit", (e) => {
+        // Enter sends, Shift+Enter breaks the line, and an IME composition
+        // always wins over both.
+        if (e.key !== "Enter" || e.shiftKey || composing || e.isComposing) return;
         e.preventDefault();
-        if (form.dataset.running) return;
-        const v = ta.value.trim();
-        if (!v) return;
-        toast("Prototype: messages are not sent to a model yet");
-        ta.value = ""; grow();
-        if (send) send.disabled = true;
+        form.requestSubmit ? form.requestSubmit()
+          : form.dispatchEvent(new Event("submit", { cancelable: true }));
       });
     });
-
-    // starter prompts fill the composer rather than doing nothing
-    $$("[data-starter]").forEach((b) => b.addEventListener("click", () => {
-      const ta = $("[data-composer] textarea");
-      if (!ta) return;
-      ta.value = b.dataset.starter || b.textContent.trim();
-      ta.dispatchEvent(new Event("input"));
-      ta.focus();
-    }));
   }
 
   /* ------------------------------------------------------------------- tabs */
@@ -1116,7 +1597,7 @@
     wireReview(); wireFilters(); wireNav(); wirePricing(); wirePlatform(); wireSignin();
     wireDownload(); wireLoadToggle(); wirePresets(); showPreset();
     wireActivity(); wireStopRun(); wirePermission(); wireRecover(); wireSuggest();
-    wireModelActions(); wireChats(); wireInert();
+    wireModelActions(); wireConversation(); wireChats(); wireInert();
     document.documentElement.dataset.reducedMotion = String(reduced);
   };
   document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", boot) : boot();

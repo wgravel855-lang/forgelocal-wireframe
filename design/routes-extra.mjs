@@ -7,7 +7,7 @@ const CROPS = {
   "5": "<div class=\"crop app\">\n          <div style=\"display:flex;align-items:center;gap:9px;margin-bottom:10px\">\n            <span class=\"h3\" style=\"flex:1\">2 files changed</span>\n            <span class=\"m num\" style=\"color:var(--ok)\">+46</span>\n            <span class=\"m num\" style=\"color:var(--bad)\">&minus;12</span>\n          </div>\n          <div class=\"m box\" style=\"font-size:13px;line-height:20px;padding:8px 0;overflow:hidden;margin-bottom:10px\">\n            <div style=\"padding:0 12px;color:var(--mut)\">import { useState } from 'react'</div>\n            <div style=\"padding:0 12px;background:var(--bad-soft);border-left:2px solid var(--bad-line);color:var(--bad)\">- const [tasks, setTasks] = useState([])</div>\n            <div style=\"padding:0 12px;background:var(--ok-soft);border-left:2px solid var(--ok-line);color:var(--ok)\">+ import { useTasks } from './useTasks'</div>\n          </div>\n          <div style=\"display:flex;gap:8px\"><span class=\"btn btnp btns\">Keep changes</span><span class=\"btn btns\">Revert all</span></div>\n        </div>"
 };
 
-export function extraRoutes({ write, marketing, appPage, part, esc, models, F, gb }) {
+export function extraRoutes({ write, marketing, appPage, part, workspace, esc, models, F, gb }) {
   const wrap = (inner) => `<section class="mwrap msec" style="padding-top:64px;padding-bottom:24px">${inner}</section>`;
   const head = (kicker, h1, lede) => wrap(`<div class="stack" style="gap:16px;max-width:720px">
     <span class="lab">${esc(kicker)}</span>
@@ -325,16 +325,29 @@ export function extraRoutes({ write, marketing, appPage, part, esc, models, F, g
   }));
 
   /* ------------------------------------------------------- app + setup ---- */
+  // Four conversation routes, one shell. Each supplies a thread id and the
+  // sidebar/topbar context; the conversation itself is rendered from data.
+  const convo = [
+    ["app/", "Workspace", "new", "New session", ""],
+    ["app/running/", "Working", "s1", "Persist tasks to localStorage", "route:running"],
+    ["app/permission/", "Permission request", "s1", "Persist tasks to localStorage", "route:permission"],
+    ["app/stopped/", "Stopped", "s3", "Switch the date helper to Temporal", "route:stopped"],
+  ];
+  for (const [path, title, active, header, thread] of convo) {
+    write(`${path}index.html`, appPage({ title: `${title} — ForgeLocal`,
+      body: workspace({ active, title: header, thread }) }));
+  }
   const appRoutes = [
-    ["app/", "WsEmpty", "Workspace"],
-    ["app/running/", "WsRunning", "Working"],
-    ["app/permission/", "WsPermission", "Permission request"],
+    ["app/", "Workspace", "Workspace"],
+    ["app/running/", "Workspace", "Working"],
+    ["app/permission/", "Workspace", "Permission request"],
     ["app/review/", "WsReview", "Review changes"],
-    ["app/stopped/", "WsFailed", "Stopped"],
+    ["app/stopped/", "Workspace", "Stopped"],
     ["app/models/", "ModelsExplore", "Models"],
     ["app/models/installed/", "ModelsMine", "My models"],
   ];
   for (const [path, p, title] of appRoutes) {
+    if (p !== "WsReview" && p !== "ModelsExplore" && p !== "ModelsMine") continue;
     write(`${path}index.html`, appPage({ title: `${title} — ForgeLocal`, body: part(p) }));
   }
 

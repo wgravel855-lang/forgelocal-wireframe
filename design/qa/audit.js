@@ -114,7 +114,7 @@
       // .field inputs are align-self:stretch, so the input covers its wrapper's
       // whole content box: only the 1px border is not the input. The wrapper is
       // the honest measure of the target.
-      const field = el.closest(".field");
+      const field = el.closest(".field, .composer");
       if (field && /^(INPUT|TEXTAREA)$/.test(el.tagName) &&
           Math.round(field.getBoundingClientRect().height) >= 40) continue;
       const rowTarget = el.closest("[data-row-target]");
