@@ -19,6 +19,11 @@
       "source": "/screens/:path+",
       "destination": "/gallery/",
       "permanent": false
+    },
+    {
+      "source": "/screens/:path+/",
+      "destination": "/gallery/",
+      "permanent": false
     }
   ]
 }
