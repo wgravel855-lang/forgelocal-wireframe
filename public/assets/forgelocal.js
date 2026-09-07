@@ -146,6 +146,17 @@
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape" && innerWidth < 1024 && !shell.classList.contains("is-collapsed")) apply(true);
     });
+
+    // The collapse decision has to be re-made when the window crosses the
+    // breakpoint, not only at load: a window that starts narrow and is then
+    // widened should get its sidebar back.
+    let wasNarrow = narrow;
+    addEventListener("resize", () => {
+      const isNarrow = innerWidth < 1024;
+      if (isNarrow === wasNarrow) return;
+      wasNarrow = isNarrow;
+      apply(isNarrow ? true : store.get("sidebar-collapsed", false));
+    });
   }
 
   /* --------------------------------------------------------------- composer */
