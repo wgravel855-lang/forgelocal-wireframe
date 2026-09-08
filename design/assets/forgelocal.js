@@ -5,6 +5,14 @@
  * cannot work in a prototype are marked [data-inert] in the markup and get an
  * explanatory tooltip rather than a silent no-op.
  */
+import {
+  initialRunState, reduce as reduceRun,
+  composerAction, sessionActivity, activeTool, pendingPermission,
+  runOutcome, contextPressure,
+} from "../core/events.mjs";
+import { createFixtureRuntime } from "../core/adapters.mjs";
+import { capture as captureReading, restore as restoreReadingPos, remember as rememberPos } from "../core/reading.mjs";
+
 (() => {
   "use strict";
 
@@ -896,7 +904,22 @@
         if (visible) shown++;
 
         const wantPinned = st.over[id]?.pinned ?? row.hasAttribute("data-pinned");
-        const stateGroup = row.dataset.bucket;
+        // The open session takes its group from the run reducer, not from the
+        // fixture it was built with, so stopping a run moves it out of Working
+        // in the same transition that settles its tools.
+        const isOpen = st.activeSessionId === id;
+        const live = isOpen ? sessionActivity(RUN.state) : null;
+        const stateGroup = live
+          ? (live === "working" ? "working"
+            : live === "needs-input" || live === "failed" ? "needs" : "recent")
+          : row.dataset.bucket;
+        if (isOpen) {
+          const glyph = $(".ic", row);
+          if (glyph) glyph.dataset.live = live;
+          const openBtn = $(".chat-open", row);
+          const word = { working: "running", "needs-input": "needs input", failed: "stopped", idle: "idle" }[live];
+          if (openBtn) openBtn.setAttribute("aria-label", $(".t", row).textContent.trim() + ", " + word);
+        }
         const target = (stateGroup === "needs" || stateGroup === "working") ? stateGroup
           : wantPinned ? "pinned" : "recent";
         const home = $(`.cgroup[data-group="${target}"]`, list) || pinnedGroup;
@@ -928,11 +951,14 @@
     };
 
     const render = () => { reconcile(); save(); paintProject(); paint(); paintWorkspace(); };
+    // one subscription, so a run transition repaints the session list too
+    onRun(() => { reconcile(); paint(); });
 
     /* ---- selection ------------------------------------------------------ */
     const openChat = (id) => {
       const c = chatById[id];
       if (!c) return;
+      rememberReading(CONVO.sessionId ?? st.activeSessionId);
       st.activeSessionId = id;
       st.activeProjectId = projectOf(id);
       save();
@@ -1158,6 +1184,129 @@
     render();
   }
 
+  /* --------------------------------------------------- reading position */
+  /* Where each session was left. Coming back to a finished chat should return
+     you to what you were reading, not throw you to the end of it. Only a chat
+     you were pinned to the bottom of keeps following new content. */
+  const READING = {
+    key: "reading",
+    /** @returns {Record<string, {top:number, pinned:boolean, lastId:string|null}>} */
+    all() { return store.get(this.key, {}) || {}; },
+    get(id) { return id ? this.all()[id] || null : null; },
+    set(id, pos) {
+      if (!id) return;
+      const all = this.all();
+      all[id] = pos;
+      store.set(this.key, all);
+    },
+  };
+
+  const metrics = (s) => ({ scrollTop: s.scrollTop, scrollHeight: s.scrollHeight, clientHeight: s.clientHeight });
+
+  /** Capture the current position for a session before leaving it. */
+  function rememberReading(id) {
+    const s = CONVO.scroll;
+    if (!id || !s) return;
+    const top = s.getBoundingClientRect().top + 80;
+    const seen = $$("[data-turn]", CONVO.el).filter((t) => t.getBoundingClientRect().top <= top);
+    const pos = captureReading(metrics(s), seen.length ? seen[seen.length - 1].dataset.turn : null);
+    store.set(READING.key, rememberPos(READING.all(), id, pos));
+  }
+
+  /** Put a session back where it was. Returns true when a position was used. */
+  function restoreReading(id) {
+    const s = CONVO.scroll;
+    const pos = READING.get(id);
+    if (!s || !pos) return false;
+    const anchor = pos.lastId != null && $(`[data-turn="${pos.lastId}"]`, CONVO.el);
+    // Sum offsetTop up to the scroller. A rect-based measurement moves with the
+    // current scroll position, so re-running the restore compounded its own
+    // error instead of converging.
+    let anchorTop = null;
+    if (anchor) {
+      anchorTop = 0;
+      for (let n = anchor; n && n !== s; n = n.offsetParent) {
+        anchorTop += n.offsetTop;
+        if (n.offsetParent === null) { anchorTop = null; break; }
+      }
+    }
+    const target = restoreReadingPos(pos, metrics(s), anchorTop);
+    if (!target) return false;
+    s.scrollTop = target.top;
+    CONVO.follow = target.follow;
+    return true;
+  }
+
+  /* ---------------------------------------------------------- run state */
+  /* One reducer, one transition, every consumer derived. Before this, Stop set
+     a status here and a class there, and a tool row could keep spinning under a
+     transcript that already said the run had stopped. */
+  const RUN = {
+    state: initialRunState(),
+    /** @type {Set<() => void>} */
+    subs: new Set(),
+  };
+
+  function dispatch(event) {
+    const next = reduceRun(RUN.state, event);
+    if (next === RUN.state) return RUN.state;   // idempotent by identity
+    RUN.state = next;
+    RUN.subs.forEach((fn) => fn());
+    return next;
+  }
+  const onRun = (fn) => { RUN.subs.add(fn); fn(); return () => RUN.subs.delete(fn); };
+
+  /* Build the run state a route starts in from its fixture, so the reducer is
+     the source of truth on a static page too rather than a second description
+     of the same thing. */
+  function seedRunFromThread(thread) {
+    if (!thread) return;
+    const at = new Date().toISOString();
+    const runId = "seed";
+    /** @type {any[]} */
+    const events = [{ type: "run.started", runId, sessionId: thread.chat || "s", at }];
+    const last = [...(thread.turns || [])].reverse()
+      .find((t) => t.role === "assistant" && t.activity);
+    const act = last && last.activity;
+    (act ? act.rows : []).forEach((r, i) => {
+      const callId = "seed-" + i;
+      events.push({
+        type: "tool.requested", runId, at,
+        call: { callId, name: r.mono ? "run_command" : "read_file", label: r.label, command: r.mono ? r.label : undefined },
+      });
+      if (r.icon === "done") {
+        events.push({ type: "tool.started", runId, callId, at });
+        if (r.output) events.push({ type: "tool.stdout", runId, callId, chunk: r.output, at });
+        events.push({ type: "tool.completed", runId, callId, at, result: { exitCode: 0 } });
+      } else if (r.icon === "fail") {
+        events.push({ type: "tool.started", runId, callId, at });
+        events.push({ type: "tool.completed", runId, callId, at, result: { exitCode: 1 } });
+      } else if (r.icon === "running") {
+        events.push({ type: "tool.started", runId, callId, at });
+        if (r.output) events.push({ type: "tool.stdout", runId, callId, chunk: r.output, at });
+      }
+    });
+    // a permission request attaches to the tool it is blocking
+    const perm = (thread.turns || []).find((t) => t.permission);
+    if (perm) {
+      const callId = "seed-perm";
+      events.push({
+        type: "tool.requested", runId, at,
+        call: { callId, name: "run_command", label: perm.permission.command, command: perm.permission.command },
+      });
+      events.push({
+        type: "permission.requested", runId, callId, at,
+        risk: { scopeTag: perm.permission.scopeTag, scope: perm.permission.scope,
+          why: perm.permission.why, cwd: perm.permission.cwd, reversible: perm.permission.reversible },
+      });
+    }
+    if (thread.state === "complete") events.push({ type: "run.completed", runId, at });
+    if (thread.state === "stopped") events.push({ type: "run.stopped", runId, at });
+    RUN.state = initialRunState();
+    for (const e of events) RUN.state = reduceRun(RUN.state, e);
+    RUN.subs.forEach((fn) => fn());
+  }
+
   /* --------------------------------------------------------- conversation */
   /* One renderer for every route and every saved chat.
    *
@@ -1179,6 +1328,7 @@
     todo: () => '<span class="box-todo" aria-hidden="true"></span>',
     now: () => '<span class="dot acc" aria-hidden="true"></span>',
     stop: () => svg('<rect x="7" y="7" width="10" height="10" rx="2"/>', "var(--warn-line)", "1.9"),
+    stopped: () => svg('<rect x="7" y="7" width="10" height="10" rx="2"/>', "var(--faint)", "1.9"),
     plan: () => svg('<path d="M4 6h16M4 12h16M4 18h9"/>', "currentColor", "1.9"),
   };
   const CHEV = svg('<path d="m6 9.5 6 6 6-6"/>', "currentColor", "2");
@@ -1202,7 +1352,7 @@
       <div class="umsg" data-umsg><div class="umsg-body" data-umsg-text>${esc(t.text)}</div></div>
       <div class="mactions" data-user-actions data-actions-for="${i}">
         ${mactCopy(t.text, "Copy message")}
-        <button class="mact" type="button" data-rewind="${i}" aria-label="Rewind from here"><span class="mact-i">${svg('<path d="M20 11a8 8 0 1 0-2.3 6.3"/><path d="M20 5v6h-6"/>', "currentColor", "1.8")}</span><span class="mact-t">Rewind</span></button>
+        ${CAPS.checkpoints ? `<button class="mact" type="button" data-rewind="${i}" aria-label="Rewind from here"><span class="mact-i">${svg('<path d="M20 11a8 8 0 1 0-2.3 6.3"/><path d="M20 5v6h-6"/>', "currentColor", "1.8")}</span><span class="mact-t">Rewind</span></button>` : ""}
       </div>
     </article>`;
 
@@ -1257,6 +1407,15 @@
   // A tool row: 34px, unboxed, and its evidence lives behind the row itself.
   const toolRow = (r, i, k) => {
     const key = `r${i}-${k}`;
+    // the reducer owns whether this step is still going
+    const live = RUN.state.tools[k];
+    if (live) {
+      const map = { running: "running", succeeded: "done", failed: "fail",
+        interrupted: "stopped", denied: "stopped", pending: "todo",
+        "awaiting-permission": "todo" };
+      r = { ...r, icon: map[live.state] || r.icon };
+      if (live.state === "interrupted") r = { ...r, meta: "interrupted" };
+    }
     const has = !!(r.output || r.cwd || r.exit);
     const open = CONVO.open[key] ?? (DENSITY === "verbose" && has);
     const target = r.files ? ` data-open-pane="diff"` : r.output ? ` data-open-pane="terminal"` : "";
@@ -1368,7 +1527,10 @@
         <button class="btnq hit recover-x" type="button" data-diagnostics>View attempts</button>
       </div>` : "";
 
-  const CAPS = { copy: true, feedback: true, onRetry: null, moreItems: [] };
+  // Capability flags: a control only renders when something real is behind it.
+  // checkpoints stays false until a CheckpointAdapter is connected.
+  const CAPS = { copy: true, feedback: true, onRetry: null, moreItems: [],
+    checkpoints: new URLSearchParams(location.search).has("dev-checkpoints") };
   const mactCopy = (text, label) =>
     `<button class="mact" type="button" data-copy="${esc(text)}" aria-label="${esc(label)}"><span class="mact-i">${svg('<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5.5A1.5 1.5 0 0 1 6.5 4H15"/>', "currentColor", "1.8")}</span><span class="mact-t">Copy</span></button>`;
 
@@ -1438,9 +1600,7 @@
     // A transcript carries no visible heading of its own, so it gets a hidden
     // one naming the conversation. The empty state has its own visible h1, so
     // exactly one h1 exists either way.
-    const title = ($("[data-ws-title]") || {}).textContent || "Conversation";
-    el.innerHTML = `<h1 class="vh">${esc(title.trim())}</h1>`
-      + t.turns.map((turn, i) =>
+    el.innerHTML = t.turns.map((turn, i) =>
         turn.role === "user" ? userMessage(turn, i) : assistantTurn(turn, i, state)).join("")
       + (CONVO.state === "thinking" || CONVO.state === "submitting" ? thinkingTurn() : "");
   }
@@ -1506,6 +1666,7 @@
     };
     const follow = () => { if (CONVO.follow) toBottom(true); };
     CONVO.syncJump = syncJump;
+    CONVO.toBottom = toBottom;
 
     let lastTop = CONVO.scroll.scrollTop;
     CONVO.scroll.addEventListener("scroll", () => {
@@ -1546,8 +1707,23 @@
       CONVO.open = {};
       CONVO.perm = {};
       CONVO.state = "idle";
+      seedRunFromThread(CONVO.thread);
+      // The follow flag has to be decided BEFORE the render: the observer that
+      // watches the transcript scrolls to the end while it is true, which was
+      // undoing the restore a frame later.
+      CONVO.sessionId = id;
+      const saved = READING.get(id);
+      CONVO.follow = saved ? saved.pinned : true;
       renderThread();
       setState(CONVO.thread?.state || "idle");
+      // a historical chat comes back where it was left, not at its end
+      const settle = () => {
+        if (!restoreReading(id)) CONVO.toBottom?.(false);
+        CONVO.syncJump?.();
+      };
+      requestAnimationFrame(settle);
+      setTimeout(settle, 60);
+      setTimeout(settle, 220);
       if (CONVO.thread?.composer && ta) {
         ta.placeholder = CONVO.thread.composer.placeholder;
         const mode = $("[data-mode-label]", form);
@@ -1662,12 +1838,35 @@
       if (!b) return;
       const i = b.dataset.turn;
       const kind = b.dataset.perm;
+      const pending = pendingPermission(RUN.state);
+      dispatch({
+        type: "permission.decided",
+        runId: RUN.state.runId || "seed",
+        callId: pending ? pending.callId : "seed-perm",
+        decision: kind === "deny" ? "deny" : kind === "always" ? "always" : "once",
+        at: new Date().toISOString(),
+      });
       CONVO.perm[i] = kind === "deny"
-        ? { ok: false, text: "Denied. The package was not installed." }
+        ? { ok: false, text: "Denied. The command was not run." }
+        // Allowed is not Installed. Only a completed tool may say that, and
+        // this prototype has no runtime to complete one.
         : { ok: true, text: kind === "always"
-          ? "Allowed here from now on. Installed" : "Allowed once. Installed" };
+          ? "Allowed in this project. Waiting for the runtime to run it."
+          : "Allowed once. Waiting for the runtime to run it." };
+      if (kind !== "deny") {
+        // The grant is real; the execution is not, because no runtime is
+        // connected to run it. The run blocks on that rather than inventing
+        // an outcome the permission never produced.
+        dispatch({
+          type: "run.blocked", runId: RUN.state.runId || "seed",
+          reason: "Waiting for a local runtime to run the approved command.",
+          at: new Date().toISOString(),
+        });
+      }
+      CONVO.thread.state = kind === "deny" ? "stopped" : "blocked";
+      setState(kind === "deny" ? "stopped" : "idle");
       renderThread();
-      const next = $(".permdone", el);
+      const next = $(".ev-audit", el);
       if (next) next.setAttribute("tabindex", "-1"), next.focus();
       say(CONVO.perm[i].text);
     });
@@ -1700,6 +1899,7 @@
       const proj = CONVO.data.projects?.[0];
       CONVO.project = proj;
       CONVO.thread = initial ? CONVO.data.threads[initial] : null;
+      seedRunFromThread(CONVO.thread);
       renderThread();
       setState(CONVO.thread?.state || "idle");
       requestAnimationFrame(() => toBottom(false));
@@ -1761,10 +1961,12 @@
 
       const stop = () => {
         clearTimeout(CONVO.timer);
+        // idempotent: a settled run returns the same state and nothing repaints
+        const before = RUN.state;
+        dispatch({ type: "run.stopped", runId: RUN.state.runId || "seed", at: new Date().toISOString() });
+        if (RUN.state === before) return;
         const turns = CONVO.thread?.turns;
         if (turns?.length) {
-          // the pending turn becomes a real stopped turn, and one is created if
-          // nothing arrived, so a user message is never left hanging
           const last = turns[turns.length - 1];
           if (last.role === "assistant") last.stopped = true;
           else turns.push({ role: "assistant", blocks: [], stopped: true });

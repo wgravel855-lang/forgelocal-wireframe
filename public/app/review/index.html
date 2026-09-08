@@ -38,7 +38,7 @@
     <button class="hit" style="gap:7px;padding:0 8px;border-radius:7px;min-width:0"
       data-popover="project-details" aria-expanded="false" aria-haspopup="dialog"
       aria-label="Project and session details">
-      <span data-ws-title style="font-size:13.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Persist tasks to localStorage</span>
+      <h1 class="ws-h1" data-ws-title>Persist tasks to localStorage</h1>
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="m6 9.5 6 6 6-6"/></svg>
     </button>
     <div class="menu popover pdetails" id="project-details" role="dialog" aria-label="Project and session details" hidden>
@@ -543,6 +543,6 @@
   </div>
 </div>
 </main>
-<script src="/assets/forgelocal.js" defer></script>
+<script type="module" src="/assets/forgelocal.js"></script>
 </body>
 </html>

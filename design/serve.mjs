@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..", "public");
 const types = { ".html": "text/html; charset=utf-8", ".css": "text/css", ".js": "text/javascript",
+  ".mjs": "text/javascript",
   ".png": "image/png", ".jpg": "image/jpeg", ".svg": "image/svg+xml", ".json": "application/json" };
 
 createServer(async (req, res) => {

@@ -985,6 +985,9 @@
       transition: background 140ms ease-out, border-color 140ms ease-out, color 140ms ease-out; }
     .chip:hover { background: var(--sunk); border-color: var(--line-strong); color: var(--fg); }
 
+    h1.ws-h1 { margin: 0; font-size: 13.5px; line-height: 20px; font-weight: 600;
+      color: var(--fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
     /* ---- stream events ------------------------------------------------- */
     /* Every event is a 34px row with a glyph, a label and its evidence behind
        it. Whitespace and one hairline separate them; none of them is a card. */

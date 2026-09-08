@@ -78,6 +78,11 @@ const css = readFileSync(join(here, "head.part"), "utf8").match(/<style>([\s\S]*
 mkdirSync(out("assets"), { recursive: true });
 writeFileSync(out("assets/forgelocal.css"), css.replace(/^ {4}/gm, ""));
 copyFileSync(join(here, "assets/forgelocal.js"), out("assets/forgelocal.js"));
+// the controller is an ES module now, so its imports ship next to it
+mkdirSync(out("core"), { recursive: true });
+for (const f of ["events.mjs", "models.mjs", "adapters.mjs", "context.mjs", "reading.mjs"]) {
+  copyFileSync(join(here, "core", f), out("core/" + f));
+}
 writeFileSync(out("assets/models.json"), JSON.stringify(
   models.map((m) => {
     const fit = F.fitFor(m);
@@ -130,7 +135,7 @@ function doc({ title, desc = "", body, cls = "", bodyStyle = "", canonical = "",
 <body class="${cls}" style="${bodyStyle}">
 <a class="vh" href="#main">Skip to content</a>
 ${body}
-<script src="/assets/forgelocal.js" defer></script>
+<script type="module" src="/assets/forgelocal.js"></script>
 </body>
 </html>
 `;

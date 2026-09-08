@@ -150,17 +150,61 @@ export const threads = {
         tests: "1 test passed", exit: "exit 0" } },
   ] },
 
+  // A session with real length. Short fixtures never scroll, so nothing
+  // exercised reading-position restore, context pressure or compaction.
   c6: { chat: "c6", state: "complete", turns: [
     { role: "user", text: "Request logging is noisy in development. Put it behind a flag." },
     { role: "assistant",
-      blocks: [{ t: "p", text: "Logging now reads a DEBUG_HTTP flag and is off unless it is set. The call sites are unchanged, so nothing else had to move." }],
+      blocks: [{ t: "p", text: "I read the two call sites first. Both log unconditionally on every request, which is why development output is unreadable." }],
+      activity: { state: "complete", label: "Completed", elapsed: "4s",
+        rows: [
+          { icon: "done", label: "Searched 14 files for logger", meta: "0.6s" },
+          { icon: "done", label: "Read 3 files", meta: "0.4s" },
+        ] } },
+    { role: "user", text: "Use an env var rather than a config file. It should default to off." },
+    { role: "assistant",
+      blocks: [
+        { t: "p", text: "DEBUG_HTTP now gates both call sites and defaults to off, so a developer opts in rather than opting out." },
+        { t: "plan", title: "Plan", items: [
+          { state: "done", label: "Read how logging is wired today" },
+          { state: "done", label: "Add a DEBUG_HTTP gate with an off default" },
+          { state: "done", label: "Update the two call sites" },
+          { state: "done", label: "Run the suite" },
+        ] },
+      ],
       activity: { state: "complete", label: "Completed", elapsed: "26s",
         rows: [
-          { icon: "done", label: "Searched 14 files", meta: "0.6s" },
           { icon: "done", label: "Edited 3 files", add: "+14", del: "−6" },
+          { icon: "done", label: "npm test -- --run", mono: true, meta: "exit 0",
+            output: "> task-tracker@0.1.0 test\n> vitest --run\n\n ✓ src/log.test.js (4)\n\n Test Files  1 passed (1)\n      Tests  4 passed (4)\n   Duration  1.94s" },
         ],
         files: [["src/log.js", "+12", "−4"], ["src/server.js", "+2", "−2"]],
         tests: "4 tests passed", exit: "exit 0" } },
+    { role: "user", text: "What happens on the hosted environment where the var is not set at all?" },
+    { role: "assistant",
+      blocks: [{ t: "p", text: "It stays off. The gate reads the variable as a string and treats anything other than \"1\" or \"true\" as off, so an unset variable and an empty one behave the same." }] },
+    { role: "user", text: "Good. Now add one test that proves the default, and one that proves it turns on." },
+    { role: "assistant",
+      blocks: [{ t: "p", text: "Both cases are covered. The second test sets the variable inside the test and restores it afterwards so the suite order cannot matter." }],
+      activity: { state: "complete", label: "Completed", elapsed: "18s",
+        rows: [
+          { icon: "done", label: "Edited src/log.test.js", add: "+22", del: "" },
+          { icon: "done", label: "npm test -- --run", mono: true, meta: "exit 0",
+            output: "> vitest --run\n\n ✓ src/log.test.js (6)\n\n Test Files  1 passed (1)\n      Tests  6 passed (6)" },
+        ],
+        files: [["src/log.test.js", "+22", ""]],
+        tests: "6 tests passed", exit: "exit 0" } },
+    { role: "user", text: "One more: the flag name should match the one the deploy scripts already use." },
+    { role: "assistant",
+      blocks: [{ t: "p", text: "The deploy scripts use LOG_HTTP, not DEBUG_HTTP. I renamed the gate and both tests to match, so there is one name across the repository." }],
+      activity: { state: "complete", label: "Completed", elapsed: "11s",
+        rows: [
+          { icon: "done", label: "Searched 21 files for DEBUG_HTTP", meta: "0.5s" },
+          { icon: "done", label: "Edited 3 files", add: "+6", del: "−6" },
+          { icon: "done", label: "npm test -- --run", mono: true, meta: "exit 0" },
+        ],
+        files: [["src/log.js", "+3", "−3"], ["src/log.test.js", "+2", "−2"], ["src/server.js", "+1", "−1"]],
+        tests: "6 tests passed", exit: "exit 0" } },
   ] },
 
   c7: { chat: "c7", state: "complete", turns: [
