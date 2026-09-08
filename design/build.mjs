@@ -13,6 +13,7 @@ import { expand } from "./lib/assemble.mjs";
 import { models } from "./data/models.mjs";
 import * as F from "./lib/fit.mjs";
 import { pickerHtml } from "./lib/picker.mjs";
+import { catalogHtml } from "./lib/catalog.mjs";
 import { recommendationBlock, installBlock, exploreList, myModelsList, scanVerdict } from "./lib/appviews.mjs";
 import { chatList, projectOptions, moveOptions, sessionData } from "./lib/chatlist.mjs";
 
@@ -37,6 +38,7 @@ const BIND = {
   "<!--SCAN_HEAD-->": () => scanVerdict().head,
   "<!--SCAN_SUB-->": () => scanVerdict().sub,
   "<!--EXPLORE_LIST-->": () => exploreList(models),
+  "<!--CATALOG-->": () => catalogHtml(models, null),
   "<!--MINE_LIST-->": () => mine.rows,
   "<!--MINE_TOTAL-->": () => mine.totalGB,
   "<!--MINE_FREE-->": () => mine.freeGB,

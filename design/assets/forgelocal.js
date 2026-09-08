@@ -397,6 +397,130 @@ import { capture as captureReading, restore as restoreReadingPos, remember as re
     });
   }
 
+  /* ------------------------------------------------------- model catalog */
+  /* The detail pane is rendered from the same record the row came from, and the
+     selection lives in the URL so a refresh keeps it. Search and filter state
+     survive selecting a model, because the list is never re-created. */
+  function wireCatalog() {
+    const root = $("[data-catalog]");
+    if (!root) return;
+    const raw = $("#fl-sessions");
+    const data = raw ? JSON.parse(raw.textContent) : {};
+    const byId = Object.fromEntries((data.models || []).map((m) => [m.id, m]));
+
+    const paint = (id, push) => {
+      const rows = $$("[data-cat-row]", root);
+      rows.forEach((a) => {
+        const on = a.dataset.catRow === id;
+        a.classList.toggle("is-on", on);
+        if (on) a.setAttribute("aria-current", "true");
+        else a.removeAttribute("aria-current");
+      });
+      root.toggleAttribute("data-selected", !!id);
+
+      const host = $("[data-cat-detail]", root);
+      const m = id && byId[id];
+      if (host && m) host.replaceWith(detailNode(m));
+      else if (host && !id) host.replaceWith(emptyNode());
+
+      const url = id ? `?model=${encodeURIComponent(id)}` : location.pathname;
+      if (push) history.pushState({ model: id }, "", url);
+      const h = $(".cat-h", root);
+      if (h && push) { h.setAttribute("tabindex", "-1"); h.focus({ preventScroll: true }); }
+    };
+
+    const detailNode = (m) => {
+      const d = document.createElement("div");
+      d.className = "cat-detail";
+      d.setAttribute("data-cat-detail", "");
+      d.innerHTML = `
+        <a class="cat-back" href="${location.pathname}">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+          Back to results</a>
+        <h2 class="cat-h">${esc(m.name)}</h2>
+        <p class="cat-sub">${esc(m.publisher)} &middot; ${esc(m.license)}
+          ${m.source ? ` &middot; <a class="link" href="${esc(m.source)}" rel="noreferrer noopener" target="_blank">Model card</a>` : ""}</p>
+        <p class="cat-desc">${esc(m.strength)}</p>
+
+        <h3 class="cat-h3">Capabilities</h3>
+        <ul class="cat-caplist">
+          <li>${capIcon("chat")}<span>Chat</span></li>
+          ${m.agentReady ? `<li>${capIcon("tool_use")}<span>Tool use</span></li>
+          <li>${capIcon("agent_ready")}<span>Agent-ready</span></li>` : ""}
+          <li>${capIcon("fim")}<span>Fill in the middle</span></li>
+        </ul>
+        <p class="cat-note">${m.agentReady
+          ? "Agent-ready means this model produced valid structured tool calls in ForgeLocal's conformance check."
+          : "Not verified for tool use. It can answer questions about code, but ForgeLocal will not let it drive tools."}</p>
+
+        <h3 class="cat-h3">Specification</h3>
+        <dl class="cat-kv">
+          <dt>Format</dt><dd>${esc(m.format)} &middot; ${esc(m.quant)}</dd>
+          <dt>Max context</dt><dd class="num">${esc(m.context)}</dd>
+          <dt>Revision</dt><dd class="m">${esc(m.revision)}</dd>
+        </dl>
+
+        <h3 class="cat-h3">On this PC</h3>
+        <dl class="cat-kv">
+          <dt>Fit</dt><dd><span class="dot ${esc(m.fitTone === "ok" ? "ok" : m.fitTone === "warn" ? "warn" : "bad")}" aria-hidden="true"></span> ${esc(m.fitLabel)}</dd>
+          <dt>Video memory</dt><dd class="num">${esc(m.needGB)} GB of ${esc(m.vramGB)} GB</dd>
+          <dt>Download</dt><dd class="num">${esc(m.downloadGB)} GB</dd>
+          <dt>On disk</dt><dd class="num">${esc(m.diskGB)} GB</dd>
+        </dl>
+        <p class="cat-note">${esc(m.fitReason)}</p>
+
+        <div class="cat-actions">
+          ${m.installed
+            ? `<a class="btn btnp" href="/app/models/installed/">In My models</a>`
+            : `<button class="btn btnp" type="button" data-model-install="${esc(m.name)}">Download ${esc(m.downloadGB)} GB</button>`}
+        </div>`;
+      wireModelActions(d);
+      return d;
+    };
+
+    const emptyNode = () => {
+      const d = document.createElement("div");
+      d.className = "cat-detail cat-empty";
+      d.setAttribute("data-cat-detail", "");
+      d.innerHTML = "<p>Select a model to see its capabilities, licence and how it fits this PC.</p>";
+      return d;
+    };
+
+    root.addEventListener("click", (e) => {
+      const a = e.target.closest("[data-cat-row]");
+      const back = e.target.closest(".cat-back");
+      if (back) { e.preventDefault(); paint(null, true); return; }
+      if (!a) return;
+      e.preventDefault();
+      paint(a.dataset.catRow, true);
+    });
+
+    // Arrow keys walk the results the way a list should.
+    root.addEventListener("keydown", (e) => {
+      if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+      const rows = $$("[data-cat-row]", root).filter((r) => r.offsetParent !== null);
+      const i = rows.indexOf(document.activeElement.closest("[data-cat-row]"));
+      if (i < 0) return;
+      e.preventDefault();
+      const next = rows[e.key === "ArrowDown" ? Math.min(i + 1, rows.length - 1) : Math.max(i - 1, 0)];
+      next.focus();
+    });
+
+    addEventListener("popstate", () =>
+      paint(new URLSearchParams(location.search).get("model"), false));
+
+    const initial = new URLSearchParams(location.search).get("model");
+    if (initial && byId[initial]) paint(initial, false);
+  }
+
+  const CAP_PATHS = {
+    chat: ['<path d="M20 15.5a2.5 2.5 0 0 1-2.5 2.5H8l-4 3V6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5z"/>', "1.8"],
+    tool_use: ['<path d="M14.7 6.3a4 4 0 0 1-5 5L5 16v3h3l4.7-4.7a4 4 0 0 0 5-5z"/>', "1.8"],
+    agent_ready: ['<path d="M20 6 9 17l-5-5"/>', "2.2"],
+    fim: ['<path d="M4 7h6M4 12h16M4 17h9"/>', "1.8"],
+  };
+  const capIcon = (k) => svg(CAP_PATHS[k][0], "currentColor", CAP_PATHS[k][1]);
+
   /* -------------------------------------------------------- model details */
   /* Model details open inside the app shell. The public /models/<id>/ page
      stays for visitors; it is not the app's management surface, because
@@ -626,6 +750,10 @@ import { capture as captureReading, restore as restoreReadingPos, remember as re
         cols.forEach((sec) => { sec.hidden = sec.id !== id; });
         paint(id);
         scroller.scrollTop = 0;
+        // the document title follows the section, so a browser tab and the
+        // page heading say the same thing
+        const name = $("h1", $("#" + id));
+        if (name) document.title = name.textContent.trim() + " settings — ForgeLocal";
       };
       links.forEach((a) => a.addEventListener("click", (e) => {
         e.preventDefault();
@@ -1576,7 +1704,7 @@ import { capture as captureReading, restore as restoreReadingPos, remember as re
      three one-line starters, and nothing the shell already says. */
   const emptyState = () => `
     <div class="empty" data-empty>
-      <h1 class="h1">What do you want to change?</h1>
+      <h2 class="h1">What do you want to change?</h2>
       <div class="starters">
         <button type="button" data-starter="Explain how this project is organised">Explain this project</button>
         <button type="button" data-starter="Fix the failing test in src/App.test.jsx">Fix a failing test</button>
@@ -2061,6 +2189,70 @@ import { capture as captureReading, restore as restoreReadingPos, remember as re
   function announce(msg) {
     const el = $("[data-thread-status]") || $("[data-live]");
     if (el) el.textContent = msg;
+  }
+
+  /* --------------------------------------------------- composer controls */
+  /* Mode, effort and the model shortcut. Each writes one value and closes its
+     own popover; none of them claims anything ran. */
+  function wireComposerControls() {
+    // Ctrl/Cmd+L opens the model picker from anywhere that is not a text field.
+    document.addEventListener("keydown", (e) => {
+      if (e.key.toLowerCase() !== "l" || !(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey) return;
+      const trigger = $('[data-popover="model-pop"]');
+      if (!trigger) return;
+      e.preventDefault();
+      trigger.click();
+    });
+
+    // Ctrl+1..3 switch mode, matching the shortcuts the menu shows.
+    const modeKeys = { 1: "Plan", 2: "Manual", 3: "Allow edits" };
+    document.addEventListener("keydown", (e) => {
+      if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey) return;
+      const want = modeKeys[e.key];
+      if (!want) return;
+      const btn = $(`[data-mode="${want}"]`);
+      if (!btn || btn.disabled) return;
+      e.preventDefault();
+      btn.click();
+    });
+
+    const pickOne = (attr, labelSel, onPick) => {
+      $$(`[${attr}]`).forEach((b) => b.addEventListener("click", () => {
+        if (b.disabled) return;
+        const value = b.getAttribute(attr);
+        $$(`[${attr}]`).forEach((x) => {
+          const on = x === b;
+          x.setAttribute("aria-checked", String(on));
+          x.classList.toggle("on", on);
+        });
+        $$(labelSel).forEach((l) => { l.textContent = value; });
+        store.set(attr, value);
+        closePop();
+        if (onPick) onPick(value);
+      }));
+      const saved = store.get(attr, null);
+      if (saved) {
+        const b = $(`[${attr}="${saved}"]`);
+        if (b && !b.disabled) {
+          $$(`[${attr}]`).forEach((x) => {
+            const on = x === b;
+            x.setAttribute("aria-checked", String(on));
+            x.classList.toggle("on", on);
+          });
+          $$(labelSel).forEach((l) => { l.textContent = saved; });
+        }
+      }
+    };
+
+    pickOne("data-mode", "[data-mode-label]", (v) =>
+      announce(`Mode: ${v}. ${v === "Plan" ? "Nothing will be changed." : ""}`));
+    pickOne("data-effort", "[data-effort-label]");
+
+    // Auto needs a sandbox this build does not have, so it says why rather
+    // than looking available.
+    $$('[data-mode][disabled]').forEach((b) => {
+      b.title = "Auto needs an isolated runtime. Not available in the web preview.";
+    });
   }
 
   /* ------------------------------------------------------ transcript detail */
@@ -2858,8 +3050,8 @@ import { capture as captureReading, restore as restoreReadingPos, remember as re
     wireDownloadRows(); wireFilesTab(); wireLoadToggle(); wirePresets(); showPreset();
     wireActivity(); wireStopRun(); wirePermission(); wireRecover(); wireSuggest();
     wireModelActions(); wireConversation(); wireChats();
-    wireWaitlist(); wireModelDetail(); wireDiagnostics(); wireComposerDraft();
-    wireAwaiting(); wireDensity(); wireQueue(); wireCaretMenus(); wirePaste();
+    wireWaitlist(); wireModelDetail(); wireCatalog(); wireDiagnostics(); wireComposerDraft();
+    wireAwaiting(); wireComposerControls(); wireDensity(); wireQueue(); wireCaretMenus(); wirePaste();
     // the one setup-specific element on /setup/5/
     const sd = $("[data-setup-done]");
     if (sd) {

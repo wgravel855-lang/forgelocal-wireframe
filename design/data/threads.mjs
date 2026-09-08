@@ -29,7 +29,7 @@ export const threads = {
   /* -------------------------------------------------- built app routes --- */
   "route:running": {
     chat: "c1", state: "tool-running",
-    composer: { placeholder: "Add to the plan, or ask a question", mode: "Build" },
+    composer: { placeholder: "Describe a task or ask a question", mode: "Allow edits" },
     turns: [
       { role: "user", text: "Save the task list to localStorage so it survives a refresh, and add a test for it." },
       { role: "assistant",
@@ -48,7 +48,7 @@ export const threads = {
 
   "route:permission": {
     chat: "c1", state: "tool-running",
-    composer: { placeholder: "Answer above, or send a different instruction", mode: "Build", blocked: true },
+    composer: { placeholder: "Describe a task or ask a question", mode: "Allow edits", blocked: true },
     turns: [
       { role: "user", text: "Save the task list to localStorage so it survives a refresh, and add a test for it." },
       { role: "assistant",
@@ -74,7 +74,7 @@ export const threads = {
 
   "route:stopped": {
     chat: "c3", state: "stopped",
-    composer: { placeholder: "Tell me how to approach it differently", mode: "Plan" },
+    composer: { placeholder: "Describe a task or ask a question", mode: "Plan" },
     turns: [
       { role: "user", text: "Switch the date helper over to the Temporal API." },
       { role: "assistant",

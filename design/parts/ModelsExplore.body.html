@@ -8,50 +8,19 @@
       <!--#include topbar.html {"title":"Explore models"} -->
 
       <div class="scroll" style="overflow-y:auto">
-        <div data-filter-root="explore" style="width:100%;max-width:960px;margin:0 auto;padding:26px 24px 32px;display:flex;flex-direction:column;gap:18px">
-
-          <div style="display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap">
-            <div style="flex:1;min-width:260px;display:flex;flex-direction:column;gap:6px">
-              <h1 class="h1">Models</h1>
-              <p class="mut" style="margin:0;font-size:13.5px">Everything here runs on this PC unless it says otherwise.</p>
-            </div>
-            <label class="field" style="width:240px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="flex-shrink:0"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg><span class="vh">Search models</span><input type="search" data-filter-search placeholder="Search models"></label>
-          </div>
+        <div class="modelwrap">
 
           <!-- These are separate pages, not panels, so they are links rather than tabs. -->
-          <nav aria-label="Model views" style="display:flex;gap:2px;border-bottom:1px solid var(--line-soft)">
-            <span aria-current="page" style="display:inline-flex;align-items:center;padding:9px 12px;font-size:13.5px;font-weight:600;border-bottom:2px solid var(--acc);margin-bottom:-1px">Explore</span>
-            <a href="/app/models/installed/" style="display:inline-flex;align-items:center;padding:9px 12px;font-size:13.5px;color:var(--mut)">My models</a>
-            <a href="/app/models/downloads/" style="display:inline-flex;align-items:center;padding:9px 12px;font-size:13.5px;color:var(--mut)">Downloads</a>
+          <nav class="modelnav" aria-label="Model views">
+            <span aria-current="page">Explore</span>
+            <a href="/app/models/installed/">My models</a>
+            <a href="/app/models/downloads/">Downloads</a>
           </nav>
 
-          <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
-            <div class="seg" role="group" aria-label="Filter models">
-              <button type="button" data-filter="fits" aria-pressed="false">Fits this PC</button>
-              <button type="button" data-filter="coding" aria-pressed="false">Coding</button>
-              <button type="button" data-filter="general" aria-pressed="false">General</button>
-              <button type="button" data-filter="tool-use" aria-pressed="false">Tool use</button>
-              <button type="button" data-filter="installed" aria-pressed="false">Installed</button>
-            </div>
-            <span class="grow"></span>
-            <span class="lab-fn mut" data-filter-count><!--EXPLORE_COUNT--></span>
-            <button class="btn btns" type="button" data-filter-clear hidden>Clear</button>
-          </div>
-
-          <ul class="reg"><!--EXPLORE_LIST--></ul>
-
-          <div class="box" data-filter-empty hidden style="padding:26px 20px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center">
-            <span class="h3">No model matches those filters</span>
-            <span class="mut" style="font-size:13px;line-height:20px;max-width:44ch">Six models are catalogued here. Clear a filter or change the search to see them again.</span>
-          </div>
-
-          <p class="faint" style="margin:0;font-size:13px;line-height:19px;max-width:70ch">
-            Fit is measured against this PC. <a class="link" href="/docs/choosing-a-model/">How fit is calculated</a>
-          </p>
+          <!--CATALOG-->
 
         </div>
       </div>
-
     </div>
   </div>
 </div>

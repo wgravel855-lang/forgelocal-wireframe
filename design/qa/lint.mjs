@@ -56,7 +56,9 @@ for (const file of files) {
 
   // 3. $ in a replacement string is an escape, so "$(x)" in a template that
   //    was meant to be "${x}" produces a literal and a runtime TypeError.
-  if (/\$\([a-zA-Z_$][\w$]*\)\s*\./.test(src)) {
+  //    $$(x) is this project's querySelectorAll helper, so only a lone $ counts,
+  //    and only inside a template literal, which is where the mistake happens.
+  if (/`[^`]*[^$]\$\([a-zA-Z_$][\w$]*\)[^`]*`/.test(src)) {
     report(file, "looks like $(...) where ${...} was intended");
   }
 

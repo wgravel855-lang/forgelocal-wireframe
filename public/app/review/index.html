@@ -107,7 +107,6 @@
 </header>
 
       <div class="scroll" style="overflow-y:auto">
-        <h1 class="vh">Review changes: Persist tasks to localStorage</h1>
         <div class="col" style="max-width:720px;display:flex;flex-direction:column;gap:18px;padding-top:24px;padding-bottom:20px">
 
           <section class="act is-flat" aria-label="Activity">
@@ -165,217 +164,180 @@
       <div style="flex-shrink:0;padding-bottom:14px">
         <div class="col" style="max-width:720px">
           <form class="composer" style="" data-composer  aria-label="Message ForgeLocal">
+
+  <!-- Context strip: where the work happens and what it can reach. These are
+       facts about the session, so they sit above the input rather than
+       competing with the controls that change what happens next. -->
+  <div class="cstrip">
+    <button class="cchip" type="button" data-popover="runtime-pop" aria-expanded="false"
+      aria-haspopup="dialog" aria-label="Runtime status">
+      <span class="dot ok" aria-hidden="true"></span><span data-env-label>Local</span>
+    </button>
+    <button class="cchip" type="button" data-popover="folder-pop" aria-expanded="false"
+      aria-haspopup="dialog" aria-label="Project folder">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5A2 2 0 0 1 5 5.5h3.6l1.8 2H19a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+      <span class="m" data-folder-label>~/projects/task-tracker</span>
+    </button>
+    <div class="folder-anchor">
+      <div class="menu popover pdetails" id="folder-pop" role="dialog" aria-label="Project folder" hidden>
+        <dl class="pd-kv">
+          <dt>Root</dt><dd><span class="m" data-pd-path>~/projects/task-tracker</span></dd>
+          <dt>Repository</dt><dd><span data-pd-branch>Git repo, on main</span></dd>
+          <dt>Stack</dt><dd><span data-pd-stack>Vite + React detected</span></dd>
+          <dt>Access</dt><dd>Files under this root. Anything outside asks first.</dd>
+        </dl>
+        <div class="sep"></div>
+        <div class="pd-a">
+          <button class="btn btns" type="button" data-open-folder>Show in Explorer</button>
+          <a class="btn btns" href="/app/settings/#permissions">Permissions</a>
+        </div>
+        <p class="pd-note">Choosing a different folder needs the desktop app.</p>
+      </div>
+    </div>
+  </div>
+
   <div class="queue" data-queue hidden aria-label="Queued messages"></div>
-  <label class="vh" for="composer-input">Describe a change or ask a question</label>
-  <textarea id="composer-input" class="ta" rows="1" placeholder="Ask for a change, or start the next task"></textarea>
+
+  <label class="vh" for="composer-input">Describe a task or ask a question</label>
+  <textarea id="composer-input" class="ta" rows="1" placeholder="Describe a task or ask a question"></textarea>
 
   <div class="cbar">
-    <div style="position:relative">
-      <button class="btn btnq ico btns" type="button" data-popover="ctx-pop" aria-expanded="false"
-        aria-haspopup="dialog" aria-label="Add context">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M12 5.5v13M5.5 12h13"/></svg>
-      </button>
-      <div class="menu popover pdetails" id="ctx-pop" role="dialog" aria-label="What the model can see"
-        hidden style="bottom:calc(100% + 8px);top:auto;left:0;width:320px">
-        <p class="pd-h"><span class="dot ok" aria-hidden="true"></span>Everything stays on this device</p>
-        <dl class="pd-kv">
-          <dt>Project root</dt><dd><span class="m" data-pd-path>~/projects/task-tracker</span></dd>
-          <dt>Reads</dt><dd>Files under the root, when a task needs them</dd>
-          <dt>Never reads</dt><dd>Anything outside the root, or matching a secret pattern, without asking</dd>
-          <dt>Context used</dt><dd><span class="num">5.6k of 16k tokens</span></dd>
-        </dl>
-        <p class="pd-bar"><span class="faint">Attaching a specific file or URL is planned. Today the
-          agent chooses what to read inside the root and every read is listed in the activity group.</span></p>
+    <!-- Left: what the agent is allowed to do, and what it can see. -->
+    <div class="cbar-l">
+      <div style="position:relative">
+        <button class="btn btnq btns" type="button" data-popover="mode-pop" aria-expanded="false" aria-haspopup="menu">
+          <span data-mode-label>Allow edits</span>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9.5 6 6 6-6"/></svg>
+        </button>
+        <div class="menu popover" id="mode-pop" role="menu" hidden
+          style="bottom:calc(100% + 8px);left:0;width:320px;padding:6px">
+          <button role="menuitemradio" aria-checked="false" class="srow mrow" type="button" data-mode="Plan">
+            <span class="mrow-t">Plan<span class="kbd">Ctrl 1</span></span>
+            <span class="mrow-d">Reads and proposes. Changes nothing.</span>
+          </button>
+          <button role="menuitemradio" aria-checked="false" class="srow mrow" type="button" data-mode="Manual">
+            <span class="mrow-t">Manual<span class="kbd">Ctrl 2</span></span>
+            <span class="mrow-d">Asks before every edit, command and network call.</span>
+          </button>
+          <button role="menuitemradio" aria-checked="true" class="srow mrow on" type="button" data-mode="Allow edits">
+            <span class="mrow-t">Allow edits<span class="kbd">Ctrl 3</span></span>
+            <span class="mrow-d">Edits inside the project. Commands and network still ask.</span>
+          </button>
+          <button role="menuitemradio" aria-checked="false" class="srow mrow" type="button" data-mode="Auto"
+            disabled aria-disabled="true">
+            <span class="mrow-t">Auto</span>
+            <span class="mrow-d">Requires an isolated runtime.</span>
+          </button>
+        </div>
       </div>
-    </div>
 
-    <div style="position:relative">
-      <button class="btn btnq btns" type="button" data-popover="model-pop" aria-expanded="false" aria-haspopup="menu">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3.5"/><rect x="8" y="8" width="8" height="8" rx="1.8"/></svg>
-        <span data-model-label>Qwen2.5 Coder 14B</span>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9.5 6 6 6-6"/></svg>
-      </button>
-      <div class="menu popover" id="model-pop" role="menu" aria-label="Choose a model" hidden
-  style="bottom:calc(100% + 8px);left:0;width:min(420px,calc(100vw - 48px));max-height:60vh;overflow-y:auto;padding:6px">
-  <div style="padding:4px 4px 6px">
-    <label class="field">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="flex-shrink:0"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>
-      <span class="vh">Search models</span>
-      <input data-model-search data-autofocus type="search" placeholder="Search models"
-        style="border:0;background:transparent;outline:none;flex:1;min-width:0;color:var(--fg);font-size:13px">
-    </label>
-  </div>
-  <div data-model-group><div class="sgroup">On this device</div><button role="menuitemradio" aria-checked="false" class="srow"
-    data-model-row data-model-id="qwen25-coder-7b-q4km" data-model-name="Qwen2.5 Coder 7B" data-state="installed"
-    style="height:auto;padding:9px;align-items:flex-start">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true" style="flex-shrink:0;margin-top:2px"><rect x="3" y="3" width="18" height="18" rx="3.5"/><rect x="8" y="8" width="8" height="8" rx="1.8"/></svg>
-    <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
-      <span style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
-        <span style="font-size:13.5px;font-weight:400">Qwen2.5 Coder 7B</span>
-        <span class="pill ok" style="height:18px;font-size:10.5px;padding:0 6px">Great fit</span>
-        
-      </span>
-      <span class="faint" style="font-size:12px;line-height:17px">Quick single-file edits, short scripts and focused fixes.</span>
-      <span class="lab num" style="font-size:11px">Q4_K_M &middot; 4.7 GB &middot; installed</span>
-    </span>
-    
-  </button><button role="menuitemradio" aria-checked="true" class="srow on"
-    data-model-row data-model-id="qwen25-coder-14b-q4km" data-model-name="Qwen2.5 Coder 14B" data-state="installed"
-    style="height:auto;padding:9px;align-items:flex-start">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true" style="flex-shrink:0;margin-top:2px"><rect x="3" y="3" width="18" height="18" rx="3.5"/><rect x="8" y="8" width="8" height="8" rx="1.8"/></svg>
-    <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
-      <span style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
-        <span style="font-size:13.5px;font-weight:600">Qwen2.5 Coder 14B</span>
-        <span class="pill warn" style="height:18px;font-size:10.5px;padding:0 6px">Runs with tradeoffs</span>
-        <span class="pill ok" style="height:18px;font-size:10.5px;padding:0 6px">Loaded</span>
-      </span>
-      <span class="faint" style="font-size:12px;line-height:17px">Multi-file edits, running commands, tests and previews.</span>
-      <span class="lab num" style="font-size:11px">Q4_K_M &middot; 9 GB &middot; installed</span>
-    </span>
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--acc-text)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0;margin-top:3px"><path d="M20 6 9 17l-5-5"/></svg>
-  </button></div>
-  <div data-model-group><div class="sgroup">Available to install</div><button role="menuitemradio" aria-checked="false" class="srow"
-    data-model-row data-model-id="deepseek-coder-v2-lite-q4km" data-model-name="DeepSeek-Coder-V2 Lite 16B" data-state="notinstalled"
-    style="height:auto;padding:9px;align-items:flex-start">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true" style="flex-shrink:0;margin-top:2px"><rect x="3" y="3" width="18" height="18" rx="3.5"/><rect x="8" y="8" width="8" height="8" rx="1.8"/></svg>
-    <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
-      <span style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
-        <span style="font-size:13.5px;font-weight:400">DeepSeek-Coder-V2 Lite 16B</span>
-        <span class="pill warn" style="height:18px;font-size:10.5px;padding:0 6px">CPU offload required</span>
-        
-      </span>
-      <span class="faint" style="font-size:12px;line-height:17px">Reading an unfamiliar codebase and explaining it back.</span>
-      <span class="lab num" style="font-size:11px">Q4_K_M &middot; 10.4 GB &middot; not installed</span>
-    </span>
-    <span class="btn btns" style="flex-shrink:0">Install</span>
-  </button><button role="menuitemradio" aria-checked="false" class="srow"
-    data-model-row data-model-id="qwen25-coder-32b-q4km" data-model-name="Qwen2.5 Coder 32B" data-state="notinstalled"
-    style="height:auto;padding:9px;align-items:flex-start">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true" style="flex-shrink:0;margin-top:2px"><rect x="3" y="3" width="18" height="18" rx="3.5"/><rect x="8" y="8" width="8" height="8" rx="1.8"/></svg>
-    <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
-      <span style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
-        <span style="font-size:13.5px;font-weight:400">Qwen2.5 Coder 32B</span>
-        <span class="pill warn" style="height:18px;font-size:10.5px;padding:0 6px">CPU offload required</span>
-        
-      </span>
-      <span class="faint" style="font-size:12px;line-height:17px">Longer plans and wider context on a machine with room for it.</span>
-      <span class="lab num" style="font-size:11px">Q4_K_M &middot; 19.8 GB &middot; not installed</span>
-    </span>
-    <span class="btn btns" style="flex-shrink:0">Install</span>
-  </button><button role="menuitemradio" aria-checked="false" class="srow"
-    data-model-row data-model-id="llama33-70b-q4km" data-model-name="Llama 3.3 70B" data-state="notinstalled"
-    style="height:auto;padding:9px;align-items:flex-start">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true" style="flex-shrink:0;margin-top:2px"><rect x="3" y="3" width="18" height="18" rx="3.5"/><rect x="8" y="8" width="8" height="8" rx="1.8"/></svg>
-    <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
-      <span style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
-        <span style="font-size:13.5px;font-weight:400">Llama 3.3 70B</span>
-        <span class="pill bad" style="height:18px;font-size:10.5px;padding:0 6px">Does not fit</span>
-        
-      </span>
-      <span class="faint" style="font-size:12px;line-height:17px">Reasoning over long, tangled tasks.</span>
-      <span class="lab num" style="font-size:11px">Q4_K_M &middot; 42.5 GB &middot; not installed</span>
-    </span>
-    <span class="btn btns" style="flex-shrink:0">Install</span>
-  </button></div>
-  <div data-model-group><div class="sgroup">General purpose, not verified for tools</div><button role="menuitemradio" aria-checked="false" class="srow"
-    data-model-row data-model-id="gemma2-9b-q4km" data-model-name="Gemma 2 9B" data-state="notinstalled"
-    style="height:auto;padding:9px;align-items:flex-start">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true" style="flex-shrink:0;margin-top:2px"><rect x="3" y="3" width="18" height="18" rx="3.5"/><rect x="8" y="8" width="8" height="8" rx="1.8"/></svg>
-    <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
-      <span style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
-        <span style="font-size:13.5px;font-weight:400">Gemma 2 9B</span>
-        <span class="pill ok" style="height:18px;font-size:10.5px;padding:0 6px">Great fit</span>
-        
-      </span>
-      <span class="faint" style="font-size:12px;line-height:17px">Writing and explanation.</span>
-      <span class="lab num" style="font-size:11px">Q4_K_M &middot; 5.8 GB &middot; not installed</span>
-    </span>
-    <span class="btn btns" style="flex-shrink:0">Install</span>
-  </button></div>
-  <p data-model-empty hidden class="mut" style="padding:16px 10px;margin:0;font-size:13px;text-align:center">No models match.</p>
-  <div class="sep" style="margin:6px 4px"></div>
-  <div style="padding:4px 9px 6px">
-    <a href="/app/models/" style="font-size:12.5px">Manage models</a>
-    <span class="faint" style="font-size:12px"> &middot; fit is recalculated from your hardware</span>
-  </div>
-</div>
-    </div>
-
-    <div style="position:relative">
-      <button class="btn btnq btns" type="button" data-popover="mode-pop" aria-expanded="false" aria-haspopup="menu">
-        <span data-mode-label>Build</span>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9.5 6 6 6-6"/></svg>
-      </button>
-      <div class="menu popover" id="mode-pop" role="menu" hidden
-        style="bottom:calc(100% + 8px);left:0;width:300px;padding:6px">
-        <button role="menuitemradio" aria-checked="false" class="srow" data-mode="Ask" style="height:auto;padding:9px;align-items:flex-start">
-          <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
-            <span style="font-size:13.5px;font-weight:600">Ask</span>
-            <span class="faint" style="font-size:13px;line-height:17px">Answers questions and reads files. Changes nothing.</span>
-          </span>
+      <div style="position:relative">
+        <button class="btn btnq ico btns" type="button" data-popover="ctx-pop" aria-expanded="false"
+          aria-haspopup="dialog" aria-label="Add context">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M12 5.5v13M5.5 12h13"/></svg>
         </button>
-        <button role="menuitemradio" aria-checked="false" class="srow" data-mode="Plan" style="height:auto;padding:9px;align-items:flex-start">
-          <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
-            <span style="font-size:13.5px;font-weight:600">Plan</span>
-            <span class="faint" style="font-size:13px;line-height:17px">Writes a plan for you to approve before anything runs.</span>
-          </span>
-        </button>
-        <button role="menuitemradio" aria-checked="true" class="srow on" data-mode="Build" style="height:auto;padding:9px;align-items:flex-start">
-          <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
-            <span style="font-size:13.5px;font-weight:600">Build</span>
-            <span class="faint" style="font-size:13px;line-height:17px">Edits files and runs the project's own commands, asking per your permission preset.</span>
-          </span>
-        </button>
-      </div>
-    </div>
-
-    <div style="position:relative">
-      <button class="btn btnq ico btns" type="button" data-popover="opts-pop" aria-expanded="false"
-        aria-haspopup="menu" aria-label="More options">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
-      </button>
-      <div class="menu popover" id="opts-pop" role="menu" hidden
-        style="bottom:calc(100% + 8px);left:0;width:300px;padding:10px 12px">
-        <div class="stack" style="gap:12px">
-          <div class="stack" style="gap:5px">
-            <div style="display:flex;align-items:center;gap:8px">
-              <span class="lab" style="flex:1">Context used</span>
-              <span class="m num">34%</span>
-            </div>
-            <div class="track"><div class="fillbar" style="width:34%"></div></div>
-            <span class="faint" style="font-size:13px">5.6k of 16k tokens. You are warned before it becomes a problem.</span>
+        <div class="menu popover pdetails" id="ctx-pop" role="dialog" aria-label="Add context"
+          hidden style="bottom:calc(100% + 8px);top:auto;left:0;width:300px">
+          <p class="pd-h">Add to this task</p>
+          <div class="pd-a" style="flex-direction:column;align-items:stretch;gap:4px">
+            <button class="srow" type="button" data-inert="Attaching a specific file needs the desktop app."><span class="t">A file from the project</span></button>
+            <button class="srow" type="button" data-inert="Attaching an image needs the desktop app."><span class="t">An image or screenshot</span></button>
           </div>
-          <div class="sep"></div>
-          <div style="display:flex;align-items:center;gap:8px">
-            <span style="flex:1;font-size:13px;color:var(--mut)">Permission preset</span>
-            <span style="font-size:13px;font-weight:500" data-preset-label>Balanced</span>
-          </div>
-          <div class="sep"></div>
-          <div class="stack" style="gap:6px">
-            <span class="lab">Transcript detail</span>
-            <div class="seg seg-sm" role="radiogroup" aria-label="Transcript detail">
-              <button type="button" role="radio" aria-checked="false" data-density="summary">Summary</button>
-              <button type="button" role="radio" aria-checked="true" data-density="normal">Normal</button>
-              <button type="button" role="radio" aria-checked="false" data-density="verbose">Verbose</button>
-            </div>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px">
-            <span style="flex:1;font-size:13px;color:var(--mut)">Runs on</span>
-            <span style="display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:500;color:var(--ok)"><span class="dot ok" aria-hidden="true"></span>This device</span>
-          </div>
+          <p class="pd-note">Type <span class="m">@</span> in the composer to reference a path.</p>
         </div>
       </div>
     </div>
 
-    <button class="btn btnq btns cbar-ctx" type="button" data-popover="opts-pop"
-      aria-label="Context used, 34 percent"><span class="num" data-ctx-pct>34%</span> context</button>
-
     <span class="grow"></span>
 
-    <button class="btn btnp ico sendbtn" type="submit" data-send style="border-radius:16px" aria-label="Send">
+    <!-- Right: which model, how hard it thinks, how much room is left. -->
+    <div class="cbar-r">
+      <div style="position:relative">
+        <button class="btn btnq btns" type="button" data-popover="model-pop" aria-expanded="false"
+          aria-haspopup="menu" aria-keyshortcuts="Control+L">
+          <span class="dot ok" aria-hidden="true" data-model-dot></span>
+          <span data-model-label>Qwen2.5 Coder 14B</span>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9.5 6 6 6-6"/></svg>
+        </button>
+        <div class="menu popover mpick" id="model-pop" role="menu" aria-label="Choose a model"
+    hidden style="bottom:calc(100% + 8px);top:auto;right:0;left:auto">
+    <span class="mpick-h">Loaded</span><button role="menuitemradio" aria-checked="true" class="mpick-row"
+    data-model-row data-model-id="qwen25-coder-14b-q4km" data-model-name="Qwen2.5 Coder 14B"
+    data-state="loaded"
+    title="Qwen2.5 Coder 14B">
+    <span class="ic"><span class="dot ok" aria-hidden="true"></span></span>
+    <span class="n">Qwen2.5 Coder 14B</span>
+    <span class="badge-agent">Agent-ready</span>
+    <span class="meta">Q4_K_M · 8k context · 11.1 GB in use</span>
+    <svg class="tick" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+  </button>
+    <span class="mpick-h">Installed</span><button role="menuitemradio" aria-checked="false" class="mpick-row"
+    data-model-row data-model-id="qwen25-coder-7b-q4km" data-model-name="Qwen2.5 Coder 7B"
+    data-state="installed"
+    title="Qwen2.5 Coder 7B">
+    <span class="ic"><span class="dot" aria-hidden="true"></span></span>
+    <span class="n">Qwen2.5 Coder 7B</span>
+    <span class="badge-agent">Agent-ready</span>
+    <span class="meta">Q4_K_M · 4.7 GB on disk</span>
+    
+  </button>
+    
+    <div class="mpick-foot">
+      <a class="btn btns" href="/app/models/installed/">Model manager</a>
+      <a class="btn btns btnq" href="/app/models/" style="border-color:var(--line)">Find a model</a>
+    </div>
+  </div>
+      </div>
+
+      <div style="position:relative">
+        <button class="btn btnq btns" type="button" data-popover="effort-pop" aria-expanded="false" aria-haspopup="menu">
+          <span data-effort-label>Standard</span>
+        </button>
+        <div class="menu popover" id="effort-pop" role="menu" hidden
+          style="bottom:calc(100% + 8px);right:0;left:auto;width:260px;padding:6px">
+          <button role="menuitemradio" aria-checked="false" class="srow mrow" type="button" data-effort="Quick">
+            <span class="mrow-t">Quick</span><span class="mrow-d">Fewer steps, faster answers.</span>
+          </button>
+          <button role="menuitemradio" aria-checked="true" class="srow mrow on" type="button" data-effort="Standard">
+            <span class="mrow-t">Standard</span><span class="mrow-d">The default balance.</span>
+          </button>
+          <button role="menuitemradio" aria-checked="false" class="srow mrow" type="button" data-effort="Thorough">
+            <span class="mrow-t">Thorough</span><span class="mrow-d">Reads more before acting.</span>
+          </button>
+        </div>
+      </div>
+
+      <div style="position:relative">
+        <button class="btn btnq btns cbar-ctx" type="button" data-popover="opts-pop"
+          aria-expanded="false" aria-haspopup="dialog" aria-label="Context used, 34 percent">
+          <span class="ring" data-ctx-ring style="--pct:34" aria-hidden="true"></span>
+          <span class="num" data-ctx-pct>34%</span>
+        </button>
+        <div class="menu popover pdetails" id="opts-pop" role="dialog" aria-label="Context usage" hidden
+          style="bottom:calc(100% + 8px);top:auto;right:0;left:auto;width:320px">
+          <p class="pd-h">Context</p>
+          <dl class="pd-kv">
+            <dt>Used</dt><dd><span class="num">5.6k of 16k tokens</span></dd>
+            <dt>Held back</dt><dd><span class="num">2k</span> for the reply</dd>
+            <dt>Auto-compacts at</dt><dd><span class="num">82%</span></dd>
+          </dl>
+          <div class="pd-bar"><div class="track"><div class="fillbar" style="width:34%"></div></div></div>
+          <p class="pd-h" style="margin-top:12px">Largest parts</p>
+          <dl class="pd-kv">
+            <dt>Messages</dt><dd><span class="num">3.0k</span></dd>
+            <dt>Files read</dt><dd><span class="num">1.2k</span></dd>
+            <dt>Tool schemas</dt><dd><span class="num">0.9k</span></dd>
+          </dl>
+          <p class="pd-note">Older command output is dropped from the prompt before anything is
+            summarized. The full transcript stays readable here.</p>
+        </div>
+      </div>
+
+      <button class="btn btnp ico sendbtn" type="submit" data-send style="border-radius:16px" aria-label="Send">
   <svg class="i-send" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5.5M5.5 12 12 5.5 18.5 12"/></svg>
   <span class="i-stop" aria-hidden="true"></span>
 </button>
+    </div>
   </div>
 </form>
         </div>

@@ -1,61 +1,59 @@
-// The composer's model popover, generated from the profile source of truth so
-// it can never disagree with the catalog or the recommendation.
+// The composer's model picker. Three sections, and each row shows only what
+// helps you choose: status, name, quantization, effective context, memory, and
+// an agent-ready badge when the model has actually been verified for tool use.
+// Everything else (publisher, license, architecture) lives in the manager.
 import * as F from "./fit.mjs";
 
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-const chip = { ok: "ok", warn: "warn", bad: "bad", mut: "" };
+
+const TICK = '<svg class="tick" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
+
+const dot = (m) => m.loaded
+  ? '<span class="dot ok" aria-hidden="true"></span>'
+  : '<span class="dot" aria-hidden="true"></span>';
+
+/**
+ * agent_ready is only claimed for models whose tool-call conformance has been
+ * checked. A general chat model can still answer questions, so it is listed
+ * without the badge rather than hidden.
+ */
+const agentReady = (m) => m.tasks.includes("coding") && m.parameterCount >= 7e9;
 
 const row = (m, selectedId) => {
   const fit = F.fitFor(m);
-  const state = !m.installed ? "notinstalled" : "installed";
   const on = m.id === selectedId;
-  return `<button role="menuitemradio" aria-checked="${on}" class="srow${on ? " on" : ""}"
-    data-model-row data-model-id="${m.id}" data-model-name="${esc(m.displayName)}" data-state="${state}"
-    style="height:auto;padding:9px;align-items:flex-start">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true" style="flex-shrink:0;margin-top:2px"><rect x="3" y="3" width="18" height="18" rx="3.5"/><rect x="8" y="8" width="8" height="8" rx="1.8"/></svg>
-    <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
-      <span style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
-        <span style="font-size:13.5px;font-weight:${on ? 600 : 400}">${esc(m.displayName)}</span>
-        <span class="pill ${chip[fit.tone] || ""}" style="height:18px;font-size:10.5px;padding:0 6px">${esc(fit.label)}</span>
-        ${m.loaded ? '<span class="pill ok" style="height:18px;font-size:10.5px;padding:0 6px">Loaded</span>' : ""}
-      </span>
-      <span class="faint" style="font-size:12px;line-height:17px">${esc(m.strength)}</span>
-      <span class="lab num" style="font-size:11px">${esc(m.quantization)} &middot; ${F.gb(m.downloadBytes, 1)} GB${m.installed ? " &middot; installed" : " &middot; not installed"}</span>
-    </span>
-    ${m.installed
-      ? (on ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--acc-text)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0;margin-top:3px"><path d="M20 6 9 17l-5-5"/></svg>' : "")
-      : '<span class="btn btns" style="flex-shrink:0">Install</span>'}
+  const meta = m.loaded
+    ? `${esc(m.quantization)} · ${esc(F.fmtCtx(fit.context))} context · ${F.gb(fit.required, 1)} GB in use`
+    : `${esc(m.quantization)} · ${F.gb(m.downloadBytes, 1)} GB on disk`;
+  return `<button role="menuitemradio" aria-checked="${on}" class="mpick-row"
+    data-model-row data-model-id="${m.id}" data-model-name="${esc(m.displayName)}"
+    data-state="${m.loaded ? "loaded" : "installed"}"
+    title="${esc(m.displayName)}">
+    <span class="ic">${dot(m)}</span>
+    <span class="n">${esc(m.displayName)}</span>
+    ${agentReady(m) ? '<span class="badge-agent">Agent-ready</span>' : ""}
+    <span class="meta">${meta}</span>
+    ${on ? TICK : ""}
   </button>`;
 };
 
 export function pickerHtml(models, selectedId) {
-  const coding = models.filter((m) => m.tasks.includes("coding"));
-  const installed = coding.filter((m) => m.installed);
-  const available = coding.filter((m) => !m.installed);
-  const other = models.filter((m) => !m.tasks.includes("coding"));
+  const coding = models.filter((m) => m.installed);
+  const loaded = coding.filter((m) => m.loaded);
+  const unloaded = coding.filter((m) => !m.loaded);
 
-  const group = (label, list) => list.length
-    ? `<div data-model-group><div class="sgroup">${label}</div>${list.map((m) => row(m, selectedId)).join("")}</div>`
+  const section = (label, list) => list.length
+    ? `<span class="mpick-h">${label}</span>${list.map((m) => row(m, selectedId)).join("\n")}`
     : "";
 
-  return `<div class="menu popover" id="model-pop" role="menu" aria-label="Choose a model" hidden
-  style="bottom:calc(100% + 8px);left:0;width:min(420px,calc(100vw - 48px));max-height:60vh;overflow-y:auto;padding:6px">
-  <div style="padding:4px 4px 6px">
-    <label class="field">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="flex-shrink:0"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>
-      <span class="vh">Search models</span>
-      <input data-model-search data-autofocus type="search" placeholder="Search models"
-        style="border:0;background:transparent;outline:none;flex:1;min-width:0;color:var(--fg);font-size:13px">
-    </label>
-  </div>
-  ${group("On this device", installed)}
-  ${group("Available to install", available)}
-  ${group("General purpose, not verified for tools", other)}
-  <p data-model-empty hidden class="mut" style="padding:16px 10px;margin:0;font-size:13px;text-align:center">No models match.</p>
-  <div class="sep" style="margin:6px 4px"></div>
-  <div style="padding:4px 9px 6px">
-    <a href="/app/models/" style="font-size:12.5px">Manage models</a>
-    <span class="faint" style="font-size:12px"> &middot; fit is recalculated from your hardware</span>
-  </div>
-</div>`;
+  return `<div class="menu popover mpick" id="model-pop" role="menu" aria-label="Choose a model"
+    hidden style="bottom:calc(100% + 8px);top:auto;right:0;left:auto">
+    ${section("Loaded", loaded)}
+    ${section("Installed", unloaded)}
+    ${loaded.length ? "" : `<p class="pd-note" style="padding:8px 9px">No model is loaded, so nothing can be sent yet.</p>`}
+    <div class="mpick-foot">
+      <a class="btn btns" href="/app/models/installed/">Model manager</a>
+      <a class="btn btns btnq" href="/app/models/" style="border-color:var(--line)">Find a model</a>
+    </div>
+  </div>`;
 }
