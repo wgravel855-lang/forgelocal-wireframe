@@ -133,9 +133,10 @@
     if (r.right > limit) shift = limit - r.right;
     if (r.left + shift < GUTTER) shift = GUTTER - r.left;
     if (!shift) return;
-    // offsetLeft is relative to the positioned ancestor, so shift in that frame
+    // offsetLeft is relative to the positioned ancestor, so shift in that frame.
+    // Floor rather than round: rounding up puts the edge back over the gutter.
     const base = r.left - hostBox.left;
-    pop.style.left = Math.round(base + shift) + "px";
+    pop.style.left = Math.floor(base + shift) + "px";
     pop.style.right = "auto";
   }
 
