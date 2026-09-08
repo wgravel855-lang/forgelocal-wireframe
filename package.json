@@ -7,12 +7,14 @@
     "serve": "node design/serve.mjs",
     "lint": "node design/qa/lint.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "node --test \"design/core/*.test.mjs\"",
-    "test:e2e": "node --test design/qa/e2e.mjs",
-    "check": "npm run lint && npm run typecheck && npm test && npm run test:e2e"
+    "test": "node --test \"design/core/*.test.mjs\" \"design/qa/*.test.mjs\"",
+    "test:e2e": "node --test design/qa/e2e.mjs && npm run test:console",
+    "check": "npm run lint && npm run typecheck && npm test && npm run test:e2e",
+    "test:console": "node design/qa/console-run.mjs"
   },
   "devDependencies": {
     "@types/node": "^26.5.0",
+    "jsdom": "^30.0.1",
     "typescript": "^7.0.2"
   }
 }

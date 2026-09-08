@@ -10,6 +10,7 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative, extname } from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { findTemporalDeadZones } from "./tdz.mjs";
 
 const root = join(fileURLToPath(new URL(".", import.meta.url)), "..", "..");
 const SKIP = new Set(["node_modules", ".git", "public", ".vercel"]);
@@ -70,7 +71,10 @@ for (const file of files) {
     report(file, `native ${m[2]}() - use flConfirm`);
   }
 
-  // 5. An unbound build marker that reached a shipped module.
+  // 5. A load-time call to a helper declared further down the same scope.
+  for (const msg of findTemporalDeadZones(src)) report(file, msg);
+
+  // 6. An unbound build marker that reached a shipped module.
   if (!DECLARES_MARKERS.has(rel)) {
     for (const m of src.matchAll(/<!--([A-Z_]{3,})-->/g)) {
       report(file, `unbound build marker ${m[1]}`);
