@@ -1070,7 +1070,7 @@
        happens, the input is the one thing you type in, and the control line
        carries what changes the next message. */
     .cstrip { display: flex; align-items: center; gap: 4px; padding: 0 0 2px; flex-wrap: wrap; }
-    .cchip { display: inline-flex; align-items: center; gap: 6px; height: 26px;
+    .cchip { display: inline-flex; align-items: center; gap: 6px; min-height: 36px;
       padding: 0 8px; border-radius: 6px; background: none; border: 0;
       font-size: 12.5px; line-height: 18px; color: var(--faint); cursor: pointer;
       max-width: 260px; }
@@ -1518,6 +1518,16 @@
         animation-duration: .001ms !important; animation-iteration-count: 1 !important;
         transition-duration: .001ms !important; scroll-behavior: auto !important;
       }
+    }
+
+    /* ---- touch targets --------------------------------------------------- */
+    /* Stated last so it beats the dense desktop sizes above. A finger is wider
+       than a pointer, and these are the controls that carry the work. */
+    @media (max-width: 720px) {
+      .cbar .btn, .cbar .ico, .cchip,
+      .topbar .btn, .topbar .ico, .topbar .hit,
+      .chip, .btn.btnp { min-height: 44px; height: auto; }
+      .cstrip { gap: 2px; }
     }
   </style>
 </helmet>

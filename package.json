@@ -8,8 +8,8 @@
     "lint": "node design/qa/lint.mjs",
     "typecheck": "tsc --noEmit",
     "test": "node --test \"design/core/*.test.mjs\"",
-    "test:e2e": "node design/qa/e2e.mjs",
-    "check": "npm run lint && npm run typecheck && npm test"
+    "test:e2e": "node --test design/qa/e2e.mjs",
+    "check": "npm run lint && npm run typecheck && npm test && npm run test:e2e"
   },
   "devDependencies": {
     "@types/node": "^26.5.0",
