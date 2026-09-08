@@ -1,4 +1,4 @@
-<aside class="sidebar" data-active="{{active}}" aria-label="Chats and projects">
+<aside class="sidebar" data-active="{{active}}" data-mode="{{mode}}" aria-label="Chats and projects">
 
   <!-- Header: the collapse control stays where it has always been, with the
        section name beside it and compose on the right. -->
@@ -59,21 +59,28 @@
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true" style="flex-shrink:0"><rect x="3" y="3" width="18" height="18" rx="3.5"/><rect x="8" y="8" width="8" height="8" rx="1.8"/></svg>
       <span class="t">Models</span>
     </a>
-    <button class="srow" type="button" aria-label="Automations, not available in this prototype" title="Automations are not built in this prototype." data-inert="Automations are not built in this prototype.">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 1.8"/></svg>
-      <span class="t">Automations</span>
-      <span class="lab lab-fn" data-hide-collapsed style="flex-shrink:0">soon</span>
-    </button>
-    <button class="srow" type="button" aria-label="Tools, not available in this prototype" title="Tool and integration settings are not built in this prototype." data-inert="Tool and integration settings are not built in this prototype.">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M14.8 6.4a4 4 0 0 1 4.8 4.8L9.6 21.2 4 22l.8-5.6z"/><path d="m3.5 3.5 5.5 5.5"/></svg>
-      <span class="t">Tools</span>
-      <span class="lab lab-fn" data-hide-collapsed style="flex-shrink:0">soon</span>
-    </button>
-    <button class="srow" type="button" data-id="settings" aria-label="Settings, not available in this prototype" title="Settings are not built in this prototype." data-inert="Settings are not built in this prototype.">
+    <div style="position:relative">
+      <button class="srow" type="button" data-popover="profile-pop" aria-expanded="false"
+        aria-haspopup="menu" aria-label="Local profile and help" title="Local profile and help">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><circle cx="12" cy="8.2" r="3.6"/><path d="M4.8 20a7.2 7.2 0 0 1 14.4 0"/></svg>
+        <span class="t">Local profile</span>
+      </button>
+      <div class="menu popover" id="profile-pop" role="menu" aria-label="Local profile" hidden
+        style="bottom:calc(100% + 6px);left:0;width:244px;padding:6px">
+        <p class="chat-menu-hd">Signed out &middot; no account needed</p>
+        <a role="menuitem" class="srow" href="/app/settings/"><span class="t">Settings</span></a>
+        <button role="menuitem" class="srow" type="button" data-shortcuts>
+          <span class="t">Keyboard shortcuts</span><span class="lab">?</span></button>
+        <a role="menuitem" class="srow" href="/docs/"><span class="t">Docs</span></a>
+        <div class="sep" style="margin:5px 0"></div>
+        <a role="menuitem" class="srow" href="/changelog/"><span class="t">What is new</span></a>
+        <p class="chat-menu-hd" style="margin-bottom:4px">Wireframe build &middot; no installer yet</p>
+      </div>
+    </div>
+    <a class="srow" data-id="settings" href="/app/settings/" aria-label="Settings" title="Settings">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true" style="flex-shrink:0"><circle cx="12" cy="12" r="3.2"/><circle cx="12" cy="12" r="8.5"/></svg>
       <span class="t">Settings</span>
-      <span class="lab lab-fn" data-hide-collapsed style="flex-shrink:0">soon</span>
-    </button>
+    </a>
   </div>
 
   <!--SESSION_DATA-->

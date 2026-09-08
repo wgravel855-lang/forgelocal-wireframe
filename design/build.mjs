@@ -13,7 +13,7 @@ import { expand } from "./lib/assemble.mjs";
 import { models } from "./data/models.mjs";
 import * as F from "./lib/fit.mjs";
 import { pickerHtml } from "./lib/picker.mjs";
-import { recommendationBlock, installBlock, exploreList, myModelsList } from "./lib/appviews.mjs";
+import { recommendationBlock, installBlock, exploreList, myModelsList, scanVerdict } from "./lib/appviews.mjs";
 import { chatList, projectOptions, moveOptions, sessionData } from "./lib/chatlist.mjs";
 
 F.registerModels(models);
@@ -33,6 +33,9 @@ const mine = myModelsList(models);
 const BIND = {
   "<!--MODEL_PICKER-->": () => pickerHtml(models, SELECTED),
   "<!--RECOMMENDATION-->": () => recommendationBlock(models),
+  "<!--SCAN_ICON-->": () => scanVerdict().svg,
+  "<!--SCAN_HEAD-->": () => scanVerdict().head,
+  "<!--SCAN_SUB-->": () => scanVerdict().sub,
   "<!--EXPLORE_LIST-->": () => exploreList(models),
   "<!--MINE_LIST-->": () => mine.rows,
   "<!--MINE_TOTAL-->": () => mine.totalGB,
@@ -138,10 +141,24 @@ const header = (current) =>
     .replace(`href="${current}"`, `href="${current}" aria-current="page"`);
 const footer = () => inc(readFileSync(join(here, "partials/site-footer.html"), "utf8"));
 
-const marketing = ({ path, title, desc, main, canonical, jsonld }) =>
+// A one-field task, an error page or a legal document does not need the full
+// marketing CTA footer under it.
+const utilityFooter = () => inc(`
+<footer class="mfoot mfoot-slim">
+  <div class="mwrap mfoot-legal">
+    <a class="brand small" href="/"><!--#include mark.html {"size":"16"} --> ForgeLocal</a>
+    <span class="grow"></span>
+    <a href="/privacy/">Privacy</a>
+    <a href="/terms/">Terms</a>
+    <a href="/security/">Security</a>
+  </div>
+</footer>`);
+
+const marketing = ({ path, title, desc, main, canonical, jsonld, compact }) =>
   doc({
     title, desc, cls: "site", canonical: canonical ?? path, jsonld,
-    body: `${header(path)}\n<main id="main">\n${main}\n</main>\n${footer()}`,
+    body: `${header(path)}\n<main id="main">\n${main}\n</main>\n${
+      compact ? utilityFooter() : footer()}`,
   });
 
 const appPage = ({ title, body }) =>

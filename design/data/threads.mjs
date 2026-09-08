@@ -101,7 +101,7 @@ export const threads = {
             { label: "Install a polyfill instead", href: "/app/permission/" },
             { label: "Keep the edits, stop here", action: "keep" },
           ],
-          text: { label: "Open diagnostics", inert: "The diagnostics screen is not built in this prototype." },
+          text: { label: "Open diagnostics", action: "diagnostics" },
         } },
     ],
   },

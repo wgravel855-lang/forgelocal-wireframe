@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Context and memory — ForgeLocal docs</title>
+<meta name="description" content="Why a longer context costs video memory, and what to do when it runs out.">
+<meta property="og:title" content="Context and memory — ForgeLocal docs">
+<meta property="og:description" content="Why a longer context costs video memory, and what to do when it runs out.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="ForgeLocal">
+<meta property="og:image" content="https://forgelocal-wireframe.vercel.app/assets/og.svg">
+<meta property="og:url" content="https://forgelocal-wireframe.vercel.app/docs/context-and-memory/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Context and memory — ForgeLocal docs">
+<meta name="twitter:description" content="Why a longer context costs video memory, and what to do when it runs out.">
+<meta name="twitter:image" content="https://forgelocal-wireframe.vercel.app/assets/og.svg">
+<link rel="canonical" href="https://forgelocal-wireframe.vercel.app/docs/context-and-memory/">
+<link rel="icon" href="/assets/mark.svg" type="image/svg+xml">
+<link rel="alternate icon" href="/favicon.ico">
+<link rel="stylesheet" href="/assets/forgelocal.css">
+</head>
+<body class="site" style="">
+<a class="vh" href="#main">Skip to content</a>
+<header class="mhead">
+  <div class="mwrap mhead-in">
+    <a class="brand" href="/">
+      <svg viewBox="0 0 24 24" fill="none" width="22" height="22" aria-hidden="true" focusable="false" style="flex-shrink:0">
+  <rect x="2.4" y="2.4" width="19.2" height="19.2" rx="5.6" stroke="currentColor" stroke-width="1.7"/>
+  <path d="M8.6 8.9 11.7 12l-3.1 3.1" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M13.6 15.1h3.3" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+</svg>
+      <span>ForgeLocal</span>
+    </a>
+    <button class="btn btnq ico" type="button" data-nav-toggle aria-expanded="false" aria-controls="site-nav" aria-label="Menu">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+    <nav id="site-nav" data-nav aria-label="Main">
+      <a href="/product/">Product</a>
+      <a href="/models/">Models</a>
+      <a href="/security/">Security</a>
+      <a href="/pricing/">Pricing</a>
+      <a href="/docs/">Docs</a>
+      <span class="mhead-sp"></span>
+      <a href="/download/" class="btn btns">Download</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+<section class="mwrap docwrap">
+  <nav class="docnav" aria-label="Documentation">
+    <div class="docnav-g">
+      <span class="lab">Getting started</span>
+      <a href="/docs/what-forgelocal-is/">What ForgeLocal is</a>
+<a href="/docs/installing/">Installing</a>
+<a href="/docs/first-task/">Your first task</a>
+    </div>
+<div class="docnav-g">
+      <span class="lab">Models</span>
+      <a href="/docs/choosing-a-model/">Choosing a model that fits</a>
+<a href="/docs/quantization/">Quantization and formats</a>
+<a href="/docs/context-and-memory/" aria-current="page" class="on">Context and memory</a>
+<a href="/docs/managing-models/">Downloading and loading</a>
+    </div>
+<div class="docnav-g">
+      <span class="lab">Working</span>
+      <a href="/docs/modes/">Ask, Plan and Build</a>
+<a href="/docs/permissions/">Permissions</a>
+<a href="/docs/review-and-checkpoints/">Review and checkpoints</a>
+    </div>
+<div class="docnav-g">
+      <span class="lab">Reference</span>
+      <a href="/docs/privacy-and-data/">Where your data lives</a>
+<a href="/docs/troubleshooting/">Troubleshooting</a>
+    </div>
+  </nav>
+  <article class="docbody">
+    <p class="docbreadcrumb"><a href="/docs/">Docs</a> <span aria-hidden="true">/</span> Models</p>
+    <h1 class="mh2" style="font-size:34px;line-height:42px">Context and memory</h1>
+    <p class="mlede" style="margin-top:12px">Why a longer context costs video memory, and what to do when it runs out.</p>
+    <p class="docmeta"><span class="num">4 min read</span> &middot; Describes the behaviour this build defines</p>
+    <section class="docsec">
+      <h2>What context is</h2>
+      <p>Context is everything the model can see at once: your messages, its replies, the files it has read and the output of commands it has run. It is measured in tokens, which are roughly three-quarters of a word each for prose and denser for code.</p>
+<p>When the context fills, the oldest content has to go. That is the point at which a model starts forgetting a constraint you gave it twenty turns ago, and it is the single most common cause of a task going sideways.</p>
+    </section>
+<section class="docsec">
+      <h2>Why it costs memory</h2>
+      <p>The runtime keeps a key-value cache so it does not have to reprocess the whole conversation on every token. That cache is proportional to the context length, and it lives in video memory next to the weights.</p>
+<p>So context is not free and it is not a preference. Raising a 14B model from 8k to 32k tokens can cost several gigabytes, which is why the model pages show a fit row per context rather than a single verdict.</p>
+<p class="docnote">The top bar shows context used against the total for the loaded model. When it approaches the limit, starting a fresh chat costs less than fighting the forgetting.</p>
+    </section>
+<section class="docsec">
+      <h2>Practical limits</h2>
+      <dl class="dockv"><div><dt>4k</dt><dd>One or two files. Fine for a focused edit, too small for anything that reads around.</dd></div><div><dt>8k</dt><dd>A comfortable default for single-file work with room for test output.</dd></div><div><dt>16k</dt><dd>Several files plus a plan and its results. This is where most real tasks sit.</dd></div><div><dt>32k and above</dt><dd>Whole-module work. Expensive, and slower per token even when it fits.</dd></div></dl>
+<p>If a task needs more context than fits, the better move is usually to narrow the task rather than to raise the context, because a smaller task also produces a diff you can actually read.</p>
+    </section>
+    <nav class="docpn" aria-label="More documentation">
+      <a href="/docs/quantization/"><span class="lab">Previous</span><span class="t">Quantization and formats</span></a>
+      <a href="/docs/managing-models/" class="nx"><span class="lab">Next</span><span class="t">Downloading and loading</span></a>
+    </nav>
+  </article>
+</section>
+</main>
+
+<footer class="mfoot mfoot-slim">
+  <div class="mwrap mfoot-legal">
+    <a class="brand small" href="/"><svg viewBox="0 0 24 24" fill="none" width="16" height="16" aria-hidden="true" focusable="false" style="flex-shrink:0">
+  <rect x="2.4" y="2.4" width="19.2" height="19.2" rx="5.6" stroke="currentColor" stroke-width="1.7"/>
+  <path d="M8.6 8.9 11.7 12l-3.1 3.1" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M13.6 15.1h3.3" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+</svg> ForgeLocal</a>
+    <span class="grow"></span>
+    <a href="/privacy/">Privacy</a>
+    <a href="/terms/">Terms</a>
+    <a href="/security/">Security</a>
+  </div>
+</footer>
+<script src="/assets/forgelocal.js" defer></script>
+</body>
+</html>

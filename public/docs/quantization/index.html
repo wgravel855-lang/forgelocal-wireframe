@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Quantization and formats — ForgeLocal docs</title>
+<meta name="description" content="What Q4_K_M means, and why the same model comes in six sizes.">
+<meta property="og:title" content="Quantization and formats — ForgeLocal docs">
+<meta property="og:description" content="What Q4_K_M means, and why the same model comes in six sizes.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="ForgeLocal">
+<meta property="og:image" content="https://forgelocal-wireframe.vercel.app/assets/og.svg">
+<meta property="og:url" content="https://forgelocal-wireframe.vercel.app/docs/quantization/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Quantization and formats — ForgeLocal docs">
+<meta name="twitter:description" content="What Q4_K_M means, and why the same model comes in six sizes.">
+<meta name="twitter:image" content="https://forgelocal-wireframe.vercel.app/assets/og.svg">
+<link rel="canonical" href="https://forgelocal-wireframe.vercel.app/docs/quantization/">
+<link rel="icon" href="/assets/mark.svg" type="image/svg+xml">
+<link rel="alternate icon" href="/favicon.ico">
+<link rel="stylesheet" href="/assets/forgelocal.css">
+</head>
+<body class="site" style="">
+<a class="vh" href="#main">Skip to content</a>
+<header class="mhead">
+  <div class="mwrap mhead-in">
+    <a class="brand" href="/">
+      <svg viewBox="0 0 24 24" fill="none" width="22" height="22" aria-hidden="true" focusable="false" style="flex-shrink:0">
+  <rect x="2.4" y="2.4" width="19.2" height="19.2" rx="5.6" stroke="currentColor" stroke-width="1.7"/>
+  <path d="M8.6 8.9 11.7 12l-3.1 3.1" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M13.6 15.1h3.3" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+</svg>
+      <span>ForgeLocal</span>
+    </a>
+    <button class="btn btnq ico" type="button" data-nav-toggle aria-expanded="false" aria-controls="site-nav" aria-label="Menu">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+    <nav id="site-nav" data-nav aria-label="Main">
+      <a href="/product/">Product</a>
+      <a href="/models/">Models</a>
+      <a href="/security/">Security</a>
+      <a href="/pricing/">Pricing</a>
+      <a href="/docs/">Docs</a>
+      <span class="mhead-sp"></span>
+      <a href="/download/" class="btn btns">Download</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+<section class="mwrap docwrap">
+  <nav class="docnav" aria-label="Documentation">
+    <div class="docnav-g">
+      <span class="lab">Getting started</span>
+      <a href="/docs/what-forgelocal-is/">What ForgeLocal is</a>
+<a href="/docs/installing/">Installing</a>
+<a href="/docs/first-task/">Your first task</a>
+    </div>
+<div class="docnav-g">
+      <span class="lab">Models</span>
+      <a href="/docs/choosing-a-model/">Choosing a model that fits</a>
+<a href="/docs/quantization/" aria-current="page" class="on">Quantization and formats</a>
+<a href="/docs/context-and-memory/">Context and memory</a>
+<a href="/docs/managing-models/">Downloading and loading</a>
+    </div>
+<div class="docnav-g">
+      <span class="lab">Working</span>
+      <a href="/docs/modes/">Ask, Plan and Build</a>
+<a href="/docs/permissions/">Permissions</a>
+<a href="/docs/review-and-checkpoints/">Review and checkpoints</a>
+    </div>
+<div class="docnav-g">
+      <span class="lab">Reference</span>
+      <a href="/docs/privacy-and-data/">Where your data lives</a>
+<a href="/docs/troubleshooting/">Troubleshooting</a>
+    </div>
+  </nav>
+  <article class="docbody">
+    <p class="docbreadcrumb"><a href="/docs/">Docs</a> <span aria-hidden="true">/</span> Models</p>
+    <h1 class="mh2" style="font-size:34px;line-height:42px">Quantization and formats</h1>
+    <p class="mlede" style="margin-top:12px">What Q4_K_M means, and why the same model comes in six sizes.</p>
+    <p class="docmeta"><span class="num">4 min read</span> &middot; Describes the behaviour this build defines</p>
+    <section class="docsec">
+      <h2>Why models come in several sizes</h2>
+      <p>A model is trained at 16 bits per weight. Storing it that way makes it too large for most consumer graphics cards, so it is quantized: the weights are stored at fewer bits, with a scheme that keeps the parts that matter most at higher precision. The result is a much smaller file that is nearly as good.</p>
+<p>That is why one model appears as several downloads. They are the same trained model at different precision, not different models.</p>
+    </section>
+<section class="docsec">
+      <h2>Reading a quantization name</h2>
+      <pre class="m doccode"><code>Q4_K_M
+|  |  |
+|  |  +-- size within the family: S small, M medium, L large
+|  +----- K-quant, a mixed-precision scheme
++-------- 4 bits per weight on average</code></pre>
+<dl class="dockv"><div><dt>Q8_0</dt><dd>8 bits. Almost indistinguishable from the original, and about twice the size of Q4.</dd></div><div><dt>Q6_K</dt><dd>6 bits. A very small quality cost for a meaningful size saving.</dd></div><div><dt>Q5_K_M</dt><dd>5 bits. A reasonable middle if Q4 feels lossy on your work.</dd></div><div><dt>Q4_K_M</dt><dd>4 bits. The usual default. Best size-to-quality ratio for coding work.</dd></div><div><dt>Q3_K_M</dt><dd>3 bits. Noticeably weaker. Worth it only to make a larger model fit at all.</dd></div><div><dt>Q2_K</dt><dd>2 bits. Degraded enough that a smaller model at Q4 is normally the better trade.</dd></div></dl>
+<p>The practical rule: prefer a larger model at Q4_K_M over a smaller model at Q8. Below Q4 the losses start to show up as broken syntax and forgotten instructions, which is exactly where coding work is sensitive.</p>
+    </section>
+<section class="docsec">
+      <h2>Formats</h2>
+      <p>This build uses GGUF files run by llama.cpp. GGUF is a single-file format that carries the weights and the metadata the runtime needs, which is what makes a model one download rather than a directory of parts.</p>
+<p class="docnote">Weights come from the publisher, not from ForgeLocal. Every model page links its source repository and pins a revision, so an upstream change cannot silently alter what is installed on your disk.</p>
+    </section>
+    <nav class="docpn" aria-label="More documentation">
+      <a href="/docs/choosing-a-model/"><span class="lab">Previous</span><span class="t">Choosing a model that fits</span></a>
+      <a href="/docs/context-and-memory/" class="nx"><span class="lab">Next</span><span class="t">Context and memory</span></a>
+    </nav>
+  </article>
+</section>
+</main>
+
+<footer class="mfoot mfoot-slim">
+  <div class="mwrap mfoot-legal">
+    <a class="brand small" href="/"><svg viewBox="0 0 24 24" fill="none" width="16" height="16" aria-hidden="true" focusable="false" style="flex-shrink:0">
+  <rect x="2.4" y="2.4" width="19.2" height="19.2" rx="5.6" stroke="currentColor" stroke-width="1.7"/>
+  <path d="M8.6 8.9 11.7 12l-3.1 3.1" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M13.6 15.1h3.3" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+</svg> ForgeLocal</a>
+    <span class="grow"></span>
+    <a href="/privacy/">Privacy</a>
+    <a href="/terms/">Terms</a>
+    <a href="/security/">Security</a>
+  </div>
+</footer>
+<script src="/assets/forgelocal.js" defer></script>
+</body>
+</html>

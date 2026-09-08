@@ -15,6 +15,8 @@
     set(k, v) { try { localStorage.setItem("fl:" + k, JSON.stringify(v)); } catch { /* private mode */ } },
   };
   const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const esc = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
   /* ---------------------------------------------------------------- toasts */
   let toastHost;
@@ -34,6 +36,75 @@
     setTimeout(() => { t.classList.remove("in"); setTimeout(() => t.remove(), 200); }, 3200);
   }
   window.flToast = toast;
+
+  /* ------------------------------------------------------------- dialog */
+  /* One accessible dialog for every destructive or scoped decision. Native
+   * confirm() blocks the whole browsing session and cannot say what a choice
+   * actually costs, so nothing in the product uses it.
+   *
+   *   flConfirm({ title, body, scope, confirm, cancel, tone, danger })
+   *     -> Promise<boolean>
+   *
+   * Focus starts on the safe action, is trapped while open, and returns to
+   * whatever opened the dialog.
+   */
+  let dlgHost = null;
+  function flConfirm(opts) {
+    return new Promise((resolve) => {
+      const trigger = document.activeElement;
+      if (!dlgHost) {
+        dlgHost = document.createElement("div");
+        dlgHost.className = "dlg-host";
+        document.body.appendChild(dlgHost);
+      }
+      dlgHost.innerHTML = `
+        <div class="dlg-scrim" data-dlg-scrim></div>
+        <div class="dlg" role="dialog" aria-modal="true" aria-labelledby="dlg-t"
+          ${opts.body || opts.scope ? 'aria-describedby="dlg-b"' : ""}>
+          <h2 class="dlg-t" id="dlg-t">${esc(opts.title)}</h2>
+          <div class="dlg-b" id="dlg-b">
+            ${opts.body ? `<p>${esc(opts.body)}</p>` : ""}
+            ${opts.scope ? `<dl class="dlg-scope">${opts.scope.map(([k, v]) =>
+              `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>` : ""}
+          </div>
+          <div class="dlg-a">
+            <button class="btn" type="button" data-dlg-cancel>${esc(opts.cancel || "Cancel")}</button>
+            <button class="btn ${opts.danger ? "btnd" : "btnp"}" type="button" data-dlg-ok>${esc(opts.confirm || "Confirm")}</button>
+          </div>
+        </div>`;
+      dlgHost.hidden = false;
+      document.body.classList.add("has-dlg");
+
+      const dlg = $(".dlg", dlgHost);
+      const ok = $("[data-dlg-ok]", dlgHost);
+      const cancel = $("[data-dlg-cancel]", dlgHost);
+      // the safe action holds focus, so Enter never destroys anything by reflex
+      cancel.focus();
+
+      const close = (answer) => {
+        document.removeEventListener("keydown", onKey, true);
+        dlgHost.hidden = true;
+        dlgHost.innerHTML = "";
+        document.body.classList.remove("has-dlg");
+        if (trigger && trigger.isConnected) trigger.focus();
+        resolve(answer);
+      };
+      const onKey = (e) => {
+        if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); close(false); return; }
+        if (e.key !== "Tab") return;
+        const items = $$("button", dlg);
+        const first = items[0], last = items[items.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+        else if (!dlg.contains(document.activeElement)) { e.preventDefault(); first.focus(); }
+      };
+      document.addEventListener("keydown", onKey, true);
+      ok.addEventListener("click", () => close(true));
+      cancel.addEventListener("click", () => close(false));
+      $("[data-dlg-scrim]", dlgHost).addEventListener("click", () => close(false));
+    });
+  }
+  window.flConfirm = flConfirm;
 
   /* --------------------------------------------------------------- popovers */
   let openPop = null;
@@ -182,6 +253,459 @@
     });
   }
 
+  /* ---------------------------------------------------------- diagnostics */
+  /* What a stopped run actually needs: the error, the context it happened in,
+     the log that shows it, and what to try next. Nothing is transmitted. */
+  const DIAG_LOG = [
+    '[14:22:07] task  start  "Switch the date helper to Temporal"',
+    "[14:22:09] read  6 files                                  1.8s",
+    "[14:22:31] edit  src/lib/date.js  +21 -19",
+    "[14:22:33] run   npm test -- --run",
+    "[14:22:36] fail  TypeError: Temporal.PlainDate.from is not a function",
+    "[14:22:36]         at formatDue (src/lib/date.js:14:26)",
+    "[14:23:02] retry 2 of 3  same edit, same failure",
+    "[14:24:18] retry 3 of 3  same edit, same failure",
+    "[14:24:18] stop  no progress after 3 attempts",
+  ].join("\n");
+
+  function wireDiagnostics() {
+    const open = (trigger) => {
+      let host = $(".mdrawer-host");
+      if (!host) {
+        host = document.createElement("div");
+        host.className = "mdrawer-host";
+        $(".app").appendChild(host);
+      }
+      const close = () => {
+        host.hidden = true;
+        host.innerHTML = "";
+        document.removeEventListener("keydown", onKey, true);
+        if (trigger && trigger.isConnected) trigger.focus();
+      };
+      const onKey = (e) => {
+        if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); close(); return; }
+        if (e.key !== "Tab") return;
+        const items = $$("a[href], button", host).filter((el) => el.offsetParent !== null);
+        if (!items.length) return;
+        const first = items[0], last = items[items.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+        else if (!host.contains(document.activeElement)) { e.preventDefault(); first.focus(); }
+      };
+      host.innerHTML = `
+        <div class="mdrawer-scrim" data-md-scrim></div>
+        <aside class="mdrawer" role="dialog" aria-modal="true" aria-labelledby="dg-t">
+          <header class="mdrawer-h">
+            <h2 class="h2" id="dg-t">Diagnostics</h2>
+            <span class="grow"></span>
+            <button class="btn btnq ico btns" type="button" data-md-close aria-label="Close diagnostics">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </button>
+          </header>
+          <div class="mdrawer-b">
+            <p class="mdrawer-s"><span class="dot bad" aria-hidden="true"></span>Stopped: no progress after 3 attempts</p>
+            <p class="ruse" style="margin:10px 0 0">The same edit produced the same failure three
+              times. Temporal is not available in this Node version and no polyfill is installed,
+              which is a project fact the agent cannot fix by editing the file again.</p>
+
+            <h3 class="set-h3" style="margin-top:22px">Context</h3>
+            <dl class="specs" style="margin-top:10px;gap:14px 24px">
+              <div><dt>Project</dt><dd>task-tracker</dd></div>
+              <div><dt>Model</dt><dd>Qwen2.5 Coder 14B Q4_K_M</dd></div>
+              <div><dt>Runtime</dt><dd>llama.cpp b4021</dd></div>
+              <div><dt>Node</dt><dd>v20.11.1</dd></div>
+              <div><dt>Mode</dt><dd>Build</dd></div>
+              <div><dt>Checkpoint</dt><dd>2, before the first edit</dd></div>
+            </dl>
+
+            <h3 class="set-h3" style="margin-top:22px">Log</h3>
+            <figure class="cblock" style="margin-top:10px">
+              <figcaption class="cblock-h">
+                <span class="m">task.log &middot; last 9 lines</span>
+                <button class="mact" type="button" data-diag-copy aria-label="Copy log"><span class="mact-t">Copy</span></button>
+              </figcaption>
+              <pre class="m"><code>${esc(DIAG_LOG)}</code></pre>
+            </figure>
+
+            <h3 class="set-h3" style="margin-top:22px">What to try</h3>
+            <ol class="diag-steps">
+              <li>Install a Temporal polyfill, then run the edit again. That needs one package, so
+                it stops and asks first.</li>
+              <li>Keep the existing date helper and revisit when the project moves to a Node version
+                that ships Temporal.</li>
+              <li>Restore checkpoint 2 to put the file back the way the task found it.</li>
+            </ol>
+            <p class="dl-m" style="margin-top:16px">Nothing here is transmitted. This log lives in
+              your app data folder and no send action exists.</p>
+          </div>
+          <footer class="mdrawer-f">
+            <a class="btn btns" href="/app/permission/">Install a polyfill</a>
+            <a class="btn btns" href="/app/settings/#privacy">Where logs live</a>
+            <span class="grow"></span>
+            <button class="btn btns btnq" type="button" data-md-close style="border-color:var(--line)">Close</button>
+          </footer>
+        </aside>`;
+      host.hidden = false;
+      $$("[data-md-close], [data-md-scrim]", host).forEach((b) => b.addEventListener("click", close));
+      $("[data-diag-copy]", host).addEventListener("click", (e) => {
+        const t = $(".mact-t", e.currentTarget);
+        if (navigator.clipboard) navigator.clipboard.writeText(DIAG_LOG).catch(() => {});
+        t.textContent = "Copied";
+        setTimeout(() => { t.textContent = "Copy"; }, 1500);
+      });
+      document.addEventListener("keydown", onKey, true);
+      $("[data-md-close]", host).focus();
+    };
+    // the recovery block is rendered after boot, so this is delegated
+    document.addEventListener("click", (e) => {
+      const b = e.target.closest("[data-diagnostics]");
+      if (b) open(b);
+    });
+  }
+
+  /* -------------------------------------------------------- model details */
+  /* Model details open inside the app shell. The public /models/<id>/ page
+     stays for visitors; it is not the app's management surface, because
+     leaving the shell threw away the tab, query, filters and scroll. */
+  function wireModelDetail() {
+    const rows = $$("[data-model-detail]");
+    if (!rows.length) return;
+    const raw = $("#fl-sessions");
+    const data = raw ? JSON.parse(raw.textContent) : {};
+    const byId = Object.fromEntries((data.models || []).map((m) => [m.id, m]));
+
+    let host = $(".mdrawer-host");
+    if (!host) {
+      host = document.createElement("div");
+      host.className = "mdrawer-host";
+      host.hidden = true;
+      $(".app").appendChild(host);
+    }
+    let opener = null;
+    let restore = null;
+
+    const close = () => {
+      host.hidden = true;
+      host.innerHTML = "";
+      document.removeEventListener("keydown", onKey, true);
+      // the list comes back exactly as it was left
+      if (restore) {
+        const s = $(".scroll", $(".main"));
+        if (s) s.scrollTop = restore.scroll;
+        restore = null;
+      }
+      if (opener && opener.isConnected) opener.focus();
+      opener = null;
+    };
+    const onKey = (e) => {
+      if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); close(); return; }
+      if (e.key !== "Tab") return;
+      const items = $$("a[href], button, [tabindex]:not([tabindex='-1'])", host)
+        .filter((el) => el.offsetParent !== null);
+      if (!items.length) return;
+      const first = items[0], last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      else if (!host.contains(document.activeElement)) { e.preventDefault(); first.focus(); }
+    };
+
+    const open = (id, trigger) => {
+      const m = byId[id];
+      if (!m) return;
+      opener = trigger;
+      const s = $(".scroll", $(".main"));
+      restore = { scroll: s ? s.scrollTop : 0 };
+
+      const state = m.loaded ? ["ok", "Loaded in video memory"]
+        : m.installed ? ["ok", "Installed, not loaded"]
+          : ["", "Not installed"];
+      const action = m.loaded
+        ? `<button class="btn btns" type="button" data-load-toggle data-model="${esc(m.name)}">Eject</button>`
+        : m.installed
+          ? `<button class="btn btnp btns" type="button" data-load-toggle data-model="${esc(m.name)}">Load</button>`
+          : `<button class="btn btnp btns" type="button" data-model-install="${esc(m.name)}">Install</button>`;
+
+      host.innerHTML = `
+        <div class="mdrawer-scrim" data-md-scrim></div>
+        <aside class="mdrawer" role="dialog" aria-modal="true" aria-labelledby="md-t">
+          <header class="mdrawer-h">
+            <h2 class="h2" id="md-t">${esc(m.name)}</h2>
+            <span class="grow"></span>
+            <button class="btn btnq ico btns" type="button" data-md-close aria-label="Close model details">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </button>
+          </header>
+          <div class="mdrawer-b">
+            <p class="mdrawer-s"><span class="dot ${state[0]}" aria-hidden="true"></span>${state[1]}</p>
+            <p class="ruse" style="margin:10px 0 0">${esc(m.strength)}</p>
+
+            <dl class="specs" style="margin-top:18px;gap:14px 24px">
+              <div><dt>Publisher</dt><dd>${esc(m.publisher)}</dd></div>
+              <div><dt>Quantization</dt><dd>${esc(m.quant)} &middot; ${esc(m.format)}</dd></div>
+              <div><dt>Download</dt><dd>${esc(m.downloadGB)} GB</dd></div>
+              <div><dt>On disk</dt><dd>${esc(m.diskGB)} GB</dd></div>
+              <div><dt>License</dt><dd>${esc(m.license)}</dd></div>
+              <div><dt>Runtime</dt><dd>${esc(m.runtime)}</dd></div>
+            </dl>
+
+            <h3 class="set-h3" style="margin-top:22px">Fit on this PC</h3>
+            <p class="dl-m" style="margin-top:6px">${esc(m.fitReason)}</p>
+            <table class="tbl flat" style="margin-top:12px">
+              <thead><tr><th>Context</th><th>Needs</th><th>Fit</th></tr></thead>
+              <tbody>${m.contexts.map((c) => `<tr>
+                <td class="num">${esc(c.ctx)}</td>
+                <td class="num">${esc(c.need)} GB</td>
+                <td><span class="rfit"><span class="dot ${esc({ ok: "ok", warn: "warn", bad: "bad" }[c.tone] || "")}" aria-hidden="true"></span>${esc(c.label)}</span></td>
+              </tr>`).join("")}</tbody>
+            </table>
+            <p class="dl-m" style="margin-top:10px">Weights plus the key-value cache at that context
+              plus runtime overhead, against ${esc(m.vramGB)} GB of video memory. Throughput is not
+              shown because nothing here has been benchmarked.</p>
+
+            <h3 class="set-h3" style="margin-top:22px">Defaults</h3>
+            <div class="setrow" style="border-top:1px solid var(--line);margin-top:10px">
+              <div><span class="set-l">Context</span>
+                <p class="set-d">Used when this model is loaded.</p></div>
+              <span class="set-v num">${esc(m.context)}</span>
+            </div>
+            <div class="setrow">
+              <div><span class="set-l">GPU offload</span>
+                <p class="set-d">Layers placed on the GPU. The rest run on the CPU.</p></div>
+              <span class="set-v num">${esc(m.offload)}</span>
+            </div>
+            <div class="setrow">
+              <div><span class="set-l">Stored in</span>
+                <p class="set-d">Changing the model folder is not built yet.</p></div>
+              <span class="set-v m">${esc(m.store)}</span>
+            </div>
+
+            <h3 class="set-h3" style="margin-top:22px">Source</h3>
+            <div class="setrow" style="border-top:1px solid var(--line);margin-top:10px">
+              <div><span class="set-l">Repository</span>
+                <p class="set-d">Weights come from the publisher, not from ForgeLocal.</p></div>
+              <a class="set-v link" href="${esc(m.source)}" rel="noreferrer noopener" target="_blank">
+                ${esc(String(m.source).replace("https://huggingface.co/", ""))}
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="margin-left:5px"><path d="M14 5h5v5"/><path d="M19 5 11 13"/><path d="M18 14v4.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/></svg></a>
+            </div>
+            <div class="setrow">
+              <div><span class="set-l">Revision</span>
+                <p class="set-d">Pinned, so an upstream change cannot alter what is installed.</p></div>
+              <span class="set-v m">${esc(m.revision)}</span>
+            </div>
+          </div>
+          <footer class="mdrawer-f">
+            ${action}
+            <a class="btn btns" href="/models/${esc(m.id)}/">Public page</a>
+            <span class="grow"></span>
+            <button class="btn btns btnq" type="button" data-md-close style="border-color:var(--line)">Close</button>
+          </footer>
+        </aside>`;
+      host.hidden = false;
+      $$("[data-md-close], [data-md-scrim]", host).forEach((b) =>
+        b.addEventListener("click", close));
+      document.addEventListener("keydown", onKey, true);
+      $("[data-md-close]", host).focus();
+      wireModelActions(host);
+      wireLoadToggle(host);
+    };
+
+    rows.forEach((b) => b.addEventListener("click", () => open(b.dataset.modelDetail, b)));
+  }
+
+  /* ------------------------------------------------------------- settings */
+  /* Toggles, and the revocation path that every "always allow this here"
+     decision promises. Choices persist in the same local state the rest of the
+     prototype uses. */
+  function wireSettings() {
+    $$(".switch").forEach((b) => {
+      const key = "switch:" + (b.getAttribute("aria-label") || "");
+      // Each state carries its own sentence, because swapping only the leading
+      // "Off." produced "On. The app only runs when you open it."
+      const sync = (on) => {
+        const row = b.closest(".setrow");
+        const d = row && $(".set-d", row);
+        if (!d) return;
+        const txt = on ? d.dataset.on : d.dataset.off;
+        if (txt) d.textContent = txt;
+        else d.textContent = d.textContent.replace(/^(On|Off)\./, on ? "On." : "Off.");
+      };
+      const saved = store.get(key, null);
+      if (saved !== null) {
+        b.setAttribute("aria-checked", String(saved));
+        sync(saved === true || saved === "true");
+      }
+      b.addEventListener("click", () => {
+        const on = b.getAttribute("aria-checked") !== "true";
+        b.setAttribute("aria-checked", String(on));
+        store.set(key, on);
+        sync(on);
+      });
+    });
+
+    const list = $("[data-approvals]");
+    if (list) {
+      const empty = $("[data-approvals-empty]");
+      const revoked = new Set(store.get("revoked", []));
+      const paint = () => {
+        let left = 0;
+        $$("[data-approval]", list).forEach((row) => {
+          const gone = revoked.has(row.dataset.approval);
+          row.hidden = gone;
+          if (!gone) left++;
+        });
+        list.hidden = left === 0;
+        if (empty) empty.hidden = left > 0;
+      };
+      $$("[data-revoke]", list).forEach((b) => b.addEventListener("click", async () => {
+        const what = b.dataset.revoke;
+        if (!(await flConfirm({
+          title: `Revoke "${what}"?`,
+          body: "The next time the agent needs this command it stops and asks again.",
+          scope: [["Scope", "This project only"],
+            ["Effect", "The command still works, it just needs approval each time"],
+            ["Reversible", "Yes. Choose Always allow again at the next prompt."]],
+          confirm: "Revoke approval", cancel: "Keep approval" }))) return;
+        revoked.add(b.closest("[data-approval]").dataset.approval);
+        store.set("revoked", [...revoked]);
+        paint();
+        toast(`Revoked. "${what}" will ask again.`);
+      }));
+      paint();
+    }
+
+    const rm = $("[data-reduced-state]");
+    if (rm) rm.textContent = matchMedia("(prefers-reduced-motion: reduce)").matches
+      ? "On, from your system" : "Off, from your system";
+
+    $$("[data-open-folder]").forEach((b) => b.addEventListener("click", () => {
+      toast("A wireframe cannot open a folder. The path is shown above so it can be copied.");
+    }));
+  }
+
+  /* ---------------------------------------------------------- shortcuts */
+  const SHORTCUTS = [
+    ["New chat", "Ctrl N"],
+    ["Search chats", "Ctrl K"],
+    ["Focus composer", "Ctrl L"],
+    ["Send", "Enter"],
+    ["New line", "Shift Enter"],
+    ["Toggle sidebar", "Ctrl B"],
+    ["Close a menu or dialog", "Esc"],
+    ["Keyboard shortcuts", "?"],
+  ];
+  function showShortcuts() {
+    flConfirm({
+      title: "Keyboard shortcuts",
+      scope: SHORTCUTS,
+      confirm: "Close", cancel: "Back",
+    });
+  }
+  function wireShortcuts() {
+    $$("[data-shortcuts]").forEach((b) => b.addEventListener("click", () => {
+      closePop();
+      showShortcuts();
+    }));
+    document.addEventListener("keydown", (e) => {
+      if (e.key !== "?" || e.metaKey || e.ctrlKey || e.altKey) return;
+      const t = e.target;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+      e.preventDefault();
+      showShortcuts();
+    });
+  }
+
+  /* ------------------------------------------------------------ downloads */
+  function wireDownloadRow() {
+    $$("[data-dl-remove]").forEach((b) => b.addEventListener("click", async () => {
+      if (!(await flConfirm({
+        title: "Remove this failed download?",
+        body: "The 6.20 GB already on disk is deleted and the entry leaves this list.",
+        scope: [["Frees", "6.20 GB"],
+          ["Kept", "Nothing. A retry starts from the beginning."],
+          ["Reversible", "No, but the model can be downloaded again"]],
+        confirm: "Remove and delete", cancel: "Keep it", danger: true }))) return;
+      const row = b.closest(".dlrow");
+      row.replaceChildren(Object.assign(document.createElement("p"), {
+        className: "dl-m", style: "margin:0",
+        textContent: "Removed. 6.20 GB freed.",
+      }));
+      toast("Removed. 6.20 GB freed.");
+    }));
+    // Retry cannot run without a network layer, so it says so rather than
+    // pretending to start
+    $$("[data-inert-note]").forEach((b) => b.addEventListener("click", () => {
+      toast("A wireframe has no network layer, so a retry cannot actually run.");
+    }));
+  }
+
+  /* ------------------------------------------------------------- waitlist */
+  /* The page reads its intent from the URL so a Pro CTA, a Team CTA and a
+     download CTA each land somewhere that says the right thing. Nothing is
+     sent: the success state says so rather than implying an email went out. */
+  const WL_MODES = {
+    pro: { kicker: "Pro", h1: "Join the Pro waitlist",
+      lede: "Pro is not open yet. Leave an address and we will write once when it is, and not otherwise.",
+      cta: "Join the Pro waitlist", done: "You are on the Pro waitlist." },
+    team: { kicker: "Team", h1: "Join the Team waitlist",
+      lede: "Team plans are not open yet. Leave an address and we will write once shared profiles, policies and billing exist.",
+      cta: "Join the Team waitlist", done: "You are on the Team waitlist." },
+    beta: { kicker: "Windows beta", h1: "Join the Windows beta",
+      lede: "No installer is published yet. Leave an address and we will write once there is a signed build to download.",
+      cta: "Notify me when the build is ready", done: "You are on the Windows beta list." },
+  };
+
+  function wireWaitlist() {
+    const form = $("[data-waitlist]");
+    if (!form) return;
+    const q = new URLSearchParams(location.search);
+    const key = q.get("team") === "1" ? "team" : (q.get("plan") || "pro").toLowerCase();
+    const mode = WL_MODES[key] || WL_MODES.pro;
+
+    $("[data-wl-kicker]").textContent = mode.kicker;
+    $("[data-wl-h1]").textContent = mode.h1;
+    $("[data-wl-lede]").textContent = mode.lede;
+    $("[data-wl-cta]").textContent = mode.cta;
+    $("[data-wl-done-t]").textContent = mode.done;
+    document.title = mode.h1 + " — ForgeLocal";
+
+    const input = $("input[type=email]", form);
+    const submit = $("[data-wl-submit]", form);
+    const err = $("[data-wl-error]");
+    const done = $("[data-wl-done]");
+    const ok = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim());
+    const setError = (msg) => {
+      err.textContent = msg || "";
+      err.hidden = !msg;
+      input.setAttribute("aria-invalid", msg ? "true" : "false");
+    };
+
+    input.addEventListener("input", () => {
+      submit.disabled = !ok(input.value);
+      if (!err.hidden && ok(input.value)) setError("");
+    });
+    input.addEventListener("blur", () => {
+      const v = input.value.trim();
+      if (v && !ok(v)) setError("That does not look like an email address.");
+    });
+
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const v = input.value.trim();
+      if (!v) return setError("Enter an email address.");
+      if (!ok(v)) return setError("That does not look like an email address.");
+      setError("");
+      submit.disabled = true;
+      $("[data-wl-cta]").textContent = "Adding you…";
+      // the wireframe has no backend; the delay is the submit state, not a fake request
+      setTimeout(() => {
+        form.hidden = true;
+        done.hidden = false;
+        done.setAttribute("tabindex", "-1");
+        done.focus();
+      }, 380);
+    });
+  }
+
   /* ----------------------------------------------------------- chat list */
   /* One state model drives the selector and the workspace together:
    *
@@ -199,6 +723,13 @@
   function wireChats() {
     const list = $(".chat-list");
     if (!list) return;
+    // A first run has no history to select from, so the selector does not run.
+    if ($(".sidebar")?.dataset.mode === "first-run") {
+      const fr = $("[data-first-run]");
+      if (fr) fr.hidden = false;
+      $$(".chat", list).forEach((r) => r.remove());
+      return;
+    }
 
     const raw = $("#fl-sessions");
     const data = raw ? JSON.parse(raw.textContent) : { projects: [], chats: [] };
@@ -260,7 +791,13 @@
     };
 
     /* ---- workspace ------------------------------------------------------ */
-    const setHeader = (t) => { $$("[data-ws-title]").forEach((el) => { el.textContent = t; }); };
+    // Only a conversation route names itself after the open chat. Models,
+    // downloads and settings carry their own title and must keep it.
+    const ownsHeader = !!$("[data-thread]");
+    const setHeader = (t) => {
+      if (!ownsHeader) return;
+      $$("[data-ws-title]").forEach((el) => { el.textContent = t; });
+    };
 
     const paintProject = () => {
       const p = projectById[st.activeProjectId];
@@ -498,7 +1035,7 @@
       return false;
     };
 
-    menu.addEventListener("click", (e) => {
+    menu.addEventListener("click", async (e) => {
       const b = e.target.closest("button");
       if (!b || !openFor) return;
       const row = openFor, id = row.dataset.chat;
@@ -530,7 +1067,13 @@
           toast(`Archived "${title}". It is under Archived at the end of the list.`);
           break;
         case "delete":
-          if (!confirm(`Delete "${title}"? This prototype cannot bring it back.`)) return;
+          if (!(await flConfirm({
+            title: `Delete "${title}"?`,
+            body: "The chat and its transcript leave this prototype's local state.",
+            scope: [["Scope", "This chat only"],
+              ["Kept", "Every other chat in this project"],
+              ["Reversible", "No. Archive it instead if you may want it back."]],
+            confirm: "Delete chat", cancel: "Keep chat", danger: true }))) return;
           of(id).deleted = true;
           closeMenu(false);
           if (afterMutation(id)) return;
@@ -576,8 +1119,7 @@
     todo: () => '<span class="box-todo" aria-hidden="true"></span>',
     now: () => '<span class="dot acc" aria-hidden="true"></span>',
   };
-  const esc = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
 
   /* ---- pieces --------------------------------------------------------- */
   const userMessage = (t, i) => `
@@ -710,7 +1252,7 @@
     ? `<a class="btn" href="${esc(a.href)}">${esc(a.label)}</a>`
     : `<button class="btn" type="button" data-recover="${esc(a.action)}">${esc(a.label)}</button>`).join("")}
         <span class="grow"></span>
-        <button class="btnq hit recover-x" type="button" data-inert="${esc(r.text.inert)}">${esc(r.text.label)}</button>
+        <button class="btnq hit recover-x" type="button" data-diagnostics>${esc(r.text.label)}</button>
       </div>` : "";
 
   // Capabilities, not decoration: an action is only drawn when something real
@@ -1030,11 +1572,16 @@
     });
 
     /* ---- recovery ----------------------------------------------------- */
-    el.addEventListener("click", (e) => {
+    el.addEventListener("click", async (e) => {
       const b = e.target.closest("[data-recover]");
       if (!b) return;
-      if (b.dataset.recover === "restore" &&
-        !confirm("Restore checkpoint 2? Every edit made after it is discarded.")) return;
+      if (b.dataset.recover === "restore" && !(await flConfirm({
+        title: "Restore checkpoint 2?",
+        body: "Every edit made after that checkpoint is discarded.",
+        scope: [["Files affected", "src/lib/date.js"],
+          ["Kept", "Everything changed before this task started"],
+          ["Reversible", "No. The discarded edits cannot be recovered."]],
+        confirm: "Restore checkpoint", cancel: "Keep the edits", danger: true }))) return;
       const row = b.closest(".recover");
       row.replaceChildren(Object.assign(document.createElement("span"), {
         className: "recover-done",
@@ -1265,12 +1812,20 @@
     const current = () =>
       $('[data-review-file][aria-current="true"]') || files.find((f) => f.dataset.reviewed !== "true");
 
-    $$("[data-review-action]").forEach((b) => b.addEventListener("click", () => {
+    $$("[data-review-action]").forEach((b) => b.addEventListener("click", async () => {
       const act = b.dataset.reviewAction;
       if (act === "revert-all" || act === "revert-file") {
-        if (!confirm(act === "revert-all"
-          ? "Revert every change this task made? Work you made before the task started is not affected."
-          : "Revert this file to how the task found it? Your own earlier edits to it are kept.")) return;
+        const all = act === "revert-all";
+        if (!(await flConfirm({
+          title: all ? "Revert every change this task made?" : "Revert this file?",
+          body: all
+            ? "Both files go back to how the task found them."
+            : "This file goes back to how the task found it.",
+          scope: [["Scope", all ? "2 files changed by this task" : "The file open in the diff"],
+            ["Kept", "Work you made before the task started"],
+            ["Checkpoint", "Checkpoint 4 was taken before these edits"],
+            ["Reversible", "Yes, restore checkpoint 4 to bring them back"]],
+          confirm: all ? "Revert all files" : "Revert file", cancel: "Keep changes", danger: true }))) return;
       }
       // file-scoped actions live in the drawer footer, not inside the row, so
       // they apply to the file currently open in the diff.
@@ -1442,6 +1997,7 @@
     const state = $("[data-dl-state]", wrap);
     const dot = $("[data-dl-dot]");
     const bar = $("[data-dl-bar]");
+    const progress = $("[role=progressbar]");
     if (!toggle) return;
     let paused = false, cancelled = false;
 
@@ -1454,6 +2010,21 @@
         dot.className = dot.className.replace(/\b(acc|warn|bad)\b/, cancelled ? "bad" : paused ? "warn" : "acc");
       }
       if (bar) bar.style.opacity = paused || cancelled ? ".45" : "1";
+      // a paused transfer has no speed and no estimate, so it claims neither
+      const speed = $("[data-dl-speed]"), remain = $("[data-dl-remain]"), foot = $("[data-dl-foot]");
+      if (speed) speed.textContent = cancelled ? "Stopped" : paused ? "Paused" : "28.6 MB/s";
+      if (remain) remain.textContent = cancelled || paused ? "Not counting" : "about 3 min";
+      const verb = $("[data-dl-verb]");
+      if (verb) verb.textContent = cancelled ? "Cancelled" : paused ? "Paused" : "Downloading";
+      if (foot) foot.textContent = cancelled
+        ? "Cancelled. The partial file is kept, so resuming does not start over."
+        : paused
+          ? "Paused. It resumes from 4.1 GB when you continue."
+          : "Downloading, about 3 min left. Step 4 opens while it runs.";
+      if (progress) {
+        progress.setAttribute("aria-label",
+          cancelled ? "Download cancelled" : paused ? "Download paused at 41 percent" : "Download progress");
+      }
     };
 
     toggle.addEventListener("click", () => {
@@ -1463,9 +2034,16 @@
       toast(paused ? "Download paused. It resumes from where it stopped." : "Download resumed.");
     });
 
-    if (cancel) cancel.addEventListener("click", () => {
+    if (cancel) cancel.addEventListener("click", async () => {
       if (cancelled) return;
-      if (!confirm("Cancel this download? The part already downloaded is kept, so resuming later does not start over.")) return;
+      const ok = await flConfirm({
+        title: "Cancel this download?",
+        body: "The part already downloaded stays on disk, so resuming later does not start over.",
+        scope: [["Downloaded so far", "4.1 GB, kept on disk"],
+          ["Setup progress", "Kept. You can resume from this step."],
+          ["Reversible", "Yes, the download can be restarted at any time"]],
+        confirm: "Cancel download", cancel: "Keep downloading", danger: true });
+      if (!ok) return;
       cancelled = true; paused = false;
       toggle.disabled = true;
       cancel.disabled = true;
@@ -1542,10 +2120,16 @@
 
   /* ------------------------------------------------------ recovery choices */
   function wireRecover() {
-    $$("[data-recover]").forEach((b) => b.addEventListener("click", () => {
+    $$("[data-recover]").forEach((b) => b.addEventListener("click", async () => {
       const row = b.parentElement;
       if (b.dataset.recover === "restore") {
-        if (!confirm("Restore checkpoint 2? Every edit made after it is discarded.")) return;
+        if (!(await flConfirm({
+          title: "Restore checkpoint 2?",
+          body: "Every edit made after that checkpoint is discarded.",
+          scope: [["Files affected", "src/lib/date.js"],
+            ["Kept", "Everything changed before this task started"],
+            ["Reversible", "No. The discarded edits cannot be recovered."]],
+          confirm: "Restore checkpoint", cancel: "Keep the edits", danger: true }))) return;
         toast("Restored checkpoint 2. The working tree matches it again.");
       } else {
         toast("Stopped here. The edits are still on disk and nothing was rolled back.");
@@ -1572,13 +2156,13 @@
   }
 
   /* --------------------------------------------- Explore: use and install */
-  function wireModelActions() {
-    $$("[data-model-use]").forEach((b) => b.addEventListener("click", () => {
+  function wireModelActions(root = document) {
+    $$("[data-model-use]", root).forEach((b) => b.addEventListener("click", () => {
       store.set("model", b.dataset.modelId);
       $$("[data-model-label]").forEach((l) => { l.textContent = b.dataset.modelUse; });
       toast(`${b.dataset.modelUse} is the model this project will use.`);
     }));
-    $$("[data-model-install]").forEach((b) => b.addEventListener("click", () => {
+    $$("[data-model-install]", root).forEach((b) => b.addEventListener("click", () => {
       b.textContent = "Queued";
       b.disabled = true;
       b.setAttribute("aria-disabled", "true");
@@ -1588,8 +2172,8 @@
   }
 
   /* ------------------------------------------------ load / eject a model */
-  function wireLoadToggle() {
-    $$("[data-load-toggle]").forEach((btn) => {
+  function wireLoadToggle(root = document) {
+    $$("[data-load-toggle]", root).forEach((btn) => {
       const row = btn.closest("li");
       const pill = row && $("[data-load-pill]", row);
       btn.addEventListener("click", () => {
@@ -1648,7 +2232,8 @@
     wireReview(); wireFilters(); wireNav(); wirePricing(); wirePlatform(); wireSignin();
     wireDownload(); wireLoadToggle(); wirePresets(); showPreset();
     wireActivity(); wireStopRun(); wirePermission(); wireRecover(); wireSuggest();
-    wireModelActions(); wireConversation(); wireChats(); wireInert();
+    wireModelActions(); wireConversation(); wireChats();
+    wireWaitlist(); wireModelDetail(); wireDiagnostics(); wireSettings(); wireShortcuts(); wireDownloadRow(); wireInert();
     document.documentElement.dataset.reducedMotion = String(reduced);
   };
   document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", boot) : boot();

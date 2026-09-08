@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>What ForgeLocal is — ForgeLocal docs</title>
+<meta name="description" content="A coding agent that runs on your machine, and an honest account of what it is not.">
+<meta property="og:title" content="What ForgeLocal is — ForgeLocal docs">
+<meta property="og:description" content="A coding agent that runs on your machine, and an honest account of what it is not.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="ForgeLocal">
+<meta property="og:image" content="https://forgelocal-wireframe.vercel.app/assets/og.svg">
+<meta property="og:url" content="https://forgelocal-wireframe.vercel.app/docs/what-forgelocal-is/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="What ForgeLocal is — ForgeLocal docs">
+<meta name="twitter:description" content="A coding agent that runs on your machine, and an honest account of what it is not.">
+<meta name="twitter:image" content="https://forgelocal-wireframe.vercel.app/assets/og.svg">
+<link rel="canonical" href="https://forgelocal-wireframe.vercel.app/docs/what-forgelocal-is/">
+<link rel="icon" href="/assets/mark.svg" type="image/svg+xml">
+<link rel="alternate icon" href="/favicon.ico">
+<link rel="stylesheet" href="/assets/forgelocal.css">
+</head>
+<body class="site" style="">
+<a class="vh" href="#main">Skip to content</a>
+<header class="mhead">
+  <div class="mwrap mhead-in">
+    <a class="brand" href="/">
+      <svg viewBox="0 0 24 24" fill="none" width="22" height="22" aria-hidden="true" focusable="false" style="flex-shrink:0">
+  <rect x="2.4" y="2.4" width="19.2" height="19.2" rx="5.6" stroke="currentColor" stroke-width="1.7"/>
+  <path d="M8.6 8.9 11.7 12l-3.1 3.1" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M13.6 15.1h3.3" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+</svg>
+      <span>ForgeLocal</span>
+    </a>
+    <button class="btn btnq ico" type="button" data-nav-toggle aria-expanded="false" aria-controls="site-nav" aria-label="Menu">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+    <nav id="site-nav" data-nav aria-label="Main">
+      <a href="/product/">Product</a>
+      <a href="/models/">Models</a>
+      <a href="/security/">Security</a>
+      <a href="/pricing/">Pricing</a>
+      <a href="/docs/">Docs</a>
+      <span class="mhead-sp"></span>
+      <a href="/download/" class="btn btns">Download</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+<section class="mwrap docwrap">
+  <nav class="docnav" aria-label="Documentation">
+    <div class="docnav-g">
+      <span class="lab">Getting started</span>
+      <a href="/docs/what-forgelocal-is/" aria-current="page" class="on">What ForgeLocal is</a>
+<a href="/docs/installing/">Installing</a>
+<a href="/docs/first-task/">Your first task</a>
+    </div>
+<div class="docnav-g">
+      <span class="lab">Models</span>
+      <a href="/docs/choosing-a-model/">Choosing a model that fits</a>
+<a href="/docs/quantization/">Quantization and formats</a>
+<a href="/docs/context-and-memory/">Context and memory</a>
+<a href="/docs/managing-models/">Downloading and loading</a>
+    </div>
+<div class="docnav-g">
+      <span class="lab">Working</span>
+      <a href="/docs/modes/">Ask, Plan and Build</a>
+<a href="/docs/permissions/">Permissions</a>
+<a href="/docs/review-and-checkpoints/">Review and checkpoints</a>
+    </div>
+<div class="docnav-g">
+      <span class="lab">Reference</span>
+      <a href="/docs/privacy-and-data/">Where your data lives</a>
+<a href="/docs/troubleshooting/">Troubleshooting</a>
+    </div>
+  </nav>
+  <article class="docbody">
+    <p class="docbreadcrumb"><a href="/docs/">Docs</a> <span aria-hidden="true">/</span> Getting started</p>
+    <h1 class="mh2" style="font-size:34px;line-height:42px">What ForgeLocal is</h1>
+    <p class="mlede" style="margin-top:12px">A coding agent that runs on your machine, and an honest account of what it is not.</p>
+    <p class="docmeta"><span class="num">3 min read</span> &middot; Describes the behaviour this build defines</p>
+    <section class="docsec">
+      <h2>The shape of it</h2>
+      <p>ForgeLocal is a desktop coding agent for Windows. It reads a folder you choose, plans work, edits files and runs the project's own commands, and then shows you a diff to keep or revert. The model doing that work is downloaded to your disk and runs on your own graphics card.</p>
+<p>The design choice underneath everything else is that a local model is not a cloud model with the network turned off. It has a fixed amount of video memory, a context window you can actually exhaust, and no ability to quietly fall back to something larger. So the interface shows you memory, context and permissions as first-class facts rather than hiding them.</p>
+    </section>
+<section class="docsec">
+      <h2>What it does not do</h2>
+      <ul class="doclist"><li>It does not have a published installer. This build is a wireframe of the product, so nothing here downloads or runs a model.</li><li>It does not benchmark models. No tokens-per-second figure appears anywhere, because none has been measured on real hardware.</li><li>It does not sandbox. A permission prompt is a prompt, not process isolation. See Permissions for exactly where the boundary sits.</li><li>It does not sync. There is no account requirement for local use and no server copy of your chats.</li></ul>
+<p class="docnote">Pages that describe unbuilt features say so in place, rather than showing a disabled control with no explanation. If you find one that does not, that is a bug.</p>
+    </section>
+<section class="docsec">
+      <h2>Where things live in the app</h2>
+      <dl class="dockv"><div><dt>Chats</dt><dd>The sidebar, grouped by pinned, today, the last seven days and older. Chats belong to a project.</dd></div><div><dt>Projects</dt><dd>The picker above the chat list. A project is a folder, a permission preset and a detected stack.</dd></div><div><dt>Models</dt><dd>Sidebar footer. Explore to find one, My models for what is installed, Downloads for what is in flight.</dd></div><div><dt>Settings</dt><dd>Sidebar footer. General, appearance, models and runtime, permissions, privacy, about.</dd></div><div><dt>Runtime</dt><dd>The Local pill in the top bar. Loaded model, video memory, context in use.</dd></div></dl>
+    </section>
+    <nav class="docpn" aria-label="More documentation">
+      <span></span>
+      <a href="/docs/installing/" class="nx"><span class="lab">Next</span><span class="t">Installing</span></a>
+    </nav>
+  </article>
+</section>
+</main>
+
+<footer class="mfoot mfoot-slim">
+  <div class="mwrap mfoot-legal">
+    <a class="brand small" href="/"><svg viewBox="0 0 24 24" fill="none" width="16" height="16" aria-hidden="true" focusable="false" style="flex-shrink:0">
+  <rect x="2.4" y="2.4" width="19.2" height="19.2" rx="5.6" stroke="currentColor" stroke-width="1.7"/>
+  <path d="M8.6 8.9 11.7 12l-3.1 3.1" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M13.6 15.1h3.3" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+</svg> ForgeLocal</a>
+    <span class="grow"></span>
+    <a href="/privacy/">Privacy</a>
+    <a href="/terms/">Terms</a>
+    <a href="/security/">Security</a>
+  </div>
+</footer>
+<script src="/assets/forgelocal.js" defer></script>
+</body>
+</html>

@@ -24,6 +24,16 @@
       "source": "/screens/:path+/",
       "destination": "/gallery/",
       "permanent": false
+    },
+    {
+      "source": "/signin",
+      "destination": "/waitlist/",
+      "permanent": false
+    },
+    {
+      "source": "/signin/",
+      "destination": "/waitlist/",
+      "permanent": false
     }
   ]
 }

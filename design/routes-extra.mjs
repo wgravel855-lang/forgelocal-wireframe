@@ -7,6 +7,8 @@ const CROPS = {
   "5": "<div class=\"crop app\">\n          <div style=\"display:flex;align-items:center;gap:9px;margin-bottom:10px\">\n            <span class=\"h3\" style=\"flex:1\">2 files changed</span>\n            <span class=\"m num\" style=\"color:var(--ok)\">+46</span>\n            <span class=\"m num\" style=\"color:var(--bad)\">&minus;12</span>\n          </div>\n          <div class=\"m box\" style=\"font-size:13px;line-height:20px;padding:8px 0;overflow:hidden;margin-bottom:10px\">\n            <div style=\"padding:0 12px;color:var(--mut)\">import { useState } from 'react'</div>\n            <div style=\"padding:0 12px;background:var(--bad-soft);border-left:2px solid var(--bad-line);color:var(--bad)\">- const [tasks, setTasks] = useState([])</div>\n            <div style=\"padding:0 12px;background:var(--ok-soft);border-left:2px solid var(--ok-line);color:var(--ok)\">+ import { useTasks } from './useTasks'</div>\n          </div>\n          <div style=\"display:flex;gap:8px\"><span class=\"btn btnp btns\">Keep changes</span><span class=\"btn btns\">Revert all</span></div>\n        </div>"
 };
 
+import { DOCS, DOC_GROUPS } from "./data/docs.mjs";
+
 export function extraRoutes({ write, marketing, appPage, part, workspace, esc, models, F, gb }) {
   const wrap = (inner) => `<section class="mwrap msec" style="padding-top:64px;padding-bottom:24px">${inner}</section>`;
   const head = (kicker, h1, lede) => wrap(`<div class="stack" style="gap:16px;max-width:720px">
@@ -52,12 +54,13 @@ export function extraRoutes({ write, marketing, appPage, part, workspace, esc, m
     <div class="strow" style="grid-template-columns:minmax(0,1fr) auto;align-items:center;padding:22px 2px">
       <div>
         <span class="t" style="font-size:17px;line-height:25px">Windows 10 and 11, 64-bit</span>
-        <p class="d" style="margin-top:5px;max-width:62ch">x64 and ARM64. Version and checksum
-          appear here once the first signed build is published.</p>
+        <p class="d" style="margin-top:5px;max-width:62ch">x64 and ARM64. No installer is
+          published yet, so there is no version, checksum or signing certificate to show. All
+          three appear here with the first signed build.</p>
         <p class="d" style="margin-top:6px;color:var(--faint)" data-platform-note>
           Detected platform appears here. macOS and Linux builds are not available yet.</p>
       </div>
-      <button class="btn btnl" style="justify-self:end" data-inert="No installer has been published yet, so there is nothing to serve.">No build published yet</button>
+      <a class="btn btnp btnl" style="justify-self:end" href="/waitlist/?plan=beta">Join the Windows beta</a>
     </div>
   </div>
 </section>
@@ -145,14 +148,18 @@ export function extraRoutes({ write, marketing, appPage, part, workspace, esc, m
         "Full verified profile matrix and updates",
         "Automations and background tasks",
         "Advanced recovery and diagnostics",
-      ], `<a class="btn btnp btnl" href="/signin/" style="width:100%">Pro is not open yet</a>`, true)}
+      ], `<a class="btn btnp btnl" href="/waitlist/?plan=pro" style="width:100%">Join the Pro waitlist</a>`, true)}
     ${plan("Team", 30, "Per user. Shared standards across a team.", [
         "Shared profiles and project policies",
         "Permission presets and an audit trail",
         "Centralized billing",
         "Private blueprint library",
-      ], `<a class="btn btnl" href="/signin/?team=1" style="width:100%">Join the team waitlist</a>`, false, " / user")}
+      ], `<a class="btn btnl" href="/waitlist/?plan=team" style="width:100%">Join the Team waitlist</a>`, false, " / user")}
   </div>
+  <p class="mut" style="margin:22px 0 0;font-size:14px;line-height:22px;max-width:70ch">
+    Nothing is on sale yet. No build is published and billing is not deployed, so the paid plans
+    describe what they will include rather than something you can buy today. The prices are what we
+    intend to charge, and the waitlist is how you hear when that changes.</p>
 </section>
 <section class="mwrap msec" style="padding-bottom:24px">
   <div style="max-width:820px">
@@ -190,25 +197,78 @@ export function extraRoutes({ write, marketing, appPage, part, workspace, esc, m
         <div class="${measure}">${body}</div></section>`,
     }));
 
-  /* /docs/ — one ruled index. Nothing is published, so no row pretends to be
-     a link: each carries its plain-text unpublished state instead. */
-  page("docs/", "Docs", "Documentation", "Docs",
-    "Install, first project, model profiles, permissions and troubleshooting.",
-    `<div class="index">
-      ${[["Getting started", "Installing, the hardware scan, and finishing your first task."],
-         ["Model profiles", "What a profile pins, how fit is calculated, and how to pin a revision."],
-         ["Permissions", "The three presets, what each command class does, and how to revoke a durable rule."],
-         ["Troubleshooting", "Out of memory, runtime offline, interrupted downloads, and how to export a redacted diagnostic."]]
-        .map(([t, d], i) => `<div class="irow">
-          <span class="n">${String(i + 1).padStart(2, "0")}</span>
-          <span class="t">${esc(t)}</span>
-          <span class="s">Not written yet</span>
-          <p class="d">${esc(d)}</p>
+  /* /docs/ and /docs/<slug>/ ------------------------------------------------
+     Written, not stubbed. Every article documents behaviour this build
+     actually defines; where a feature does not exist, the article says so
+     rather than inventing instructions for it. */
+  const docNav = (current) => `<nav class="docnav" aria-label="Documentation">
+    ${DOC_GROUPS.map(([g]) => `<div class="docnav-g">
+      <span class="lab">${esc(g)}</span>
+      ${DOCS.filter((d) => d.group === g).map((d) => `<a href="/docs/${d.slug}/"${
+        d.slug === current ? ' aria-current="page" class="on"' : ""}>${esc(d.title)}</a>`).join("\n")}
+    </div>`).join("\n")}
+  </nav>`;
+
+  const docBlock = (b) => {
+    const [k, v] = b;
+    if (k === "p") return `<p>${esc(v)}</p>`;
+    if (k === "note") return `<p class="docnote">${esc(v)}</p>`;
+    if (k === "code") return `<pre class="m doccode"><code>${esc(v)}</code></pre>`;
+    if (k === "list") return `<ul class="doclist">${v.map((i) => `<li>${esc(i)}</li>`).join("")}</ul>`;
+    if (k === "steps") return `<ol class="doclist">${v.map((i) => `<li>${esc(i)}</li>`).join("")}</ol>`;
+    if (k === "kv") return `<dl class="dockv">${v.map(([a, c]) =>
+      `<div><dt>${esc(a)}</dt><dd>${esc(c)}</dd></div>`).join("")}</dl>`;
+    return "";
+  };
+
+  DOCS.forEach((d, i) => {
+    const prev = DOCS[i - 1], next = DOCS[i + 1];
+    write(`docs/${d.slug}/index.html`, marketing({
+      path: `/docs/${d.slug}/`, title: `${d.title} — ForgeLocal docs`, desc: d.lede, compact: true,
+      main: `<section class="mwrap docwrap">
+  ${docNav(d.slug)}
+  <article class="docbody">
+    <p class="docbreadcrumb"><a href="/docs/">Docs</a> <span aria-hidden="true">/</span> ${esc(d.group)}</p>
+    <h1 class="mh2" style="font-size:34px;line-height:42px">${esc(d.title)}</h1>
+    <p class="mlede" style="margin-top:12px">${esc(d.lede)}</p>
+    <p class="docmeta"><span class="num">${d.read} min read</span> &middot; Describes the behaviour this build defines</p>
+    ${d.sections.map((s) => `<section class="docsec">
+      <h2>${esc(s.h)}</h2>
+      ${s.blocks.map(docBlock).join("\n")}
+    </section>`).join("\n")}
+    <nav class="docpn" aria-label="More documentation">
+      ${prev ? `<a href="/docs/${prev.slug}/"><span class="lab">Previous</span><span class="t">${esc(prev.title)}</span></a>` : "<span></span>"}
+      ${next ? `<a href="/docs/${next.slug}/" class="nx"><span class="lab">Next</span><span class="t">${esc(next.title)}</span></a>` : "<span></span>"}
+    </nav>
+  </article>
+</section>`,
+    }));
+  });
+
+  write("docs/index.html", marketing({
+    path: "/docs/", title: "Docs — ForgeLocal", compact: true,
+    desc: "Models, memory, permissions, review and troubleshooting for a local coding agent.",
+    main: head("Documentation", "Docs",
+      esc("Twelve articles covering how models are chosen, what permissions actually guarantee, how changes are reviewed, and what to do when something stops.")) +
+      `<section class="mwrap msec" style="padding-bottom:80px">
+  <div class="measure-w">
+    ${DOC_GROUPS.map(([g, gd]) => `<section class="docgroup">
+      <div class="docgroup-h"><h2>${esc(g)}</h2><p>${esc(gd)}</p></div>
+      <div class="index">
+        ${DOCS.filter((d) => d.group === g).map((d) => `<div class="irow docrow" data-row-target>
+          <a class="t" href="/docs/${d.slug}/">${esc(d.title)}</a>
+          <span class="s num">${d.read} min</span>
+          <p class="d">${esc(d.lede)}</p>
         </div>`).join("\n")}
-    </div>
-    <p class="mut" style="margin:20px 0 0;font-size:14.5px;line-height:23px;max-width:70ch">
-      Docs are written alongside the features they describe. Nothing is published here yet,
-      because there is no shipped build for it to describe.</p>`);
+      </div>
+    </section>`).join("\n")}
+    <p class="mut" style="margin:34px 0 0;font-size:14.5px;line-height:23px;max-width:70ch">
+      These articles describe the behaviour this build defines, including the parts that are not
+      built yet, which are named as such rather than documented as though they work. Release notes
+      will live in the <a class="link" href="/changelog/">changelog</a> once there is a release.</p>
+  </div>
+</section>`,
+  }));
 
   /* /changelog/ — an empty release timeline, deliberately empty rather than a
      placeholder component. */
@@ -293,20 +353,54 @@ export function extraRoutes({ write, marketing, appPage, part, workspace, esc, m
     </dl>`,
     "measure-doc");
 
-  /* The sign-in form stays a contained card: it is a genuinely separate form. */
-  page("signin/", "Sign in", "Account", "Sign in",
-    "An account is only needed for paid plans and syncing settings.",
-    `<form class="box" data-signin novalidate style="padding:24px;max-width:440px;display:flex;flex-direction:column;gap:16px">
+  /* ------------------------------------------------------------ /waitlist/ */
+  /* There is no authentication, so the product does not draw an authentication
+     form. The page reads its intent from the URL and says exactly what it
+     records. A focused shell, not the full marketing page, because the task is
+     one field long. */
+  write("waitlist/index.html", marketing({
+    path: "/waitlist/", title: "Waitlist — ForgeLocal", compact: true,
+    desc: "ForgeLocal is not open yet. Leave an address and we will write once it is.",
+    main: `
+<section class="mwrap msec authwrap">
+  <div class="authcard">
+    <span class="lab" data-wl-kicker>Pro</span>
+    <h1 class="mh2" style="font-size:28px;margin-top:8px" data-wl-h1>Join the Pro waitlist</h1>
+    <p class="mut" style="margin:12px 0 0;font-size:15px;line-height:24px" data-wl-lede>
+      Pro is not open yet. Leave an address and we will write once when it is, and not otherwise.</p>
+
+    <form data-waitlist novalidate style="margin-top:22px;display:flex;flex-direction:column;gap:14px">
       <div class="stack" style="gap:8px">
-        <label class="h3" for="signin-email">Email</label>
-        <span class="field"><input id="signin-email" name="email" type="email" autocomplete="email"
-          placeholder="you@example.com" aria-describedby="signin-help signin-error" required></span>
-        <p class="faint" id="signin-help" style="margin:0;font-size:13px;line-height:19px">No password. We send a one-time link.</p>
-        <p id="signin-error" role="alert" data-signin-error hidden style="margin:0;font-size:13px;line-height:19px;color:var(--bad)"></p>
+        <label class="h3" for="wl-email">Email</label>
+        <span class="field"><input id="wl-email" name="email" type="email" autocomplete="email"
+          placeholder="you@example.com" aria-describedby="wl-help wl-error" required></span>
+        <p class="faint" id="wl-help" style="margin:0;font-size:13px;line-height:20px">
+          Used for this one announcement. No account is created and nothing is shared.</p>
+        <p id="wl-error" role="alert" data-wl-error hidden
+          style="margin:0;font-size:13px;line-height:20px;color:var(--bad)"></p>
       </div>
-      <button class="btn btnp btnl" type="submit" data-signin-submit disabled>Email me a sign-in link</button>
-      <p class="faint" style="margin:0;font-size:13px;line-height:19px">ForgeLocal works locally without an account. Accounts are not open yet, so this records interest rather than creating one.</p>
-    </form>`);
+      <button class="btn btnp btnl" type="submit" data-wl-submit disabled>
+        <span data-wl-cta>Join the Pro waitlist</span></button>
+    </form>
+
+    <div data-wl-done hidden style="margin-top:22px">
+      <p style="margin:0;display:flex;align-items:flex-start;gap:10px;font-size:15px;line-height:24px">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0;margin-top:4px"><path d="M20 6 9 17l-5-5"/></svg>
+        <span><strong data-wl-done-t>You are on the list.</strong><br>
+        <span class="mut">Nothing was sent and nothing was stored: this is a wireframe, and the form
+        is here so the flow can be reviewed end to end.</span></span></p>
+      <div style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap">
+        <a class="btn" href="/models/">Browse models</a>
+        <a class="btn" href="/docs/">Read the docs</a>
+      </div>
+    </div>
+
+    <p class="faint" style="margin:22px 0 0;font-size:13px;line-height:20px">
+      ForgeLocal runs models on your own machine. An account is only ever needed for a paid plan,
+      never for local use. <a class="link" href="/privacy/">What we collect</a>.</p>
+  </div>
+</section>`,
+  }));
 
   /* ---------------------------------------------------------------- /404 */
   write("404.html", marketing({
@@ -343,11 +437,13 @@ export function extraRoutes({ write, marketing, appPage, part, workspace, esc, m
     ["app/permission/", "Workspace", "Permission request"],
     ["app/review/", "WsReview", "Review changes"],
     ["app/stopped/", "Workspace", "Stopped"],
+    ["app/settings/", "Settings", "Settings"],
     ["app/models/", "ModelsExplore", "Models"],
     ["app/models/installed/", "ModelsMine", "My models"],
+    ["app/models/downloads/", "ModelsDownloads", "Downloads"],
   ];
   for (const [path, p, title] of appRoutes) {
-    if (p !== "WsReview" && p !== "ModelsExplore" && p !== "ModelsMine") continue;
+    if (!["WsReview", "ModelsExplore", "ModelsMine", "ModelsDownloads", "Settings"].includes(p)) continue;
     write(`${path}index.html`, appPage({ title: `${title} — ForgeLocal`, body: part(p) }));
   }
 

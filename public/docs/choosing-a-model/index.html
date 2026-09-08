@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Choosing a model that fits — ForgeLocal docs</title>
+<meta name="description" content="The arithmetic behind every fit label, so you can check it yourself.">
+<meta property="og:title" content="Choosing a model that fits — ForgeLocal docs">
+<meta property="og:description" content="The arithmetic behind every fit label, so you can check it yourself.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="ForgeLocal">
+<meta property="og:image" content="https://forgelocal-wireframe.vercel.app/assets/og.svg">
+<meta property="og:url" content="https://forgelocal-wireframe.vercel.app/docs/choosing-a-model/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Choosing a model that fits — ForgeLocal docs">
+<meta name="twitter:description" content="The arithmetic behind every fit label, so you can check it yourself.">
+<meta name="twitter:image" content="https://forgelocal-wireframe.vercel.app/assets/og.svg">
+<link rel="canonical" href="https://forgelocal-wireframe.vercel.app/docs/choosing-a-model/">
+<link rel="icon" href="/assets/mark.svg" type="image/svg+xml">
+<link rel="alternate icon" href="/favicon.ico">
+<link rel="stylesheet" href="/assets/forgelocal.css">
+</head>
+<body class="site" style="">
+<a class="vh" href="#main">Skip to content</a>
+<header class="mhead">
+  <div class="mwrap mhead-in">
+    <a class="brand" href="/">
+      <svg viewBox="0 0 24 24" fill="none" width="22" height="22" aria-hidden="true" focusable="false" style="flex-shrink:0">
+  <rect x="2.4" y="2.4" width="19.2" height="19.2" rx="5.6" stroke="currentColor" stroke-width="1.7"/>
+  <path d="M8.6 8.9 11.7 12l-3.1 3.1" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M13.6 15.1h3.3" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+</svg>
+      <span>ForgeLocal</span>
+    </a>
+    <button class="btn btnq ico" type="button" data-nav-toggle aria-expanded="false" aria-controls="site-nav" aria-label="Menu">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+    <nav id="site-nav" data-nav aria-label="Main">
+      <a href="/product/">Product</a>
+      <a href="/models/">Models</a>
+      <a href="/security/">Security</a>
+      <a href="/pricing/">Pricing</a>
+      <a href="/docs/">Docs</a>
+      <span class="mhead-sp"></span>
+      <a href="/download/" class="btn btns">Download</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+<section class="mwrap docwrap">
+  <nav class="docnav" aria-label="Documentation">
+    <div class="docnav-g">
+      <span class="lab">Getting started</span>
+      <a href="/docs/what-forgelocal-is/">What ForgeLocal is</a>
+<a href="/docs/installing/">Installing</a>
+<a href="/docs/first-task/">Your first task</a>
+    </div>
+<div class="docnav-g">
+      <span class="lab">Models</span>
+      <a href="/docs/choosing-a-model/" aria-current="page" class="on">Choosing a model that fits</a>
+<a href="/docs/quantization/">Quantization and formats</a>
+<a href="/docs/context-and-memory/">Context and memory</a>
+<a href="/docs/managing-models/">Downloading and loading</a>
+    </div>
+<div class="docnav-g">
+      <span class="lab">Working</span>
+      <a href="/docs/modes/">Ask, Plan and Build</a>
+<a href="/docs/permissions/">Permissions</a>
+<a href="/docs/review-and-checkpoints/">Review and checkpoints</a>
+    </div>
+<div class="docnav-g">
+      <span class="lab">Reference</span>
+      <a href="/docs/privacy-and-data/">Where your data lives</a>
+<a href="/docs/troubleshooting/">Troubleshooting</a>
+    </div>
+  </nav>
+  <article class="docbody">
+    <p class="docbreadcrumb"><a href="/docs/">Docs</a> <span aria-hidden="true">/</span> Models</p>
+    <h1 class="mh2" style="font-size:34px;line-height:42px">Choosing a model that fits</h1>
+    <p class="mlede" style="margin-top:12px">The arithmetic behind every fit label, so you can check it yourself.</p>
+    <p class="docmeta"><span class="num">5 min read</span> &middot; Describes the behaviour this build defines</p>
+    <section class="docsec">
+      <h2>The three numbers</h2>
+      <p>Whether a model runs on your machine is a subtraction, not an opinion. Three things occupy video memory at once:</p>
+<dl class="dockv"><div><dt>Weights</dt><dd>The model file itself, at its quantization. Fixed. A 14B model at Q4_K_M is about 8.9 GB.</dd></div><div><dt>Key-value cache</dt><dd>Grows with context length. Roughly linear: doubling the context roughly doubles this.</dd></div><div><dt>Runtime overhead</dt><dd>Compute buffers and the graphics driver's own reservation. A few hundred megabytes to about a gigabyte.</dd></div></dl>
+<p>Add those three and compare to the video memory actually available, which is less than the number on the box because the display and other applications hold some. That comparison is the fit label, and every model page shows the inputs rather than only the verdict.</p>
+    </section>
+<section class="docsec">
+      <h2>What the labels mean</h2>
+      <dl class="dockv"><div><dt>Runs well</dt><dd>The total fits with headroom. Nothing spills to system memory.</dd></div><div><dt>Runs with tradeoffs</dt><dd>It fits, but close to the limit. Expect to lower the context or close other applications.</dd></div><div><dt>Partly on the CPU</dt><dd>The weights do not fit, so some layers run on the processor. It works and it is slower.</dd></div><div><dt>Will not fit</dt><dd>Not enough video memory even with offload worth doing. A smaller model or a smaller quantization is the answer.</dd></div></dl>
+<p class="docnote">No label claims a speed. Throughput depends on your specific card, driver, context and the shape of the work, and none of that has been measured here, so quoting a number would be inventing one.</p>
+    </section>
+<section class="docsec">
+      <h2>Picking between sizes</h2>
+      <p>Larger is not automatically better for coding work. A 14B model that fits at a 16k context will usually beat a 32B model forced to a 4k context, because most real tasks need more of the file than they need of the model. Start with the largest model that fits comfortably at the context you actually work in, not the largest that fits at all.</p>
+<p>The recommendation shown during setup applies exactly that rule, which is why it is sometimes not the biggest model in the list.</p>
+    </section>
+    <nav class="docpn" aria-label="More documentation">
+      <a href="/docs/first-task/"><span class="lab">Previous</span><span class="t">Your first task</span></a>
+      <a href="/docs/quantization/" class="nx"><span class="lab">Next</span><span class="t">Quantization and formats</span></a>
+    </nav>
+  </article>
+</section>
+</main>
+
+<footer class="mfoot mfoot-slim">
+  <div class="mwrap mfoot-legal">
+    <a class="brand small" href="/"><svg viewBox="0 0 24 24" fill="none" width="16" height="16" aria-hidden="true" focusable="false" style="flex-shrink:0">
+  <rect x="2.4" y="2.4" width="19.2" height="19.2" rx="5.6" stroke="currentColor" stroke-width="1.7"/>
+  <path d="M8.6 8.9 11.7 12l-3.1 3.1" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M13.6 15.1h3.3" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+</svg> ForgeLocal</a>
+    <span class="grow"></span>
+    <a href="/privacy/">Privacy</a>
+    <a href="/terms/">Terms</a>
+    <a href="/security/">Security</a>
+  </div>
+</footer>
+<script src="/assets/forgelocal.js" defer></script>
+</body>
+</html>

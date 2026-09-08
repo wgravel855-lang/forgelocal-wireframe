@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ask, Plan and Build — ForgeLocal docs</title>
+<meta name="description" content="Three modes, chosen in the composer, that decide how much the agent is allowed to do.">
+<meta property="og:title" content="Ask, Plan and Build — ForgeLocal docs">
+<meta property="og:description" content="Three modes, chosen in the composer, that decide how much the agent is allowed to do.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="ForgeLocal">
+<meta property="og:image" content="https://forgelocal-wireframe.vercel.app/assets/og.svg">
+<meta property="og:url" content="https://forgelocal-wireframe.vercel.app/docs/modes/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Ask, Plan and Build — ForgeLocal docs">
+<meta name="twitter:description" content="Three modes, chosen in the composer, that decide how much the agent is allowed to do.">
+<meta name="twitter:image" content="https://forgelocal-wireframe.vercel.app/assets/og.svg">
+<link rel="canonical" href="https://forgelocal-wireframe.vercel.app/docs/modes/">
+<link rel="icon" href="/assets/mark.svg" type="image/svg+xml">
+<link rel="alternate icon" href="/favicon.ico">
+<link rel="stylesheet" href="/assets/forgelocal.css">
+</head>
+<body class="site" style="">
+<a class="vh" href="#main">Skip to content</a>
+<header class="mhead">
+  <div class="mwrap mhead-in">
+    <a class="brand" href="/">
+      <svg viewBox="0 0 24 24" fill="none" width="22" height="22" aria-hidden="true" focusable="false" style="flex-shrink:0">
+  <rect x="2.4" y="2.4" width="19.2" height="19.2" rx="5.6" stroke="currentColor" stroke-width="1.7"/>
+  <path d="M8.6 8.9 11.7 12l-3.1 3.1" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M13.6 15.1h3.3" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+</svg>
+      <span>ForgeLocal</span>
+    </a>
+    <button class="btn btnq ico" type="button" data-nav-toggle aria-expanded="false" aria-controls="site-nav" aria-label="Menu">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+    <nav id="site-nav" data-nav aria-label="Main">
+      <a href="/product/">Product</a>
+      <a href="/models/">Models</a>
+      <a href="/security/">Security</a>
+      <a href="/pricing/">Pricing</a>
+      <a href="/docs/">Docs</a>
+      <span class="mhead-sp"></span>
+      <a href="/download/" class="btn btns">Download</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+<section class="mwrap docwrap">
+  <nav class="docnav" aria-label="Documentation">
+    <div class="docnav-g">
+      <span class="lab">Getting started</span>
+      <a href="/docs/what-forgelocal-is/">What ForgeLocal is</a>
+<a href="/docs/installing/">Installing</a>
+<a href="/docs/first-task/">Your first task</a>
+    </div>
+<div class="docnav-g">
+      <span class="lab">Models</span>
+      <a href="/docs/choosing-a-model/">Choosing a model that fits</a>
+<a href="/docs/quantization/">Quantization and formats</a>
+<a href="/docs/context-and-memory/">Context and memory</a>
+<a href="/docs/managing-models/">Downloading and loading</a>
+    </div>
+<div class="docnav-g">
+      <span class="lab">Working</span>
+      <a href="/docs/modes/" aria-current="page" class="on">Ask, Plan and Build</a>
+<a href="/docs/permissions/">Permissions</a>
+<a href="/docs/review-and-checkpoints/">Review and checkpoints</a>
+    </div>
+<div class="docnav-g">
+      <span class="lab">Reference</span>
+      <a href="/docs/privacy-and-data/">Where your data lives</a>
+<a href="/docs/troubleshooting/">Troubleshooting</a>
+    </div>
+  </nav>
+  <article class="docbody">
+    <p class="docbreadcrumb"><a href="/docs/">Docs</a> <span aria-hidden="true">/</span> Working</p>
+    <h1 class="mh2" style="font-size:34px;line-height:42px">Ask, Plan and Build</h1>
+    <p class="mlede" style="margin-top:12px">Three modes, chosen in the composer, that decide how much the agent is allowed to do.</p>
+    <p class="docmeta"><span class="num">3 min read</span> &middot; Describes the behaviour this build defines</p>
+    <section class="docsec">
+      <h2>The three modes</h2>
+      <dl class="dockv"><div><dt>Ask</dt><dd>Answers questions and reads files. Changes nothing. Use it to understand code before touching it.</dd></div><div><dt>Plan</dt><dd>Writes a plan for you to approve before anything runs. Use it when the task spans several files or you are not sure the model has understood.</dd></div><div><dt>Build</dt><dd>Edits files and runs the project's own commands, asking according to your permission preset. The default.</dd></div></dl>
+<p>Mode is per message, not per chat, so you can ask a question in the middle of a build without changing anything about the session.</p>
+    </section>
+<section class="docsec">
+      <h2>When Plan earns its extra step</h2>
+      <p>Plan mode costs you one approval and saves you a review of work that was aimed at the wrong thing. It is worth it when the task touches more than about three files, when it involves a migration or rename that is tedious to revert, or when the first attempt in Build mode came back with the wrong shape.</p>
+<p>It is not worth it for a single obvious edit, where reading the diff is faster than reading the plan and then the diff.</p>
+    </section>
+<section class="docsec">
+      <h2>Mode and permissions are separate</h2>
+      <p class="docnote">Ask mode changes nothing regardless of your permission preset, and Autopilot does not make Ask mode start editing. The mode decides what class of work is on the table; the preset decides how often the agent stops to confirm within that class.</p>
+    </section>
+    <nav class="docpn" aria-label="More documentation">
+      <a href="/docs/managing-models/"><span class="lab">Previous</span><span class="t">Downloading and loading</span></a>
+      <a href="/docs/permissions/" class="nx"><span class="lab">Next</span><span class="t">Permissions</span></a>
+    </nav>
+  </article>
+</section>
+</main>
+
+<footer class="mfoot mfoot-slim">
+  <div class="mwrap mfoot-legal">
+    <a class="brand small" href="/"><svg viewBox="0 0 24 24" fill="none" width="16" height="16" aria-hidden="true" focusable="false" style="flex-shrink:0">
+  <rect x="2.4" y="2.4" width="19.2" height="19.2" rx="5.6" stroke="currentColor" stroke-width="1.7"/>
+  <path d="M8.6 8.9 11.7 12l-3.1 3.1" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M13.6 15.1h3.3" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+</svg> ForgeLocal</a>
+    <span class="grow"></span>
+    <a href="/privacy/">Privacy</a>
+    <a href="/terms/">Terms</a>
+    <a href="/security/">Security</a>
+  </div>
+</footer>
+<script src="/assets/forgelocal.js" defer></script>
+</body>
+</html>

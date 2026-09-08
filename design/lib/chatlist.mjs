@@ -3,6 +3,8 @@
 // and their date group at runtime, so pinning survives without a rebuild.
 import { projects, chats, GROUPS } from "../data/chats.mjs";
 import { threads } from "../data/threads.mjs";
+import { models } from "../data/models.mjs";
+import * as F from "./fit.mjs";
 
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;")
   .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -66,6 +68,25 @@ export function sessionData() {
       route: c.route || null, hasThread: !!threads[c.id],
     })),
     threads,
+    models: models.map((m) => {
+      const fit = F.fitFor(m);
+      return { id: m.id, name: m.displayName, publisher: m.publisher, quant: m.quantization,
+        format: m.format, license: m.licenseId, source: m.sourceUrl, revision: m.sourceRevision,
+        strength: m.strength, limitation: m.limitation, runtime: m.runtime,
+        installed: m.installed, loaded: m.loaded,
+        downloadGB: F.gb(m.downloadBytes, 2), diskGB: F.gb(m.installedBytes, 2),
+        fitLabel: fit.label, fitTone: fit.tone, fitReason: fit.reason,
+        needGB: F.gb(fit.required, 1), vramGB: F.gb(F.thisPC.vramBytes, 0),
+        context: F.fmtCtx(fit.context),
+        contexts: m.contextOptions.map((c) => {
+          const f = F.fitAtContext(m, F.thisPC, c);
+          return { ctx: F.fmtCtx(c), need: F.gb(F.requiredBytes(m, c), 1),
+            label: f.label, tone: f.tone };
+        }),
+        offload: String(m.gpuOffloadLayers),
+        store: "C:\Users\you\ForgeLocal\models",
+      };
+    }),
   };
   // a literal < is escaped so no payload value can close the element early
   const json = JSON.stringify(payload).split(String.fromCharCode(60)).join("\\u003c");

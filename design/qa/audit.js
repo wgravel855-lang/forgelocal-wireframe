@@ -17,15 +17,15 @@
 (() => {
   const ROUTES = {
     app: ["/app/", "/app/running/", "/app/permission/", "/app/review/", "/app/stopped/",
-      "/app/models/", "/app/models/installed/",
+      "/app/models/", "/app/models/installed/", "/app/models/downloads/", "/app/settings/",
       "/setup/1/", "/setup/2/", "/setup/3/", "/setup/4/", "/setup/5/"],
     site: ["/", "/product/", "/models/", "/models/qwen25-coder-14b-q4km/", "/download/",
       "/pricing/", "/security/", "/docs/", "/changelog/", "/privacy/", "/terms/",
-      "/status/", "/signin/", "/404.html"],
+      "/status/", "/waitlist/", "/docs/permissions/", "/docs/choosing-a-model/", "/404.html"],
   };
   const VIEWPORTS = {
-    app: [[1440, 900], [1366, 768], [1024, 768], [768, 1024]],
-    site: [[1440, 900], [1366, 768], [1024, 768], [768, 1024], [390, 844], [375, 812]],
+    app: [[1920, 1080], [1440, 900], [1366, 768], [1024, 768], [768, 1024], [720, 900], [390, 844]],
+    site: [[1920, 1080], [1440, 900], [1366, 768], [1024, 768], [768, 1024], [720, 900], [390, 844], [375, 812]],
   };
 
   const lum = (c) => { const [r, g, b] = c.map((v) => { v /= 255; return v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4; }); return .2126 * r + .7152 * g + .0722 * b; };
@@ -67,6 +67,19 @@
     const comp = isApp ? d.querySelector(".composer") : null;
     if (comp && Math.round(comp.getBoundingClientRect().bottom) > W.innerHeight + 1)
       add("composer-below-fold", "");
+
+    // ---- content clipped above its own scroll container ----
+    // justify-content:center on a scrollable column overflows in both
+    // directions, so tall content loses its top and cannot be scrolled back.
+    for (const sc of d.querySelectorAll(".ob-body, .scroll, .thread-scroll")) {
+      if (!visible(sc, W)) continue;
+      if (sc.scrollTop > 0) continue;
+      const top = sc.getBoundingClientRect().top;
+      const first = sc.firstElementChild;
+      if (first && visible(first, W) && first.getBoundingClientRect().top - top < -1)
+        add("clipped-above-scroll",
+          Math.round(top - first.getBoundingClientRect().top) + "px of " + (sc.className || sc.tagName));
+    }
 
     // ---- text size ----
     for (const el of d.querySelectorAll("*")) {
@@ -127,7 +140,9 @@
     }
 
     // ---- semantics ----
-    if (isApp && /\/app\/(?!models)/.test(route) && !d.querySelector("textarea"))
+    // A conversation route needs a real composer. Settings and the model
+    // surfaces are not conversation routes and never had one.
+    if (isApp && /\/app\/(?!models|settings)/.test(route) && !d.querySelector("textarea"))
       add("no-textarea", "workspace must contain a real textarea");
     if (/\/models\/$|\/app\/models\//.test(route) && !d.querySelector('input[type="search"], input'))
       add("no-input", "model surface must contain a real input");

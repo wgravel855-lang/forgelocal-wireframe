@@ -3,10 +3,24 @@
   <textarea id="composer-input" class="ta" rows="1" placeholder="{{placeholder}}"></textarea>
 
   <div class="cbar">
-    <button class="btn btnq ico btns" type="button" aria-label="Attach a file or add context"
-      data-inert="Attachments are not implemented in this prototype.">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M12 5.5v13M5.5 12h13"/></svg>
-    </button>
+    <div style="position:relative">
+      <button class="btn btnq ico btns" type="button" data-popover="ctx-pop" aria-expanded="false"
+        aria-haspopup="dialog" aria-label="What the model can see">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M12 5.5v13M5.5 12h13"/></svg>
+      </button>
+      <div class="menu popover pdetails" id="ctx-pop" role="dialog" aria-label="What the model can see"
+        hidden style="bottom:calc(100% + 8px);top:auto;left:0;width:320px">
+        <p class="pd-h"><span class="dot ok" aria-hidden="true"></span>Everything stays on this device</p>
+        <dl class="pd-kv">
+          <dt>Project root</dt><dd><span class="m" data-pd-path>~/projects/task-tracker</span></dd>
+          <dt>Reads</dt><dd>Files under the root, when a task needs them</dd>
+          <dt>Never reads</dt><dd>Anything outside the root, or matching a secret pattern, without asking</dd>
+          <dt>Context used</dt><dd><span class="num">5.6k of 16k tokens</span></dd>
+        </dl>
+        <p class="pd-bar"><span class="faint">Attaching a specific file or URL is planned. Today the
+          agent chooses what to read inside the root and every read is listed in the activity group.</span></p>
+      </div>
+    </div>
 
     <div style="position:relative">
       <button class="btn btnq btns" type="button" data-popover="model-pop" aria-expanded="false" aria-haspopup="menu">

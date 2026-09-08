@@ -1,175 +1,172 @@
-<div class="win" style="width:1440px;height:900px">
+<div class="app" style="height:100%;position:relative">
+  <div class="shell">
 
-  <div class="chrome">
-    <div class="xbox" style="width:16px;height:16px"></div>
-    <span style="font-size:13px;font-weight:600">ForgeLocal</span>
-    <span class="mut" style="font-size:13px">Settings</span>
-    <div style="flex-grow:1"></div>
-    <div style="display:flex;align-items:center;gap:16px">
-      <div class="ph" style="width:11px;height:2px"></div>
-      <div class="ph" style="width:9px;height:9px;border-radius:1px"></div>
-      <div class="ph" style="width:10px;height:10px;border-radius:1px"></div>
-    </div>
-  </div>
+    <!--#include sidebar.html {"active":"settings","mode":"normal"} -->
 
-  <div style="flex-grow:1;min-height:0;display:flex;background:#FFFFFF">
+    <div class="main">
+      <header class="topbar">
+        <button class="btn btnq ico btns" type="button" data-sidebar-toggle aria-expanded="true" aria-label="Hide sidebar">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M9.5 4v16"/></svg>
+        </button>
+        <span style="font-size:13.5px;font-weight:600">Settings</span>
+        <span class="grow"></span>
+        <a class="btn btns btnq" href="/app/">Back to chat</a>
+      </header>
 
-    <div style="width:240px;flex-shrink:0;border-right:1px solid #DAD5CB;background:#F1EDE5;padding:12px 10px;display:flex;flex-direction:column;gap:3px">
-      <div style="display:flex;align-items:center;gap:8px;padding:7px 8px;margin-bottom:6px">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5B5CF0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-        <a href="#" style="font-size:13px">Back to task-tracker</a>
-      </div>
-      <span class="lab" style="padding:0 8px 8px">Settings</span>
-      <div style="padding:8px 10px;font-size:13px;color:#6E6A62">Runtime</div>
-      <div style="padding:8px 10px;font-size:13px;color:#6E6A62">Models and profiles</div>
-      <div style="padding:8px 10px;font-size:13px;color:#6E6A62">Safety and permissions</div>
-      <div style="padding:8px 10px;font-size:13px;font-weight:600;border-radius:4px;background:#FFFFFF;border:1px solid #C9C6BE">Privacy and diagnostics</div>
-      <div style="padding:8px 10px;font-size:13px;color:#6E6A62">Project memory</div>
-      <div style="padding:8px 10px;font-size:13px;color:#6E6A62">Cloud boost and billing</div>
-      <div style="padding:8px 10px;font-size:13px;color:#6E6A62">Advanced</div>
-      <div style="flex-grow:1"></div>
-      <div class="box soft" style="padding:11px;display:flex;flex-direction:column;gap:5px">
-        <span class="lab">Uninstall</span>
-        <span class="mut" style="font-size:13px">Removing the app never silently deletes downloaded models. You are asked, with the size.</span>
-      </div>
-    </div>
+      <div class="scroll setwrap">
+        <!-- A section list and one readable column, not a grid of cards. -->
+        <nav class="setnav" aria-label="Settings sections">
+          <a class="srow is-on" href="#general" aria-current="true"><span class="t">General</span></a>
+          <a class="srow" href="#appearance"><span class="t">Appearance</span></a>
+          <a class="srow" href="#models"><span class="t">Models &amp; runtime</span></a>
+          <a class="srow" href="#permissions"><span class="t">Permissions</span></a>
+          <a class="srow" href="#privacy"><span class="t">Privacy &amp; diagnostics</span></a>
+          <a class="srow" href="#about"><span class="t">About</span></a>
+        </nav>
 
-    <div style="flex-grow:1;min-width:0;padding:24px 28px;display:flex;flex-direction:column;gap:18px;overflow:hidden">
+        <div class="setcol">
+          <section class="setsec" id="general">
+            <h1 class="h1" style="font-size:24px">General</h1>
+            <div class="setrow">
+              <div><span class="set-l">Default project folder</span>
+                <p class="set-d">Where the folder picker opens when you start a project.</p></div>
+              <span class="m set-v">~/projects</span>
+            </div>
+            <div class="setrow">
+              <div><span class="set-l">Start ForgeLocal with Windows</span>
+                <p class="set-d" data-off="Off. The app only runs when you open it."
+                  data-on="On. It starts with Windows and waits in the tray.">Off. The app only runs when you open it.</p></div>
+              <button class="switch" type="button" role="switch" aria-checked="false" aria-label="Start ForgeLocal with Windows"><span></span></button>
+            </div>
+            <div class="setrow">
+              <div><span class="set-l">Update channel</span>
+                <p class="set-d">No build is published yet, so there is nothing to update from.</p></div>
+              <span class="set-v faint">Not available</span>
+            </div>
+          </section>
 
-      <div style="display:flex;flex-direction:column;gap:5px">
-        <h1 class="h1" style="font-size:22px">Privacy and diagnostics</h1>
-        <span class="mut" style="font-size:13px">Everything below is off until you turn it on. The app works with all of it off.</span>
-      </div>
+          <section class="setsec" id="appearance">
+            <h2 class="h1" style="font-size:20px">Appearance</h2>
+            <div class="setrow">
+              <div><span class="set-l">Theme</span>
+                <p class="set-d">The workspace is dark and the public site is light. A theme choice
+                  is not built yet.</p></div>
+              <span class="set-v faint">Dark workspace</span>
+            </div>
+            <div class="setrow">
+              <div><span class="set-l">Reduced motion</span>
+                <p class="set-d">Follows your system setting. When it is on, the composer edge stops
+                  moving and scrolling jumps rather than glides.</p></div>
+              <span class="set-v" data-reduced-state>Following system</span>
+            </div>
+          </section>
 
-      <div style="display:flex;gap:18px;flex-grow:1;min-height:0">
+          <section class="setsec" id="models">
+            <h2 class="h1" style="font-size:20px">Models &amp; runtime</h2>
+            <div class="setrow">
+              <div><span class="set-l">Runtime</span>
+                <p class="set-d">Managed by ForgeLocal. Reinstalling replaces the binary, not your models.</p></div>
+              <span class="m set-v">llama.cpp b4021</span>
+            </div>
+            <div class="setrow">
+              <div><span class="set-l">Default model</span>
+                <p class="set-d">Used for a new chat in any mode until you change it in the composer.</p></div>
+              <span class="set-v">Qwen2.5 Coder 14B</span>
+            </div>
+            <div class="setrow">
+              <div><span class="set-l">Model folder</span>
+                <p class="set-d">13.7 GB of models on disk. Moving the folder is not built yet.</p></div>
+              <span class="m set-v">C:\Users\you\ForgeLocal\models</span>
+            </div>
+            <div class="setrow">
+              <div><span class="set-l">Unload after idle</span>
+                <p class="set-d">Frees video memory when a model has not been used for a while.</p></div>
+              <span class="set-v">30 minutes</span>
+            </div>
+          </section>
 
-        <div style="flex-grow:1;min-width:0;display:flex;flex-direction:column;gap:16px">
-
-          <div style="display:flex;flex-direction:column;gap:8px">
-            <span class="lab">What leaves this device</span>
-            <div class="box" style="display:flex;flex-direction:column">
-              <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid #E4DFD5">
-                <div style="display:flex;flex-direction:column;gap:2px;flex-grow:1">
-                  <span class="h3">Crash reports</span>
-                  <span class="mut" style="font-size:13px">Stack traces and app version. No file contents, no prompts.</span>
-                </div>
-                <div style="width:34px;height:19px;border-radius:10px;background:#DFDAD0;padding:2px;flex-shrink:0"><div style="width:15px;height:15px;border-radius:50%;background:#FFFFFF;border:1px solid #C9C6BE"></div></div>
+          <!-- Every "always allow" made in a permission prompt lands here, with
+               the scope it was granted at and a way to take it back. -->
+          <section class="setsec" id="permissions">
+            <h2 class="h1" style="font-size:20px">Permissions</h2>
+            <p class="set-lede">The preset decides how often the agent stops to ask. Remembered
+              approvals are listed underneath and can be revoked one at a time.</p>
+            <div class="setrow">
+              <div><span class="set-l">Preset for task-tracker</span>
+                <p class="set-d">Edits and the project's own test and build commands run on their
+                  own. Installing packages, network access, Git writes and deletes ask first.</p></div>
+              <span class="set-v" data-preset-label>Balanced</span>
+            </div>
+            <h3 class="set-h3">Remembered approvals</h3>
+            <div class="index" data-approvals>
+              <div class="setrow" data-approval="npm-install">
+                <div><span class="m set-l">npm install</span>
+                  <p class="set-d">Always allowed in <span class="m">~/projects/task-tracker</span>.
+                    Reaches the npm registry, writes inside node_modules and package.json.</p></div>
+                <button class="btn btns" type="button" data-revoke="npm install in task-tracker">Revoke</button>
               </div>
-              <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid #E4DFD5">
-                <div style="display:flex;flex-direction:column;gap:2px;flex-grow:1">
-                  <span class="h3">Anonymous usage counts</span>
-                  <span class="mut" style="font-size:13px">Which screens are used, and how often a task completes.</span>
-                </div>
-                <div style="width:34px;height:19px;border-radius:10px;background:#DFDAD0;padding:2px;flex-shrink:0"><div style="width:15px;height:15px;border-radius:50%;background:#FFFFFF;border:1px solid #C9C6BE"></div></div>
-              </div>
-              <div style="display:flex;align-items:center;gap:12px;padding:12px 14px">
-                <div style="display:flex;flex-direction:column;gap:2px;flex-grow:1">
-                  <span class="h3">Contribute profile test results</span>
-                  <span class="mut" style="font-size:13px">Pass, fail and timings from the self-test, plus the hardware class. Improves the matrix for machines like yours.</span>
-                </div>
-                <div style="width:34px;height:19px;border-radius:10px;background:#DFDAD0;padding:2px;flex-shrink:0"><div style="width:15px;height:15px;border-radius:50%;background:#FFFFFF;border:1px solid #C9C6BE"></div></div>
+              <div class="setrow" data-approval="vitest">
+                <div><span class="m set-l">npm test</span>
+                  <p class="set-d">Always allowed in <span class="m">~/projects/task-tracker</span>.
+                    Runs the project's own test script. No network.</p></div>
+                <button class="btn btns" type="button" data-revoke="npm test in task-tracker">Revoke</button>
               </div>
             </div>
-            <a href="#" style="font-size:13px">Exactly what is collected, field by field</a>
-          </div>
-
-          <div style="display:flex;flex-direction:column;gap:8px;flex-grow:1;min-height:0">
-            <span class="lab">Diagnostics report</span>
-            <div class="box" style="padding:14px;display:flex;flex-direction:column;gap:11px;flex-grow:1;min-height:0">
-              <span class="mut" style="font-size:13px">Built on demand, shown in full before it goes anywhere, and redacted by rule rather than by best effort.</span>
-              <div class="box m" style="padding:10px 12px;font-size:13px;background:#F1EDE5;display:flex;flex-direction:column;gap:4px;flex-grow:1;min-height:0;overflow:hidden">
-                <div>runtime      ollama [x.y.z]  healthy</div>
-                <div>profile      [model:tag] rev [n]</div>
-                <div>hardware     12 GB VRAM / 32 GB RAM / 16 cores</div>
-                <div>last error   tool_call.schema_repair_failed</div>
-                <div>project      &lt;redacted path&gt;</div>
-                <div>env          &lt;redacted: 4 keys matched secret patterns&gt;</div>
-                <div>prompt       &lt;not included&gt;</div>
-              </div>
-              <div style="display:flex;align-items:center;gap:9px">
-                <div class="btn btns" style="height:36px">Copy</div>
-                <div class="btn btns" style="height:36px">Save to a file</div>
-                <div style="flex-grow:1"></div>
-                <span class="mut" style="font-size:13px">Nothing is sent automatically.</span>
-              </div>
+            <p class="set-empty" data-approvals-empty hidden>No remembered approvals. Every command
+              in this project stops and asks.</p>
+            <div class="setrow" style="border-top:1px solid var(--line)">
+              <div><span class="set-l">Always blocked</span>
+                <p class="set-d">Deletes outside the project root, reads of files matching a secret
+                  pattern, and system-wide changes stop and ask in every preset. This cannot be
+                  turned off.</p></div>
             </div>
-          </div>
+          </section>
 
+          <section class="setsec" id="privacy">
+            <h2 class="h1" style="font-size:20px">Privacy &amp; diagnostics</h2>
+            <div class="setrow">
+              <div><span class="set-l">Crash reports</span>
+                <p class="set-d" data-off="Off. Nothing is sent when the app stops unexpectedly."
+                  data-on="On. A crash sends the stack trace and app version, nothing from your project.">Off. Nothing is sent when the app stops unexpectedly.</p></div>
+              <button class="switch" type="button" role="switch" aria-checked="false" aria-label="Send crash reports"><span></span></button>
+            </div>
+            <div class="setrow">
+              <div><span class="set-l">Anonymous usage counts</span>
+                <p class="set-d" data-off="Off. No counts of features used leave this machine."
+                  data-on="On. Counts of features used are sent. No prompts, code or file names.">Off. No counts of features used leave this machine.</p></div>
+              <button class="switch" type="button" role="switch" aria-checked="false" aria-label="Send anonymous usage counts"><span></span></button>
+            </div>
+            <div class="setrow">
+              <div><span class="set-l">Contributed profile results</span>
+                <p class="set-d" data-off="Off. Model fit results measured here are not shared."
+                  data-on="On. Fit results for this hardware are shared, with no identifier attached.">Off. Model fit results measured here are not shared.</p></div>
+              <button class="switch" type="button" role="switch" aria-checked="false" aria-label="Contribute profile results"><span></span></button>
+            </div>
+            <div class="setrow">
+              <div><span class="set-l">Local data</span>
+                <p class="set-d">Chats, checkpoints and settings live in a SQLite file in your app
+                  data folder. Prompts and replies never leave the machine while a local model is
+                  in use.</p></div>
+              <a class="btn btns" href="/privacy/">Read the policy</a>
+            </div>
+          </section>
+
+          <section class="setsec" id="about">
+            <h2 class="h1" style="font-size:20px">About</h2>
+            <div class="setrow">
+              <div><span class="set-l">ForgeLocal</span>
+                <p class="set-d">Wireframe build. No installer is published and no model adapter is
+                  connected, so nothing here talks to a model.</p></div>
+              <span class="m set-v">wireframe</span>
+            </div>
+            <div class="setrow">
+              <div><span class="set-l">Keyboard shortcuts</span>
+                <p class="set-d">The full list, including new chat, search and focus composer.</p></div>
+              <button class="btn btns" type="button" data-shortcuts>Show shortcuts</button>
+            </div>
+          </section>
         </div>
-
-        <div style="width:300px;flex-shrink:0;display:flex;flex-direction:column;gap:16px">
-
-          <div style="display:flex;flex-direction:column;gap:8px">
-            <span class="lab">Where your data lives</span>
-            <div class="box" style="display:flex;flex-direction:column">
-              <div style="padding:10px 13px;border-bottom:1px solid #E4DFD5;display:flex;flex-direction:column;gap:2px">
-                <span class="mut" style="font-size:13px">Projects</span>
-                <span class="m" style="font-size:13px">folders you chose, untouched</span>
-              </div>
-              <div style="padding:10px 13px;border-bottom:1px solid #E4DFD5;display:flex;flex-direction:column;gap:2px">
-                <span class="mut" style="font-size:13px">Model weights</span>
-                <span class="m" style="font-size:13px">C:\Users\[you]\.ollama\models</span>
-              </div>
-              <div style="padding:10px 13px;border-bottom:1px solid #E4DFD5;display:flex;flex-direction:column;gap:2px">
-                <span class="mut" style="font-size:13px">Tasks, checkpoints, settings</span>
-                <span class="m" style="font-size:13px">%APPDATA%\ForgeLocal\local.db</span>
-              </div>
-              <div style="padding:10px 13px;display:flex;flex-direction:column;gap:2px">
-                <span class="mut" style="font-size:13px">Cloud keys, if any</span>
-                <span class="m" style="font-size:13px">Windows Credential Manager</span>
-              </div>
-            </div>
-          </div>
-
-          <div style="display:flex;flex-direction:column;gap:8px">
-            <span class="lab">Redaction rules</span>
-            <div class="box" style="padding:13px;display:flex;flex-direction:column;gap:7px">
-              <span class="mut" style="font-size:13px">.env files and credential patterns are stripped from model context unless you approve them one at a time.</span>
-              <div style="display:flex;gap:6px;flex-wrap:wrap">
-                <span class="pill" >.env</span>
-                <span class="pill" >*.pem</span>
-                <span class="pill" >API keys</span>
-                <span class="pill" >tokens</span>
-              </div>
-              <a href="#" style="font-size:13px">Edit patterns</a>
-            </div>
-          </div>
-
-          <div style="flex-grow:1"></div>
-
-          <div class="box soft" style="padding:12px;display:flex;flex-direction:column;gap:6px">
-            <span class="lab">Delete everything</span>
-            <span class="mut" style="font-size:13px">Removes tasks, checkpoints and settings. Your project folders and downloaded models are listed separately, with sizes, before anything is removed.</span>
-            <div class="btn btns" style="height:36px;border-color:#B4514A;color:#8E4A44">Review what would be deleted</div>
-          </div>
-
-        </div>
-
       </div>
-
     </div>
-
   </div>
-
-  <div style="height:30px;flex-shrink:0;border-top:1px solid #DAD5CB;background:#EFEBE3;display:flex;align-items:center;padding:0 14px;font-size:13px">
-    <div style="display:flex;align-items:center;gap:7px;padding-right:14px;border-right:1px solid #DAD5CB">
-      <div class="dot" style="width:7px;height:7px;background:#5F7F63"></div>
-      <span>Balanced</span>
-      <span class="m mut">[model:tag]</span>
-    </div>
-    <div style="display:flex;align-items:center;gap:7px;padding:0 14px;border-right:1px solid #DAD5CB"><span>Local</span></div>
-    <div style="display:flex;align-items:center;gap:7px;padding:0 14px;border-right:1px solid #DAD5CB">
-      <span class="mut">RAM</span>
-      <div class="track" style="width:52px;height:5px"><div class="fillbar" style="width:31%;background:#8B867C"></div></div>
-      <span class="mut">31%</span>
-    </div>
-    <div style="display:flex;align-items:center;gap:7px;padding:0 14px;border-right:1px solid #DAD5CB">
-      <span class="mut">Context</span>
-      <div class="track" style="width:52px;height:5px"><div class="fillbar" style="width:0%"></div></div>
-      <span class="mut">idle</span>
-    </div>
-    <div style="flex-grow:1"></div>
-    <div style="display:flex;align-items:center;gap:7px"><span class="mut">Safety</span><span>Balanced</span></div>
-  </div>
-
 </div>

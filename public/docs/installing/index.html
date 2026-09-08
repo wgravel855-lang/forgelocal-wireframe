@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Installing — ForgeLocal docs</title>
+<meta name="description" content="There is no build to install yet. This is what the installer will and will not do.">
+<meta property="og:title" content="Installing — ForgeLocal docs">
+<meta property="og:description" content="There is no build to install yet. This is what the installer will and will not do.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="ForgeLocal">
+<meta property="og:image" content="https://forgelocal-wireframe.vercel.app/assets/og.svg">
+<meta property="og:url" content="https://forgelocal-wireframe.vercel.app/docs/installing/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Installing — ForgeLocal docs">
+<meta name="twitter:description" content="There is no build to install yet. This is what the installer will and will not do.">
+<meta name="twitter:image" content="https://forgelocal-wireframe.vercel.app/assets/og.svg">
+<link rel="canonical" href="https://forgelocal-wireframe.vercel.app/docs/installing/">
+<link rel="icon" href="/assets/mark.svg" type="image/svg+xml">
+<link rel="alternate icon" href="/favicon.ico">
+<link rel="stylesheet" href="/assets/forgelocal.css">
+</head>
+<body class="site" style="">
+<a class="vh" href="#main">Skip to content</a>
+<header class="mhead">
+  <div class="mwrap mhead-in">
+    <a class="brand" href="/">
+      <svg viewBox="0 0 24 24" fill="none" width="22" height="22" aria-hidden="true" focusable="false" style="flex-shrink:0">
+  <rect x="2.4" y="2.4" width="19.2" height="19.2" rx="5.6" stroke="currentColor" stroke-width="1.7"/>
+  <path d="M8.6 8.9 11.7 12l-3.1 3.1" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M13.6 15.1h3.3" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+</svg>
+      <span>ForgeLocal</span>
+    </a>
+    <button class="btn btnq ico" type="button" data-nav-toggle aria-expanded="false" aria-controls="site-nav" aria-label="Menu">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+    <nav id="site-nav" data-nav aria-label="Main">
+      <a href="/product/">Product</a>
+      <a href="/models/">Models</a>
+      <a href="/security/">Security</a>
+      <a href="/pricing/">Pricing</a>
+      <a href="/docs/">Docs</a>
+      <span class="mhead-sp"></span>
+      <a href="/download/" class="btn btns">Download</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+<section class="mwrap docwrap">
+  <nav class="docnav" aria-label="Documentation">
+    <div class="docnav-g">
+      <span class="lab">Getting started</span>
+      <a href="/docs/what-forgelocal-is/">What ForgeLocal is</a>
+<a href="/docs/installing/" aria-current="page" class="on">Installing</a>
+<a href="/docs/first-task/">Your first task</a>
+    </div>
+<div class="docnav-g">
+      <span class="lab">Models</span>
+      <a href="/docs/choosing-a-model/">Choosing a model that fits</a>
+<a href="/docs/quantization/">Quantization and formats</a>
+<a href="/docs/context-and-memory/">Context and memory</a>
+<a href="/docs/managing-models/">Downloading and loading</a>
+    </div>
+<div class="docnav-g">
+      <span class="lab">Working</span>
+      <a href="/docs/modes/">Ask, Plan and Build</a>
+<a href="/docs/permissions/">Permissions</a>
+<a href="/docs/review-and-checkpoints/">Review and checkpoints</a>
+    </div>
+<div class="docnav-g">
+      <span class="lab">Reference</span>
+      <a href="/docs/privacy-and-data/">Where your data lives</a>
+<a href="/docs/troubleshooting/">Troubleshooting</a>
+    </div>
+  </nav>
+  <article class="docbody">
+    <p class="docbreadcrumb"><a href="/docs/">Docs</a> <span aria-hidden="true">/</span> Getting started</p>
+    <h1 class="mh2" style="font-size:34px;line-height:42px">Installing</h1>
+    <p class="mlede" style="margin-top:12px">There is no build to install yet. This is what the installer will and will not do.</p>
+    <p class="docmeta"><span class="num">2 min read</span> &middot; Describes the behaviour this build defines</p>
+    <section class="docsec">
+      <h2>Current state</h2>
+      <p>No installer is published. There is no version number, no checksum and no signing certificate to verify, so this page cannot give you install instructions without inventing them. The download page carries the same statement and a waitlist instead of a button that does nothing.</p>
+<p class="docnote">When a signed build exists, its version, SHA-256 checksum and certificate subject appear on the download page and in the changelog entry for that release.</p>
+    </section>
+<section class="docsec">
+      <h2>What setup will ask for</h2>
+      <p>Setup is five steps, and it is worth knowing in advance which of them touch your machine.</p>
+<ol class="doclist"><li>A welcome screen. Nothing is read yet.</li><li>A hardware scan, after you agree to it. It reads CPU, total and free memory, video memory, free disk and whether a runtime is already installed. The reading stays on the device.</li><li>One model recommendation with the arithmetic shown, and alternatives behind a disclosure. Installing it downloads the runtime and the weights, then runs a capability self-test.</li><li>A project folder and a permission preset. File access is limited to that folder by default.</li><li>The workspace, with an empty chat.</li></ol>
+    </section>
+<section class="docsec">
+      <h2>System requirements</h2>
+      <dl class="dockv"><div><dt>Operating system</dt><dd>Windows 10 and 11, 64-bit. x64 and ARM64.</dd></div><div><dt>Video memory</dt><dd>Determines which models fit. 8 GB runs a 7B model comfortably, 12 GB runs a 14B model at a moderate context.</dd></div><div><dt>Disk</dt><dd>The weights, not the download, are what you need room for. A 14B model at Q4_K_M is about 9 GB on disk.</dd></div><div><dt>Network</dt><dd>Needed once to download the runtime and a model. After that the agent works offline.</dd></div></dl>
+<p>There is no minimum graphics card, because a model that does not fit in video memory can still run partly on the CPU. It is slower, and the model pages say so rather than hiding the option.</p>
+    </section>
+    <nav class="docpn" aria-label="More documentation">
+      <a href="/docs/what-forgelocal-is/"><span class="lab">Previous</span><span class="t">What ForgeLocal is</span></a>
+      <a href="/docs/first-task/" class="nx"><span class="lab">Next</span><span class="t">Your first task</span></a>
+    </nav>
+  </article>
+</section>
+</main>
+
+<footer class="mfoot mfoot-slim">
+  <div class="mwrap mfoot-legal">
+    <a class="brand small" href="/"><svg viewBox="0 0 24 24" fill="none" width="16" height="16" aria-hidden="true" focusable="false" style="flex-shrink:0">
+  <rect x="2.4" y="2.4" width="19.2" height="19.2" rx="5.6" stroke="currentColor" stroke-width="1.7"/>
+  <path d="M8.6 8.9 11.7 12l-3.1 3.1" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M13.6 15.1h3.3" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+</svg> ForgeLocal</a>
+    <span class="grow"></span>
+    <a href="/privacy/">Privacy</a>
+    <a href="/terms/">Terms</a>
+    <a href="/security/">Security</a>
+  </div>
+</footer>
+<script src="/assets/forgelocal.js" defer></script>
+</body>
+</html>

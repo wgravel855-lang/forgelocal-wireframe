@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Where your data lives — ForgeLocal docs</title>
+<meta name="description" content="What is on your disk, what is optional, and what changes with a cloud model.">
+<meta property="og:title" content="Where your data lives — ForgeLocal docs">
+<meta property="og:description" content="What is on your disk, what is optional, and what changes with a cloud model.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="ForgeLocal">
+<meta property="og:image" content="https://forgelocal-wireframe.vercel.app/assets/og.svg">
+<meta property="og:url" content="https://forgelocal-wireframe.vercel.app/docs/privacy-and-data/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Where your data lives — ForgeLocal docs">
+<meta name="twitter:description" content="What is on your disk, what is optional, and what changes with a cloud model.">
+<meta name="twitter:image" content="https://forgelocal-wireframe.vercel.app/assets/og.svg">
+<link rel="canonical" href="https://forgelocal-wireframe.vercel.app/docs/privacy-and-data/">
+<link rel="icon" href="/assets/mark.svg" type="image/svg+xml">
+<link rel="alternate icon" href="/favicon.ico">
+<link rel="stylesheet" href="/assets/forgelocal.css">
+</head>
+<body class="site" style="">
+<a class="vh" href="#main">Skip to content</a>
+<header class="mhead">
+  <div class="mwrap mhead-in">
+    <a class="brand" href="/">
+      <svg viewBox="0 0 24 24" fill="none" width="22" height="22" aria-hidden="true" focusable="false" style="flex-shrink:0">
+  <rect x="2.4" y="2.4" width="19.2" height="19.2" rx="5.6" stroke="currentColor" stroke-width="1.7"/>
+  <path d="M8.6 8.9 11.7 12l-3.1 3.1" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M13.6 15.1h3.3" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+</svg>
+      <span>ForgeLocal</span>
+    </a>
+    <button class="btn btnq ico" type="button" data-nav-toggle aria-expanded="false" aria-controls="site-nav" aria-label="Menu">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+    <nav id="site-nav" data-nav aria-label="Main">
+      <a href="/product/">Product</a>
+      <a href="/models/">Models</a>
+      <a href="/security/">Security</a>
+      <a href="/pricing/">Pricing</a>
+      <a href="/docs/">Docs</a>
+      <span class="mhead-sp"></span>
+      <a href="/download/" class="btn btns">Download</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+<section class="mwrap docwrap">
+  <nav class="docnav" aria-label="Documentation">
+    <div class="docnav-g">
+      <span class="lab">Getting started</span>
+      <a href="/docs/what-forgelocal-is/">What ForgeLocal is</a>
+<a href="/docs/installing/">Installing</a>
+<a href="/docs/first-task/">Your first task</a>
+    </div>
+<div class="docnav-g">
+      <span class="lab">Models</span>
+      <a href="/docs/choosing-a-model/">Choosing a model that fits</a>
+<a href="/docs/quantization/">Quantization and formats</a>
+<a href="/docs/context-and-memory/">Context and memory</a>
+<a href="/docs/managing-models/">Downloading and loading</a>
+    </div>
+<div class="docnav-g">
+      <span class="lab">Working</span>
+      <a href="/docs/modes/">Ask, Plan and Build</a>
+<a href="/docs/permissions/">Permissions</a>
+<a href="/docs/review-and-checkpoints/">Review and checkpoints</a>
+    </div>
+<div class="docnav-g">
+      <span class="lab">Reference</span>
+      <a href="/docs/privacy-and-data/" aria-current="page" class="on">Where your data lives</a>
+<a href="/docs/troubleshooting/">Troubleshooting</a>
+    </div>
+  </nav>
+  <article class="docbody">
+    <p class="docbreadcrumb"><a href="/docs/">Docs</a> <span aria-hidden="true">/</span> Reference</p>
+    <h1 class="mh2" style="font-size:34px;line-height:42px">Where your data lives</h1>
+    <p class="mlede" style="margin-top:12px">What is on your disk, what is optional, and what changes with a cloud model.</p>
+    <p class="docmeta"><span class="num">3 min read</span> &middot; Describes the behaviour this build defines</p>
+    <section class="docsec">
+      <h2>On your machine</h2>
+      <p>Chats, checkpoints, project settings and permission rules are stored in a SQLite file in your Windows app data folder. While you are using a local model, your prompts, the model's replies and the file contents it reads are processed on your machine and are not transmitted.</p>
+<dl class="dockv"><div><dt>Chats and checkpoints</dt><dd>SQLite, in your app data folder.</dd></div><div><dt>Models</dt><dd>A folder you choose. Large, and safe to move between machines.</dd></div><div><dt>Logs</dt><dd>Your app data folder. Written locally, never uploaded.</dd></div></dl>
+    </section>
+<section class="docsec">
+      <h2>The three optional switches</h2>
+      <p>Crash reports, anonymous usage counts and contributed profile results are three separate settings, all off on a fresh install. None of them is bundled into another. They are in Settings under Privacy and diagnostics.</p>
+<p>A diagnostics report is built on demand, shown to you in full first, and redacted before it can go anywhere. Nothing is collected in the background to prepare one.</p>
+    </section>
+<section class="docsec">
+      <h2>If you connect a cloud model</h2>
+      <p>Cloud boost is off by default. If you turn it on, the task summary and the contents of the files it names go to that provider under that provider's terms. It is asked per task rather than once at setup, so a decision you made a month ago cannot quietly send today's code somewhere.</p>
+<p class="docnote">The workspace shows Local in the top bar when the loaded model is on your machine. If that ever says anything else, something is leaving the device.</p>
+    </section>
+    <nav class="docpn" aria-label="More documentation">
+      <a href="/docs/review-and-checkpoints/"><span class="lab">Previous</span><span class="t">Review and checkpoints</span></a>
+      <a href="/docs/troubleshooting/" class="nx"><span class="lab">Next</span><span class="t">Troubleshooting</span></a>
+    </nav>
+  </article>
+</section>
+</main>
+
+<footer class="mfoot mfoot-slim">
+  <div class="mwrap mfoot-legal">
+    <a class="brand small" href="/"><svg viewBox="0 0 24 24" fill="none" width="16" height="16" aria-hidden="true" focusable="false" style="flex-shrink:0">
+  <rect x="2.4" y="2.4" width="19.2" height="19.2" rx="5.6" stroke="currentColor" stroke-width="1.7"/>
+  <path d="M8.6 8.9 11.7 12l-3.1 3.1" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M13.6 15.1h3.3" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+</svg> ForgeLocal</a>
+    <span class="grow"></span>
+    <a href="/privacy/">Privacy</a>
+    <a href="/terms/">Terms</a>
+    <a href="/security/">Security</a>
+  </div>
+</footer>
+<script src="/assets/forgelocal.js" defer></script>
+</body>
+</html>

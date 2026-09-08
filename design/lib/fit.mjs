@@ -96,7 +96,7 @@ export function speedFor(profile, pc = thisPC) {
   const m = profile.measuredTokensPerSecond.find((x) => x.hardwareId === pc.id);
   return m
     ? { measured: true, text: `${m.median} tokens/s median`, detail: `${m.min}–${m.max} over ${m.generatedTokens} tokens at ${fmtCtx(m.context)} context` }
-    : { measured: false, text: "Not measured on this PC yet", detail: "Run a local benchmark to record throughput for this exact profile." };
+    : { measured: false, text: "Not measured on this PC yet", detail: "Throughput is measured on your own machine once the model has run there. No benchmark has been run for this profile." };
 }
 
 /**

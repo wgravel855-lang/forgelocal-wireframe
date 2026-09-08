@@ -133,6 +133,142 @@
     .sendbtn[data-stop="true"] .i-send { display: none; }
     .sendbtn[data-stop="true"] .i-stop { display: block; }
 
+    /* ---- model detail drawer -------------------------------------------------- */
+    .mdrawer-host { position: absolute; inset: 0; z-index: 80; }
+    .mdrawer-host[hidden] { display: none !important; }
+    .mdrawer-scrim { position: absolute; inset: 0; background: rgba(0,0,0,.42); }
+    .mdrawer { position: absolute; top: 0; right: 0; bottom: 0; width: min(520px, 92vw);
+      border-left: 1px solid var(--line); background: var(--bg);
+      display: flex; flex-direction: column; box-shadow: var(--shadow-menu); }
+    .mdrawer-h { flex-shrink: 0; display: flex; align-items: center; gap: 10px;
+      min-height: 52px; padding: 0 12px 0 20px; border-bottom: 1px solid var(--line-soft); }
+    .mdrawer-b { flex: 1; min-height: 0; overflow-y: auto; padding: 20px 20px 28px; }
+    .mdrawer-s { margin: 0; display: flex; align-items: center; gap: 8px;
+      font-size: 14px; color: var(--mut); }
+    .mdrawer-f { flex-shrink: 0; display: flex; align-items: center; gap: 8px;
+      padding: 12px 16px; border-top: 1px solid var(--line-soft); }
+    /* the row title is a control, and the whole row is its target */
+    button.rname { font: inherit; font-size: 15.5px; line-height: 22px; font-weight: 600;
+      color: var(--fg); text-align: left; }
+    button.rname::after { content: ""; position: absolute; inset: 0; }
+    .rrow.has-action button.rname::after { content: none; }
+    .rrow.has-action button.rname { padding: 9px 10px 9px 0; margin: -9px -10px -9px 0; }
+
+    .diag-steps { margin: 10px 0 0; padding-left: 20px; }
+    .diag-steps li { font-size: 14px; line-height: 22px; color: var(--mut); margin-bottom: 8px; }
+    .diag-steps li::marker { color: var(--faint); }
+
+    /* ---- first run ---------------------------------------------------------- */
+    /* A new user has no history, no second project and no settings to manage
+       yet, so none of that is drawn. */
+    .sidebar[data-mode="first-run"] .side-search,
+    .sidebar[data-mode="first-run"] .cgroup,
+    .sidebar[data-mode="first-run"] .chat-archived,
+    .sidebar[data-mode="first-run"] .side-foot { display: none; }
+    .sidebar[data-mode="first-run"] [data-first-run] { display: block; }
+
+    /* ---- downloads ---------------------------------------------------------- */
+    .dlrow { display: grid; grid-template-columns: minmax(0,1fr) 168px auto; gap: 6px 20px;
+      align-items: center; padding: 16px 2px; }
+    .dl-main { min-width: 0; display: flex; flex-direction: column; gap: 7px; }
+    .dl-n { font-size: 14.5px; line-height: 21px; font-weight: 500; }
+    .dl-track { width: 100%; max-width: 320px; }
+    .dl-m { margin: 0; font-size: 13px; line-height: 20px; color: var(--mut); max-width: 62ch; }
+    .dl-s { font-size: 13.5px; }
+    .dl-a { display: flex; gap: 8px; justify-self: end; }
+    @media (max-width: 860px) {
+      .dlrow { grid-template-columns: minmax(0,1fr); }
+      .dl-s, .dl-a { justify-self: start; }
+    }
+
+    /* ---- settings ----------------------------------------------------------- */
+    /* A section list and one readable column. Each row is a label, a sentence
+       of consequence and the current value. */
+    .setwrap { display: flex; overflow-y: auto; }
+    .setnav { flex-shrink: 0; width: 208px; padding: 24px 8px; position: sticky; top: 0;
+      align-self: flex-start; }
+    .setnav .srow.is-on { background: var(--sunk); color: var(--fg); box-shadow: inset 2px 0 0 var(--acc); }
+    .setcol { flex: 1; min-width: 0; max-width: 680px; padding: 24px 28px 64px; }
+    .setsec { padding-top: 32px; }
+    .setsec:first-child { padding-top: 0; }
+    .setsec > h1, .setsec > h2 { margin: 0 0 4px; }
+    .set-lede { margin: 8px 0 4px; font-size: 14.5px; line-height: 23px; color: var(--mut);
+      max-width: 68ch; }
+    .set-h3 { margin: 26px 0 0; font-size: 14px; line-height: 22px; font-weight: 600; }
+    .setrow { display: flex; align-items: flex-start; gap: 20px; padding: 16px 0;
+      border-top: 1px solid var(--line-soft); }
+    .setsec > .setrow:first-of-type { border-top: 1px solid var(--line); margin-top: 14px; }
+    .setrow > div:first-child { flex: 1; min-width: 0; }
+    .set-l { font-size: 14.5px; line-height: 22px; font-weight: 500; }
+    .set-d { margin: 3px 0 0; font-size: 13.5px; line-height: 21px; color: var(--mut);
+      max-width: 62ch; }
+    .set-v { flex-shrink: 0; font-size: 13.5px; line-height: 22px; color: var(--mut);
+      text-align: right; max-width: 40%; overflow-wrap: anywhere; }
+    .set-empty { margin: 14px 0 0; font-size: 13.5px; line-height: 21px; color: var(--faint); }
+    .setrow[hidden] { display: none !important; }
+    /* a switch that states its value in text as well as position */
+    .switch { flex-shrink: 0; width: 44px; height: 40px; border: 0; background: none;
+      padding: 0; position: relative; cursor: pointer; }
+    .switch::before { content: ""; position: absolute; inset: 7px 0; border-radius: 13px;
+      border: 1px solid var(--line-strong); background: var(--sunk);
+      transition: background 140ms ease-out, border-color 140ms ease-out; }
+    .switch > span { position: absolute; top: 10px; left: 3px; width: 18px; height: 18px;
+      border-radius: 50%; background: var(--mut); transition: transform 160ms ease-out,
+      background 160ms ease-out; }
+    .switch[aria-checked="true"]::before { background: var(--acc); border-color: var(--acc); }
+    .switch[aria-checked="true"] > span { transform: translateX(18px); background: #fff; }
+    @media (max-width: 860px) {
+      .setwrap { flex-direction: column; }
+      .setnav { width: auto; position: static; display: flex; gap: 4px; overflow-x: auto;
+        padding: 12px 12px 8px; border-bottom: 1px solid var(--line-soft); }
+      .setnav .srow { width: auto; white-space: nowrap; }
+      .setcol { padding: 20px 16px 56px; }
+    }
+
+    /* ---- details popovers --------------------------------------------------- */
+    /* Project and runtime context, on demand, instead of permanent metrics in
+       the header. */
+    .pdetails { top: calc(100% + 6px); left: 0; width: 320px; padding: 14px 16px 12px; }
+    .pd-h { margin: 0 0 10px; display: flex; align-items: center; gap: 8px;
+      font-size: 14px; font-weight: 600; }
+    .pd-kv { margin: 0; display: grid; grid-template-columns: 108px 1fr; gap: 7px 12px; }
+    .pd-kv dt { font-size: 12.5px; line-height: 19px; color: var(--faint); }
+    .pd-kv dd { margin: 0; font-size: 13.5px; line-height: 19px; overflow-wrap: anywhere; }
+    .pd-bar { margin-top: 12px; display: flex; flex-direction: column; gap: 6px;
+      font-size: 12.5px; line-height: 18px; }
+    .pd-a { display: flex; gap: 8px; flex-wrap: wrap; padding-top: 10px; }
+    .pdetails .sep { margin: 12px -16px 0; }
+    @media (max-width: 520px) { .pdetails { width: min(320px, calc(100vw - 24px)); } }
+
+    /* ---- focused task shell ------------------------------------------------ */
+    /* One field, one decision: a centred card and a slim footer instead of the
+       full marketing page. */
+    .authwrap { display: flex; justify-content: center; padding-top: 72px; padding-bottom: 72px; }
+    .authcard { width: 100%; max-width: 460px; }
+    .mfoot-slim { margin-top: 48px; }
+    .mfoot-slim .mfoot-legal { padding-top: 20px; padding-bottom: 20px; }
+    .mfoot-slim .mfoot-legal a:not(.brand) { font-size: 13.5px; color: var(--mut); }
+
+    /* ---- dialog ----------------------------------------------------------- */
+    /* One shape for every scoped decision. It says what the choice costs and
+       what survives it, which a native confirm cannot. */
+    .dlg-host { position: fixed; inset: 0; z-index: 300; }
+    .dlg-host[hidden] { display: none !important; }
+    .dlg-scrim { position: absolute; inset: 0; background: rgba(0,0,0,.5); }
+    .dlg { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+      width: min(440px, calc(100vw - 32px)); border: 1px solid var(--line-strong);
+      border-radius: 14px; background: var(--raised); box-shadow: var(--shadow-menu);
+      padding: 22px 22px 18px; }
+    .dlg-t { margin: 0 0 8px; font-size: 17px; line-height: 25px; font-weight: 600;
+      letter-spacing: -.01em; }
+    .dlg-b p { margin: 0; font-size: 14.5px; line-height: 22px; color: var(--mut); }
+    .dlg-scope { margin: 14px 0 0; display: grid; grid-template-columns: 132px 1fr;
+      gap: 8px 14px; padding-top: 14px; border-top: 1px solid var(--line-soft); }
+    .dlg-scope dt { font-size: 13px; line-height: 20px; color: var(--faint); }
+    .dlg-scope dd { margin: 0; font-size: 13.5px; line-height: 20px; }
+    .dlg-a { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+    body.has-dlg { overflow: hidden; }
+
     /* ---- scrollbars ------------------------------------------------------- */
     /* Scoped to the dark shell so the light marketing pages keep their own. */
     .app { color-scheme: dark; }
@@ -820,6 +956,84 @@
     /* ---- technical document ------------------------------------------- */
     /* Sections divided by a rule rather than each one sitting in its own
        rounded box. Used by the model detail pages. */
+    fieldset.bare { border: 0; margin: 0; padding: 0; min-width: 0; }
+
+    .dlchip { display: inline-flex; align-items: center; gap: 8px; height: 40px;
+      padding: 0 12px; border-radius: 8px; font-size: 13px; color: var(--mut);
+      text-decoration: none; }
+    .dlchip:hover { background: var(--sunk); color: var(--fg); }
+    .dlchip b { font-weight: 600; color: var(--fg); }
+    /* narrow onboarding headers have no room for the word, only the number */
+    @media (max-width: 640px) { .dlchip-t { display: none; } .dlchip { padding: 0 8px; } }
+
+    /* ---- documentation ------------------------------------------------------ */
+    /* Two columns: a persistent index and one readable measure. No cards, and
+       the article is the widest thing on the page rather than a panel in it. */
+    .docwrap { display: grid; grid-template-columns: 210px minmax(0, 1fr);
+      gap: 56px; align-items: start; padding: 56px 24px 88px; }
+    .docnav { position: sticky; top: 84px; display: flex; flex-direction: column; gap: 22px; }
+    .docnav-g { display: flex; flex-direction: column; gap: 2px; }
+    .docnav-g .lab { margin-bottom: 5px; }
+    .docnav a { display: flex; align-items: center; min-height: 40px; padding: 6px 10px;
+      margin-left: -10px; border-radius: 7px; font-size: 13.5px; line-height: 19px;
+      color: var(--mut); text-decoration: none; }
+    .docnav a:hover { background: var(--sunk); color: var(--fg); }
+    .docnav a.on { color: var(--fg); font-weight: 600; background: var(--sunk); }
+    .docbody { max-width: 44rem; }
+    .docbreadcrumb { margin: 0 0 14px; font-size: 13px; color: var(--faint); }
+    .docbreadcrumb a { color: var(--mut); }
+    .docbreadcrumb span { margin: 0 7px; }
+    .docmeta { margin: 16px 0 0; font-size: 13px; color: var(--faint); }
+    .docbody .docsec:first-of-type { margin-top: 30px; }
+    .docbody .docsec p { margin: 0 0 14px; font-size: 15.5px; line-height: 27px; color: var(--mut); }
+    .docbody .docsec p:last-child { margin-bottom: 0; }
+    .docnote { border-left: 2px solid var(--line); padding-left: 16px; }
+    .doccode { margin: 0 0 14px; padding: 14px 16px; border: 1px solid var(--line);
+      border-radius: 8px; background: var(--sunk); font-size: 13px; line-height: 21px;
+      overflow-x: auto; color: var(--fg); }
+    .doclist { margin: 0 0 14px; padding-left: 22px; }
+    .doclist li { font-size: 15.5px; line-height: 27px; color: var(--mut); margin-bottom: 8px; }
+    .doclist li::marker { color: var(--faint); }
+    .dockv { margin: 0 0 14px; display: grid; gap: 0; }
+    .dockv > div { display: grid; grid-template-columns: 190px minmax(0, 1fr); gap: 22px;
+      padding: 13px 0; border-top: 1px solid var(--line-soft); }
+    .dockv > div:last-child { border-bottom: 1px solid var(--line-soft); }
+    .dockv dt { font-size: 14.5px; font-weight: 600; color: var(--fg); }
+    .dockv dd { margin: 0; font-size: 14.5px; line-height: 24px; color: var(--mut); }
+    .docpn { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 44px;
+      padding-top: 26px; border-top: 1px solid var(--line); }
+    .docpn a { display: flex; flex-direction: column; gap: 4px; padding: 15px 17px;
+      border: 1px solid var(--line); border-radius: 10px; text-decoration: none;
+      min-height: 40px; justify-content: center; }
+    .docpn a:hover { border-color: var(--line-strong); background: var(--sunk); }
+    .docpn a.nx { text-align: right; }
+    .docpn .lab { font-size: 13px; }
+    .docpn .t { font-size: 14.5px; font-weight: 600; color: var(--fg); }
+    .docgroup { margin-top: 34px; }
+    .docgroup:first-child { margin-top: 0; }
+    .docgroup-h { margin-bottom: 6px; }
+    .docgroup-h h2 { margin: 0; font-size: 19px; line-height: 27px; font-weight: 600; }
+    .docgroup-h p { margin: 4px 0 0; font-size: 14px; line-height: 21px; color: var(--mut); }
+    .docrow { grid-template-columns: minmax(0, 1fr) auto; }
+    .docrow .t { grid-column: 1; text-decoration: none; }
+    .docrow .d { grid-column: 1 / -1; }
+    .docrow .s { grid-column: 2; }
+    .measure-w { max-width: 62rem; }
+
+    @media (max-width: 900px) {
+      /* twelve links ahead of the article is a wall to scroll past on a phone,
+         so the index moves below the thing you actually opened */
+      .docwrap { grid-template-columns: minmax(0, 1fr); gap: 30px; padding: 40px 20px 72px; }
+      .docbody { order: 1; }
+      .docnav { order: 2; position: static; flex-direction: row; flex-wrap: wrap;
+        gap: 20px 28px; padding-top: 30px; border-top: 1px solid var(--line); }
+      .docnav-g { min-width: 150px; }
+      .docnav a { margin-left: -10px; }
+      .dockv > div { grid-template-columns: minmax(0, 1fr); gap: 3px; }
+      .docpn { grid-template-columns: minmax(0, 1fr); }
+      .docpn a.nx { text-align: left; }
+    }
+
     .docsec { border-top:1px solid var(--line); padding:34px 0 0; margin-top:34px; }
     .docsec > h2 { margin:0 0 12px; font-size:20px; line-height:28px; font-weight:600;
       letter-spacing:-.012em; }
@@ -936,7 +1150,7 @@
       .shell.is-collapsed .sidebar { transition: width 180ms ease; }
     }
 
-    .popover { position: absolute; z-index: 60; }
+    .popover { position: absolute; z-index: 60; max-width: calc(100vw - 24px); }
     .popover[hidden] { display: none; }
 
     .toast-host { position: fixed; right: 16px; bottom: 16px; z-index: 200;
@@ -992,6 +1206,12 @@
     .num { font-variant-numeric: tabular-nums; }
     .vh { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
       overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+    /* the skip link is the one visually hidden thing that must appear on focus */
+    a.vh:focus-visible { position: fixed; left: 12px; top: 12px; z-index: 400;
+      width: auto; height: auto; margin: 0; clip: auto; overflow: visible;
+      display: inline-flex; align-items: center; min-height: 40px; padding: 0 16px;
+      border: 1px solid var(--line-strong); border-radius: 8px;
+      background: var(--raised); color: var(--fg); font-size: 14px; }
 
     [data-nav][data-open="true"] { display: flex !important; }
 
@@ -1010,9 +1230,12 @@
     .ob-steps[data-step="3"] i:nth-child(3),
     .ob-steps[data-step="4"] i:nth-child(4),
     .ob-steps[data-step="5"] i:nth-child(5) { background: var(--acc); }
+    /* on a phone the bar is 130px of decoration next to "Step 4 of 5", which
+       says the same thing in 29px */
+    @media (max-width: 480px) { .ob-steps { display: none; } }
     .ob-body { flex:1; min-height:0; overflow-y:auto; display:flex; flex-direction:column;
-      justify-content:center; }
-    .ob-col { width:100%; max-width:648px; margin:0 auto; padding:32px 24px;
+      justify-content:flex-start; }
+    .ob-col { width:100%; max-width:648px; margin:auto; padding:32px 24px;
       display:flex; flex-direction:column; gap:22px; }
     .ob-foot { flex-shrink:0; border-top:1px solid var(--line-soft); }
     .ob-foot .inner { width:100%; max-width:648px; margin:0 auto; padding:12px 24px;

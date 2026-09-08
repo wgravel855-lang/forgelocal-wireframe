@@ -3,23 +3,78 @@
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M9.5 4v16"/></svg>
   </button>
 
-  <button class="hit" style="gap:7px;padding:0 8px;border-radius:7px;min-width:0" aria-label="Project and session details">
-    <span data-ws-title style="font-size:13.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{title}}</span>
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="m6 9.5 6 6 6-6"/></svg>
-  </button>
+  <!-- The chevron now opens something. Project, model, permission preset,
+       context and checkpoint are the five things a user asks about mid-task. -->
+  <div style="position:relative;min-width:0">
+    <button class="hit" style="gap:7px;padding:0 8px;border-radius:7px;min-width:0"
+      data-popover="project-details" aria-expanded="false" aria-haspopup="dialog"
+      aria-label="Project and session details">
+      <span data-ws-title style="font-size:13.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{title}}</span>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="m6 9.5 6 6 6-6"/></svg>
+    </button>
+    <div class="menu popover pdetails" id="project-details" role="dialog" aria-label="Project and session details" hidden>
+      <dl class="pd-kv">
+        <dt>Project</dt><dd><span data-pd-name>task-tracker</span></dd>
+        <dt>Root</dt><dd><span class="m" data-pd-path>~/projects/task-tracker</span></dd>
+        <dt>Repository</dt><dd><span data-pd-branch>Git repo, on main</span></dd>
+        <dt>Stack</dt><dd><span data-pd-stack>Vite + React detected</span></dd>
+        <dt>Model</dt><dd><span data-pd-model>Qwen2.5 Coder 14B</span> <span class="faint">Q4_K_M</span></dd>
+        <dt>Permissions</dt><dd><span data-preset-label>Balanced</span></dd>
+        <dt>Context used</dt><dd><span class="num">5.6k of 16k</span> <span class="faint">34%</span></dd>
+        <dt>Checkpoint</dt><dd>Checkpoint 4, before the last edit</dd>
+      </dl>
+      <div class="sep"></div>
+      <div class="pd-a">
+        <button class="btn btns" type="button" data-open-folder>Open folder</button>
+        <a class="btn btns" href="/app/settings/">Project settings</a>
+      </div>
+    </div>
+  </div>
 
   <span class="grow"></span>
 
   {{status}}
 
-  <span class="pill hide-sm" title="Everything is running on this computer">
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--ok-line)" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3.5"/><rect x="8" y="8" width="8" height="8" rx="1.8"/></svg>
-    Local
-  </span>
+  <!-- Local is the runtime, so it opens the runtime, not a decoration. -->
+  <div style="position:relative">
+    <button class="pill hide-sm" type="button" data-popover="runtime-pop" aria-expanded="false"
+      aria-haspopup="dialog" aria-label="Local runtime status">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--ok-line)" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3.5"/><rect x="8" y="8" width="8" height="8" rx="1.8"/></svg>
+      Local
+    </button>
+    <div class="menu popover pdetails" id="runtime-pop" role="dialog" aria-label="Local runtime" hidden>
+      <p class="pd-h"><span class="dot ok" aria-hidden="true"></span>Runtime healthy</p>
+      <dl class="pd-kv">
+        <dt>Runtime</dt><dd><span class="m">llama.cpp b4021</span></dd>
+        <dt>Loaded model</dt><dd>Qwen2.5 Coder 14B <span class="faint">Q4_K_M</span></dd>
+        <dt>Video memory</dt><dd><span class="num">11.1 GB of 12 GB</span></dd>
+        <dt>System memory</dt><dd><span class="num">6.2 GB of 32 GB</span></dd>
+        <dt>Context</dt><dd><span class="num">5.6k of 16k tokens</span></dd>
+        <dt>Runs on</dt><dd>This device. Nothing leaves it.</dd>
+      </dl>
+      <div class="pd-bar"><div class="track"><div class="fillbar" style="width:92%"></div></div>
+        <span class="faint">Video memory is nearly full. Ejecting frees 11.1 GB.</span></div>
+      <div class="sep"></div>
+      <div class="pd-a">
+        <a class="btn btns" href="/app/models/installed/">Loaded models</a>
+        <a class="btn btns" href="/app/settings/#models">Runtime settings</a>
+      </div>
+    </div>
+  </div>
 
   {{artifacts}}
 
-  <button class="btn btnq ico btns" type="button" aria-label="More options" data-inert="The overflow menu is not built in this prototype.">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r=".8"/><circle cx="12" cy="12" r=".8"/><circle cx="19" cy="12" r=".8"/></svg>
-  </button>
+  <div style="position:relative">
+    <button class="btn btnq ico btns" type="button" data-popover="more-pop" aria-expanded="false"
+      aria-haspopup="menu" aria-label="More options">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r=".8"/><circle cx="12" cy="12" r=".8"/><circle cx="19" cy="12" r=".8"/></svg>
+    </button>
+    <div class="menu popover" id="more-pop" role="menu" aria-label="More" hidden
+      style="top:calc(100% + 6px);right:0;width:236px;padding:6px">
+      <button role="menuitem" class="srow" type="button" data-shortcuts>
+        <span class="t">Keyboard shortcuts</span><span class="lab">?</span></button>
+      <a role="menuitem" class="srow" href="/app/settings/"><span class="t">Settings</span></a>
+      <a role="menuitem" class="srow" href="/docs/"><span class="t">Docs</span></a>
+    </div>
+  </div>
 </header>

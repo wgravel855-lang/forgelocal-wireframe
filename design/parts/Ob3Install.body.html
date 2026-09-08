@@ -8,7 +8,8 @@
       <div style="display:flex;flex-direction:column;gap:10px">
         <h1 class="h1">Setting up <!--REC_NAME--></h1>
         <p class="mut" style="margin:0;font-size:13.5px;line-height:20px">
-          You can leave this running. It picks up where it left off if the connection drops.
+          You can leave this step. The download keeps running and picks up where it left off if
+          the connection drops.
         </p>
       </div>
 
@@ -24,7 +25,7 @@
         <div style="padding:14px 16px;display:flex;flex-direction:column;gap:12px">
           <div style="display:flex;align-items:center;gap:11px">
             <span class="dot acc pulse" data-dl-dot aria-hidden="true"></span>
-            <span style="flex:1;font-size:13.5px;font-weight:600">Downloading <!--REC_NAME--></span>
+            <span style="flex:1;font-size:13.5px;font-weight:600"><span data-dl-verb>Downloading</span> <!--REC_NAME--></span>
             <span class="m">41%</span>
           </div>
 
@@ -37,10 +38,10 @@
               <span class="lab">Downloaded</span><span class="m"><!--REC_DONE--> of <!--REC_TOTAL--> GB</span>
             </div>
             <div style="display:flex;flex-direction:column;gap:2px">
-              <span class="lab">Speed</span><span class="m">28.6 MB/s</span>
+              <span class="lab">Speed</span><span class="m" data-dl-speed>28.6 MB/s</span>
             </div>
             <div style="display:flex;flex-direction:column;gap:2px">
-              <span class="lab">Remaining</span><span class="m">about 3 min</span>
+              <span class="lab">Remaining</span><span class="m" data-dl-remain>about 3 min</span>
             </div>
             <div style="display:flex;flex-direction:column;gap:2px">
               <span class="lab">Free after</span><span class="m"><!--REC_FREE--> GB</span>
@@ -50,7 +51,7 @@
           <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">
             <span class="lab" style="flex-shrink:0">Saving to</span>
             <span class="m mut" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">C:\Users\you\ForgeLocal\models</span>
-            <button class="btnq hit" type="button" style="font-size:14px;color:var(--acc-text);padding:0 8px" data-inert="Choosing a different install folder is not built in this prototype.">Change</button>
+              
           </div>
 
           <div style="display:flex;align-items:center;gap:8px" data-download>
@@ -96,9 +97,9 @@
 
   <footer class="ob-foot">
     <div class="inner">
-      <a class="btn btnp btnl" href="/setup/4/">Keep setting up</a>
+      <a class="btn btnp btnl" href="/setup/4/">Continue in the background</a>
       <span class="grow"></span>
-      <span class="lab">About 3 min left</span>
+      <span class="lab" data-dl-foot>Downloading, about 3 min left. Step 4 opens while it runs.</span>
     </div>
   </footer>
 

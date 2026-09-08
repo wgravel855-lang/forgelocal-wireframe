@@ -8,6 +8,32 @@ const tone = { ok: "ok", warn: "warn", bad: "bad", mut: "" };
 const params = (n) => `${(n / 1e9).toFixed(n >= 1e10 ? 0 : 1).replace(/\.0$/, "")}B`;
 
 /* ------------------------------------------------- onboarding step two --- */
+/* The scan headline is derived from the recommendation, not asserted next to
+   it. A green check over "runs well" above a warn dot over "runs with
+   tradeoffs" was two different answers to the same question. */
+export function scanVerdict() {
+  const r = F.recommendFor();
+  if (!r) return { tone: "bad", icon: "bad",
+    head: "No coding model fits this PC on the GPU",
+    sub: "Read in 1.4 seconds. Nothing left the device. A model can still run on the processor, more slowly." };
+  const map = {
+    great: { tone: "ok", icon: "ok",
+      head: `This PC runs ${r.m.displayName} comfortably`,
+      sub: "Read in 1.4 seconds. Nothing left the device." },
+    tradeoffs: { tone: "warn", icon: "warn",
+      head: `This PC runs ${r.m.displayName}, close to its limit`,
+      sub: `Read in 1.4 seconds. Nothing left the device. It needs ${F.gb(r.f.required, 1)} GB of the ${F.gb(F.thisPC.vramBytes, 0)} GB available, so a lighter option is offered below.` },
+    offload: { tone: "warn", icon: "warn",
+      head: `This PC runs ${r.m.displayName} partly on the processor`,
+      sub: "Read in 1.4 seconds. Nothing left the device. It works, and it is slower than running entirely on the GPU." },
+  };
+  const v = map[r.f.state] || map.tradeoffs;
+  const stroke = { ok: "var(--ok)", warn: "var(--warn)", bad: "var(--bad)" }[v.icon];
+  const path = v.icon === "ok" ? "M20 6 9 17l-5-5"
+    : "M12 9.5v4.2M12 17.4h.01M10.4 4.2 2.1 18a2 2 0 0 0 1.7 3h16.4a2 2 0 0 0 1.7-3L13.6 4.2a2 2 0 0 0-3.2 0z";
+  return { ...v, svg: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${stroke}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${path}"/></svg>` };
+}
+
 export function recommendationBlock(models) {
   const r = F.recommendFor();
   const m = r.m, fit = r.f;
@@ -113,7 +139,7 @@ export function exploreList(models) {
               data-tags="${m.tasks.join(" ")} ${m.installed ? "installed" : ""} ${fit.rank <= 1 ? "fits" : ""}"${m.loaded ? ' class="is-current"' : ""}>
               <div class="rrow has-action">
                 <div style="min-width:0">
-                  <a class="rname" href="/models/${m.id}/">${esc(m.displayName)}</a>
+                  <button class="rname" type="button" data-model-detail="${esc(m.id)}">${esc(m.displayName)}</button>
                   <p class="ruse">${esc(m.strength)}</p>
                   <p class="rmeta">${esc(m.publisher)} &middot; ${esc(m.quantization)} ${params(m.parameterCount)} &middot; ${esc(m.licenseId)}</p>
                 </div>
@@ -138,7 +164,7 @@ export function myModelsList(models) {
               data-tags="${m.tasks.join(" ")} installed${fit.rank <= 1 ? " fits" : ""}"${m.loaded ? ' class="is-current"' : ""}>
               <div class="rrow has-action">
                 <div style="min-width:0">
-                  <a class="rname" href="/models/${m.id}/">${esc(m.displayName)}</a>
+                  <button class="rname" type="button" data-model-detail="${esc(m.id)}">${esc(m.displayName)}</button>
                   <p class="ruse">${esc(m.strength)}</p>
                   <p class="rmeta"><span data-load-pill>${m.loaded ? "Loaded" : "Idle"}</span> &middot; ${esc(m.quantization)}${m.recommended ? " &middot; Default for coding" : ""}</p>
                 </div>

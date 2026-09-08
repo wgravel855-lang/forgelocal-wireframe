@@ -1,6 +1,6 @@
 <div class="app ob">
 
-  <!--#include ob-top.html {"n":"4","back":"/setup/3/","backLabel":"Back to step 3"} -->
+  <!--#include ob-top.html {"n":"4","back":"/setup/3/","backLabel":"Back to step 3","download":"<a class=\"dlchip\" href=\"/setup/3/\" data-bg-download><span class=\"dot acc pulse\" aria-hidden=\"true\"></span><span class=\"dlchip-t\">Downloading</span><b class=\"num\">41%</b></a>"} -->
 
   <div class="ob-body">
     <div class="ob-col">
@@ -20,19 +20,18 @@
             <div style="font-size:13.5px;font-weight:600">Open an existing folder</div>
             <div class="m faint" style="margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">~/projects/task-tracker</div>
           </div>
-          <button class="btn btns" type="button" style="flex-shrink:0" data-inert="Choosing a different project folder is not built in this prototype.">Change</button>
+              
         </div>
 
         <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn btns btnq" type="button" style="border-color:var(--line)" data-inert="Cloning a repository is not built in this prototype.">Clone from Git</button>
-          <button class="btn btns btnq" type="button" style="border-color:var(--line)" data-inert="Project blueprints are not built in this prototype.">Start from a blueprint</button>
+              
         </div>
       </div>
 
-      <div style="display:flex;flex-direction:column;gap:10px">
-        <span class="lab" id="preset-legend">How much should it ask?</span>
+      <fieldset class="bare" style="display:flex;flex-direction:column;gap:10px">
+        <legend class="lab" style="padding:0">How much should it ask?</legend>
 
-        <div role="radiogroup" aria-labelledby="preset-legend" data-presets style="display:flex;flex-direction:column;gap:8px">
+        <div data-presets style="display:flex;flex-direction:column;gap:8px">
 
           <label class="box preset" style="padding:14px 16px;display:flex;gap:12px;align-items:flex-start;cursor:pointer">
             <input type="radio" name="preset" id="preset-ask" value="ask"
@@ -64,10 +63,11 @@
         </div>
 
         <p class="faint" style="margin:0;font-size:13px;line-height:18px">
-          You can change this per project later, and a permission prompt is not the same as sandbox isolation.
+          Change this later in Settings, under Permissions, where every remembered approval is also
+          listed and can be revoked. A permission prompt is not the same as sandbox isolation.
           <a class="link" href="/security/">How the boundary works</a>
         </p>
-      </div>
+      </fieldset>
 
     </div>
   </div>

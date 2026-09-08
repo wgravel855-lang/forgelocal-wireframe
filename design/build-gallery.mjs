@@ -56,7 +56,7 @@ const GROUPS = [
       ["Status", "/status/", 1280, 800],
       ["Privacy", "/privacy/", 1280, 900],
       ["Terms", "/terms/", 1280, 700],
-      ["Sign in", "/signin/", 1280, 800],
+      ["Waitlist", "/waitlist/", 1280, 800],
       ["Not found", "/404.html", 1280, 700],
     ],
   },

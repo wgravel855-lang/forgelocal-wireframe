@@ -4,18 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Docs — ForgeLocal</title>
-<meta name="description" content="Install, first project, model profiles, permissions and troubleshooting.">
+<meta name="description" content="Models, memory, permissions, review and troubleshooting for a local coding agent.">
 <meta property="og:title" content="Docs — ForgeLocal">
-<meta property="og:description" content="Install, first project, model profiles, permissions and troubleshooting.">
+<meta property="og:description" content="Models, memory, permissions, review and troubleshooting for a local coding agent.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="ForgeLocal">
 <meta property="og:image" content="https://forgelocal-wireframe.vercel.app/assets/og.svg">
-<meta property="og:url" content="https://forgelocal-wireframe.vercel.appdocs/">
+<meta property="og:url" content="https://forgelocal-wireframe.vercel.app/docs/">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Docs — ForgeLocal">
-<meta name="twitter:description" content="Install, first project, model profiles, permissions and troubleshooting.">
+<meta name="twitter:description" content="Models, memory, permissions, review and troubleshooting for a local coding agent.">
 <meta name="twitter:image" content="https://forgelocal-wireframe.vercel.app/assets/og.svg">
-<link rel="canonical" href="https://forgelocal-wireframe.vercel.appdocs/">
+<link rel="canonical" href="https://forgelocal-wireframe.vercel.app/docs/">
 <link rel="icon" href="/assets/mark.svg" type="image/svg+xml">
 <link rel="alternate icon" href="/favicon.ico">
 <link rel="stylesheet" href="/assets/forgelocal.css">
@@ -40,9 +40,8 @@
       <a href="/models/">Models</a>
       <a href="/security/">Security</a>
       <a href="/pricing/">Pricing</a>
-      <a href="/docs/">Docs</a>
+      <a href="/docs/" aria-current="page">Docs</a>
       <span class="mhead-sp"></span>
-      <a href="/signin/">Sign in</a>
       <a href="/download/" class="btn btns">Download</a>
     </nav>
   </div>
@@ -52,81 +51,110 @@
 <section class="mwrap msec" style="padding-top:64px;padding-bottom:24px"><div class="stack" style="gap:16px;max-width:720px">
     <span class="lab">Documentation</span>
     <h1 class="mh2">Docs</h1>
-    <p class="mlede">Install, first project, model profiles, permissions and troubleshooting.</p>
-  </div></section><section class="mwrap msec" style="padding-bottom:72px">
-        <div class="measure"><div class="index">
-      <div class="irow">
-          <span class="n">01</span>
-          <span class="t">Getting started</span>
-          <span class="s">Not written yet</span>
-          <p class="d">Installing, the hardware scan, and finishing your first task.</p>
+    <p class="mlede">Twelve articles covering how models are chosen, what permissions actually guarantee, how changes are reviewed, and what to do when something stops.</p>
+  </div></section><section class="mwrap msec" style="padding-bottom:80px">
+  <div class="measure-w">
+    <section class="docgroup">
+      <div class="docgroup-h"><h2>Getting started</h2><p>What this is, what setup does, and what a first task looks like.</p></div>
+      <div class="index">
+        <div class="irow docrow" data-row-target>
+          <a class="t" href="/docs/what-forgelocal-is/">What ForgeLocal is</a>
+          <span class="s num">3 min</span>
+          <p class="d">A coding agent that runs on your machine, and an honest account of what it is not.</p>
         </div>
-<div class="irow">
-          <span class="n">02</span>
-          <span class="t">Model profiles</span>
-          <span class="s">Not written yet</span>
-          <p class="d">What a profile pins, how fit is calculated, and how to pin a revision.</p>
+<div class="irow docrow" data-row-target>
+          <a class="t" href="/docs/installing/">Installing</a>
+          <span class="s num">2 min</span>
+          <p class="d">There is no build to install yet. This is what the installer will and will not do.</p>
         </div>
-<div class="irow">
-          <span class="n">03</span>
-          <span class="t">Permissions</span>
-          <span class="s">Not written yet</span>
-          <p class="d">The three presets, what each command class does, and how to revoke a durable rule.</p>
+<div class="irow docrow" data-row-target>
+          <a class="t" href="/docs/first-task/">Your first task</a>
+          <span class="s num">4 min</span>
+          <p class="d">What actually happens between typing a request and getting a diff.</p>
         </div>
-<div class="irow">
-          <span class="n">04</span>
-          <span class="t">Troubleshooting</span>
-          <span class="s">Not written yet</span>
-          <p class="d">Out of memory, runtime offline, interrupted downloads, and how to export a redacted diagnostic.</p>
+      </div>
+    </section>
+<section class="docgroup">
+      <div class="docgroup-h"><h2>Models</h2><p>Picking one that fits, what the numbers mean, and managing them once installed.</p></div>
+      <div class="index">
+        <div class="irow docrow" data-row-target>
+          <a class="t" href="/docs/choosing-a-model/">Choosing a model that fits</a>
+          <span class="s num">5 min</span>
+          <p class="d">The arithmetic behind every fit label, so you can check it yourself.</p>
         </div>
-    </div>
-    <p class="mut" style="margin:20px 0 0;font-size:14.5px;line-height:23px;max-width:70ch">
-      Docs are written alongside the features they describe. Nothing is published here yet,
-      because there is no shipped build for it to describe.</p></div></section>
-</main>
-<footer class="mfoot">
-  <div class="mwrap mfoot-top">
-    <div class="mfoot-cta">
-      <h2>See what your PC can build</h2>
-      <div class="row">
-        <a href="/download/" class="btn btnp btnl">View downloads</a>
-        <span class="faint" style="font-size:13px" data-platform-note>Windows 10 and 11, 64-bit is the only build. Free for local use.</span>
+<div class="irow docrow" data-row-target>
+          <a class="t" href="/docs/quantization/">Quantization and formats</a>
+          <span class="s num">4 min</span>
+          <p class="d">What Q4_K_M means, and why the same model comes in six sizes.</p>
+        </div>
+<div class="irow docrow" data-row-target>
+          <a class="t" href="/docs/context-and-memory/">Context and memory</a>
+          <span class="s num">4 min</span>
+          <p class="d">Why a longer context costs video memory, and what to do when it runs out.</p>
+        </div>
+<div class="irow docrow" data-row-target>
+          <a class="t" href="/docs/managing-models/">Downloading and loading</a>
+          <span class="s num">3 min</span>
+          <p class="d">The difference between installed and loaded, and what each one costs.</p>
+        </div>
       </div>
-    </div>
-    <nav class="mfoot-nav" aria-label="Footer">
-      <div>
-        <span class="lab">Product</span>
-        <a href="/product/">How it works</a>
-        <a href="/models/">Models</a>
-        <a href="/pricing/">Pricing</a>
-        <a href="/download/">Download</a>
+    </section>
+<section class="docgroup">
+      <div class="docgroup-h"><h2>Working</h2><p>The three modes, the permission model, and how changes get reviewed.</p></div>
+      <div class="index">
+        <div class="irow docrow" data-row-target>
+          <a class="t" href="/docs/modes/">Ask, Plan and Build</a>
+          <span class="s num">3 min</span>
+          <p class="d">Three modes, chosen in the composer, that decide how much the agent is allowed to do.</p>
+        </div>
+<div class="irow docrow" data-row-target>
+          <a class="t" href="/docs/permissions/">Permissions</a>
+          <span class="s num">5 min</span>
+          <p class="d">The three presets, what is never allowed, and how to take an approval back.</p>
+        </div>
+<div class="irow docrow" data-row-target>
+          <a class="t" href="/docs/review-and-checkpoints/">Review and checkpoints</a>
+          <span class="s num">4 min</span>
+          <p class="d">Changes arrive as a diff, and every step is restorable.</p>
+        </div>
       </div>
-      <div>
-        <span class="lab">Resources</span>
-        <a href="/docs/">Docs</a>
-        <a href="/changelog/">Changelog</a>
-        <a href="/status/">Status</a>
+    </section>
+<section class="docgroup">
+      <div class="docgroup-h"><h2>Reference</h2><p>Where data lives, and what to do when something stops.</p></div>
+      <div class="index">
+        <div class="irow docrow" data-row-target>
+          <a class="t" href="/docs/privacy-and-data/">Where your data lives</a>
+          <span class="s num">3 min</span>
+          <p class="d">What is on your disk, what is optional, and what changes with a cloud model.</p>
+        </div>
+<div class="irow docrow" data-row-target>
+          <a class="t" href="/docs/troubleshooting/">Troubleshooting</a>
+          <span class="s num">5 min</span>
+          <p class="d">Out of memory, a runtime that will not start, and downloads that stop.</p>
+        </div>
       </div>
-      <div>
-        <span class="lab">Trust</span>
-        <a href="/security/">Security</a>
-        <a href="/privacy/">Privacy</a>
-        <a href="/terms/">Terms</a>
-      </div>
-    </nav>
+    </section>
+    <p class="mut" style="margin:34px 0 0;font-size:14.5px;line-height:23px;max-width:70ch">
+      These articles describe the behaviour this build defines, including the parts that are not
+      built yet, which are named as such rather than documented as though they work. Release notes
+      will live in the <a class="link" href="/changelog/">changelog</a> once there is a release.</p>
   </div>
+</section>
+</main>
+
+<footer class="mfoot mfoot-slim">
   <div class="mwrap mfoot-legal">
-    <span class="brand small"><svg viewBox="0 0 24 24" fill="none" width="16" height="16" aria-hidden="true" focusable="false" style="flex-shrink:0">
+    <a class="brand small" href="/"><svg viewBox="0 0 24 24" fill="none" width="16" height="16" aria-hidden="true" focusable="false" style="flex-shrink:0">
   <rect x="2.4" y="2.4" width="19.2" height="19.2" rx="5.6" stroke="currentColor" stroke-width="1.7"/>
   <path d="M8.6 8.9 11.7 12l-3.1 3.1" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
   <path d="M13.6 15.1h3.3" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
-</svg> ForgeLocal</span>
-    <span class="faint">Independent project. Not affiliated with any model publisher.</span>
+</svg> ForgeLocal</a>
     <span class="grow"></span>
-    <a href="/security/#disclosure" class="faint">Report a vulnerability</a>
+    <a href="/privacy/">Privacy</a>
+    <a href="/terms/">Terms</a>
+    <a href="/security/">Security</a>
   </div>
 </footer>
-
 <script src="/assets/forgelocal.js" defer></script>
 </body>
 </html>

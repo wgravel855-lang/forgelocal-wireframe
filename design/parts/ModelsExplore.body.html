@@ -1,11 +1,11 @@
 <div class="app" style="height:100%;position:relative">
   <div class="shell">
 
-    <!--#include sidebar.html {"active":"models"} -->
+    <!--#include sidebar.html {"active":"models","mode":"normal"} -->
 
     <div class="main">
 
-      <!--#include topbar.html {"title":"Models"} -->
+      <!--#include topbar.html {"title":"Explore models"} -->
 
       <div class="scroll" style="overflow-y:auto">
         <div data-filter-root="explore" style="width:100%;max-width:960px;margin:0 auto;padding:26px 24px 32px;display:flex;flex-direction:column;gap:18px">
@@ -22,7 +22,7 @@
           <nav aria-label="Model views" style="display:flex;gap:2px;border-bottom:1px solid var(--line-soft)">
             <span aria-current="page" style="display:inline-flex;align-items:center;padding:9px 12px;font-size:13.5px;font-weight:600;border-bottom:2px solid var(--acc);margin-bottom:-1px">Explore</span>
             <a href="/app/models/installed/" style="display:inline-flex;align-items:center;padding:9px 12px;font-size:13.5px;color:var(--mut)">My models</a>
-            <button type="button" style="padding:9px 12px;font-size:13.5px;color:var(--mut)" data-inert="There is no download queue in this prototype. Step 3 of setup shows a download in progress.">Downloads</button>
+            <a href="/app/models/downloads/" style="display:inline-flex;align-items:center;padding:9px 12px;font-size:13.5px;color:var(--mut)">Downloads</a>
           </nav>
 
           <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">

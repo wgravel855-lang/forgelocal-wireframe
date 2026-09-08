@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Troubleshooting — ForgeLocal docs</title>
+<meta name="description" content="Out of memory, a runtime that will not start, and downloads that stop.">
+<meta property="og:title" content="Troubleshooting — ForgeLocal docs">
+<meta property="og:description" content="Out of memory, a runtime that will not start, and downloads that stop.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="ForgeLocal">
+<meta property="og:image" content="https://forgelocal-wireframe.vercel.app/assets/og.svg">
+<meta property="og:url" content="https://forgelocal-wireframe.vercel.app/docs/troubleshooting/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Troubleshooting — ForgeLocal docs">
+<meta name="twitter:description" content="Out of memory, a runtime that will not start, and downloads that stop.">
+<meta name="twitter:image" content="https://forgelocal-wireframe.vercel.app/assets/og.svg">
+<link rel="canonical" href="https://forgelocal-wireframe.vercel.app/docs/troubleshooting/">
+<link rel="icon" href="/assets/mark.svg" type="image/svg+xml">
+<link rel="alternate icon" href="/favicon.ico">
+<link rel="stylesheet" href="/assets/forgelocal.css">
+</head>
+<body class="site" style="">
+<a class="vh" href="#main">Skip to content</a>
+<header class="mhead">
+  <div class="mwrap mhead-in">
+    <a class="brand" href="/">
+      <svg viewBox="0 0 24 24" fill="none" width="22" height="22" aria-hidden="true" focusable="false" style="flex-shrink:0">
+  <rect x="2.4" y="2.4" width="19.2" height="19.2" rx="5.6" stroke="currentColor" stroke-width="1.7"/>
+  <path d="M8.6 8.9 11.7 12l-3.1 3.1" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M13.6 15.1h3.3" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+</svg>
+      <span>ForgeLocal</span>
+    </a>
+    <button class="btn btnq ico" type="button" data-nav-toggle aria-expanded="false" aria-controls="site-nav" aria-label="Menu">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+    <nav id="site-nav" data-nav aria-label="Main">
+      <a href="/product/">Product</a>
+      <a href="/models/">Models</a>
+      <a href="/security/">Security</a>
+      <a href="/pricing/">Pricing</a>
+      <a href="/docs/">Docs</a>
+      <span class="mhead-sp"></span>
+      <a href="/download/" class="btn btns">Download</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+<section class="mwrap docwrap">
+  <nav class="docnav" aria-label="Documentation">
+    <div class="docnav-g">
+      <span class="lab">Getting started</span>
+      <a href="/docs/what-forgelocal-is/">What ForgeLocal is</a>
+<a href="/docs/installing/">Installing</a>
+<a href="/docs/first-task/">Your first task</a>
+    </div>
+<div class="docnav-g">
+      <span class="lab">Models</span>
+      <a href="/docs/choosing-a-model/">Choosing a model that fits</a>
+<a href="/docs/quantization/">Quantization and formats</a>
+<a href="/docs/context-and-memory/">Context and memory</a>
+<a href="/docs/managing-models/">Downloading and loading</a>
+    </div>
+<div class="docnav-g">
+      <span class="lab">Working</span>
+      <a href="/docs/modes/">Ask, Plan and Build</a>
+<a href="/docs/permissions/">Permissions</a>
+<a href="/docs/review-and-checkpoints/">Review and checkpoints</a>
+    </div>
+<div class="docnav-g">
+      <span class="lab">Reference</span>
+      <a href="/docs/privacy-and-data/">Where your data lives</a>
+<a href="/docs/troubleshooting/" aria-current="page" class="on">Troubleshooting</a>
+    </div>
+  </nav>
+  <article class="docbody">
+    <p class="docbreadcrumb"><a href="/docs/">Docs</a> <span aria-hidden="true">/</span> Reference</p>
+    <h1 class="mh2" style="font-size:34px;line-height:42px">Troubleshooting</h1>
+    <p class="mlede" style="margin-top:12px">Out of memory, a runtime that will not start, and downloads that stop.</p>
+    <p class="docmeta"><span class="num">5 min read</span> &middot; Describes the behaviour this build defines</p>
+    <section class="docsec">
+      <h2>Out of video memory</h2>
+      <p>The symptom is a load that fails, or a run that becomes dramatically slower partway through a long conversation. Both are the same cause: weights plus the key-value cache no longer fit.</p>
+<ol class="doclist"><li>Lower the context for that model. This is the largest single saving and the least destructive.</li><li>Close whatever else is using the card. A browser with hardware acceleration and a game launcher can hold a surprising amount.</li><li>Drop one quantization step, for example from Q5_K_M to Q4_K_M, which saves roughly a fifth of the weights.</li><li>Move to the next smaller model. A 7B at a comfortable context beats a 14B that is thrashing.</li></ol>
+    </section>
+<section class="docsec">
+      <h2>The runtime will not start</h2>
+      <p>The Local pill in the top bar reports runtime health. If it says the runtime is offline, the usual causes are a graphics driver that updated underneath a running app, or a runtime binary that a security tool quarantined.</p>
+<ul class="doclist"><li>Restart the app first. A driver update invalidates the existing context and a restart is the fix.</li><li>Reinstalling the runtime from Settings replaces the binary only. It does not touch your models, so it costs seconds rather than gigabytes.</li><li>If a security tool is quarantining it, the runtime path is shown in Settings so it can be excluded.</li></ul>
+    </section>
+<section class="docsec">
+      <h2>A download stopped</h2>
+      <p>Downloads resume from the bytes already on disk, so a paused or interrupted download is not lost work. The Downloads page states the actual reason a download failed rather than the word Failed.</p>
+<dl class="dockv"><div><dt>Not enough disk</dt><dd>It names the space needed and the space free. Free space or choose a smaller quantization, then retry.</dd></div><div><dt>Checksum mismatch</dt><dd>The file did not verify, so it is not marked installed. Retrying re-downloads rather than keeping a corrupt file.</dd></div><div><dt>Connection lost</dt><dd>Resumes from where it stopped when you retry.</dd></div></dl>
+    </section>
+<section class="docsec">
+      <h2>The model is not following instructions</h2>
+      <p>Before blaming the model, check the context indicator. A conversation that has filled its window has already dropped its earliest turns, which is usually where the constraint you are annoyed about was stated.</p>
+<p>A fresh chat with the constraint restated at the top costs less than five more turns of correction, and it is why starting over is a normal move rather than an admission of defeat.</p>
+    </section>
+    <nav class="docpn" aria-label="More documentation">
+      <a href="/docs/privacy-and-data/"><span class="lab">Previous</span><span class="t">Where your data lives</span></a>
+      <span></span>
+    </nav>
+  </article>
+</section>
+</main>
+
+<footer class="mfoot mfoot-slim">
+  <div class="mwrap mfoot-legal">
+    <a class="brand small" href="/"><svg viewBox="0 0 24 24" fill="none" width="16" height="16" aria-hidden="true" focusable="false" style="flex-shrink:0">
+  <rect x="2.4" y="2.4" width="19.2" height="19.2" rx="5.6" stroke="currentColor" stroke-width="1.7"/>
+  <path d="M8.6 8.9 11.7 12l-3.1 3.1" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M13.6 15.1h3.3" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+</svg> ForgeLocal</a>
+    <span class="grow"></span>
+    <a href="/privacy/">Privacy</a>
+    <a href="/terms/">Terms</a>
+    <a href="/security/">Security</a>
+  </div>
+</footer>
+<script src="/assets/forgelocal.js" defer></script>
+</body>
+</html>

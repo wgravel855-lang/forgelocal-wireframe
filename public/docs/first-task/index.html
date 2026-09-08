@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Your first task — ForgeLocal docs</title>
+<meta name="description" content="What actually happens between typing a request and getting a diff.">
+<meta property="og:title" content="Your first task — ForgeLocal docs">
+<meta property="og:description" content="What actually happens between typing a request and getting a diff.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="ForgeLocal">
+<meta property="og:image" content="https://forgelocal-wireframe.vercel.app/assets/og.svg">
+<meta property="og:url" content="https://forgelocal-wireframe.vercel.app/docs/first-task/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Your first task — ForgeLocal docs">
+<meta name="twitter:description" content="What actually happens between typing a request and getting a diff.">
+<meta name="twitter:image" content="https://forgelocal-wireframe.vercel.app/assets/og.svg">
+<link rel="canonical" href="https://forgelocal-wireframe.vercel.app/docs/first-task/">
+<link rel="icon" href="/assets/mark.svg" type="image/svg+xml">
+<link rel="alternate icon" href="/favicon.ico">
+<link rel="stylesheet" href="/assets/forgelocal.css">
+</head>
+<body class="site" style="">
+<a class="vh" href="#main">Skip to content</a>
+<header class="mhead">
+  <div class="mwrap mhead-in">
+    <a class="brand" href="/">
+      <svg viewBox="0 0 24 24" fill="none" width="22" height="22" aria-hidden="true" focusable="false" style="flex-shrink:0">
+  <rect x="2.4" y="2.4" width="19.2" height="19.2" rx="5.6" stroke="currentColor" stroke-width="1.7"/>
+  <path d="M8.6 8.9 11.7 12l-3.1 3.1" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M13.6 15.1h3.3" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+</svg>
+      <span>ForgeLocal</span>
+    </a>
+    <button class="btn btnq ico" type="button" data-nav-toggle aria-expanded="false" aria-controls="site-nav" aria-label="Menu">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+    <nav id="site-nav" data-nav aria-label="Main">
+      <a href="/product/">Product</a>
+      <a href="/models/">Models</a>
+      <a href="/security/">Security</a>
+      <a href="/pricing/">Pricing</a>
+      <a href="/docs/">Docs</a>
+      <span class="mhead-sp"></span>
+      <a href="/download/" class="btn btns">Download</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+<section class="mwrap docwrap">
+  <nav class="docnav" aria-label="Documentation">
+    <div class="docnav-g">
+      <span class="lab">Getting started</span>
+      <a href="/docs/what-forgelocal-is/">What ForgeLocal is</a>
+<a href="/docs/installing/">Installing</a>
+<a href="/docs/first-task/" aria-current="page" class="on">Your first task</a>
+    </div>
+<div class="docnav-g">
+      <span class="lab">Models</span>
+      <a href="/docs/choosing-a-model/">Choosing a model that fits</a>
+<a href="/docs/quantization/">Quantization and formats</a>
+<a href="/docs/context-and-memory/">Context and memory</a>
+<a href="/docs/managing-models/">Downloading and loading</a>
+    </div>
+<div class="docnav-g">
+      <span class="lab">Working</span>
+      <a href="/docs/modes/">Ask, Plan and Build</a>
+<a href="/docs/permissions/">Permissions</a>
+<a href="/docs/review-and-checkpoints/">Review and checkpoints</a>
+    </div>
+<div class="docnav-g">
+      <span class="lab">Reference</span>
+      <a href="/docs/privacy-and-data/">Where your data lives</a>
+<a href="/docs/troubleshooting/">Troubleshooting</a>
+    </div>
+  </nav>
+  <article class="docbody">
+    <p class="docbreadcrumb"><a href="/docs/">Docs</a> <span aria-hidden="true">/</span> Getting started</p>
+    <h1 class="mh2" style="font-size:34px;line-height:42px">Your first task</h1>
+    <p class="mlede" style="margin-top:12px">What actually happens between typing a request and getting a diff.</p>
+    <p class="docmeta"><span class="num">4 min read</span> &middot; Describes the behaviour this build defines</p>
+    <section class="docsec">
+      <h2>Ask for something small</h2>
+      <p>A first task that touches one or two files tells you more than a large one, because you can read the whole diff and judge whether the model understood the codebase. Renaming a helper, adding a test for an existing function, or tightening one error message are all good first tasks.</p>
+<p>Type it in plain language. There is no prompt syntax, no slash commands and no file-mention syntax to learn. The agent reads the project itself.</p>
+    </section>
+<section class="docsec">
+      <h2>What you see while it works</h2>
+      <p>The reply is one group, not a stream of separate messages. Inside it, an activity block collects everything the agent did: files read, edits made, commands run, tests and their exit codes. It is collapsed to a one-line summary by default and expands when you want the detail.</p>
+<ul class="doclist"><li>A plan appears first in Plan mode, and you approve it before anything runs.</li><li>Anything the permission preset does not cover stops the run and asks, showing the exact command.</li><li>Stop is always available. A stopped run keeps the work already done and says where it stopped.</li></ul>
+    </section>
+<section class="docsec">
+      <h2>Then review</h2>
+      <p>Changes arrive as a diff, not as applied edits you have to discover later. You keep or revert per file and per hunk. Reverting is not undo, it is a checkpoint restore, so it works even after you have kept some other part of the change.</p>
+<p class="docnote">If the result is wrong, the fastest repair is usually to revert and rephrase rather than to argue with the model across several turns. Each turn spends context, and context is finite.</p>
+    </section>
+    <nav class="docpn" aria-label="More documentation">
+      <a href="/docs/installing/"><span class="lab">Previous</span><span class="t">Installing</span></a>
+      <a href="/docs/choosing-a-model/" class="nx"><span class="lab">Next</span><span class="t">Choosing a model that fits</span></a>
+    </nav>
+  </article>
+</section>
+</main>
+
+<footer class="mfoot mfoot-slim">
+  <div class="mwrap mfoot-legal">
+    <a class="brand small" href="/"><svg viewBox="0 0 24 24" fill="none" width="16" height="16" aria-hidden="true" focusable="false" style="flex-shrink:0">
+  <rect x="2.4" y="2.4" width="19.2" height="19.2" rx="5.6" stroke="currentColor" stroke-width="1.7"/>
+  <path d="M8.6 8.9 11.7 12l-3.1 3.1" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M13.6 15.1h3.3" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+</svg> ForgeLocal</a>
+    <span class="grow"></span>
+    <a href="/privacy/">Privacy</a>
+    <a href="/terms/">Terms</a>
+    <a href="/security/">Security</a>
+  </div>
+</footer>
+<script src="/assets/forgelocal.js" defer></script>
+</body>
+</html>
