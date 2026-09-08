@@ -99,8 +99,9 @@ a.link,
   padding: 0 16px 0 12px; border-bottom: 1px solid var(--line-soft); }
 .scroll { flex: 1; min-height: 0; overflow: hidden; }
 .col { width: 100%; max-width: 792px; margin: 0 auto; padding: 0 28px; }
-.drawer { width: 480px; flex-shrink: 0; border-left: 1px solid var(--line);
-  background: var(--panel); display: flex; flex-direction: column; min-height: 0; }
+.drawer { position: relative; width: 480px; flex-shrink: 0;
+  border-left: 1px solid var(--line); background: var(--panel);
+  display: flex; flex-direction: column; min-height: 0; }
 
 /* sidebar rows */
 .srow { display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 4px 10px;
@@ -144,9 +145,11 @@ a.link,
 .thread-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
   display: flex; flex-direction: column; }
 .col { width: 100%; max-width: 748px; margin: 0 auto; padding: 0 28px; }
-.thread { display: flex; flex-direction: column; gap: 34px;
+.thread { display: flex; flex-direction: column; gap: 40px;
   padding-top: 28px; padding-bottom: 28px; }
-.thread { flex: 0 0 auto; padding-bottom: 8px; }
+/* the last turn's action row lives in the gutter below it, so the thread
+   needs room for one before the composer starts */
+.thread { flex: 0 0 auto; padding-bottom: 48px; }
 /* the empty state centres in the canvas; a conversation starts at the top */
 .thread.is-empty { flex: 1 0 auto; justify-content: center; gap: 0;
   padding-bottom: 8vh; }
@@ -272,18 +275,21 @@ a.link,
 /* ---- message actions ------------------------------------------------- */
 /* Reserved space, so revealing them never shifts the thread. */
 .mactions { display: flex; gap: 2px; height: 40px; align-items: center;
-  opacity: 0; pointer-events: none; transition: opacity 140ms ease-out; }
-/* out of flow: the row sits in the gap between turns instead of adding to it */
+  opacity: 0; transition: opacity 140ms ease-out; }
+/* Out of flow, in the gutter between turns, starting at the content
+   boundary rather than above it. The row itself never intercepts a
+   pointer; only its buttons do, and only while they are visible. */
 .turn > .mactions { position: absolute; left: 0; right: 0; top: 100%;
-  margin-top: -6px; }
+  margin-top: 0; pointer-events: none; }
+.turn > .mactions .mact { pointer-events: none; }
 .turn { position: relative; }
-.turn:hover > .mactions, .turn:focus-within > .mactions,
-.turn > .mactions:focus-within { opacity: 1; pointer-events: auto; }
+.turn:hover > .mactions, .turn:focus-within > .mactions { opacity: 1; }
+.turn:hover > .mactions .mact, .turn:focus-within > .mactions .mact { pointer-events: auto; }
 .turn-user > .mactions { justify-content: flex-end; }
 /* a coarse pointer has no hover, so the actions stay put and readable */
 @media (hover: none), (pointer: coarse) {
-  .turn > .mactions { position: static; opacity: 1; pointer-events: auto;
-    margin-top: 4px; height: 44px; }
+  .turn > .mactions { position: static; opacity: 1; margin-top: 4px; height: 44px; }
+  .turn > .mactions .mact { pointer-events: auto; }
   .mact { min-height: 44px; min-width: 44px; }
 }
 .mact { display: inline-flex; align-items: center; justify-content: center; gap: 6px;
@@ -335,15 +341,19 @@ a.link,
 .starters > button:hover { background: var(--sunk); border-color: var(--line-strong); }
 /* one featured action, then two equal halves: never an empty third column */
 .starters > button:first-child { grid-column: 1 / -1; }
-.starters > button:nth-child(2) { grid-column: 1; }
-.starters > button:nth-child(3) { grid-column: 2; }
-.starters.is-pair > button:first-child { grid-column: 1; }
+.starters:not(.is-pair) > button:nth-child(2) { grid-column: 1; }
+.starters:not(.is-pair) > button:nth-child(3) { grid-column: 2; }
+/* a pair is two equal columns, one card each, by auto-placement */
+.starters.is-pair > button { grid-column: auto; }
 .starters .s-t { font-size: 14.5px; line-height: 21px; color: var(--fg); font-weight: 500; }
 .starters .s-d { font-size: 13px; line-height: 19px; color: var(--faint); }
 @media (max-width: 720px) {
   .starters { grid-template-columns: 1fr; }
-  .starters > button, .starters > button:first-child,
-  .starters > button:nth-child(2), .starters > button:nth-child(3) {
+  .starters > button,
+  .starters > button:first-child,
+  .starters.is-pair > button,
+  .starters:not(.is-pair) > button:nth-child(2),
+  .starters:not(.is-pair) > button:nth-child(3) {
     grid-column: 1; min-height: 44px; }
 }
 @media (max-width: 640px) {

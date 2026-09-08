@@ -875,12 +875,26 @@
       lastTop = s.scrollTop;
     }, { passive: true });
 
-    if (jump) jump.addEventListener("click", () => {
+    const jumpToLatest = () => {
       CONVO.follow = true;
-      toBottom(!reduced);
-      showJump(false);
-      if (ta) ta.focus();
-    });
+      const target = CONVO.scroll;
+      const land = () => { target.scrollTop = target.scrollHeight - target.clientHeight; };
+      if (reduced) { land(); syncJump(); }
+      else {
+        target.scrollTo({ top: target.scrollHeight, behavior: "smooth" });
+        // a smooth scroll can be interrupted by focus or a rerender, so the
+        // landing is confirmed rather than assumed
+        clearTimeout(CONVO.jumpTimer);
+        CONVO.jumpTimer = setTimeout(() => {
+          if (distanceFromBottom() > 2) land();
+          syncJump();
+        }, 420);
+      }
+      // focusing must not scroll the composer back into view mid-flight
+      if (ta) ta.focus({ preventScroll: true });
+    };
+    // Enter and Space fire click on a button, so one handler covers both
+    if (jump) jump.addEventListener("click", jumpToLatest);
 
     /* ---- load a thread ----------------------------------------------- */
     const load = (id, project) => {
