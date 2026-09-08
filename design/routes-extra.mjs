@@ -37,8 +37,11 @@ export function extraRoutes({ write, marketing, appPage, part, workspace, esc, m
         <p class="mut" style="margin:0;font-size:14px;line-height:21px;max-width:62ch">${esc(d)}</p></div>
         ${CROPS[i + 1] ?? ""}</li>`).join("\n")}
   </ol>
-  <div style="margin-top:32px;display:flex;gap:14px;flex-wrap:wrap">
-    <a class="btn btnp btnl" href="/download/">Download for Windows</a>
+  <p class="mut" style="margin:30px 0 0;font-size:14.5px;line-height:23px;max-width:70ch">
+    These five steps are the designed flow, and the screens above are the real ones. No build is
+    published yet, so nothing here downloads or runs a model today.</p>
+  <div style="margin-top:22px;display:flex;gap:14px;flex-wrap:wrap">
+    <a class="btn btnp btnl" href="/download/">View downloads</a>
     <a class="btn btnl" href="/models/">Browse models first</a>
   </div>
 </section>`,
@@ -48,7 +51,7 @@ export function extraRoutes({ write, marketing, appPage, part, workspace, esc, m
   write("download/index.html", marketing({
     path: "/download/", title: "Download ForgeLocal",
     desc: "Windows build, system requirements, checksum and release notes.",
-    main: head("Download", "Get ForgeLocal", "One installer. Free for local use, and it does not need an account.") +
+    main: head("Download", "Get ForgeLocal", "There is no installer yet. Local use will be free and will not need an account.") +
       `<section class="mwrap msec" style="padding-bottom:44px">
   <div class="index">
     <div class="strow" style="grid-template-columns:minmax(0,1fr) auto;align-items:center;padding:22px 2px">
@@ -142,7 +145,7 @@ export function extraRoutes({ write, marketing, appPage, part, workspace, esc, m
         "Hardware scan and one tested recommendation",
         "Files, Git, terminal, diff, preview and rollback",
         "Up to three active projects",
-      ], `<a class="btn btnl" href="/download/" style="width:100%">Download</a>`, false)}
+      ], `<a class="btn btnl" href="/download/" style="width:100%">View downloads</a>`, false)}
     ${plan("Pro", 15, "For people who live in it.", [
         "Unlimited projects",
         "Full verified profile matrix and updates",
@@ -327,6 +330,51 @@ export function extraRoutes({ write, marketing, appPage, part, workspace, esc, m
           <p>${esc(d)}</p>
         </section>`).join("\n")}
     </div>
+    <section id="collected" style="padding-top:26px;border-top:1px solid var(--line-soft);margin-top:26px">
+      <h2>Field by field</h2>
+      <p>Every switch is off on a fresh install, so by default the rows below never leave the
+        machine. This is what each one would contain if you turned it on.</p>
+      ${[["Crash reports", "When the app stops unexpectedly",
+          ["Exception type and stack trace, with file paths inside the app only",
+            "App version, build id and runtime version",
+            "Windows version and graphics driver version",
+            "Which model was loaded, by name and quantization"],
+          ["Your project path, file names or file contents",
+            "Prompts, replies or anything typed into the composer",
+            "Any identifier that links two reports to the same person"]],
+        ["Anonymous usage counts", "Batched, at most once a day",
+          ["Counts of features used: chats started, tasks run, models loaded",
+            "Which permission preset is set, as one of three values",
+            "Whether a task ended in keep, revert or stop"],
+          ["Prompt text, code, file names or project names",
+            "Timestamps precise enough to reconstruct a session",
+            "Any identifier that links two days of counts together"]],
+        ["Contributed profile results", "Once, after a model is first loaded",
+          ["Graphics card model and video memory size",
+            "The model, quantization and context that was loaded",
+            "Whether it loaded, and measured throughput if it ran"],
+          ["Anything about your project or your code",
+            "Your machine name, user name or network address",
+            "Anything that identifies the machine beyond its hardware class"]],
+        ["Diagnostics report", "Only when you build one and choose to send it",
+          ["The task log, with absolute paths reduced to their project-relative form",
+            "The context around the failure: model, runtime, mode, checkpoint",
+            "Anything you leave in after reading it"],
+          ["Anything matching a secret pattern, removed before it is shown to you",
+            "Anything you delete from the report before sending",
+            "Anything at all unless you press send, because it is built on demand"]]]
+        .map(([name, when, sends, never]) => `<div class="cfrow">
+          <div class="cfrow-h"><span class="t">${esc(name)}</span><span class="lab">${esc(when)}</span></div>
+          <div class="cfrow-b">
+            <div><span class="lab-fn ok-t">Includes</span>
+              <ul>${sends.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></div>
+            <div><span class="lab-fn">Never includes</span>
+              <ul>${never.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></div>
+          </div>
+        </div>`).join("\n")}
+      <p style="margin-top:18px">Turning a switch off stops the next send. There is no queue that
+        drains afterwards, because nothing is collected while the switch is off.</p>
+    </section>
     <p class="mut" style="margin:0;padding-top:22px;border-top:1px solid var(--line);font-size:14px;line-height:23px">
       This is a plain-language summary of intended behavior, not a legal policy. A reviewed policy
       will be published before any build ships, and it will describe what the code actually does

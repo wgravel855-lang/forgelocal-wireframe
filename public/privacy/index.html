@@ -67,6 +67,49 @@
           <p>Then the task summary and the file contents it names go to that provider under their terms. It is asked per task, never once at setup.</p>
         </section>
     </div>
+    <section id="collected" style="padding-top:26px;border-top:1px solid var(--line-soft);margin-top:26px">
+      <h2>Field by field</h2>
+      <p>Every switch is off on a fresh install, so by default the rows below never leave the
+        machine. This is what each one would contain if you turned it on.</p>
+      <div class="cfrow">
+          <div class="cfrow-h"><span class="t">Crash reports</span><span class="lab">When the app stops unexpectedly</span></div>
+          <div class="cfrow-b">
+            <div><span class="lab-fn ok-t">Includes</span>
+              <ul><li>Exception type and stack trace, with file paths inside the app only</li><li>App version, build id and runtime version</li><li>Windows version and graphics driver version</li><li>Which model was loaded, by name and quantization</li></ul></div>
+            <div><span class="lab-fn">Never includes</span>
+              <ul><li>Your project path, file names or file contents</li><li>Prompts, replies or anything typed into the composer</li><li>Any identifier that links two reports to the same person</li></ul></div>
+          </div>
+        </div>
+<div class="cfrow">
+          <div class="cfrow-h"><span class="t">Anonymous usage counts</span><span class="lab">Batched, at most once a day</span></div>
+          <div class="cfrow-b">
+            <div><span class="lab-fn ok-t">Includes</span>
+              <ul><li>Counts of features used: chats started, tasks run, models loaded</li><li>Which permission preset is set, as one of three values</li><li>Whether a task ended in keep, revert or stop</li></ul></div>
+            <div><span class="lab-fn">Never includes</span>
+              <ul><li>Prompt text, code, file names or project names</li><li>Timestamps precise enough to reconstruct a session</li><li>Any identifier that links two days of counts together</li></ul></div>
+          </div>
+        </div>
+<div class="cfrow">
+          <div class="cfrow-h"><span class="t">Contributed profile results</span><span class="lab">Once, after a model is first loaded</span></div>
+          <div class="cfrow-b">
+            <div><span class="lab-fn ok-t">Includes</span>
+              <ul><li>Graphics card model and video memory size</li><li>The model, quantization and context that was loaded</li><li>Whether it loaded, and measured throughput if it ran</li></ul></div>
+            <div><span class="lab-fn">Never includes</span>
+              <ul><li>Anything about your project or your code</li><li>Your machine name, user name or network address</li><li>Anything that identifies the machine beyond its hardware class</li></ul></div>
+          </div>
+        </div>
+<div class="cfrow">
+          <div class="cfrow-h"><span class="t">Diagnostics report</span><span class="lab">Only when you build one and choose to send it</span></div>
+          <div class="cfrow-b">
+            <div><span class="lab-fn ok-t">Includes</span>
+              <ul><li>The task log, with absolute paths reduced to their project-relative form</li><li>The context around the failure: model, runtime, mode, checkpoint</li><li>Anything you leave in after reading it</li></ul></div>
+            <div><span class="lab-fn">Never includes</span>
+              <ul><li>Anything matching a secret pattern, removed before it is shown to you</li><li>Anything you delete from the report before sending</li><li>Anything at all unless you press send, because it is built on demand</li></ul></div>
+          </div>
+        </div>
+      <p style="margin-top:18px">Turning a switch off stops the next send. There is no queue that
+        drains afterwards, because nothing is collected while the switch is off.</p>
+    </section>
     <p class="mut" style="margin:0;padding-top:22px;border-top:1px solid var(--line);font-size:14px;line-height:23px">
       This is a plain-language summary of intended behavior, not a legal policy. A reviewed policy
       will be published before any build ships, and it will describe what the code actually does
