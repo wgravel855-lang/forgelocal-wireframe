@@ -65,10 +65,14 @@ for (const file of files) {
 
   // 4. Native confirm/alert/prompt block the whole session and cannot explain
   //    what a choice does. This project uses flConfirm instead.
-  for (const m of src.matchAll(/(^|[^.\w])(confirm|alert|prompt)\s*\(/g)) {
-    const before = src.slice(Math.max(0, m.index - 60), m.index);
-    if (/\/\/|\*|flConfirm|showPrompt/.test(before.split("\n").pop() || "")) continue;
-    report(file, `native ${m[2]}() - use flConfirm`);
+  //    A test file never ships, and a sanitisation test has to contain the
+  //    payloads it defends against, so this rule covers shipped code only.
+  if (!rel.endsWith(".test.mjs")) {
+    for (const m of src.matchAll(/(^|[^.\w])(confirm|alert|prompt)\s*\(/g)) {
+      const before = src.slice(Math.max(0, m.index - 60), m.index);
+      if (/\/\/|\*|flConfirm|showPrompt/.test(before.split("\n").pop() || "")) continue;
+      report(file, `native ${m[2]}() - use flConfirm`);
+    }
   }
 
   // 5. A load-time call to a helper declared further down the same scope.
