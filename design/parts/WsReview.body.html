@@ -6,6 +6,7 @@
       <!--#include topbar.html {"title":"Persist tasks to localStorage","status":"<!--#include status-review.html -->","artifacts":"<!--#include artifacts-btn.html {\"n\":\"3\"} -->"} -->
 
       <div class="scroll" style="overflow-y:auto">
+        <h1 class="vh">Review changes: Persist tasks to localStorage</h1>
         <div class="col" style="max-width:720px;display:flex;flex-direction:column;gap:18px;padding-top:24px;padding-bottom:20px">
 
           <section class="act is-flat" aria-label="Activity">
@@ -13,7 +14,20 @@
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
               <span class="h3" style="flex:1">Done</span>
               <span class="lab">1m 04s</span>
-              <button class="btn btnq btns" type="button" data-act-toggle aria-expanded="false">Show</button>
+              <button class="btn btnq btns" type="button" data-act-toggle aria-expanded="false"
+                aria-controls="review-activity">Show activity</button>
+            </div>
+            <div id="review-activity" hidden>
+              <div class="arow"><span class="arow-i"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span>
+                <span class="t">Read 4 files</span><span class="lab">1.2s</span></div>
+              <div class="arow"><span class="arow-i"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span>
+                <span class="t">Searched 21 files for localStorage</span><span class="lab">0.4s</span></div>
+              <div class="arow"><span class="arow-i"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span>
+                <span class="t">Edited 2 files</span>
+                <span class="m" style="color:var(--ok);font-size:12.5px">+46</span>
+                <span class="m" style="color:var(--bad);font-size:12.5px">&minus;12</span></div>
+              <div class="arow"><span class="arow-i"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span>
+                <span class="m t">npm test -- --run</span><span class="lab">4 passed, exit 0</span></div>
             </div>
           </section>
 
@@ -111,23 +125,23 @@
 
       <div style="flex-shrink:0;padding:8px 6px;border-bottom:1px solid var(--line-soft);max-height:190px;overflow-y:auto">
         <div class="sgroup">Modified</div>
-        <button class="srow on" style="height:36px" data-review-file data-reviewed="false" aria-current="true">
+        <button class="srow on" style="height:36px" data-review-file data-path="src/App.jsx" data-reviewed="false" aria-current="true">
           <svg class="review-mark" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M20 6 9 17l-5-5"/></svg>
           <span class="m t">src/App.jsx</span>
           <span class="m" style="color:var(--ok);font-size:13px">+8</span>
           <span class="m" style="color:var(--bad);font-size:13px">&minus;12</span>
         </button>
         <div class="sgroup" style="margin-top:6px">Added</div>
-        <button class="srow" style="height:36px" data-review-file data-reviewed="false">
+        <button class="srow" style="height:36px" data-review-file data-path="src/useTasks.js" data-reviewed="false">
           <svg class="review-mark" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M20 6 9 17l-5-5"/></svg>
           <span class="m t">src/useTasks.js</span>
           <span class="m" style="color:var(--ok);font-size:13px">+38</span>
         </button>
         <div class="sgroup" style="margin-top:6px">Yours, from before this task</div>
-        <button class="srow" style="height:36px">
+        <div class="srow is-static" style="height:36px">
           <span class="m t">src/index.css</span>
           <span class="pill" style="padding:0 6px">untouched</span>
-        </button>
+        </div>
       </div>
 
       <div style="flex:1;min-height:0;display:flex;flex-direction:column;background:var(--bg);overflow:hidden">
@@ -193,13 +207,15 @@
         style="flex:1;min-height:0;display:flex;flex-direction:column">
         <div style="flex:1;min-height:0;overflow-y:auto;padding:8px 6px">
           <div class="sgroup">src</div>
-          <button class="srow"><span class="m t">App.jsx</span><span class="m" style="color:var(--ok);font-size:12px">+8</span><span class="m" style="color:var(--bad);font-size:12px">&minus;12</span></button>
-          <button class="srow"><span class="m t">useTasks.js</span><span class="pill ok">new</span></button>
-          <button class="srow"><span class="m t">index.css</span><span class="lab">unchanged</span></button>
-          <button class="srow"><span class="m t">main.jsx</span><span class="lab">unchanged</span></button>
+          <button class="srow" data-file-open="src/App.jsx" aria-current="false"><span class="m t">App.jsx</span><span class="m" style="color:var(--ok);font-size:12px">+8</span><span class="m" style="color:var(--bad);font-size:12px">&minus;12</span></button>
+          <button class="srow" data-file-open="src/useTasks.js" aria-current="false"><span class="m t">useTasks.js</span><span class="pill ok">new</span></button>
+          <div class="srow is-static"><span class="m t">index.css</span><span class="lab">unchanged</span></div>
+          <div class="srow is-static"><span class="m t">main.jsx</span><span class="lab">unchanged</span></div>
           <div class="sgroup" style="margin-top:6px">project root</div>
-          <button class="srow"><span class="m t">package.json</span><span class="m" style="color:var(--ok);font-size:12px">+1</span></button>
-          <button class="srow"><span class="m t">vite.config.js</span><span class="lab">unchanged</span></button>
+          <div class="srow is-static"><span class="m t">package.json</span><span class="lab">not in this diff</span></div>
+          <div class="srow is-static"><span class="m t">vite.config.js</span><span class="lab">unchanged</span></div>
+          <p class="dl-m" style="margin:10px 8px 0">This task changed two files. The rest are listed
+            for context; opening a file the task did not touch is not built here.</p>
         </div></div>
         <div role="tabpanel" id="panel-problems" aria-labelledby="tab-problems" hidden
         style="flex:1;min-height:0;display:flex;flex-direction:column">

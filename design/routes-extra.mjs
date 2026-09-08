@@ -304,7 +304,7 @@ export function extraRoutes({ write, marketing, appPage, part, workspace, esc, m
         <span class="lab-fn" style="color:var(--faint)">What it affects</span>
         <span class="lab-fn" style="justify-self:end;color:var(--faint)">State</span>
       </div>
-      ${[["Local app", "Works offline. Nothing on this page can stop it.", "ok", "Operational, on your machine"],
+      ${[["Local app", "Works offline. Nothing on this page can stop it.", "", "Runs locally, independent of hosted status"],
          ["Profile registry", "Serves signed profile manifests. Cached locally, so an outage does not block work.", "", "Not deployed"],
          ["Downloads", "Weights come from the publisher, not from us.", "", "Not deployed"],
          ["Accounts and billing", "Only needed for paid plans.", "", "Not deployed"]]

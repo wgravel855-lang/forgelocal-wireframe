@@ -116,14 +116,39 @@
     openPop = null;
     if (restore) trigger.focus();
   }
+  /* A panel is positioned against its trigger, and a trigger near either
+     gutter pushes it off screen: the runtime panel lost 174px off the right at
+     1363px wide. Neither CSS side can be right for every trigger, so the panel
+     opens where its markup says and is then nudged back inside the viewport. */
+  const GUTTER = 8;
+  function clampPopover(pop) {
+    pop.style.left = "";
+    pop.style.right = "";
+    pop.style.marginLeft = "";
+    const host = pop.offsetParent || document.documentElement;
+    const hostBox = host.getBoundingClientRect();
+    const r = pop.getBoundingClientRect();
+    const limit = document.documentElement.clientWidth - GUTTER;
+    let shift = 0;
+    if (r.right > limit) shift = limit - r.right;
+    if (r.left + shift < GUTTER) shift = GUTTER - r.left;
+    if (!shift) return;
+    // offsetLeft is relative to the positioned ancestor, so shift in that frame
+    const base = r.left - hostBox.left;
+    pop.style.left = Math.round(base + shift) + "px";
+    pop.style.right = "auto";
+  }
+
   function openPopover(trigger, pop) {
     closePop(false);
     pop.hidden = false;
     trigger.setAttribute("aria-expanded", "true");
     openPop = { pop, trigger };
+    clampPopover(pop);
     const first = pop.querySelector('[data-autofocus], input, [role="menuitemradio"], button');
     if (first) first.focus();
   }
+  addEventListener("resize", () => { if (openPop) clampPopover(openPop.pop); });
   document.addEventListener("click", (e) => {
     const trigger = e.target.closest("[data-popover]");
     if (trigger) {
@@ -462,7 +487,9 @@
               plus runtime overhead, against ${esc(m.vramGB)} GB of video memory. Throughput is not
               shown because nothing here has been benchmarked.</p>
 
-            <h3 class="set-h3" style="margin-top:22px">Defaults</h3>
+            <h3 class="set-h3" style="margin-top:22px">Current defaults</h3>
+            <p class="dl-m" style="margin:6px 0 0">Read-only here. Change them in
+              <a class="link" href="/app/settings/#models">Settings, under Models and runtime</a>.</p>
             <div class="setrow" style="border-top:1px solid var(--line);margin-top:10px">
               <div><span class="set-l">Context</span>
                 <p class="set-d">Used when this model is loaded.</p></div>
@@ -571,6 +598,36 @@
         toast(`Revoked. "${what}" will ask again.`);
       }));
       paint();
+    }
+
+    // The settings nav highlighted the visible section but never told an
+    // assistive client which one, and never updated as the column scrolled.
+    const nav = $(".setnav");
+    const cols = $(".setwrap .setcol") ? $$(".setsec") : [];
+    if (nav && cols.length) {
+      const links = $$("a[href^='#']", nav);
+      const paint = (id) => links.forEach((a) => {
+        const on = a.getAttribute("href") === "#" + id;
+        a.classList.toggle("is-on", on);
+        if (on) a.setAttribute("aria-current", "location");
+        else a.removeAttribute("aria-current");
+      });
+      const scroller = $(".setwrap");
+      const pick = () => {
+        // at the very bottom the last section can never reach the top line, so
+        // it would never highlight however far you scrolled
+        const atEnd = scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 4;
+        if (atEnd) return paint(cols[cols.length - 1].id);
+        const top = scroller.getBoundingClientRect().top + 80;
+        let current = cols[0];
+        cols.forEach((sec) => { if (sec.getBoundingClientRect().top <= top) current = sec; });
+        paint(current.id);
+      };
+      scroller.addEventListener("scroll", pick, { passive: true });
+      links.forEach((a) => a.addEventListener("click", () =>
+        paint(a.getAttribute("href").slice(1))));
+      pick();
+      if (location.hash) paint(location.hash.slice(1));
     }
 
     const rm = $("[data-reduced-state]");
@@ -1341,8 +1398,13 @@
     }
     el.classList.remove("is-empty");
     const state = CONVO.state === "idle" ? (t.state || "complete") : CONVO.state;
-    el.innerHTML = t.turns.map((turn, i) =>
-      turn.role === "user" ? userMessage(turn, i) : assistantTurn(turn, i, state)).join("")
+    // A transcript carries no visible heading of its own, so it gets a hidden
+    // one naming the conversation. The empty state has its own visible h1, so
+    // exactly one h1 exists either way.
+    const title = ($("[data-ws-title]") || {}).textContent || "Conversation";
+    el.innerHTML = `<h1 class="vh">${esc(title.trim())}</h1>`
+      + t.turns.map((turn, i) =>
+        turn.role === "user" ? userMessage(turn, i) : assistantTurn(turn, i, state)).join("")
       + (CONVO.state === "thinking" || CONVO.state === "submitting" ? thinkingTurn() : "");
   }
 
@@ -1702,6 +1764,48 @@
     });
   }
 
+  /* ------------------------------------------------- composer, no thread */
+  /* /setup/5/ and /app/review/ have a real composer but no transcript, so
+     wireConversation bails on them and nothing gated Send or handled submit.
+     The button was enabled on an empty draft, and pressing it ran a native
+     form submission: the page reloaded, which is what made a closed artifact
+     panel appear to reopen itself. Same rules as the chat routes, one owner
+     per route. */
+  function wireComposerDraft() {
+    if ($("[data-thread]")) return;          // the conversation owns those
+    $$("[data-composer]").forEach((form) => {
+      const ta = $("textarea", form);
+      const send = $("[data-send]", form);
+      if (!ta || !send) return;
+
+      const sync = () => {
+        const empty = !ta.value.trim();
+        send.disabled = empty;
+        send.setAttribute("aria-disabled", String(empty));
+      };
+      ta.addEventListener("input", sync);
+      sync();
+
+      const fill = (text) => {
+        ta.value = text;
+        ta.dispatchEvent(new Event("input", { bubbles: true }));
+        ta.focus();
+        ta.setSelectionRange(ta.value.length, ta.value.length);
+        sync();
+      };
+      $$("[data-starter], [data-suggest]").forEach((b) =>
+        b.addEventListener("click", () => fill(b.dataset.starter || b.dataset.suggest)));
+
+      form.addEventListener("submit", (e) => {
+        // Always: a rejected submit must not navigate, because a reload here
+        // silently resets every other panel on the route.
+        e.preventDefault();
+        if (!ta.value.trim()) return;
+        toast("No model is connected in this wireframe, so nothing is sent. Your draft is kept.");
+      });
+    });
+  }
+
   /* ------------------------------------------------------------------- tabs */
   function wireTabs() {
     $$('[role="tablist"]').forEach((list) => {
@@ -1763,10 +1867,32 @@
       const tab = $('[role="tab"][aria-selected="true"]', drawer);
       if (tab) tab.focus();
     }));
+    // Maximizing hides the conversation pane outright. Leaving it on screen at
+    // 60px showed clipped paragraphs and half a Send button down the left edge,
+    // and kept the transcript in the tab order.
+    const conversation = $(".main", shell);
+    const setMax = (on, btn) => {
+      drawer.classList.toggle("is-max", on);
+      shell.classList.toggle("is-max", on);
+      if (conversation) conversation.inert = on;
+      $$("[data-drawer-max]").forEach((b) => {
+        b.setAttribute("aria-pressed", String(on));
+        const label = on ? "Restore split view" : "Maximize the artifacts panel";
+        b.setAttribute("aria-label", label);
+        b.title = label;
+      });
+      if (btn) btn.focus();
+    };
     $$("[data-drawer-max]").forEach((b) => b.addEventListener("click", () => {
-      drawer.classList.toggle("is-max");
-      b.setAttribute("aria-pressed", String(drawer.classList.contains("is-max")));
+      setMax(!drawer.classList.contains("is-max"), b);
     }));
+    // Escape restores the split rather than closing the panel, because the
+    // panel was already open before it was maximized.
+    document.addEventListener("keydown", (e) => {
+      if (e.key !== "Escape" || !drawer.classList.contains("is-max")) return;
+      e.preventDefault();
+      setMax(false, $("[data-drawer-max]"));
+    });
 
     const handle = $(".drawer-handle", drawer);
     if (handle) {
@@ -1801,6 +1927,34 @@
   }
 
   /* ---------------------------------------------------------------- reviews */
+  /* A Files row that is a focusable button has to do something. A changed file
+     opens its diff and keeps a selected state on both lists; a file this task
+     did not touch has no diff to open, so it is a listed row, not a button. */
+  function wireFilesTab() {
+    const rows = $$("[data-file-open]");
+    if (!rows.length) return;
+    const mark = (path) => rows.forEach((r) => {
+      const on = r.dataset.fileOpen === path;
+      r.setAttribute("aria-current", String(on));
+      r.classList.toggle("on", on);
+    });
+    rows.forEach((row) => row.addEventListener("click", () => {
+      const path = row.dataset.fileOpen;
+      mark(path);
+      const target = $('[data-review-file][data-path="' + path + '"]');
+      if (target) target.click();
+      const diffTab = $("#tab-diff");
+      if (diffTab) diffTab.click();
+      if (target) target.focus();
+    }));
+    // coming back to Files keeps the row that was opened selected
+    const filesTab = $("#tab-files");
+    if (filesTab) filesTab.addEventListener("click", () => {
+      const open = $('[data-review-file][aria-current="true"]');
+      if (open && open.dataset.path) mark(open.dataset.path);
+    });
+  }
+
   function wireReview() {
     const counter = $("[data-review-count]");
     const files = $$("[data-review-file]");
@@ -1988,72 +2142,101 @@
   }
 
   /* ------------------------------------------------------ download demo */
-  function wireDownload() {
-    const wrap = $("[data-download]");
-    if (!wrap) return;
-    const toggle = $("[data-dl-toggle]", wrap);
-    // The My models row offers Pause only; setup step 3 also offers Cancel.
-    const cancel = $("[data-dl-cancel]", wrap);
-    const state = $("[data-dl-state]", wrap);
-    const dot = $("[data-dl-dot]");
-    const bar = $("[data-dl-bar]");
-    const progress = $("[role=progressbar]");
-    if (!toggle) return;
-    let paused = false, cancelled = false;
+  /* --------------------------------------------------- download progress */
+  /* One state formatter for every download surface. Onboarding, My models and
+     Downloads each rendered their own copy, so pausing on Downloads left
+     "28.6 MB/s - about 3 min left" next to the word Paused. A paused transfer
+     has no speed and no estimate, and it says so everywhere. */
+  function dlFormat(row, state) {
+    const done = row.dataset.dlDone;      // one stored byte value, one precision
+    const total = row.dataset.dlTotal;
+    const pct = row.dataset.dlPct;
+    const speed = row.dataset.dlRate;
+    const left = row.dataset.dlLeft;
+    const head = `${done} GB of ${total} GB · ${pct}%`;
+    if (state === "cancelled") return `${head} · Cancelled`;
+    if (state === "paused") return `${head} · Paused`;
+    return `${head} · ${speed} · ${left}`;
+  }
 
-    const paint = () => {
-      toggle.textContent = paused ? "Resume" : "Pause";
-      toggle.setAttribute("aria-label", paused ? "Resume the download" : "Pause the download");
-      state.textContent = cancelled ? "Cancelled" : paused ? "Paused" : "Downloading";
-      if (dot) {
-        dot.classList.toggle("pulse", !paused && !cancelled);
-        dot.className = dot.className.replace(/\b(acc|warn|bad)\b/, cancelled ? "bad" : paused ? "warn" : "acc");
-      }
-      if (bar) bar.style.opacity = paused || cancelled ? ".45" : "1";
-      // a paused transfer has no speed and no estimate, so it claims neither
-      const speed = $("[data-dl-speed]"), remain = $("[data-dl-remain]"), foot = $("[data-dl-foot]");
-      if (speed) speed.textContent = cancelled ? "Stopped" : paused ? "Paused" : "28.6 MB/s";
-      if (remain) remain.textContent = cancelled || paused ? "Not counting" : "about 3 min";
-      const verb = $("[data-dl-verb]");
-      if (verb) verb.textContent = cancelled ? "Cancelled" : paused ? "Paused" : "Downloading";
-      if (foot) foot.textContent = cancelled
-        ? "Cancelled. The partial file is kept, so resuming does not start over."
-        : paused
-          ? "Paused. It resumes from 4.1 GB when you continue."
-          : "Downloading, about 3 min left. Step 4 opens while it runs.";
-      if (progress) {
-        progress.setAttribute("aria-label",
-          cancelled ? "Download cancelled" : paused ? "Download paused at 41 percent" : "Download progress");
-      }
-    };
+  function wireDownloadRows() {
+    $$("[data-download]").forEach((row) => {
+      const toggle = $("[data-dl-toggle]", row);
+      if (!toggle) return;
+      const cancel = $("[data-dl-cancel]", row);
+      const state = $("[data-dl-state]", row);
+      const scope = row.closest(".dlrow, .ob-col, .index, body") || document;
+      const dot = $("[data-dl-dot]", scope);
+      const bar = $("[data-dl-bar]", scope);
+      const detail = $("[data-dl-detail]", scope);
+      const verb = $("[data-dl-verb]", scope);
+      const speedEl = $("[data-dl-speed]", scope);
+      const remainEl = $("[data-dl-remain]", scope);
+      const foot = $("[data-dl-foot]");
+      const progress = $("[role=progressbar]", scope);
+      let st = "downloading";
 
-    toggle.addEventListener("click", () => {
-      if (cancelled) return;
-      paused = !paused;
+      const paint = () => {
+        const paused = st === "paused", cancelled = st === "cancelled";
+        const word = cancelled ? "Cancelled" : paused ? "Paused" : "Downloading";
+        toggle.textContent = paused ? "Resume" : "Pause";
+        toggle.setAttribute("aria-label", paused ? "Resume the download" : "Pause the download");
+        if (state) state.textContent = word;
+        if (verb) verb.textContent = word;
+        if (dot) {
+          dot.classList.toggle("pulse", st === "downloading");
+          dot.className = dot.className.replace(/\b(acc|warn|bad)\b/,
+            cancelled ? "bad" : paused ? "warn" : "acc");
+        }
+        if (bar) bar.style.opacity = st === "downloading" ? "1" : ".45";
+        if (detail) detail.textContent = dlFormat(row, st);
+        if (speedEl) speedEl.textContent = cancelled ? "Stopped" : paused ? "Paused" : row.dataset.dlRate;
+        if (remainEl) remainEl.textContent = st === "downloading" ? row.dataset.dlLeft : "Not counting";
+        if (foot) {
+          foot.textContent = cancelled
+            ? "Cancelled. The partial file is kept, so resuming does not start over."
+            : paused
+              ? `Paused. Resume to continue from ${row.dataset.dlDone} GB.`
+              : `Downloading, ${row.dataset.dlLeft}. Step 4 opens while it runs.`;
+        }
+        if (progress) {
+          progress.setAttribute("aria-label",
+            cancelled ? "Download cancelled"
+              : paused ? `Download paused at ${row.dataset.dlPct} percent`
+                : "Download progress");
+        }
+      };
+
+      toggle.addEventListener("click", () => {
+        if (st === "cancelled") return;
+        st = st === "paused" ? "downloading" : "paused";
+        paint();
+        toast(st === "paused"
+          ? `Paused. It resumes from ${row.dataset.dlDone} GB.`
+          : "Download resumed.");
+      });
+
+      if (cancel) cancel.addEventListener("click", async () => {
+        if (st === "cancelled") return;
+        const ok = await flConfirm({
+          title: "Cancel this download?",
+          body: "The part already downloaded stays on disk, so resuming later does not start over.",
+          scope: [["Downloaded so far", `${row.dataset.dlDone} GB, kept on disk`],
+            ["Setup progress", "Kept. You can resume from this step."],
+            ["Reversible", "Yes, the download can be restarted at any time"]],
+          confirm: "Cancel download", cancel: "Keep downloading", danger: true });
+        if (!ok) return;
+        st = "cancelled";
+        toggle.disabled = true;
+        toggle.setAttribute("aria-disabled", "true");
+        cancel.disabled = true;
+        if (bar) bar.style.width = "0%";
+        paint();
+        toast("Cancelled. The partial file is kept for a later resume.");
+      });
+
       paint();
-      toast(paused ? "Download paused. It resumes from where it stopped." : "Download resumed.");
     });
-
-    if (cancel) cancel.addEventListener("click", async () => {
-      if (cancelled) return;
-      const ok = await flConfirm({
-        title: "Cancel this download?",
-        body: "The part already downloaded stays on disk, so resuming later does not start over.",
-        scope: [["Downloaded so far", "4.1 GB, kept on disk"],
-          ["Setup progress", "Kept. You can resume from this step."],
-          ["Reversible", "Yes, the download can be restarted at any time"]],
-        confirm: "Cancel download", cancel: "Keep downloading", danger: true });
-      if (!ok) return;
-      cancelled = true; paused = false;
-      toggle.disabled = true;
-      cancel.disabled = true;
-      toggle.setAttribute("aria-disabled", "true");
-      if (bar) bar.style.width = "0%";
-      paint();
-      toast("Cancelled. The partial file is kept for a later resume.");
-    });
-
-    paint();
   }
 
   /* ---------------------------------------------- the activity group's fold */
@@ -2064,7 +2247,7 @@
       const rows = [...group.children].filter((el) => el !== btn.parentElement);
       const apply = (open) => {
         btn.setAttribute("aria-expanded", String(open));
-        btn.textContent = open ? "Hide" : "Show";
+        btn.textContent = open ? "Hide activity" : "Show activity";
         rows.forEach((el) => { el.hidden = !open; });
       };
       apply(btn.getAttribute("aria-expanded") === "true");
@@ -2230,10 +2413,10 @@
   const boot = () => {
     wireSidebar(); wireComposer(); wireModelPicker(); wireTabs(); wireDrawer();
     wireReview(); wireFilters(); wireNav(); wirePricing(); wirePlatform(); wireSignin();
-    wireDownload(); wireLoadToggle(); wirePresets(); showPreset();
+    wireDownloadRows(); wireFilesTab(); wireLoadToggle(); wirePresets(); showPreset();
     wireActivity(); wireStopRun(); wirePermission(); wireRecover(); wireSuggest();
     wireModelActions(); wireConversation(); wireChats();
-    wireWaitlist(); wireModelDetail(); wireDiagnostics(); wireSettings(); wireShortcuts(); wireDownloadRow(); wireInert();
+    wireWaitlist(); wireModelDetail(); wireDiagnostics(); wireComposerDraft(); wireSettings(); wireShortcuts(); wireDownloadRow(); wireInert();
     document.documentElement.dataset.reducedMotion = String(reduced);
   };
   document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", boot) : boot();

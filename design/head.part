@@ -228,7 +228,8 @@
     /* ---- details popovers --------------------------------------------------- */
     /* Project and runtime context, on demand, instead of permanent metrics in
        the header. */
-    .pdetails { top: calc(100% + 6px); left: 0; width: 320px; padding: 14px 16px 12px; }
+    .pdetails { top: calc(100% + 6px); left: 0; width: min(320px, calc(100vw - 16px));
+      padding: 14px 16px 12px; }
     .pd-h { margin: 0 0 10px; display: flex; align-items: center; gap: 8px;
       font-size: 14px; font-weight: 600; }
     .pd-kv { margin: 0; display: grid; grid-template-columns: 108px 1fr; gap: 7px 12px; }
@@ -238,7 +239,9 @@
       font-size: 12.5px; line-height: 18px; }
     .pd-a { display: flex; gap: 8px; flex-wrap: wrap; padding-top: 10px; }
     .pdetails .sep { margin: 12px -16px 0; }
-    @media (max-width: 520px) { .pdetails { width: min(320px, calc(100vw - 24px)); } }
+    /* A panel taller than the viewport scrolls inside itself rather than
+       running off the bottom. */
+    .pdetails { max-height: calc(100vh - 76px); overflow-y: auto; }
 
     /* ---- focused task shell ------------------------------------------------ */
     /* One field, one decision: a centred card and a slim footer instead of the
@@ -493,6 +496,9 @@
     .starters .s-t { font-size: 14.5px; line-height: 21px; color: var(--fg); font-weight: 500; }
     .starters .s-d { font-size: 13px; line-height: 19px; color: var(--faint); }
     @media (max-width: 720px) {
+      .btn, .ico, .btn.btns, .btn.ico { min-height: 44px; }
+      .composer .ico, .composer .btn { min-height: 44px; }
+      .drawer-h .btn, .dl-a .btn, [data-dl-toggle], [data-act-toggle] { min-height: 44px; }
       .starters { grid-template-columns: 1fr; }
       .starters > button,
       .starters > button:first-child,
@@ -970,6 +976,10 @@
     .ok-t { color: var(--ok); }
     @media (max-width: 700px) { .cfrow-b { grid-template-columns: minmax(0, 1fr); gap: 14px; } }
 
+    /* a listed file, not an action: no hover lift, no pointer, no focus ring */
+    .srow.is-static { cursor: default; background: none; }
+    .srow.is-static:hover { background: none; }
+
     .dlchip { display: inline-flex; align-items: center; gap: 8px; height: 40px;
       padding: 0 12px; border-radius: 8px; font-size: 13px; color: var(--mut);
       text-decoration: none; }
@@ -1174,7 +1184,9 @@
     .toast.in { opacity: 1; transform: none; }
 
     .drawer[hidden] { display: none; }
-    .drawer.is-max { width: calc(100% - 60px) !important; }
+    .shell.is-max > .main { display: none; }
+    .drawer.is-max { width: auto !important; min-width: 0; flex: 1; }
+    .drawer.is-max .drawer-handle { display: none; }
     .drawer-handle { position: absolute; left: -4px; top: 0; bottom: 0; width: 9px;
       cursor: col-resize; z-index: 5; background: transparent; }
     .drawer-handle:hover, .drawer-handle:focus-visible { background: var(--acc); opacity: .45; }

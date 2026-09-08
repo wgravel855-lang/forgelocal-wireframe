@@ -14,18 +14,17 @@
       </div>
 
       <div style="display:flex;flex-direction:column;gap:8px">
-        <div class="box" style="padding:12px 14px;display:flex;align-items:center;gap:12px;border-color:var(--acc)">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--acc-text)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M3 7.5A2 2 0 0 1 5 5.5h3.6l1.8 2H19a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+        <div style="padding:12px 0;display:flex;align-items:center;gap:12px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M3 7.5A2 2 0 0 1 5 5.5h3.6l1.8 2H19a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
           <div style="flex:1;min-width:0">
-            <div style="font-size:13.5px;font-weight:600">Open an existing folder</div>
-            <div class="m faint" style="margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">~/projects/task-tracker</div>
+            <span class="lab">Selected project folder</span>
+            <div class="m" style="margin-top:3px;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">~/projects/task-tracker</div>
           </div>
-              
+          <button class="btn btns" type="button" data-open-folder style="flex-shrink:0">Show in Explorer</button>
         </div>
-
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-              
-        </div>
+        <p class="faint" style="margin:0;font-size:13px;line-height:18px">
+          Chosen when you started setup. Changing the folder is not built in this wireframe, so no
+          picker is offered here rather than one that cannot open.</p>
       </div>
 
       <fieldset class="bare" style="display:flex;flex-direction:column;gap:10px">
