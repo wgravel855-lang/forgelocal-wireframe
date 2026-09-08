@@ -1,7 +1,7 @@
 // Renders the sidebar chat selector from the fixtures. Every chat is emitted
 // once, in its date bucket; the controller moves rows between the Pinned group
 // and their date group at runtime, so pinning survives without a rebuild.
-import { projects, chats, GROUPS } from "../data/chats.mjs";
+import { projects, chats, GROUPS, groupFor } from "../data/chats.mjs";
 import { threads } from "../data/threads.mjs";
 import { models } from "../data/models.mjs";
 import * as F from "./fit.mjs";
@@ -20,7 +20,7 @@ const stateWord = { running: "running", done: "finished", failed: "stopped", idl
 
 function row(c) {
   return `<div class="chat" data-chat="${esc(c.id)}" data-project="${esc(c.project)}"
-        data-bucket="${esc(c.bucket)}"${c.pinned ? " data-pinned" : ""}${c.route ? ` data-route="${esc(c.route)}"` : ""}>
+        data-bucket="${esc(groupFor(c))}"${c.pinned ? " data-pinned" : ""}${c.route ? ` data-route="${esc(c.route)}"` : ""}>
         <button class="chat-open" type="button" title="${esc(c.title)}"
           aria-label="${esc(c.title)}, ${stateWord[c.state] || "idle"}">
           <span class="ic" aria-hidden="true">${dot[c.state] || dot.idle}</span>
@@ -35,8 +35,9 @@ function row(c) {
 
 export function chatList() {
   const groups = GROUPS.map(([id, label]) => {
-    const rows = id === "pinned" ? "" : chats.filter((c) => c.bucket === id).map(row).join("\n      ");
-    return `<section class="cgroup" data-group="${id}"${id === "pinned" ? " hidden" : ""}>
+    const rows = chats.filter((c) => groupFor(c) === id).map(row).join("\n      ");
+    // An empty group is not a heading with nothing under it: it is absent.
+    return `<section class="cgroup" data-group="${id}"${rows ? "" : " hidden"}>
       <h2 class="cgroup-hd">
         <button type="button" data-group-toggle aria-expanded="true">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9.5 6 6 6-6"/></svg>

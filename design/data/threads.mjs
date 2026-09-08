@@ -79,12 +79,10 @@ export const threads = {
       { role: "user", text: "Switch the date helper over to the Temporal API." },
       { role: "assistant",
         blocks: [
-          { t: "p", text: "I repeated the same fix three times without making progress. Each attempt rewrote the same two lines and hit the same failure, so I stopped rather than keep looping." },
-          { t: "p", text: "Temporal is not available in this Node version, and no polyfill is installed. That is a project fact I cannot fix by editing the file." },
-          { t: "note", tone: "ok", text: "Your working tree is untouched. Every edit sits behind checkpoint 2." },
+          { t: "p", text: "Stopped after 3 repeated failures. Temporal is unavailable in this Node version and no polyfill is installed." },
         ],
         activity: {
-          state: "stopped", label: "Stopped", summary: "same failure after 3 attempts", elapsed: "2m 11s",
+          state: "stopped", label: "Stopped after 3 repeated failures", summary: "", elapsed: "2m 11s",
           rows: [
             { icon: "done", label: "Read 6 files", meta: "1.8s" },
             { icon: "done", label: "Edited src/lib/date.js", add: "+21", del: "−19" },
@@ -96,10 +94,10 @@ export const threads = {
           },
         },
         recovery: {
-          primary: { label: "Restore checkpoint 2", action: "restore" },
+          primary: { label: "Use a polyfill", href: "/app/permission/" },
           alternatives: [
-            { label: "Install a polyfill instead", href: "/app/permission/" },
-            { label: "Keep the edits, stop here", action: "keep" },
+            { label: "Keep current code", action: "keep" },
+            { label: "Rewind", action: "restore" },
           ],
           text: { label: "Open diagnostics", action: "diagnostics" },
         } },

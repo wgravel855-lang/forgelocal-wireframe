@@ -58,23 +58,18 @@ export function recommendationBlock(models) {
   return `<div>
         <div style="box-shadow:inset 2px 0 0 var(--acc)">
           <div style="padding:18px 20px 20px;display:flex;flex-direction:column;gap:14px">
-            <span class="lab">Recommended for this PC</span>
             <div style="display:flex;align-items:flex-start;gap:12px">
-              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px">
-                <h2 class="h-sec">${esc(m.displayName)}</h2>
-                <p class="mut" style="margin:0;font-size:14px;line-height:21px">
-                  ${esc(m.strength)} Running at ${esc(F.fmtCtx(fit.context))} context, ${esc(m.quantization)}.
-                </p>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:5px">
+                <h2 class="h-sec">Recommended: ${esc(m.displayName)}</h2>
+                <p class="mut" style="margin:0;font-size:14px;line-height:21px">${esc(m.strength)}</p>
               </div>
               <span class="rfit" style="flex-shrink:0"><span class="dot ${tone[fit.tone]}" aria-hidden="true"></span>${esc(fit.label)}</span>
             </div>
 
-            <p class="faint" style="margin:0;font-size:13.5px;line-height:20px">${esc(fit.reason)}</p>
-
             <div class="specs" style="border:0;margin:0;padding:0;gap:14px 28px;grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">
-              <div><span class="k">Download</span><span class="v">${F.gb(m.downloadBytes, 2)} GB</span></div>
-              <div><span class="k">Video memory needed</span><span class="v">${F.gb(fit.required, 1)} GB of ${F.gb(F.thisPC.vramBytes, 0)} GB</span></div>
-              <div><span class="k">Speed</span><span class="v" style="font-size:14px">${esc(speed.text)}</span></div>
+              <div><span class="k">GPU fit</span><span class="v">${F.gb(fit.required, 1)} GB of ${F.gb(F.thisPC.vramBytes, 0)} GB</span></div>
+              <div><span class="k">Context</span><span class="v">${esc(F.fmtCtx(fit.context))}</span></div>
+              <div><span class="k">Disk</span><span class="v">${F.gb(m.downloadBytes, 2)} GB</span></div>
             </div>
           </div>
 
@@ -140,14 +135,11 @@ export function exploreList(models) {
               <div class="rrow has-action">
                 <div style="min-width:0">
                   <button class="rname" type="button" data-model-detail="${esc(m.id)}">${esc(m.displayName)}</button>
-                  <p class="ruse">${esc(m.strength)}</p>
-                  <p class="rmeta">${esc(m.publisher)} &middot; ${esc(m.quantization)} ${params(m.parameterCount)} &middot; ${esc(m.licenseId)}</p>
+                  <p class="ruse">${esc(m.bestFor || m.strength.split(". ")[0])}</p>
                 </div>
                 ${fitDot(fit)}
                 <div class="rnums">
-                  <span class="rnum"><b>${F.gb(fit.required, 1)} GB</b><span>video memory</span></span>
                   <span class="rnum"><b>${F.gb(m.downloadBytes, 1)} GB</b><span>download</span></span>
-                  <span class="rnum"><b>${esc(F.fmtCtx(fit.context))}</b><span>context</span></span>
                 </div>
                 ${action}
               </div>

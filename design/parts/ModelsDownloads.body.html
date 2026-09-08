@@ -13,8 +13,10 @@
           <div style="display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap">
             <div style="flex:1;min-width:260px;display:flex;flex-direction:column;gap:6px">
               <h1 class="h1">Models</h1>
-              <p class="mut" style="margin:0;font-size:13.5px">One download at a time, so a partial
-                file is never left behind by a second one starting.</p>
+              <details class="dl-info"><summary>How downloads work</summary>
+                <p>One at a time, so a partial file is never left behind by a second one starting.
+                  Weights come from the publisher, not from ForgeLocal. A paused download keeps the
+                  bytes already on disk and resumes from there.</p></details>
             </div>
           </div>
 
@@ -93,9 +95,7 @@
           <p class="chat-empty" data-dl-empty hidden style="padding:36px 2px">
             Nothing is downloading. Start one from Explore and it appears here with its progress.</p>
 
-          <p class="mut" style="margin:6px 0 0;font-size:13.5px;line-height:21px;max-width:70ch">
-            Weights are fetched from the publisher, not from ForgeLocal. A paused download keeps the
-            bytes already on disk and resumes from there.</p>
+
 
         </div>
       </div>

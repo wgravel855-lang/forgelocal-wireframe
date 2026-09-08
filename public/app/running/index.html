@@ -80,51 +80,16 @@
   </div>
 
   <nav class="chat-list scroll" data-hide-collapsed aria-label="Chats">
-    <section class="cgroup" data-group="pinned" hidden>
+    <section class="cgroup" data-group="needs">
       <h2 class="cgroup-hd">
         <button type="button" data-group-toggle aria-expanded="true">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9.5 6 6 6-6"/></svg>
-          Pinned
+          Needs input
         </button>
       </h2>
       <div class="cgroup-body">
-      
-      </div>
-    </section>
-    <section class="cgroup" data-group="today">
-      <h2 class="cgroup-hd">
-        <button type="button" data-group-toggle aria-expanded="true">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9.5 6 6 6-6"/></svg>
-          Today
-        </button>
-      </h2>
-      <div class="cgroup-body">
-      <div class="chat" data-chat="c1" data-project="task-tracker"
-        data-bucket="today" data-pinned data-route="/app/running/">
-        <button class="chat-open" type="button" title="Persist tasks to localStorage"
-          aria-label="Persist tasks to localStorage, running">
-          <span class="ic" aria-hidden="true"><span class="dot acc pulse" aria-hidden="true"></span></span>
-          <span class="t" data-chat-title>Persist tasks to localStorage</span>
-        </button>
-        <button class="chat-more" type="button" aria-haspopup="menu" aria-expanded="false"
-          aria-label="Actions for Persist tasks to localStorage">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r=".9"/><circle cx="12" cy="12" r=".9"/><circle cx="19" cy="12" r=".9"/></svg>
-        </button>
-      </div>
-      <div class="chat" data-chat="c2" data-project="task-tracker"
-        data-bucket="today">
-        <button class="chat-open" type="button" title="Add a filter bar to the list"
-          aria-label="Add a filter bar to the list, finished">
-          <span class="ic" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span>
-          <span class="t" data-chat-title>Add a filter bar to the list</span>
-        </button>
-        <button class="chat-more" type="button" aria-haspopup="menu" aria-expanded="false"
-          aria-label="Actions for Add a filter bar to the list">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r=".9"/><circle cx="12" cy="12" r=".9"/><circle cx="19" cy="12" r=".9"/></svg>
-        </button>
-      </div>
       <div class="chat" data-chat="c3" data-project="task-tracker"
-        data-bucket="today" data-route="/app/stopped/">
+        data-bucket="needs" data-route="/app/stopped/">
         <button class="chat-open" type="button" title="Switch the date helper to Temporal"
           aria-label="Switch the date helper to Temporal, stopped">
           <span class="ic" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--bad)" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></span>
@@ -137,16 +102,61 @@
       </div>
       </div>
     </section>
-    <section class="cgroup" data-group="week">
+    <section class="cgroup" data-group="working">
       <h2 class="cgroup-hd">
         <button type="button" data-group-toggle aria-expanded="true">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9.5 6 6 6-6"/></svg>
-          Previous 7 days
+          Working
         </button>
       </h2>
       <div class="cgroup-body">
+      <div class="chat" data-chat="c1" data-project="task-tracker"
+        data-bucket="working" data-pinned data-route="/app/running/">
+        <button class="chat-open" type="button" title="Persist tasks to localStorage"
+          aria-label="Persist tasks to localStorage, running">
+          <span class="ic" aria-hidden="true"><span class="dot acc pulse" aria-hidden="true"></span></span>
+          <span class="t" data-chat-title>Persist tasks to localStorage</span>
+        </button>
+        <button class="chat-more" type="button" aria-haspopup="menu" aria-expanded="false"
+          aria-label="Actions for Persist tasks to localStorage">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r=".9"/><circle cx="12" cy="12" r=".9"/><circle cx="19" cy="12" r=".9"/></svg>
+        </button>
+      </div>
+      </div>
+    </section>
+    <section class="cgroup" data-group="pinned" hidden>
+      <h2 class="cgroup-hd">
+        <button type="button" data-group-toggle aria-expanded="true">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9.5 6 6 6-6"/></svg>
+          Pinned
+        </button>
+      </h2>
+      <div class="cgroup-body">
+      
+      </div>
+    </section>
+    <section class="cgroup" data-group="recent">
+      <h2 class="cgroup-hd">
+        <button type="button" data-group-toggle aria-expanded="true">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9.5 6 6 6-6"/></svg>
+          Recent
+        </button>
+      </h2>
+      <div class="cgroup-body">
+      <div class="chat" data-chat="c2" data-project="task-tracker"
+        data-bucket="recent">
+        <button class="chat-open" type="button" title="Add a filter bar to the list"
+          aria-label="Add a filter bar to the list, finished">
+          <span class="ic" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span>
+          <span class="t" data-chat-title>Add a filter bar to the list</span>
+        </button>
+        <button class="chat-more" type="button" aria-haspopup="menu" aria-expanded="false"
+          aria-label="Actions for Add a filter bar to the list">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r=".9"/><circle cx="12" cy="12" r=".9"/><circle cx="19" cy="12" r=".9"/></svg>
+        </button>
+      </div>
       <div class="chat" data-chat="c4" data-project="task-tracker"
-        data-bucket="week">
+        data-bucket="recent">
         <button class="chat-open" type="button" title="Scaffold the project"
           aria-label="Scaffold the project, finished">
           <span class="ic" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span>
@@ -158,7 +168,7 @@
         </button>
       </div>
       <div class="chat" data-chat="c5" data-project="task-tracker"
-        data-bucket="week">
+        data-bucket="recent">
         <button class="chat-open" type="button" title="Set up Vitest"
           aria-label="Set up Vitest, finished">
           <span class="ic" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span>
@@ -169,30 +179,8 @@
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r=".9"/><circle cx="12" cy="12" r=".9"/><circle cx="19" cy="12" r=".9"/></svg>
         </button>
       </div>
-      <div class="chat" data-chat="c7" data-project="portfolio-site"
-        data-bucket="week">
-        <button class="chat-open" type="button" title="Extract the card grid into a component"
-          aria-label="Extract the card grid into a component, finished">
-          <span class="ic" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span>
-          <span class="t" data-chat-title>Extract the card grid into a component</span>
-        </button>
-        <button class="chat-more" type="button" aria-haspopup="menu" aria-expanded="false"
-          aria-label="Actions for Extract the card grid into a component">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r=".9"/><circle cx="12" cy="12" r=".9"/><circle cx="19" cy="12" r=".9"/></svg>
-        </button>
-      </div>
-      </div>
-    </section>
-    <section class="cgroup" data-group="older">
-      <h2 class="cgroup-hd">
-        <button type="button" data-group-toggle aria-expanded="true">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9.5 6 6 6-6"/></svg>
-          Older
-        </button>
-      </h2>
-      <div class="cgroup-body">
       <div class="chat" data-chat="c6" data-project="task-tracker"
-        data-bucket="older">
+        data-bucket="recent">
         <button class="chat-open" type="button" title="Move request logging behind a flag"
           aria-label="Move request logging behind a flag, finished">
           <span class="ic" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span>
@@ -203,8 +191,20 @@
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r=".9"/><circle cx="12" cy="12" r=".9"/><circle cx="19" cy="12" r=".9"/></svg>
         </button>
       </div>
+      <div class="chat" data-chat="c7" data-project="portfolio-site"
+        data-bucket="recent">
+        <button class="chat-open" type="button" title="Extract the card grid into a component"
+          aria-label="Extract the card grid into a component, finished">
+          <span class="ic" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span>
+          <span class="t" data-chat-title>Extract the card grid into a component</span>
+        </button>
+        <button class="chat-more" type="button" aria-haspopup="menu" aria-expanded="false"
+          aria-label="Actions for Extract the card grid into a component">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r=".9"/><circle cx="12" cy="12" r=".9"/><circle cx="19" cy="12" r=".9"/></svg>
+        </button>
+      </div>
       <div class="chat" data-chat="c8" data-project="portfolio-site"
-        data-bucket="older">
+        data-bucket="recent">
         <button class="chat-open" type="button" title="Fix the contrast on the dark header"
           aria-label="Fix the contrast on the dark header, finished">
           <span class="ic" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span>
@@ -216,7 +216,7 @@
         </button>
       </div>
       <div class="chat" data-chat="c9" data-project="api-gateway"
-        data-bucket="older">
+        data-bucket="recent">
         <button class="chat-open" type="button" title="Rate limit the public endpoints"
           aria-label="Rate limit the public endpoints, finished">
           <span class="ic" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span>
@@ -286,7 +286,7 @@
     </a>
   </div>
 
-  <script type="application/json" id="fl-sessions">{"projects":[{"id":"task-tracker","name":"task-tracker","path":"~/projects/task-tracker","branch":"Git repo, on main","stack":"Vite + React detected"},{"id":"portfolio-site","name":"portfolio-site","path":"~/projects/portfolio-site","branch":"Git repo, on redesign","stack":"Astro + Tailwind detected"},{"id":"api-gateway","name":"api-gateway","path":"~/projects/api-gateway","branch":"Git repo, on main","stack":"Node + Fastify detected"}],"chats":[{"id":"c1","title":"Persist tasks to localStorage","project":"task-tracker","state":"running","route":"/app/running/","hasThread":false},{"id":"c2","title":"Add a filter bar to the list","project":"task-tracker","state":"done","route":null,"hasThread":true},{"id":"c3","title":"Switch the date helper to Temporal","project":"task-tracker","state":"failed","route":"/app/stopped/","hasThread":false},{"id":"c4","title":"Scaffold the project","project":"task-tracker","state":"done","route":null,"hasThread":true},{"id":"c5","title":"Set up Vitest","project":"task-tracker","state":"done","route":null,"hasThread":true},{"id":"c6","title":"Move request logging behind a flag","project":"task-tracker","state":"done","route":null,"hasThread":true},{"id":"c7","title":"Extract the card grid into a component","project":"portfolio-site","state":"done","route":null,"hasThread":true},{"id":"c8","title":"Fix the contrast on the dark header","project":"portfolio-site","state":"done","route":null,"hasThread":true},{"id":"c9","title":"Rate limit the public endpoints","project":"api-gateway","state":"done","route":null,"hasThread":true}],"threads":{"route:running":{"chat":"c1","state":"tool-running","composer":{"placeholder":"Add to the plan, or ask a question","mode":"Build"},"turns":[{"role":"user","text":"Save the task list to localStorage so it survives a refresh, and add a test for it."},{"role":"assistant","blocks":[{"t":"p","text":"I will move state into a small hook so the components stay unaware of storage, then cover the reload behaviour with one test."},{"t":"plan","title":"Plan","items":[{"state":"done","label":"Read how state is handled today"},{"state":"done","label":"Extract a useTasks hook backed by localStorage"},{"state":"now","label":"Add a test that survives a reload"},{"state":"todo","label":"Run the suite and report"}]}],"activity":{"state":"running","label":"Working","elapsed":"14s","rows":[{"icon":"done","label":"Read 4 files","meta":"1.2s"},{"icon":"done","label":"Searched 21 files for localStorage","meta":"0.4s"},{"icon":"done","label":"Edited 2 files","add":"+46","del":"−12"},{"icon":"running","label":"npm test -- --run","mono":true,"meta":"running","output":"> vitest --run\n\n ✓ src/App.test.jsx (3)\n · src/useTasks.test.js"}]}}]},"route:permission":{"chat":"c1","state":"tool-running","composer":{"placeholder":"Answer above, or send a different instruction","mode":"Build","blocked":true},"turns":[{"role":"user","text":"Save the task list to localStorage so it survives a refresh, and add a test for it."},{"role":"assistant","blocks":[{"t":"p","text":"The hook is in place. The test needs a DOM environment, and this project has none installed."}],"activity":{"state":"paused","label":"Paused","elapsed":"22s","rows":[{"icon":"done","label":"Read 4 files","meta":"1.2s"},{"icon":"done","label":"Edited 2 files","add":"+46","del":"−12"}]},"permission":{"title":"Install one package before running the test","scopeTag":"Network","command":"npm install --save-dev jsdom","why":"The test asserts that tasks reload after a refresh, which needs a DOM. Nothing in the project provides one.","cwd":"~/projects/task-tracker","scope":"Reaches the npm registry. Writes only inside node_modules and package.json.","reversible":"Yes, checkpoint 3 was taken before the last edit"}}]},"route:stopped":{"chat":"c3","state":"stopped","composer":{"placeholder":"Tell me how to approach it differently","mode":"Plan"},"turns":[{"role":"user","text":"Switch the date helper over to the Temporal API."},{"role":"assistant","blocks":[{"t":"p","text":"I repeated the same fix three times without making progress. Each attempt rewrote the same two lines and hit the same failure, so I stopped rather than keep looping."},{"t":"p","text":"Temporal is not available in this Node version, and no polyfill is installed. That is a project fact I cannot fix by editing the file."},{"t":"note","tone":"ok","text":"Your working tree is untouched. Every edit sits behind checkpoint 2."}],"activity":{"state":"stopped","label":"Stopped","summary":"same failure after 3 attempts","elapsed":"2m 11s","rows":[{"icon":"done","label":"Read 6 files","meta":"1.8s"},{"icon":"done","label":"Edited src/lib/date.js","add":"+21","del":"−19"},{"icon":"fail","label":"Ran tests · 3 failed, same failure each time","meta":"×3"}],"diagnostics":{"label":"The failure, unchanged across all three attempts","text":"TypeError: Temporal.PlainDate.from is not a function\n  at formatDue (src/lib/date.js:14:26)"}},"recovery":{"primary":{"label":"Restore checkpoint 2","action":"restore"},"alternatives":[{"label":"Install a polyfill instead","href":"/app/permission/"},{"label":"Keep the edits, stop here","action":"keep"}],"text":{"label":"Open diagnostics","action":"diagnostics"}}}]},"c2":{"chat":"c2","state":"complete","turns":[{"role":"user","text":"Add a filter bar above the list so I can show all, active or done."},{"role":"assistant","blocks":[{"t":"p","text":"Added a filter bar as a controlled component above the list. The filter is a single piece of state in App, so the list stays the only thing that knows how to render a task."}],"activity":{"state":"complete","label":"Completed","elapsed":"31s","rows":[{"icon":"done","label":"Read 3 files","meta":"0.9s"},{"icon":"done","label":"Edited 2 files","add":"+34","del":"−21"},{"icon":"done","label":"npm test -- --run","mono":true,"meta":"3.1s"}],"files":[["src/App.jsx","+34","−21"],["src/FilterBar.jsx","new",""]],"tests":"3 tests passed","exit":"exit 0"}}]},"c4":{"chat":"c4","state":"complete","turns":[{"role":"user","text":"Set up a Vite React project called task-tracker with a basic list."},{"role":"assistant","blocks":[{"t":"p","text":"Created the project with Vite's react template and a single App component holding an in-memory list. No state library and no router: neither is needed yet."}],"activity":{"state":"complete","label":"Completed","elapsed":"1m 12s","rows":[{"icon":"done","label":"npm create vite@latest","mono":true,"meta":"42s"},{"icon":"done","label":"Installed 2 packages","meta":"18s"},{"icon":"done","label":"Edited 4 files"}],"files":[["package.json","new",""],["src/App.jsx","new",""],["index.html","new",""]],"tests":"No tests yet","exit":"exit 0"}}]},"c5":{"chat":"c5","state":"complete","turns":[{"role":"user","text":"Add Vitest and one test that proves adding a task works."},{"role":"assistant","blocks":[{"t":"p","text":"Added Vitest with jsdom and a single test that renders App, adds a task and asserts it is listed. The test script runs in watch mode locally and once in CI."},{"t":"code","file":"package.json","lang":"json","code":"\"scripts\": {\n  \"test\": \"vitest\",\n  \"test:ci\": \"vitest --run\"\n}"}],"activity":{"state":"complete","label":"Completed","elapsed":"48s","rows":[{"icon":"done","label":"Installed 3 packages","meta":"21s"},{"icon":"done","label":"Edited 2 files","add":"+4","del":""},{"icon":"done","label":"npm test -- --run","mono":true,"meta":"2.4s"}],"files":[["package.json","+4",""],["src/App.test.jsx","new",""]],"tests":"1 test passed","exit":"exit 0"}}]},"c6":{"chat":"c6","state":"complete","turns":[{"role":"user","text":"Request logging is noisy in development. Put it behind a flag."},{"role":"assistant","blocks":[{"t":"p","text":"Logging now reads a DEBUG_HTTP flag and is off unless it is set. The call sites are unchanged, so nothing else had to move."}],"activity":{"state":"complete","label":"Completed","elapsed":"26s","rows":[{"icon":"done","label":"Searched 14 files","meta":"0.6s"},{"icon":"done","label":"Edited 3 files","add":"+14","del":"−6"}],"files":[["src/log.js","+12","−4"],["src/server.js","+2","−2"]],"tests":"4 tests passed","exit":"exit 0"}}]},"c7":{"chat":"c7","state":"complete","turns":[{"role":"user","text":"The card grid is copied on three pages. Pull it into one component."},{"role":"assistant","blocks":[{"t":"p","text":"Extracted the grid into CardGrid.astro and replaced all three copies. The markup was identical apart from the heading, so that is the only prop it takes."}],"activity":{"state":"complete","label":"Completed","elapsed":"54s","rows":[{"icon":"done","label":"Read 6 files","meta":"1.1s"},{"icon":"done","label":"Edited 4 files","add":"+9","del":"−82"},{"icon":"done","label":"npm run build","mono":true,"meta":"6.8s"}],"files":[["src/components/CardGrid.astro","new",""],["src/pages/index.astro","+3","−28"],["src/pages/work.astro","+3","−28"],["src/pages/writing.astro","+3","−26"]],"tests":"Build succeeded","exit":"exit 0"}}]},"c8":{"chat":"c8","state":"complete","turns":[{"role":"user","text":"The nav links fail contrast on the dark header. Fix them."},{"role":"assistant","blocks":[{"t":"p","text":"Raised the muted link colour until it clears 4.5:1 against the header background, and left the hover state alone because it already passed."}],"activity":{"state":"complete","label":"Completed","elapsed":"19s","rows":[{"icon":"done","label":"Read 2 files","meta":"0.5s"},{"icon":"done","label":"Edited 1 file","add":"+2","del":"−2"}],"files":[["src/styles/tokens.css","+2","−2"]],"tests":"Build succeeded","exit":"exit 0"}}]},"c9":{"chat":"c9","state":"complete","turns":[{"role":"user","text":"Add rate limiting to the public routes, 60 requests a minute."},{"role":"assistant","blocks":[{"t":"p","text":"Registered @fastify/rate-limit on the public route prefix only. The internal prefix is untouched, so service-to-service calls are not throttled."},{"t":"code","file":"src/server.js","lang":"js","code":"app.register(rateLimit, {\n  max: 60,\n  timeWindow: '1 minute',\n  keyGenerator: (req) => req.ip,\n});"}],"activity":{"state":"complete","label":"Completed","elapsed":"37s","rows":[{"icon":"done","label":"Installed 1 package","meta":"9s"},{"icon":"done","label":"Edited 2 files","add":"+12","del":"−1"},{"icon":"done","label":"npm test -- --run","mono":true,"meta":"4.0s"}],"files":[["src/server.js","+9",""],["src/routes/public.js","+3","−1"]],"tests":"11 tests passed","exit":"exit 0"}}]}},"models":[{"id":"qwen25-coder-7b-q4km","name":"Qwen2.5 Coder 7B","publisher":"Alibaba Qwen","quant":"Q4_K_M","format":"GGUF","license":"Apache-2.0","source":"https://huggingface.co/Qwen/Qwen2.5-Coder-7B-Instruct-GGUF","revision":"main","strength":"Quick single-file edits, short scripts and focused fixes.","limitation":"Loses the thread on refactors that span many files.","runtime":"llama.cpp","installed":true,"loaded":false,"downloadGB":"4.68","diskGB":"4.68","fitLabel":"Great fit","fitTone":"ok","fitReason":"Weights, a 16k context and runtime overhead come to 6.1 GB, inside 12 GB of video memory.","needGB":"6.1","vramGB":"12","context":"16k","contexts":[{"ctx":"8k","need":"5.7","label":"Great fit","tone":"ok"},{"ctx":"16k","need":"6.1","label":"Great fit","tone":"ok"},{"ctx":"32k","need":"7","label":"Great fit","tone":"ok"}],"offload":"auto","store":"C:UsersyouForgeLocalmodels"},{"id":"qwen25-coder-14b-q4km","name":"Qwen2.5 Coder 14B","publisher":"Alibaba Qwen","quant":"Q4_K_M","format":"GGUF","license":"Apache-2.0","source":"https://huggingface.co/Qwen/Qwen2.5-Coder-14B-Instruct-GGUF","revision":"main","strength":"Multi-file edits, running commands, tests and previews.","limitation":"Slower than the 7B on trivial one-line changes.","runtime":"llama.cpp","installed":true,"loaded":true,"downloadGB":"8.99","diskGB":"8.99","fitLabel":"Runs with tradeoffs","fitTone":"warn","fitReason":"Needs 11.1 GB of the 12 GB available. It fits, but leaves little room for anything else on the GPU.","needGB":"11.1","vramGB":"12","context":"8k","contexts":[{"ctx":"8k","need":"11.1","label":"Runs with tradeoffs","tone":"warn"},{"ctx":"16k","need":"12.6","label":"CPU offload required","tone":"warn"},{"ctx":"32k","need":"15.6","label":"CPU offload required","tone":"warn"}],"offload":"auto","store":"C:UsersyouForgeLocalmodels"},{"id":"deepseek-coder-v2-lite-q4km","name":"DeepSeek-Coder-V2 Lite 16B","publisher":"DeepSeek","quant":"Q4_K_M","format":"GGUF","license":"DeepSeek License","source":"https://huggingface.co/bartowski/DeepSeek-Coder-V2-Lite-Instruct-GGUF","revision":"main","strength":"Reading an unfamiliar codebase and explaining it back.","limitation":"Mixture-of-experts loading makes the first response slower.","runtime":"llama.cpp","installed":false,"loaded":false,"downloadGB":"10.36","diskGB":"10.36","fitLabel":"CPU offload required","fitTone":"warn","fitReason":"14.3 GB needed against 12 GB of video memory. The weights fit but the 16k key-value cache does not, so it spills to system memory and slows down.","needGB":"14.3","vramGB":"12","context":"16k","contexts":[{"ctx":"8k","need":"12.6","label":"CPU offload required","tone":"warn"},{"ctx":"16k","need":"14.3","label":"CPU offload required","tone":"warn"},{"ctx":"32k","need":"17.7","label":"CPU offload required","tone":"warn"}],"offload":"auto","store":"C:UsersyouForgeLocalmodels"},{"id":"qwen25-coder-32b-q4km","name":"Qwen2.5 Coder 32B","publisher":"Alibaba Qwen","quant":"Q4_K_M","format":"GGUF","license":"Apache-2.0","source":"https://huggingface.co/Qwen/Qwen2.5-Coder-32B-Instruct-GGUF","revision":"main","strength":"Longer plans and wider context on a machine with room for it.","limitation":"Needs about 20 GB of weights alone. On a 12 GB card most layers run on the CPU.","runtime":"llama.cpp","installed":false,"loaded":false,"downloadGB":"19.85","diskGB":"19.85","fitLabel":"CPU offload required","fitTone":"warn","fitReason":"19.8 GB of weights against 12 GB of video memory, so most layers run on the CPU. It works, but expect it to be slow.","needGB":"24.4","vramGB":"12","context":"16k","contexts":[{"ctx":"8k","need":"22.4","label":"CPU offload required","tone":"warn"},{"ctx":"16k","need":"24.4","label":"CPU offload required","tone":"warn"},{"ctx":"32k","need":"28.4","label":"CPU offload required","tone":"warn"}],"offload":"auto","store":"C:UsersyouForgeLocalmodels"},{"id":"llama33-70b-q4km","name":"Llama 3.3 70B","publisher":"Meta","quant":"Q4_K_M","format":"GGUF","license":"Llama 3.3 Community License","source":"https://huggingface.co/bartowski/Llama-3.3-70B-Instruct-GGUF","revision":"main","strength":"Reasoning over long, tangled tasks.","limitation":"42.5 GB of weights. This needs a workstation card or a lot of patience.","runtime":"llama.cpp","installed":false,"loaded":false,"downloadGB":"42.52","diskGB":"42.52","fitLabel":"Does not fit","fitTone":"bad","fitReason":"42.5 GB of weights will not fit in 12 GB of video memory plus 19 GB of free system memory.","needGB":"45.6","vramGB":"12","context":"8k","contexts":[{"ctx":"8k","need":"45.6","label":"Does not fit","tone":"bad"},{"ctx":"16k","need":"48.1","label":"Does not fit","tone":"bad"}],"offload":"auto","store":"C:UsersyouForgeLocalmodels"},{"id":"gemma2-9b-q4km","name":"Gemma 2 9B","publisher":"Google","quant":"Q4_K_M","format":"GGUF","license":"Gemma Terms of Use","source":"https://huggingface.co/bartowski/gemma-2-9b-it-GGUF","revision":"main","strength":"Writing and explanation.","limitation":"Not verified for the agent's tool-call format. Not offered for coding.","runtime":"llama.cpp","installed":false,"loaded":false,"downloadGB":"5.76","diskGB":"5.76","fitLabel":"Great fit","fitTone":"ok","fitReason":"Weights, an 8k context and runtime overhead come to 9 GB, inside 12 GB of video memory.","needGB":"9","vramGB":"12","context":"8k","contexts":[{"ctx":"4k","need":"7.7","label":"Great fit","tone":"ok"},{"ctx":"8k","need":"9","label":"Great fit","tone":"ok"}],"offload":"auto","store":"C:UsersyouForgeLocalmodels"}]}</script>
+  <script type="application/json" id="fl-sessions">{"projects":[{"id":"task-tracker","name":"task-tracker","path":"~/projects/task-tracker","branch":"Git repo, on main","stack":"Vite + React detected"},{"id":"portfolio-site","name":"portfolio-site","path":"~/projects/portfolio-site","branch":"Git repo, on redesign","stack":"Astro + Tailwind detected"},{"id":"api-gateway","name":"api-gateway","path":"~/projects/api-gateway","branch":"Git repo, on main","stack":"Node + Fastify detected"}],"chats":[{"id":"c1","title":"Persist tasks to localStorage","project":"task-tracker","state":"running","route":"/app/running/","hasThread":false},{"id":"c2","title":"Add a filter bar to the list","project":"task-tracker","state":"done","route":null,"hasThread":true},{"id":"c3","title":"Switch the date helper to Temporal","project":"task-tracker","state":"failed","route":"/app/stopped/","hasThread":false},{"id":"c4","title":"Scaffold the project","project":"task-tracker","state":"done","route":null,"hasThread":true},{"id":"c5","title":"Set up Vitest","project":"task-tracker","state":"done","route":null,"hasThread":true},{"id":"c6","title":"Move request logging behind a flag","project":"task-tracker","state":"done","route":null,"hasThread":true},{"id":"c7","title":"Extract the card grid into a component","project":"portfolio-site","state":"done","route":null,"hasThread":true},{"id":"c8","title":"Fix the contrast on the dark header","project":"portfolio-site","state":"done","route":null,"hasThread":true},{"id":"c9","title":"Rate limit the public endpoints","project":"api-gateway","state":"done","route":null,"hasThread":true}],"threads":{"route:running":{"chat":"c1","state":"tool-running","composer":{"placeholder":"Add to the plan, or ask a question","mode":"Build"},"turns":[{"role":"user","text":"Save the task list to localStorage so it survives a refresh, and add a test for it."},{"role":"assistant","blocks":[{"t":"p","text":"I will move state into a small hook so the components stay unaware of storage, then cover the reload behaviour with one test."},{"t":"plan","title":"Plan","items":[{"state":"done","label":"Read how state is handled today"},{"state":"done","label":"Extract a useTasks hook backed by localStorage"},{"state":"now","label":"Add a test that survives a reload"},{"state":"todo","label":"Run the suite and report"}]}],"activity":{"state":"running","label":"Working","elapsed":"14s","rows":[{"icon":"done","label":"Read 4 files","meta":"1.2s"},{"icon":"done","label":"Searched 21 files for localStorage","meta":"0.4s"},{"icon":"done","label":"Edited 2 files","add":"+46","del":"−12"},{"icon":"running","label":"npm test -- --run","mono":true,"meta":"running","output":"> vitest --run\n\n ✓ src/App.test.jsx (3)\n · src/useTasks.test.js"}]}}]},"route:permission":{"chat":"c1","state":"tool-running","composer":{"placeholder":"Answer above, or send a different instruction","mode":"Build","blocked":true},"turns":[{"role":"user","text":"Save the task list to localStorage so it survives a refresh, and add a test for it."},{"role":"assistant","blocks":[{"t":"p","text":"The hook is in place. The test needs a DOM environment, and this project has none installed."}],"activity":{"state":"paused","label":"Paused","elapsed":"22s","rows":[{"icon":"done","label":"Read 4 files","meta":"1.2s"},{"icon":"done","label":"Edited 2 files","add":"+46","del":"−12"}]},"permission":{"title":"Install one package before running the test","scopeTag":"Network","command":"npm install --save-dev jsdom","why":"The test asserts that tasks reload after a refresh, which needs a DOM. Nothing in the project provides one.","cwd":"~/projects/task-tracker","scope":"Reaches the npm registry. Writes only inside node_modules and package.json.","reversible":"Yes, checkpoint 3 was taken before the last edit"}}]},"route:stopped":{"chat":"c3","state":"stopped","composer":{"placeholder":"Tell me how to approach it differently","mode":"Plan"},"turns":[{"role":"user","text":"Switch the date helper over to the Temporal API."},{"role":"assistant","blocks":[{"t":"p","text":"Stopped after 3 repeated failures. Temporal is unavailable in this Node version and no polyfill is installed."}],"activity":{"state":"stopped","label":"Stopped after 3 repeated failures","summary":"","elapsed":"2m 11s","rows":[{"icon":"done","label":"Read 6 files","meta":"1.8s"},{"icon":"done","label":"Edited src/lib/date.js","add":"+21","del":"−19"},{"icon":"fail","label":"Ran tests · 3 failed, same failure each time","meta":"×3"}],"diagnostics":{"label":"The failure, unchanged across all three attempts","text":"TypeError: Temporal.PlainDate.from is not a function\n  at formatDue (src/lib/date.js:14:26)"}},"recovery":{"primary":{"label":"Use a polyfill","href":"/app/permission/"},"alternatives":[{"label":"Keep current code","action":"keep"},{"label":"Rewind","action":"restore"}],"text":{"label":"Open diagnostics","action":"diagnostics"}}}]},"c2":{"chat":"c2","state":"complete","turns":[{"role":"user","text":"Add a filter bar above the list so I can show all, active or done."},{"role":"assistant","blocks":[{"t":"p","text":"Added a filter bar as a controlled component above the list. The filter is a single piece of state in App, so the list stays the only thing that knows how to render a task."}],"activity":{"state":"complete","label":"Completed","elapsed":"31s","rows":[{"icon":"done","label":"Read 3 files","meta":"0.9s"},{"icon":"done","label":"Edited 2 files","add":"+34","del":"−21"},{"icon":"done","label":"npm test -- --run","mono":true,"meta":"3.1s"}],"files":[["src/App.jsx","+34","−21"],["src/FilterBar.jsx","new",""]],"tests":"3 tests passed","exit":"exit 0"}}]},"c4":{"chat":"c4","state":"complete","turns":[{"role":"user","text":"Set up a Vite React project called task-tracker with a basic list."},{"role":"assistant","blocks":[{"t":"p","text":"Created the project with Vite's react template and a single App component holding an in-memory list. No state library and no router: neither is needed yet."}],"activity":{"state":"complete","label":"Completed","elapsed":"1m 12s","rows":[{"icon":"done","label":"npm create vite@latest","mono":true,"meta":"42s"},{"icon":"done","label":"Installed 2 packages","meta":"18s"},{"icon":"done","label":"Edited 4 files"}],"files":[["package.json","new",""],["src/App.jsx","new",""],["index.html","new",""]],"tests":"No tests yet","exit":"exit 0"}}]},"c5":{"chat":"c5","state":"complete","turns":[{"role":"user","text":"Add Vitest and one test that proves adding a task works."},{"role":"assistant","blocks":[{"t":"p","text":"Added Vitest with jsdom and a single test that renders App, adds a task and asserts it is listed. The test script runs in watch mode locally and once in CI."},{"t":"code","file":"package.json","lang":"json","code":"\"scripts\": {\n  \"test\": \"vitest\",\n  \"test:ci\": \"vitest --run\"\n}"}],"activity":{"state":"complete","label":"Completed","elapsed":"48s","rows":[{"icon":"done","label":"Installed 3 packages","meta":"21s"},{"icon":"done","label":"Edited 2 files","add":"+4","del":""},{"icon":"done","label":"npm test -- --run","mono":true,"meta":"2.4s"}],"files":[["package.json","+4",""],["src/App.test.jsx","new",""]],"tests":"1 test passed","exit":"exit 0"}}]},"c6":{"chat":"c6","state":"complete","turns":[{"role":"user","text":"Request logging is noisy in development. Put it behind a flag."},{"role":"assistant","blocks":[{"t":"p","text":"Logging now reads a DEBUG_HTTP flag and is off unless it is set. The call sites are unchanged, so nothing else had to move."}],"activity":{"state":"complete","label":"Completed","elapsed":"26s","rows":[{"icon":"done","label":"Searched 14 files","meta":"0.6s"},{"icon":"done","label":"Edited 3 files","add":"+14","del":"−6"}],"files":[["src/log.js","+12","−4"],["src/server.js","+2","−2"]],"tests":"4 tests passed","exit":"exit 0"}}]},"c7":{"chat":"c7","state":"complete","turns":[{"role":"user","text":"The card grid is copied on three pages. Pull it into one component."},{"role":"assistant","blocks":[{"t":"p","text":"Extracted the grid into CardGrid.astro and replaced all three copies. The markup was identical apart from the heading, so that is the only prop it takes."}],"activity":{"state":"complete","label":"Completed","elapsed":"54s","rows":[{"icon":"done","label":"Read 6 files","meta":"1.1s"},{"icon":"done","label":"Edited 4 files","add":"+9","del":"−82"},{"icon":"done","label":"npm run build","mono":true,"meta":"6.8s"}],"files":[["src/components/CardGrid.astro","new",""],["src/pages/index.astro","+3","−28"],["src/pages/work.astro","+3","−28"],["src/pages/writing.astro","+3","−26"]],"tests":"Build succeeded","exit":"exit 0"}}]},"c8":{"chat":"c8","state":"complete","turns":[{"role":"user","text":"The nav links fail contrast on the dark header. Fix them."},{"role":"assistant","blocks":[{"t":"p","text":"Raised the muted link colour until it clears 4.5:1 against the header background, and left the hover state alone because it already passed."}],"activity":{"state":"complete","label":"Completed","elapsed":"19s","rows":[{"icon":"done","label":"Read 2 files","meta":"0.5s"},{"icon":"done","label":"Edited 1 file","add":"+2","del":"−2"}],"files":[["src/styles/tokens.css","+2","−2"]],"tests":"Build succeeded","exit":"exit 0"}}]},"c9":{"chat":"c9","state":"complete","turns":[{"role":"user","text":"Add rate limiting to the public routes, 60 requests a minute."},{"role":"assistant","blocks":[{"t":"p","text":"Registered @fastify/rate-limit on the public route prefix only. The internal prefix is untouched, so service-to-service calls are not throttled."},{"t":"code","file":"src/server.js","lang":"js","code":"app.register(rateLimit, {\n  max: 60,\n  timeWindow: '1 minute',\n  keyGenerator: (req) => req.ip,\n});"}],"activity":{"state":"complete","label":"Completed","elapsed":"37s","rows":[{"icon":"done","label":"Installed 1 package","meta":"9s"},{"icon":"done","label":"Edited 2 files","add":"+12","del":"−1"},{"icon":"done","label":"npm test -- --run","mono":true,"meta":"4.0s"}],"files":[["src/server.js","+9",""],["src/routes/public.js","+3","−1"]],"tests":"11 tests passed","exit":"exit 0"}}]}},"models":[{"id":"qwen25-coder-7b-q4km","name":"Qwen2.5 Coder 7B","publisher":"Alibaba Qwen","quant":"Q4_K_M","format":"GGUF","license":"Apache-2.0","source":"https://huggingface.co/Qwen/Qwen2.5-Coder-7B-Instruct-GGUF","revision":"main","strength":"Quick single-file edits, short scripts and focused fixes.","limitation":"Loses the thread on refactors that span many files.","runtime":"llama.cpp","installed":true,"loaded":false,"downloadGB":"4.68","diskGB":"4.68","fitLabel":"Great fit","fitTone":"ok","fitReason":"Weights, a 16k context and runtime overhead come to 6.1 GB, inside 12 GB of video memory.","needGB":"6.1","vramGB":"12","context":"16k","contexts":[{"ctx":"8k","need":"5.7","label":"Great fit","tone":"ok"},{"ctx":"16k","need":"6.1","label":"Great fit","tone":"ok"},{"ctx":"32k","need":"7","label":"Great fit","tone":"ok"}],"offload":"auto","store":"C:UsersyouForgeLocalmodels"},{"id":"qwen25-coder-14b-q4km","name":"Qwen2.5 Coder 14B","publisher":"Alibaba Qwen","quant":"Q4_K_M","format":"GGUF","license":"Apache-2.0","source":"https://huggingface.co/Qwen/Qwen2.5-Coder-14B-Instruct-GGUF","revision":"main","strength":"Multi-file edits, running commands, tests and previews.","limitation":"Slower than the 7B on trivial one-line changes.","runtime":"llama.cpp","installed":true,"loaded":true,"downloadGB":"8.99","diskGB":"8.99","fitLabel":"Runs with tradeoffs","fitTone":"warn","fitReason":"Needs 11.1 GB of the 12 GB available. It fits, but leaves little room for anything else on the GPU.","needGB":"11.1","vramGB":"12","context":"8k","contexts":[{"ctx":"8k","need":"11.1","label":"Runs with tradeoffs","tone":"warn"},{"ctx":"16k","need":"12.6","label":"CPU offload required","tone":"warn"},{"ctx":"32k","need":"15.6","label":"CPU offload required","tone":"warn"}],"offload":"auto","store":"C:UsersyouForgeLocalmodels"},{"id":"deepseek-coder-v2-lite-q4km","name":"DeepSeek-Coder-V2 Lite 16B","publisher":"DeepSeek","quant":"Q4_K_M","format":"GGUF","license":"DeepSeek License","source":"https://huggingface.co/bartowski/DeepSeek-Coder-V2-Lite-Instruct-GGUF","revision":"main","strength":"Reading an unfamiliar codebase and explaining it back.","limitation":"Mixture-of-experts loading makes the first response slower.","runtime":"llama.cpp","installed":false,"loaded":false,"downloadGB":"10.36","diskGB":"10.36","fitLabel":"CPU offload required","fitTone":"warn","fitReason":"14.3 GB needed against 12 GB of video memory. The weights fit but the 16k key-value cache does not, so it spills to system memory and slows down.","needGB":"14.3","vramGB":"12","context":"16k","contexts":[{"ctx":"8k","need":"12.6","label":"CPU offload required","tone":"warn"},{"ctx":"16k","need":"14.3","label":"CPU offload required","tone":"warn"},{"ctx":"32k","need":"17.7","label":"CPU offload required","tone":"warn"}],"offload":"auto","store":"C:UsersyouForgeLocalmodels"},{"id":"qwen25-coder-32b-q4km","name":"Qwen2.5 Coder 32B","publisher":"Alibaba Qwen","quant":"Q4_K_M","format":"GGUF","license":"Apache-2.0","source":"https://huggingface.co/Qwen/Qwen2.5-Coder-32B-Instruct-GGUF","revision":"main","strength":"Longer plans and wider context on a machine with room for it.","limitation":"Needs about 20 GB of weights alone. On a 12 GB card most layers run on the CPU.","runtime":"llama.cpp","installed":false,"loaded":false,"downloadGB":"19.85","diskGB":"19.85","fitLabel":"CPU offload required","fitTone":"warn","fitReason":"19.8 GB of weights against 12 GB of video memory, so most layers run on the CPU. It works, but expect it to be slow.","needGB":"24.4","vramGB":"12","context":"16k","contexts":[{"ctx":"8k","need":"22.4","label":"CPU offload required","tone":"warn"},{"ctx":"16k","need":"24.4","label":"CPU offload required","tone":"warn"},{"ctx":"32k","need":"28.4","label":"CPU offload required","tone":"warn"}],"offload":"auto","store":"C:UsersyouForgeLocalmodels"},{"id":"llama33-70b-q4km","name":"Llama 3.3 70B","publisher":"Meta","quant":"Q4_K_M","format":"GGUF","license":"Llama 3.3 Community License","source":"https://huggingface.co/bartowski/Llama-3.3-70B-Instruct-GGUF","revision":"main","strength":"Reasoning over long, tangled tasks.","limitation":"42.5 GB of weights. This needs a workstation card or a lot of patience.","runtime":"llama.cpp","installed":false,"loaded":false,"downloadGB":"42.52","diskGB":"42.52","fitLabel":"Does not fit","fitTone":"bad","fitReason":"42.5 GB of weights will not fit in 12 GB of video memory plus 19 GB of free system memory.","needGB":"45.6","vramGB":"12","context":"8k","contexts":[{"ctx":"8k","need":"45.6","label":"Does not fit","tone":"bad"},{"ctx":"16k","need":"48.1","label":"Does not fit","tone":"bad"}],"offload":"auto","store":"C:UsersyouForgeLocalmodels"},{"id":"gemma2-9b-q4km","name":"Gemma 2 9B","publisher":"Google","quant":"Q4_K_M","format":"GGUF","license":"Gemma Terms of Use","source":"https://huggingface.co/bartowski/gemma-2-9b-it-GGUF","revision":"main","strength":"Writing and explanation.","limitation":"Not verified for the agent's tool-call format. Not offered for coding.","runtime":"llama.cpp","installed":false,"loaded":false,"downloadGB":"5.76","diskGB":"5.76","fitLabel":"Great fit","fitTone":"ok","fitReason":"Weights, an 8k context and runtime overhead come to 9 GB, inside 12 GB of video memory.","needGB":"9","vramGB":"12","context":"8k","contexts":[{"ctx":"4k","need":"7.7","label":"Great fit","tone":"ok"},{"ctx":"8k","need":"9","label":"Great fit","tone":"ok"}],"offload":"auto","store":"C:UsersyouForgeLocalmodels"}]}</script>
 </aside>
 
     <div class="main">
@@ -328,25 +328,19 @@
 
   
 
-  <!-- Local is the runtime, so it opens the runtime, not a decoration. -->
   <div style="position:relative">
-    <button class="pill hide-sm" type="button" data-popover="runtime-pop" aria-expanded="false"
-      aria-haspopup="dialog" aria-label="Local runtime status">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--ok-line)" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3.5"/><rect x="8" y="8" width="8" height="8" rx="1.8"/></svg>
-      Local
+    <button class="pill hide-sm" type="button" data-popover="runtime-pop" data-runtime-pill hidden
+      aria-expanded="false" aria-haspopup="dialog" aria-label="Runtime status">
+      <span class="dot warn" aria-hidden="true"></span><span data-runtime-word>Runtime</span>
     </button>
     <div class="menu popover pdetails" id="runtime-pop" role="dialog" aria-label="Local runtime" hidden>
       <p class="pd-h"><span class="dot ok" aria-hidden="true"></span>Runtime healthy</p>
       <dl class="pd-kv">
         <dt>Runtime</dt><dd><span class="m">llama.cpp b4021</span></dd>
-        <dt>Loaded model</dt><dd>Qwen2.5 Coder 14B <span class="faint">Q4_K_M</span></dd>
+        <dt>Loaded model</dt><dd>Qwen2.5 Coder 14B</dd>
         <dt>Video memory</dt><dd><span class="num">11.1 GB of 12 GB</span></dd>
-        <dt>System memory</dt><dd><span class="num">6.2 GB of 32 GB</span></dd>
-        <dt>Context</dt><dd><span class="num">5.6k of 16k tokens</span></dd>
-        <dt>Runs on</dt><dd>This device. Nothing leaves it.</dd>
+        <dt>Runs on</dt><dd>This device</dd>
       </dl>
-      <div class="pd-bar"><div class="track"><div class="fillbar" style="width:92%"></div></div>
-        <span class="faint">Video memory is nearly full. Ejecting frees 11.1 GB.</span></div>
       <div class="sep"></div>
       <div class="pd-a">
         <a class="btn btns" href="/app/models/installed/">Loaded models</a>
@@ -384,13 +378,14 @@
             <span data-jump-label>Jump to latest</span>
           </button>
           <form class="composer" style="" data-composer  aria-label="Message ForgeLocal">
+  <div class="queue" data-queue hidden aria-label="Queued messages"></div>
   <label class="vh" for="composer-input">Describe a change or ask a question</label>
   <textarea id="composer-input" class="ta" rows="1" placeholder="Describe a change, or ask about this project"></textarea>
 
   <div class="cbar">
     <div style="position:relative">
       <button class="btn btnq ico btns" type="button" data-popover="ctx-pop" aria-expanded="false"
-        aria-haspopup="dialog" aria-label="What the model can see">
+        aria-haspopup="dialog" aria-label="Add context">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M12 5.5v13M5.5 12h13"/></svg>
       </button>
       <div class="menu popover pdetails" id="ctx-pop" role="dialog" aria-label="What the model can see"
@@ -568,9 +563,14 @@
             <span style="flex:1;font-size:13px;color:var(--mut)">Permission preset</span>
             <span style="font-size:13px;font-weight:500" data-preset-label>Balanced</span>
           </div>
-          <div style="display:flex;align-items:center;gap:8px">
-            <span style="flex:1;font-size:13px;color:var(--mut)">Reasoning effort</span>
-            <span style="font-size:13px;font-weight:500">High</span>
+          <div class="sep"></div>
+          <div class="stack" style="gap:6px">
+            <span class="lab">Transcript detail</span>
+            <div class="seg seg-sm" role="radiogroup" aria-label="Transcript detail">
+              <button type="button" role="radio" aria-checked="false" data-density="summary">Summary</button>
+              <button type="button" role="radio" aria-checked="true" data-density="normal">Normal</button>
+              <button type="button" role="radio" aria-checked="false" data-density="verbose">Verbose</button>
+            </div>
           </div>
           <div style="display:flex;align-items:center;gap:8px">
             <span style="flex:1;font-size:13px;color:var(--mut)">Runs on</span>
@@ -579,6 +579,9 @@
         </div>
       </div>
     </div>
+
+    <button class="btn btnq btns cbar-ctx" type="button" data-popover="opts-pop"
+      aria-label="Context used, 34 percent"><span class="num" data-ctx-pct>34%</span> context</button>
 
     <span class="grow"></span>
 

@@ -1,11 +1,12 @@
 <form class="composer" style="{{style}}" data-composer {{running}} aria-label="Message ForgeLocal">
+  <div class="queue" data-queue hidden aria-label="Queued messages"></div>
   <label class="vh" for="composer-input">Describe a change or ask a question</label>
   <textarea id="composer-input" class="ta" rows="1" placeholder="{{placeholder}}"></textarea>
 
   <div class="cbar">
     <div style="position:relative">
       <button class="btn btnq ico btns" type="button" data-popover="ctx-pop" aria-expanded="false"
-        aria-haspopup="dialog" aria-label="What the model can see">
+        aria-haspopup="dialog" aria-label="Add context">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M12 5.5v13M5.5 12h13"/></svg>
       </button>
       <div class="menu popover pdetails" id="ctx-pop" role="dialog" aria-label="What the model can see"
@@ -80,9 +81,14 @@
             <span style="flex:1;font-size:13px;color:var(--mut)">Permission preset</span>
             <span style="font-size:13px;font-weight:500" data-preset-label>Balanced</span>
           </div>
-          <div style="display:flex;align-items:center;gap:8px">
-            <span style="flex:1;font-size:13px;color:var(--mut)">Reasoning effort</span>
-            <span style="font-size:13px;font-weight:500">High</span>
+          <div class="sep"></div>
+          <div class="stack" style="gap:6px">
+            <span class="lab">Transcript detail</span>
+            <div class="seg seg-sm" role="radiogroup" aria-label="Transcript detail">
+              <button type="button" role="radio" aria-checked="false" data-density="summary">Summary</button>
+              <button type="button" role="radio" aria-checked="true" data-density="normal">Normal</button>
+              <button type="button" role="radio" aria-checked="false" data-density="verbose">Verbose</button>
+            </div>
           </div>
           <div style="display:flex;align-items:center;gap:8px">
             <span style="flex:1;font-size:13px;color:var(--mut)">Runs on</span>
@@ -91,6 +97,9 @@
         </div>
       </div>
     </div>
+
+    <button class="btn btnq btns cbar-ctx" type="button" data-popover="opts-pop"
+      aria-label="Context used, 34 percent"><span class="num" data-ctx-pct>34%</span> context</button>
 
     <span class="grow"></span>
 

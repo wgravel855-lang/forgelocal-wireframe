@@ -89,7 +89,10 @@
       const size = parseFloat(cs.fontSize);
       const txt = own.map((n) => n.textContent.trim()).join(" ").slice(0, 30);
       if (size < 12) add("text<12", `${size}px "${txt}"`);
-      else if (size < 13 && el.closest("button,a,[role=tab],label,summary,th,.pill,.lab-fn"))
+      else if (size < 12.5 && el.closest(".evrow-m, .done-t, .docitem .s"))
+        add("meta-text<12.5", `${size}px "${txt}"`);
+      else if (size < 13 && !el.closest(".evrow-m, .done-t, .docitem .s")
+        && el.closest("button,a,[role=tab],label,summary,th,.pill,.lab-fn"))
         add("functional-text<13", `${size}px "${txt}"`);
 
       const need = size >= 24 || (size >= 18.66 && parseInt(cs.fontWeight) >= 700) ? 3 : 4.5;
@@ -134,8 +137,11 @@
       if (rowTarget && el.tagName === "A" &&
           Math.round(rowTarget.getBoundingClientRect().height) >= 40) continue;
       const iconOnly = !el.textContent.trim() && wd <= 48;
-      const min = iconOnly ? 36 : 40;
-      if (h < min) add(`control<${min}`, `${wd}x${h} "${label}"`);
+      const inBar = el.closest(".cbar");
+      const denseRow = el.closest(".ev, .done, .qrow, .acts, .chat, .docitem, .cgroup-hd")
+        || el.tagName === "SUMMARY";
+      const min = denseRow ? 32 : (iconOnly || inBar) ? 36 : 40;
+      if (h < min) add(`${denseRow ? "row" : "control"}<${min}`, `${wd}x${h} "${label}"`);
       if (iconOnly && wd < 36) add("icon-width<36", `${wd}x${h} "${label}"`);
     }
 

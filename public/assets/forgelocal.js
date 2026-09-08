@@ -614,21 +614,20 @@
         else a.removeAttribute("aria-current");
       });
       const scroller = $(".setwrap");
-      const pick = () => {
-        // at the very bottom the last section can never reach the top line, so
-        // it would never highlight however far you scrolled
-        const atEnd = scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 4;
-        if (atEnd) return paint(cols[cols.length - 1].id);
-        const top = scroller.getBoundingClientRect().top + 80;
-        let current = cols[0];
-        cols.forEach((sec) => { if (sec.getBoundingClientRect().top <= top) current = sec; });
-        paint(current.id);
+      const show = (id) => {
+        cols.forEach((sec) => { sec.hidden = sec.id !== id; });
+        paint(id);
+        scroller.scrollTop = 0;
       };
-      scroller.addEventListener("scroll", pick, { passive: true });
-      links.forEach((a) => a.addEventListener("click", () =>
-        paint(a.getAttribute("href").slice(1))));
-      pick();
-      if (location.hash) paint(location.hash.slice(1));
+      links.forEach((a) => a.addEventListener("click", (e) => {
+        e.preventDefault();
+        const id = a.getAttribute("href").slice(1);
+        history.replaceState(null, "", "#" + id);
+        show(id);
+        const h = $("h1, h2", $("#" + id));
+        if (h) { h.setAttribute("tabindex", "-1"); h.focus(); }
+      }));
+      show(location.hash ? location.hash.slice(1) : cols[0].id);
     }
 
     const rm = $("[data-reduced-state]");
@@ -897,7 +896,10 @@
         if (visible) shown++;
 
         const wantPinned = st.over[id]?.pinned ?? row.hasAttribute("data-pinned");
-        const home = wantPinned ? pinnedGroup : $(`.cgroup[data-group="${row.dataset.bucket}"]`, list);
+        const stateGroup = row.dataset.bucket;
+        const target = (stateGroup === "needs" || stateGroup === "working") ? stateGroup
+          : wantPinned ? "pinned" : "recent";
+        const home = $(`.cgroup[data-group="${target}"]`, list) || pinnedGroup;
         const body = $(".cgroup-body", home);
         if (row.parentElement !== body) body.appendChild(row);
 
@@ -1176,26 +1178,53 @@
     running: () => '<span class="spin" aria-hidden="true"></span>',
     todo: () => '<span class="box-todo" aria-hidden="true"></span>',
     now: () => '<span class="dot acc" aria-hidden="true"></span>',
+    stop: () => svg('<rect x="7" y="7" width="10" height="10" rx="2"/>', "var(--warn-line)", "1.9"),
+    plan: () => svg('<path d="M4 6h16M4 12h16M4 18h9"/>', "currentColor", "1.9"),
   };
+  const CHEV = svg('<path d="m6 9.5 6 6 6-6"/>', "currentColor", "2");
 
 
-  /* ---- pieces --------------------------------------------------------- */
+  /* ---- transcript density ---------------------------------------------- */
+  /* Three modes over one event stream, not three renderers.
+   *   summary  prompts, outcomes, changed files, tests, pending decisions
+   *   normal   the above plus compact activity rows and the active action
+   *   verbose  every row expanded, with output, timing and exit codes
+   * Normal is the first-run default and the choice is remembered. */
+  const MODES = ["summary", "normal", "verbose"];
+  let DENSITY = MODES.includes(store.get("density", "")) ? store.get("density", "") : "normal";
+
+  /* ---- stream pieces --------------------------------------------------- */
+  /* One component per event kind, each with its own states, so a route never
+     hand-writes a variant of the same thing. */
+
   const userMessage = (t, i) => `
     <article class="turn turn-user" data-turn="${i}">
       <div class="umsg" data-umsg><div class="umsg-body" data-umsg-text>${esc(t.text)}</div></div>
       <div class="mactions" data-user-actions data-actions-for="${i}">
         ${mactCopy(t.text, "Copy message")}
-        <button class="mact" type="button" data-edit-msg aria-label="Edit message"><span class="mact-i">${svg('<path d="M12 20h9"/><path d="M16.6 3.6a2.1 2.1 0 0 1 3 3L7.4 18.8 3.5 20l1.2-3.9z"/>', "currentColor", "1.8")}</span><span class="mact-t">Edit</span></button>
+        <button class="mact" type="button" data-rewind="${i}" aria-label="Rewind from here"><span class="mact-i">${svg('<path d="M20 11a8 8 0 1 0-2.3 6.3"/><path d="M20 5v6h-6"/>', "currentColor", "1.8")}</span><span class="mact-t">Rewind</span></button>
       </div>
     </article>`;
 
-  const planBlock = (b) => `
-      <div class="plan">
-        ${b.title ? `<div class="plan-h">${esc(b.title)}</div>` : ""}
-        ${b.items.map((it) => `<div class="plan-row is-${it.state}">
-          <span class="plan-i">${(ICON[it.state] || ICON.todo)()}</span>
-          <span>${esc(it.label)}</span></div>`).join("")}
+  // Plan is a one-line row that opens a checklist, not a permanent block.
+  const planBlock = (b, i) => {
+    const done = b.items.filter((it) => it.state === "done").length;
+    const open = CONVO.open["plan" + i] === true;
+    return `
+      <div class="ev ev-plan">
+        <button class="evrow" type="button" data-plan-toggle="${i}" aria-expanded="${open}">
+          <span class="evrow-i">${ICON.plan()}</span>
+          <span class="evrow-t">Plan</span>
+          <span class="evrow-m num">${done} of ${b.items.length} complete</span>
+          <span class="evrow-c">${CHEV}</span>
+        </button>
+        <div class="evbody"${open ? "" : " hidden"}>
+          ${b.items.map((it) => `<div class="plan-row is-${it.state}">
+            <span class="plan-i">${(ICON[it.state] || ICON.todo)()}</span>
+            <span>${esc(it.label)}</span></div>`).join("")}
+        </div>
       </div>`;
+  };
 
   const codeBlock = (b) => `
       <figure class="cblock">
@@ -1210,112 +1239,135 @@
       <p class="tnote is-${esc(b.tone || "ok")}">
         ${b.tone === "ok" ? ICON.done() : ICON.fail()}<span>${esc(b.text)}</span></p>`;
 
-  const blocks = (list) => (list || []).map((b) =>
-    b.t === "plan" ? planBlock(b)
+  const blocks = (list, i) => (list || []).map((b) =>
+    b.t === "plan" ? planBlock(b, i)
       : b.t === "code" ? codeBlock(b)
         : b.t === "note" ? noteBlock(b)
           : `<p>${esc(b.text)}</p>`).join("");
 
-  const activityRow = (r) => `
-        <div class="arow2 is-${esc(r.icon)}">
-          <span class="arow2-i">${(ICON[r.icon] || ICON.done)()}</span>
-          <span class="arow2-t${r.mono ? " m" : ""}" title="${esc(r.label)}">${esc(r.label)}</span>
+  // Present tense while it runs, past tense once it has.
+  const rowLabel = (r) => {
+    if (r.icon !== "running") return r.label;
+    return /^(Read|Searched|Edited|Ran)\b/.test(r.label)
+      ? r.label.replace(/^Read\b/, "Reading").replace(/^Searched\b/, "Searching")
+        .replace(/^Edited\b/, "Editing").replace(/^Ran\b/, "Running")
+      : r.label;
+  };
+
+  // A tool row: 34px, unboxed, and its evidence lives behind the row itself.
+  const toolRow = (r, i, k) => {
+    const key = `r${i}-${k}`;
+    const has = !!(r.output || r.cwd || r.exit);
+    const open = CONVO.open[key] ?? (DENSITY === "verbose" && has);
+    const target = r.files ? ` data-open-pane="diff"` : r.output ? ` data-open-pane="terminal"` : "";
+    return `
+      <div class="ev ev-tool is-${esc(r.icon)}">
+        <${has ? "button" : "div"} class="evrow"${has ? ` type="button" data-row-toggle="${key}" aria-expanded="${open}"` : ""}${target}>
+          <span class="evrow-i">${(ICON[r.icon] || ICON.done)()}</span>
+          <span class="evrow-t${r.mono ? " m" : ""}" title="${esc(r.label)}">${esc(rowLabel(r))}</span>
           ${r.add ? `<span class="num add">${esc(r.add)}</span>` : ""}
           ${r.del ? `<span class="num del">${esc(r.del)}</span>` : ""}
-          ${r.meta ? `<span class="num arow2-m">${esc(r.meta)}</span>` : ""}
-        </div>${r.output ? `<pre class="m arow2-out">${esc(r.output)}</pre>` : ""}`;
-
-  const fileRows = (files) => (files || []).map(([n, a, d]) => `
-        <div class="frow">
-          <span class="frow-n m" title="${esc(n)}">${esc(n)}</span>
-          ${a === "new" ? '<span class="lab-fn frow-new">new file</span>'
-    : a ? `<span class="num add">${esc(a)}</span>` : ""}
-          ${d ? `<span class="num del">${esc(d)}</span>` : ""}
-        </div>`).join("");
-
-  // "Working · 3 actions · 14s" / "Completed · 4 files changed · tests passed"
-  const summaryOf = (a) => {
-    const bits = [];
-    if (a.state === "running") bits.push(`${a.rows.length} action${a.rows.length === 1 ? "" : "s"}`);
-    if (a.files?.length) bits.push(`${a.files.length} file${a.files.length === 1 ? "" : "s"} changed`);
-    if (a.summary) bits.push(a.summary);
-    if (a.tests) bits.push(a.tests.toLowerCase());
-    if (a.elapsed) bits.push(a.elapsed);
-    return bits.join(" · ");
+          ${r.meta ? `<span class="evrow-m num">${esc(r.meta)}</span>` : ""}
+          ${has ? `<span class="evrow-c">${CHEV}</span>` : ""}
+        </${has ? "button" : "div"}>
+        ${has ? `<div class="evbody"${open ? "" : " hidden"}>
+          ${r.cwd ? `<p class="evkv"><span>Working dir</span><span class="m">${esc(r.cwd)}</span></p>` : ""}
+          ${r.exit ? `<p class="evkv"><span>Exit</span><span class="m">${esc(r.exit)}</span></p>` : ""}
+          ${r.output ? `<pre class="m evout">${esc(r.output)}</pre>` : ""}
+        </div>` : ""}
+      </div>`;
   };
 
+  const thinkingRow = (a, i) => {
+    if (!a.thinking) return "";
+    const active = a.state === "running";
+    return `<div class="ev ev-think"><div class="evrow">
+      <span class="evrow-i">${active ? ICON.running() : ICON.done()}</span>
+      <span class="evrow-t">${active ? "Thinking" : "Thought for " + esc(a.thinking)}</span>
+      ${active ? `<span class="evrow-m num">${esc(a.thinking)}</span>` : ""}
+    </div></div>`;
+  };
+
+  /* Activity in Normal is the rows themselves, compact and unboxed. In Summary
+     it collapses to nothing: the outcome line below already carries the result.
+     In Verbose every row opens with its output. */
   const activityGroup = (a, i) => {
     if (!a) return "";
-    const open = CONVO.open[i] ?? (a.state === "running" || a.state === "paused" || a.state === "stopped");
-    const mark = { running: ICON.running(), complete: ICON.done(), stopped: ICON.fail(),
-      paused: svg('<path d="M12 9.5v4.2M12 17.4h.01M10.4 4.2 2.1 18a2 2 0 0 0 1.7 3h16.4a2 2 0 0 0 1.7-3L13.6 4.2a2 2 0 0 0-3.2 0z"/>', "var(--warn-line)") }[a.state] || ICON.done();
-    return `
-      <section class="agroup is-${esc(a.state)}" aria-label="Agent activity">
-        <button class="agroup-h" type="button" data-act-toggle="${i}" aria-expanded="${open}">
-          <span class="agroup-i">${mark}</span>
-          <span class="agroup-l">${esc(a.label)}</span>
-          <span class="agroup-s num">${esc(summaryOf(a))}</span>
-          <span class="agroup-c">${svg('<path d="m6 9.5 6 6 6-6"/>', "currentColor", "2")}</span>
-        </button>
-        <div class="agroup-b"${open ? "" : " hidden"}>
-          ${a.rows.map(activityRow).join("")}
-          ${a.files?.length ? `<div class="agroup-files">${fileRows(a.files)}</div>` : ""}
-          ${a.tests || a.exit ? `<div class="arow2 is-done">
-            <span class="arow2-i">${ICON.done()}</span>
-            <span class="arow2-t">${esc(a.tests || "")}</span>
-            <span class="num arow2-m">${esc(a.exit || "")}</span></div>` : ""}
-          ${a.diagnostics ? `<details class="adiag">
-            <summary>${esc(a.diagnostics.label)}</summary>
-            <pre class="m">${esc(a.diagnostics.text)}</pre></details>` : ""}
-        </div>
-      </section>`;
+    if (DENSITY === "summary") return "";
+    return `<div class="acts" data-acts="${i}">
+      ${thinkingRow(a, i)}
+      ${a.rows.map((r, k) => toolRow(r, i, k)).join("")}
+    </div>`;
   };
 
+  /* The outcome: one status line, then evidence as two compact rows, then one
+     route into the work pane. Not five restatements of "done". */
+  const outcome = (a, i) => {
+    if (!a || a.state === "running") return "";
+    const files = a.files || [];
+    const adds = files.reduce((n, f) => n + (parseInt(f[1], 10) || 0), 0);
+    const dels = files.reduce((n, f) => n + (parseInt(String(f[2]).replace(/[^\d]/g, ""), 10) || 0), 0);
+    const stopped = a.state === "stopped";
+    return `
+      <div class="done is-${esc(a.state)}">
+        <p class="done-h">
+          <span class="done-i">${stopped ? ICON.stop() : ICON.done()}</span>
+          <span>${stopped ? esc(a.label) : "Done"}</span>
+          ${a.elapsed ? `<span class="num done-t">${esc(a.elapsed)}</span>` : ""}
+        </p>
+        ${files.length ? `<button class="evidence" type="button" data-open-pane="diff">
+          <span>${files.length} file${files.length === 1 ? "" : "s"} changed</span>
+          ${adds ? `<span class="num add">+${adds}</span>` : ""}
+          ${dels ? `<span class="num del">&minus;${dels}</span>` : ""}
+        </button>` : ""}
+        ${a.tests ? `<button class="evidence" type="button" data-open-pane="problems">
+          <span>${esc(a.tests)}</span>${a.exit ? `<span class="num">${esc(a.exit)}</span>` : ""}
+        </button>` : ""}
+      </div>`;
+  };
+
+  /* Permission: the question, the command, one scope line, the choices.
+     Everything else is evidence and lives under Details. */
   const permissionBlock = (p, i) => {
     if (!p) return "";
     const done = CONVO.perm?.[i];
     if (done) {
-      return `<div class="permdone">${done.ok ? ICON.done() : ICON.fail()}
-        <span>${esc(done.text)}</span>
-        <span class="m permdone-c" title="${esc(p.command)}">${esc(p.command)}</span></div>`;
+      return `<div class="ev ev-audit"><div class="evrow">
+        <span class="evrow-i">${done.ok ? ICON.done() : ICON.fail()}</span>
+        <span class="evrow-t">${esc(done.text)}</span>
+      </div></div>`;
     }
     return `
       <section class="perm" aria-labelledby="perm-h-${i}">
-        <div class="perm-h">
-          ${svg('<path d="M12 9.5v4.2M12 17.4h.01M10.4 4.2 2.1 18a2 2 0 0 0 1.7 3h16.4a2 2 0 0 0 1.7-3L13.6 4.2a2 2 0 0 0-3.2 0z"/>', "var(--warn-line)")}
-          <h3 class="h3" id="perm-h-${i}">${esc(p.title)}</h3>
-          <span class="pill warn">${esc(p.scopeTag)}</span>
-        </div>
-        <pre class="m perm-c">${esc(p.command)}</pre>
-        <dl class="perm-kv">
-          <dt>Why</dt><dd>${esc(p.why)}</dd>
-          <dt>Working dir</dt><dd><span class="m">${esc(p.cwd)}</span></dd>
-          <dt>Scope</dt><dd>${esc(p.scope)}</dd>
-          <dt>Reversible</dt><dd class="perm-rev">${ICON.done()}${esc(p.reversible)}</dd>
-        </dl>
+        <h3 class="perm-q" id="perm-h-${i}">Run <span class="m">${esc(p.command)}</span>?</h3>
+        <p class="perm-scope">${esc(p.scopeTag)} &middot; ${esc(p.scope)}</p>
         <div class="perm-a">
           <button class="btn btnp" type="button" data-perm="once" data-turn="${i}">Allow once</button>
-          <button class="btn" type="button" data-perm="always" data-turn="${i}">Always allow this here</button>
+          <button class="btn" type="button" data-perm="always" data-turn="${i}">Always allow in this project</button>
           <button class="btn btnq" type="button" style="border-color:var(--line)" data-perm="deny" data-turn="${i}">Deny</button>
-          <span class="grow"></span>
-          <button class="btnq hit perm-x" type="button" data-inert="Editing the proposed command is not built in this prototype.">Edit command</button>
         </div>
+        <details class="perm-d">
+          <summary>Details</summary>
+          <dl class="perm-kv">
+            <dt>Why</dt><dd>${esc(p.why)}</dd>
+            <dt>Working dir</dt><dd><span class="m">${esc(p.cwd)}</span></dd>
+            <dt>Reversible</dt><dd>${esc(p.reversible)}</dd>
+          </dl>
+        </details>
       </section>`;
   };
 
   const recoveryBlock = (r) => r ? `
       <div class="recover">
-        <button class="btn btnp" type="button" data-recover="${esc(r.primary.action)}">${esc(r.primary.label)}</button>
+        ${r.primary.href
+    ? `<a class="btn btnp" href="${esc(r.primary.href)}">${esc(r.primary.label)}</a>`
+    : `<button class="btn btnp" type="button" data-recover="${esc(r.primary.action)}">${esc(r.primary.label)}</button>`}
         ${r.alternatives.map((a) => a.href
     ? `<a class="btn" href="${esc(a.href)}">${esc(a.label)}</a>`
     : `<button class="btn" type="button" data-recover="${esc(a.action)}">${esc(a.label)}</button>`).join("")}
-        <span class="grow"></span>
-        <button class="btnq hit recover-x" type="button" data-diagnostics>${esc(r.text.label)}</button>
+        <button class="btnq hit recover-x" type="button" data-diagnostics>View attempts</button>
       </div>` : "";
 
-  // Capabilities, not decoration: an action is only drawn when something real
-  // is behind it. This prototype has no regeneration callback and no overflow
-  // menu items, so Retry and More are absent rather than inert.
   const CAPS = { copy: true, feedback: true, onRetry: null, moreItems: [] };
   const mactCopy = (text, label) =>
     `<button class="mact" type="button" data-copy="${esc(text)}" aria-label="${esc(label)}"><span class="mact-i">${svg('<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5.5A1.5 1.5 0 0 1 6.5 4H15"/>', "currentColor", "1.8")}</span><span class="mact-t">Copy</span></button>`;
@@ -1326,26 +1378,24 @@
     if (CAPS.feedback) parts.push(
       `<button class="mact" type="button" data-vote="up" data-turn="${i}" aria-pressed="false" aria-label="Helpful"><span class="mact-i">${svg('<path d="M7 20V10M7 10l4.2-6.2a1.8 1.8 0 0 1 3 1.9L13 10h5.2a2 2 0 0 1 2 2.4l-1.3 6A2 2 0 0 1 17 20H7z"/>', "currentColor", "1.7")}</span></button>`,
       `<button class="mact" type="button" data-vote="down" data-turn="${i}" aria-pressed="false" aria-label="Not helpful"><span class="mact-i">${svg('<path d="M17 4v10M17 14l-4.2 6.2a1.8 1.8 0 0 1-3-1.9L11 14H5.8a2 2 0 0 1-2-2.4l1.3-6A2 2 0 0 1 7 4h10z"/>', "currentColor", "1.7")}</span></button>`);
-    if (CAPS.onRetry) parts.push(`<button class="mact" type="button" data-retry aria-label="Retry this response"><span class="mact-i">${svg('<path d="M20 11a8 8 0 1 0-2.3 6.3"/><path d="M20 5v6h-6"/>', "currentColor", "1.8")}</span></button>`);
-    if (CAPS.moreItems.length) parts.push(`<button class="mact" type="button" data-more aria-label="More actions"><span class="mact-i">${svg('<circle cx="5" cy="12" r=".9"/><circle cx="12" cy="12" r=".9"/><circle cx="19" cy="12" r=".9"/>', "currentColor", "2.2")}</span></button>`);
     return parts.length ? `<div class="mactions" data-assistant-actions>${parts.join("")}</div>` : "";
   };
 
   const assistantTurn = (t, i, state) => {
     const settled = state === "complete" || state === "stopped" || state === "error";
-    const text = (t.blocks || []).filter((b) => b.t === "p" || b.t === "note")
-      .map((b) => b.text).join("\n\n");
-    // Whatever text arrived is kept; the stopped status sits after it, so a
-    // stopped turn is a durable record in the thread rather than only a
-    // composer state and an announcement.
+    const list = t.blocks || [];
+    // Summary keeps the prose and drops the plan; the outcome carries the rest.
+    const shown = DENSITY === "summary" ? list.filter((b) => b.t !== "plan") : list;
+    const text = list.filter((b) => b.t === "p" || b.t === "note").map((b) => b.text).join("\n\n");
     const halted = t.stopped
       ? `<p class="haltnote">${svg('<rect x="7" y="7" width="10" height="10" rx="2"/>', "currentColor", "1.8")}<span>You stopped this response</span></p>`
       : "";
     return `
     <article class="turn turn-assistant" data-turn="${i}">
-      ${(t.blocks || []).length ? `<div class="prose amsg" data-amsg>${blocks(t.blocks)}</div>` : ""}
+      ${shown.length ? `<div class="prose amsg" data-amsg>${blocks(shown, i)}</div>` : ""}
       ${halted}
       ${activityGroup(t.activity, i)}
+      ${outcome(t.activity, i)}
       ${permissionBlock(t.permission, i)}
       ${recoveryBlock(t.recovery)}
       ${settled && text ? messageActions(i, text) : ""}
@@ -1354,37 +1404,23 @@
 
   const thinkingTurn = () => `
     <article class="turn turn-assistant" data-turn="pending">
-      <p class="thinking"><span class="spin" aria-hidden="true"></span><span data-thinking-label>Thinking</span></p>
+      <div class="ev ev-think"><div class="evrow">
+        <span class="evrow-i">${ICON.running()}</span>
+        <span class="evrow-t" data-thinking-label>Thinking</span>
+      </div></div>
     </article>`;
 
-  const emptyState = () => {
-    const p = CONVO.project || {};
-    return `
+  /* The empty session is guidance for the input, not a hero. One question,
+     three one-line starters, and nothing the shell already says. */
+  const emptyState = () => `
     <div class="empty" data-empty>
-      <h1 class="h1">What do you want to build or change?</h1>
-      <p class="empty-meta">
-        <span class="m faint" data-project-path>${esc(p.path || "")}</span>
-        <span class="faint" aria-hidden="true">·</span>
-        <span class="mut" data-project-branch>${esc(p.branch || "")}</span>
-        <span class="faint" aria-hidden="true">·</span>
-        <span class="mut" data-project-stack>${esc(p.stack || "")}</span>
-      </p>
+      <h1 class="h1">What do you want to change?</h1>
       <div class="starters">
-        <button type="button" data-starter="Explain how this project is organised">
-          <span class="s-t">Explain how this project is organised</span>
-          <span class="s-d">Reads the tree and the entry points. Changes nothing.</span>
-        </button>
-        <button type="button" data-starter="Fix the failing test in src/App.test.jsx">
-          <span class="s-t">Fix a failing test</span>
-          <span class="s-d">Runs the suite first, then edits behind a checkpoint.</span>
-        </button>
-        <button type="button" data-starter="Add a small feature">
-          <span class="s-t">Add a small feature</span>
-          <span class="s-d">Plans it, asks before installing anything.</span>
-        </button>
+        <button type="button" data-starter="Explain how this project is organised">Explain this project</button>
+        <button type="button" data-starter="Fix the failing test in src/App.test.jsx">Fix a failing test</button>
+        <button type="button" data-starter="Add a small feature">Add a small feature</button>
       </div>
     </div>`;
-  };
 
   /* ---- render --------------------------------------------------------- */
   function renderThread() {
@@ -1448,6 +1484,8 @@
         send.type = running ? "button" : "submit";
         send.disabled = running ? false : !(ta && ta.value.trim());
       }
+      // the composer edge reads this attribute for its working state
+      if (form) form.toggleAttribute("data-running", running);
       if (running) say(next === "tool-running" ? "Running a tool" : "Working on it");
       if (next === "complete") say("Response complete");
       if (next === "stopped") say("Task stopped");
@@ -1528,17 +1566,17 @@
 
     /* ---- activity disclosure ----------------------------------------- */
     el.addEventListener("click", (e) => {
-      const t = e.target.closest("[data-act-toggle]");
+      const t = e.target.closest("[data-row-toggle], [data-plan-toggle]");
       if (!t) return;
-      const i = t.dataset.actToggle;
+      const key = t.dataset.rowToggle || ("plan" + t.dataset.planToggle);
       const body = t.nextElementSibling;
       const open = t.getAttribute("aria-expanded") !== "true";
       // hold the reading position: expanding must not throw the page around
-      const s = CONVO.scroll, before = s.scrollHeight - s.scrollTop;
-      CONVO.open[i] = open;
+      const s = CONVO.scroll, before = s ? s.scrollHeight - s.scrollTop : 0;
+      CONVO.open[key] = open;
       t.setAttribute("aria-expanded", String(open));
-      body.hidden = !open;
-      if (!CONVO.follow) s.scrollTop = s.scrollHeight - before;
+      if (body) body.hidden = !open;
+      if (s && !CONVO.follow) s.scrollTop = s.scrollHeight - before;
     });
 
     /* ---- message actions --------------------------------------------- */
@@ -1670,15 +1708,24 @@
       ta.addEventListener("compositionstart", () => { composing = true; });
       ta.addEventListener("compositionend", () => { composing = false; });
       ta.addEventListener("input", () => {
-        if (!el.dataset.state?.match(/submitting|thinking|tool-running|streaming/))
-          send.disabled = !ta.value.trim();
+        // Stop is always available; Send is gated on a real draft
+        if (send.dataset.stop !== "true") send.disabled = !ta.value.trim();
       });
+
+      const working = () => /submitting|thinking|tool-running|streaming/.test(CONVO.state);
 
       form.addEventListener("submit", (e) => {
         e.preventDefault();
         if (composing) return;
         const text = ta.value.trim();
-        if (!text || CONVO.state === "submitting") return;
+        if (!text) return;
+        if (working()) {
+          queueMessage(text);
+          ta.value = "";
+          ta.style.height = "";
+          ta.dispatchEvent(new Event("input", { bubbles: true }));
+          return;
+        }
         submit(text);
       });
 
@@ -1747,7 +1794,7 @@
       if (!ta) return;
       const grow = () => {
         ta.style.height = "auto";
-        ta.style.height = Math.min(ta.scrollHeight, 200) + "px";
+        ta.style.height = Math.min(ta.scrollHeight, 176) + "px";
       };
       ta.addEventListener("input", grow);
       grow();
@@ -1807,6 +1854,188 @@
     });
   }
 
+  /* One live region for state transitions. Working, Needs input, Stopped and
+     Done are announced; nothing announces a timer. */
+  function announce(msg) {
+    const el = $("[data-thread-status]") || $("[data-live]");
+    if (el) el.textContent = msg;
+  }
+
+  /* ------------------------------------------------------ transcript detail */
+  /* A pending permission is the loudest thing on screen; the composer edge
+     steps back while one is open. */
+  function wireAwaiting() {
+    const form = $("[data-composer]");
+    if (!form) return;
+    const sync = () => {
+      const pending = !!$(".perm");
+      form.toggleAttribute("data-awaiting", pending);
+    };
+    sync();
+    new MutationObserver(sync).observe(document.body, { childList: true, subtree: true });
+  }
+
+  function wireDensity() {
+    const paint = () => $$("[data-density]").forEach((b) =>
+      b.setAttribute("aria-checked", String(b.dataset.density === DENSITY)));
+    $$("[data-density]").forEach((b) => b.addEventListener("click", () => {
+      DENSITY = b.dataset.density;
+      store.set("density", DENSITY);
+      paint();
+      closePop();
+      if (CONVO.el) renderThread();
+      toast(`Transcript detail: ${DENSITY}.`);
+    }));
+    paint();
+  }
+
+  /* ------------------------------------------------------- queued messages */
+  /* While the agent is working, Enter queues rather than discarding. A queued
+     item is an editable row: it can be pulled back into the composer or
+     dropped. Nothing is sent, because there is no adapter to send it to. */
+  const QUEUE = [];
+  function paintQueue() {
+    const host = $("[data-queue]");
+    if (!host) return;
+    host.hidden = QUEUE.length === 0;
+    host.innerHTML = QUEUE.map((text, i) => `
+      <div class="qrow">
+        <span class="qrow-i" aria-hidden="true">${svg('<path d="M4 7h16M4 12h16M4 17h10"/>', "currentColor", "1.8")}</span>
+        <span class="qrow-t" title="${esc(text)}">${esc(text)}</span>
+        <button class="mact" type="button" data-queue-edit="${i}" aria-label="Edit this queued message"><span class="mact-t">Edit</span></button>
+        <button class="mact" type="button" data-queue-drop="${i}" aria-label="Remove this queued message"><span class="mact-i">${svg('<path d="M18 6 6 18M6 6l12 12"/>', "currentColor", "2")}</span></button>
+      </div>`).join("");
+  }
+  function queueMessage(text) {
+    QUEUE.push(text);
+    paintQueue();
+    announce(`Queued. ${QUEUE.length} message${QUEUE.length === 1 ? "" : "s"} waiting.`);
+  }
+  function wireQueue() {
+    const host = $("[data-queue]");
+    if (!host) return;
+    host.addEventListener("click", (e) => {
+      const edit = e.target.closest("[data-queue-edit]");
+      const drop = e.target.closest("[data-queue-drop]");
+      const ta = $("[data-composer] textarea");
+      if (edit) {
+        const i = +edit.dataset.queueEdit;
+        const text = QUEUE.splice(i, 1)[0];
+        if (ta) {
+          ta.value = ta.value ? ta.value + "\n" + text : text;
+          ta.dispatchEvent(new Event("input", { bubbles: true }));
+          ta.focus();
+        }
+        paintQueue();
+      } else if (drop) {
+        QUEUE.splice(+drop.dataset.queueDrop, 1);
+        paintQueue();
+      }
+    });
+  }
+
+  /* ------------------------------------------------ slash and at menus */
+  /* Both open at the caret, filter as you type, and are keyboard operable.
+     They insert text; nothing here executes. */
+  const SLASH = [
+    ["/plan", "Switch to Plan mode for the next message"],
+    ["/build", "Switch to Build mode"],
+    ["/ask", "Switch to Ask mode, which changes nothing"],
+    ["/rewind", "Rewind to an earlier checkpoint"],
+    ["/review", "Open the diff for this task"],
+    ["/clear", "Start a new session in this project"],
+  ];
+  const MENTIONS = [
+    ["src/App.jsx", "file"], ["src/useTasks.js", "file"], ["src/index.css", "file"],
+    ["src/App.test.jsx", "file"], ["package.json", "file"], ["src/", "folder"],
+  ];
+
+  function wireCaretMenus() {
+    const form = $("[data-composer]");
+    const ta = form && $("textarea", form);
+    if (!ta) return;
+    let host = $(".caret-menu");
+    if (!host) {
+      host = document.createElement("div");
+      host.className = "caret-menu menu";
+      host.hidden = true;
+      host.setAttribute("role", "listbox");
+      form.appendChild(host);
+    }
+    let items = [], active = 0, trigger = "", start = -1;
+
+    const close = () => { host.hidden = true; items = []; trigger = ""; start = -1; };
+    const paint = () => {
+      host.innerHTML = items.map(([a, b], i) => `
+        <button class="srow" type="button" role="option" aria-selected="${i === active}"
+          data-caret-pick="${esc(a)}"${i === active ? ' class="srow on"' : ""}>
+          <span class="t${trigger === "@" ? " m" : ""}">${esc(a)}</span>
+          <span class="lab">${esc(b)}</span></button>`).join("");
+      $$("[aria-selected=true]", host).forEach((el) => el.classList.add("on"));
+      host.hidden = items.length === 0;
+    };
+    const pick = (value) => {
+      const before = ta.value.slice(0, start);
+      const after = ta.value.slice(ta.selectionStart);
+      ta.value = before + value + " " + after;
+      const caret = (before + value + " ").length;
+      ta.setSelectionRange(caret, caret);
+      ta.dispatchEvent(new Event("input", { bubbles: true }));
+      close();
+      ta.focus();
+    };
+
+    ta.addEventListener("input", () => {
+      const caret = ta.selectionStart;
+      const upto = ta.value.slice(0, caret);
+      const m = upto.match(/(^|\s)([/@])([\w./-]*)$/);
+      if (!m) return close();
+      trigger = m[2];
+      start = caret - m[3].length - 1;
+      const q = m[3].toLowerCase();
+      const source = trigger === "/" ? SLASH : MENTIONS;
+      items = source.filter(([a]) => a.toLowerCase().includes(q)).slice(0, 6);
+      active = 0;
+      paint();
+    });
+    ta.addEventListener("keydown", (e) => {
+      if (host.hidden) return;
+      if (e.key === "ArrowDown") { e.preventDefault(); active = (active + 1) % items.length; paint(); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); active = (active - 1 + items.length) % items.length; paint(); }
+      else if (e.key === "Enter" || e.key === "Tab") { e.preventDefault(); e.stopPropagation(); pick(items[active][0]); }
+      else if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); close(); }
+    }, true);
+    host.addEventListener("click", (e) => {
+      const b = e.target.closest("[data-caret-pick]");
+      if (b) pick(b.dataset.caretPick);
+    });
+    ta.addEventListener("blur", () => setTimeout(close, 120));
+  }
+
+  /* Long pastes become one disclosure rather than a wall in the input. */
+  function wirePaste() {
+    const ta = $("[data-composer] textarea");
+    if (!ta) return;
+    ta.addEventListener("paste", (e) => {
+      const text = (e.clipboardData || window.clipboardData).getData("text");
+      const lines = text.split("\n").length;
+      if (lines < 12) return;
+      e.preventDefault();
+      const host = $("[data-queue]");
+      const chip = document.createElement("div");
+      chip.className = "qrow is-paste";
+      chip.innerHTML = `<span class="qrow-i" aria-hidden="true">${svg('<path d="M9 4h6v3H9z"/><path d="M7 6H5.5A1.5 1.5 0 0 0 4 7.5v11A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5v-11A1.5 1.5 0 0 0 18.5 6H17"/>', "currentColor", "1.7")}</span>
+        <span class="qrow-t">Pasted text &middot; <span class="num">${lines} lines</span></span>
+        <button class="mact" type="button" data-paste-drop aria-label="Remove pasted text"><span class="mact-i">${svg('<path d="M18 6 6 18M6 6l12 12"/>', "currentColor", "2")}</span></button>`;
+      chip.querySelector("[data-paste-drop]").addEventListener("click", () => {
+        chip.remove();
+        if (host && !host.querySelector(".qrow")) host.hidden = true;
+      });
+      if (host) { host.hidden = false; host.appendChild(chip); }
+      toast(`Attached as ${lines} lines instead of filling the composer.`);
+    });
+  }
+
   /* ------------------------------------------------------------------- tabs */
   function wireTabs() {
     $$('[role="tablist"]').forEach((list) => {
@@ -1862,12 +2091,22 @@
       const opener = $("[data-drawer-open]");
       if (opener) opener.focus();
     }));
-    $$("[data-drawer-open]").forEach((b) => b.addEventListener("click", () => {
+    const openPane = (which, focusTab) => {
       drawer.hidden = false;
       shell.classList.remove("no-drawer");
-      const tab = $('[role="tab"][aria-selected="true"]', drawer);
-      if (tab) tab.focus();
-    }));
+      const tab = which && $("#tab-" + which, drawer);
+      if (tab) tab.click();
+      const target = tab || $('[role="tab"][aria-selected="true"]', drawer);
+      if (target && focusTab !== false) target.focus();
+    };
+    $$("[data-drawer-open]").forEach((b) => b.addEventListener("click", () =>
+      openPane(b.dataset.pane)));
+    // rows inside the transcript name the tab they belong to
+    document.addEventListener("click", (e) => {
+      const t = e.target.closest("[data-open-pane]");
+      if (!t || t.hasAttribute("data-drawer-open")) return;
+      openPane(t.dataset.openPane);
+    });
     // Maximizing hides the conversation pane outright. Leaving it on screen at
     // 60px showed clipped paragraphs and half a Send button down the left edge,
     // and kept the transcript in the tab order.
@@ -2417,7 +2656,16 @@
     wireDownloadRows(); wireFilesTab(); wireLoadToggle(); wirePresets(); showPreset();
     wireActivity(); wireStopRun(); wirePermission(); wireRecover(); wireSuggest();
     wireModelActions(); wireConversation(); wireChats();
-    wireWaitlist(); wireModelDetail(); wireDiagnostics(); wireComposerDraft(); wireSettings(); wireShortcuts(); wireDownloadRow(); wireInert();
+    wireWaitlist(); wireModelDetail(); wireDiagnostics(); wireComposerDraft();
+    wireAwaiting(); wireDensity(); wireQueue(); wireCaretMenus(); wirePaste();
+    // the one setup-specific element on /setup/5/
+    const sd = $("[data-setup-done]");
+    if (sd) {
+      const hide = () => { sd.hidden = true; };
+      $("[data-setup-dismiss]", sd).addEventListener("click", hide);
+      const ta = $("[data-composer] textarea");
+      if (ta) ta.addEventListener("input", () => { if (ta.value.trim()) hide(); }, { once: true });
+    } wireSettings(); wireShortcuts(); wireDownloadRow(); wireInert();
     document.documentElement.dataset.reducedMotion = String(reduced);
   };
   document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", boot) : boot();

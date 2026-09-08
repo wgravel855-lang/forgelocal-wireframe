@@ -22,15 +22,15 @@ export function extraRoutes({ write, marketing, appPage, part, workspace, esc, m
     path: "/product/", title: "How ForgeLocal works",
     desc: "Detect hardware, choose a model that fits, open a project, run tools with reviewable permissions.",
     main: head("How it works", "Five steps, then you are working",
-      "There is no configuration file to learn and no inference vocabulary to pick up. The parts that matter are shown when they matter.") +
+      "No configuration file to learn and no inference vocabulary to pick up.") +
       `<section class="mwrap msec" style="padding-bottom:96px">
   <ol class="index" style="list-style:none;margin:0;padding:0">
     ${[
-        ["Read the machine", "CPU, memory, video memory, free disk and any runtime already installed. It happens inside the app, after you agree to it, and the reading stays on the device."],
-        ["Pick one profile", "Not a catalog to guess through. One recommendation with the arithmetic shown, and alternatives behind a disclosure."],
-        ["Install runtime and weights", "Runtime, model download and a capability self-test in one step, with pause, resume and a clear interrupted state."],
-        ["Choose a folder and a permission preset", "Project file access is limited to that folder by default. The preset decides how often the agent stops to ask."],
-        ["Work, then review", "Plan, edits, commands and tests appear as one quiet activity group. Changes arrive as a diff you keep or revert per file and per hunk."],
+        ["Read the machine", "CPU, memory, video memory, free disk and any runtime already installed, after you agree to it."],
+        ["Pick one profile", "One recommendation with the arithmetic shown, and alternatives behind a disclosure."],
+        ["Install runtime and weights", "Runtime, weights and a capability self-test in one step, with pause and resume."],
+        ["Choose a folder and a permission preset", "File access is limited to that folder, and the preset decides how often the agent asks."],
+        ["Work, then review", "Changes arrive as a diff you keep or revert per file and per hunk."],
       ].map(([t, d], i) => `<li style="padding:26px 2px;display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap">
         <span class="lab num" style="width:24px;flex-shrink:0;padding-top:2px">0${i + 1}</span>
         <div class="stack" style="gap:6px;flex:1;min-width:280px"><span class="h2">${esc(t)}</span>
@@ -51,15 +51,13 @@ export function extraRoutes({ write, marketing, appPage, part, workspace, esc, m
   write("download/index.html", marketing({
     path: "/download/", title: "Download ForgeLocal",
     desc: "Windows build, system requirements, checksum and release notes.",
-    main: head("Download", "Get ForgeLocal", "There is no installer yet. Local use will be free and will not need an account.") +
+    main: head("Download", "ForgeLocal is not available to download yet", "Join the waitlist to hear when the first signed Windows build is ready.") +
       `<section class="mwrap msec" style="padding-bottom:44px">
   <div class="index">
     <div class="strow" style="grid-template-columns:minmax(0,1fr) auto;align-items:center;padding:22px 2px">
       <div>
         <span class="t" style="font-size:17px;line-height:25px">Windows 10 and 11, 64-bit</span>
-        <p class="d" style="margin-top:5px;max-width:62ch">x64 and ARM64. No installer is
-          published yet, so there is no version, checksum or signing certificate to show. All
-          three appear here with the first signed build.</p>
+        <p class="d" style="margin-top:5px;max-width:62ch">x64 and ARM64.</p>
         <p class="d" style="margin-top:6px;color:var(--faint)" data-platform-note>
           Detected platform appears here. macOS and Linux builds are not available yet.</p>
       </div>
@@ -129,7 +127,7 @@ export function extraRoutes({ write, marketing, appPage, part, workspace, esc, m
     path: "/pricing/", title: "Pricing — ForgeLocal",
     desc: "Local use is free and unmetered. Paid plans cover the compatibility work, not your GPU.",
     main: head("Pricing", "Your compute is never metered",
-      "Running a model on your own hardware is free and always will be. What you can pay for is the compatibility work: profiles that stay tested as runtimes and model releases move.") +
+      "Nothing is on sale yet: these are the prices we intend to charge. Running a model on your own hardware is free and always will be, and what you can pay for is the compatibility work.") +
       `<section class="mwrap msec" style="padding-bottom:64px">
   <div class="billing">
     <span id="billing-label">Billing</span>
@@ -159,20 +157,16 @@ export function extraRoutes({ write, marketing, appPage, part, workspace, esc, m
         "Private blueprint library",
       ], `<a class="btn btnl" href="/waitlist/?plan=team" style="width:100%">Join the Team waitlist</a>`, false, " / user")}
   </div>
-  <p class="mut" style="margin:22px 0 0;font-size:14px;line-height:22px;max-width:70ch">
-    Nothing is on sale yet. No build is published and billing is not deployed, so the paid plans
-    describe what they will include rather than something you can buy today. The prices are what we
-    intend to charge, and the waitlist is how you hear when that changes.</p>
 </section>
 <section class="mwrap msec" style="padding-bottom:24px">
   <div style="max-width:820px">
     <h2 class="h2" style="font-size:20px;margin-bottom:6px">Questions people actually ask</h2>
     <div class="faq">
       ${[
-        ["Do I pay for tokens?", "Not for local use. A model running on your own GPU costs you electricity, not credits. If you later connect a cloud provider, that is billed in real currency against a cap you set, and it is off by default."],
+        ["Do I pay for tokens?", "Not for local use: a model on your own GPU costs electricity, not credits. A cloud provider, if you connect one, is billed against a cap you set and is off by default."],
         ["What happens if I stop paying?", "The app keeps working locally with the profiles you already have. You stop receiving new verified profiles and Pro features."],
-        ["Is there a refund?", "Cancel any time and the plan runs to the end of the period you paid for. Refund terms will be published with billing when it is connected."],
-        ["Do I need an account?", "No, not for local use. An account exists for billing and for syncing settings between machines."],
+        ["Is there a refund?", "Cancel any time and the plan runs to the end of the period you paid for."],
+        ["Do I need an account?", "Not for local use. An account exists for billing and for syncing settings between machines."],
       ].map(([q, a]) => `<details><summary>${esc(q)}<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9.5 6 6 6-6"/></svg></summary>
       <p>${esc(a)}</p></details>`).join("\n")}
     </div>
@@ -192,9 +186,9 @@ export function extraRoutes({ write, marketing, appPage, part, workspace, esc, m
      editorial index rather than each getting a white card stranded in a wide
      empty page: rules top and bottom, rows divided by 1px, and a measure that
      matches the amount of text actually on the page. */
-  const page = (path, title, kicker, h1, lede, body, measure = "measure") =>
+  const page = (path, title, kicker, h1, lede, body, measure = "measure", compact = false) =>
     write(`${path}index.html`, marketing({
-      path, title: `${title} — ForgeLocal`, desc: lede,
+      path, title: `${title} — ForgeLocal`, desc: lede, compact,
       main: head(kicker, h1, esc(lede)) +
         `<section class="mwrap msec" style="padding-bottom:72px">
         <div class="${measure}">${body}</div></section>`,
@@ -252,23 +246,20 @@ export function extraRoutes({ write, marketing, appPage, part, workspace, esc, m
     path: "/docs/", title: "Docs — ForgeLocal", compact: true,
     desc: "Models, memory, permissions, review and troubleshooting for a local coding agent.",
     main: head("Documentation", "Docs",
-      esc("Twelve articles covering how models are chosen, what permissions actually guarantee, how changes are reviewed, and what to do when something stops.")) +
+      esc("How models are chosen, what permissions guarantee, how changes are reviewed, and what to do when something stops.")) +
       `<section class="mwrap msec" style="padding-bottom:80px">
   <div class="measure-w">
-    ${DOC_GROUPS.map(([g, gd]) => `<section class="docgroup">
-      <div class="docgroup-h"><h2>${esc(g)}</h2><p>${esc(gd)}</p></div>
-      <div class="index">
-        ${DOCS.filter((d) => d.group === g).map((d) => `<div class="irow docrow" data-row-target>
-          <a class="t" href="/docs/${d.slug}/">${esc(d.title)}</a>
+    ${DOC_GROUPS.map(([g]) => `<section class="docgroup">
+      <h2 class="docgroup-h">${esc(g)}</h2>
+      <div class="doclist-nav">
+        ${DOCS.filter((d) => d.group === g).map((d) => `<a class="docitem" href="/docs/${d.slug}/">
+          <span class="t">${esc(d.title)}</span>
           <span class="s num">${d.read} min</span>
-          <p class="d">${esc(d.lede)}</p>
-        </div>`).join("\n")}
+        </a>`).join("\n")}
       </div>
     </section>`).join("\n")}
-    <p class="mut" style="margin:34px 0 0;font-size:14.5px;line-height:23px;max-width:70ch">
-      These articles describe the behaviour this build defines, including the parts that are not
-      built yet, which are named as such rather than documented as though they work. Release notes
-      will live in the <a class="link" href="/changelog/">changelog</a> once there is a release.</p>
+    <p class="mut" style="margin:30px 0 0;font-size:14px;line-height:22px;max-width:70ch">
+      These describe the behaviour this build defines. Parts that are not built yet are named as such.</p>
   </div>
 </section>`,
   }));
@@ -287,24 +278,21 @@ export function extraRoutes({ write, marketing, appPage, part, workspace, esc, m
         </div>
       </div>
     </div>
-    <p style="margin:20px 0 0;display:flex;gap:22px;flex-wrap:wrap">
-      <a class="link" href="/download/">Download</a>
-      <a class="link" href="/status/">Service status</a></p>`);
+`);
 
   /* /status/ — a real status table. State is a dot plus its own words, so the
      meaning does not depend on colour, and four identical capsules are gone. */
   page("status/", "Status", "Status", "Service status",
     "Account, downloads and optional cloud providers.",
     `<p class="mut" style="margin:0 0 22px;font-size:15px;line-height:24px;max-width:70ch">
-      The local app works offline and nothing on this page can stop it. No hosted service is
-      deployed yet.</p>
+      No hosted services are deployed yet.</p>
     <div class="index">
       <div class="strow strow-head" style="padding-top:12px;padding-bottom:12px;min-height:0">
         <span class="lab-fn" style="color:var(--faint)">Service</span>
         <span class="lab-fn" style="color:var(--faint)">What it affects</span>
         <span class="lab-fn" style="justify-self:end;color:var(--faint)">State</span>
       </div>
-      ${[["Local app", "Works offline. Nothing on this page can stop it.", "", "Runs locally, independent of hosted status"],
+      ${[["Local app", "Runs on your machine.", "", "Independent of hosted status"],
          ["Profile registry", "Serves signed profile manifests. Cached locally, so an outage does not block work.", "", "Not deployed"],
          ["Downloads", "Weights come from the publisher, not from us.", "", "Not deployed"],
          ["Accounts and billing", "Only needed for paid plans.", "", "Not deployed"]]
@@ -315,8 +303,7 @@ export function extraRoutes({ write, marketing, appPage, part, workspace, esc, m
         </div>`).join("\n")}
     </div>
     <p class="mut" style="margin:20px 0 0;font-size:14.5px;line-height:23px;max-width:70ch">
-      No services are deployed yet, so there is no uptime history to show. This page will carry
-      live component status and incident history once there is something running.</p>`);
+      Component status and incident history appear here once something is running.</p>`);
 
   /* /privacy/ — a plain-language document, not content inside a card. */
   page("privacy/", "Privacy", "Legal", "Privacy",
@@ -452,7 +439,7 @@ export function extraRoutes({ write, marketing, appPage, part, workspace, esc, m
 
   /* ---------------------------------------------------------------- /404 */
   write("404.html", marketing({
-    path: "/", title: "Page not found — ForgeLocal", desc: "That page does not exist.",
+    path: "/", title: "Page not found — ForgeLocal", desc: "That page does not exist.", compact: true,
     main: `<section class="mwrap msec" style="padding:96px 32px 120px">
       <div class="stack" style="gap:16px;max-width:520px">
         <span class="lab num">404</span>
@@ -460,8 +447,6 @@ export function extraRoutes({ write, marketing, appPage, part, workspace, esc, m
         <p class="mlede">The link may be old, or the page may not be built yet.</p>
         <div style="display:flex;gap:12px;flex-wrap:wrap;padding-top:6px">
           <a class="btn btnp" href="/">Home</a>
-          <a class="btn" href="/models/">Models</a>
-          <a class="btn" href="/docs/">Docs</a>
         </div>
       </div></section>`,
   }));

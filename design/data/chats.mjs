@@ -87,8 +87,14 @@ export const chats = [
 ];
 
 export const GROUPS = [
+  ["needs", "Needs input"],
+  ["working", "Working"],
   ["pinned", "Pinned"],
-  ["today", "Today"],
-  ["week", "Previous 7 days"],
-  ["older", "Older"],
+  ["recent", "Recent"],
 ];
+
+// Which group a session belongs in, from its own state rather than its age.
+export const groupFor = (c) =>
+  c.state === "failed" || c.needsInput ? "needs"
+    : c.state === "running" ? "working"
+      : c.pinned ? "pinned" : "recent";

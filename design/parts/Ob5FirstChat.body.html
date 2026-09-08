@@ -7,47 +7,30 @@
 
       <!--#include topbar.html {"title":"New session"} -->
 
-      <div class="scroll" style="display:flex;flex-direction:column;justify-content:center">
-        <div class="col" style="display:flex;flex-direction:column;gap:22px;padding-top:24px;padding-bottom:24px">
+      <!-- Setup 5 is the workspace, not a copy of it. The stream, composer,
+           starters, menus and keyboard behaviour are the same components /app/
+           renders; the only setup-specific element is the acknowledgement,
+           which goes away after the first prompt or when dismissed. -->
+      <div class="thread-scroll scroll" data-thread-scroll>
+        <div class="thread col" data-thread data-thread-id=""></div>
+      </div>
 
-          <div style="display:flex;flex-direction:column;gap:10px">
-            <h1 class="h1">What do you want to build or change?</h1>
-            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-              <span class="m faint">~/projects/task-tracker</span>
-              <span class="faint" aria-hidden="true">&middot;</span>
-              <span class="mut" style="font-size:13px">Git repo, on main</span>
-              <span class="faint" aria-hidden="true">&middot;</span>
-              <span class="mut" style="font-size:13px">Vite + React, 31 files</span>
-            </div>
-          </div>
-
+      <div class="dock">
+        <div class="dock-inner col">
+          <p class="setupdone" data-setup-done>
+            <span class="setupdone-i" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            </span>
+            <span>Setup complete. Qwen2.5 Coder 14B is loaded and balanced permissions are on.</span>
+            <button class="mact" type="button" data-setup-dismiss aria-label="Dismiss setup confirmation">
+              <span class="mact-i"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></span>
+            </button>
+          </p>
           <!--#include composer.html {"placeholder":"Describe a change, or ask about this project","mode":"Build","send":"<!--#include send-arrow.html -->"} -->
-
-          <div style="display:flex;flex-direction:column;gap:9px">
-            <span class="lab">Since this is a React project with no tests yet, you could start with</span>
-            <div class="starters">
-              <button type="button" data-starter="Walk me through how this project is organised">
-                <span class="s-t">Walk me through how this project is organised</span>
-                <span class="s-d">Reads the tree and the entry points. Changes nothing.</span>
-              </button>
-              <button type="button" data-starter="Set up Vitest and write one test">
-                <span class="s-t">Set up Vitest and write one test</span>
-                <span class="s-d">Installs it, then asks first.</span>
-              </button>
-              <button type="button" data-starter="Add a filter bar to the task list">
-                <span class="s-t">Add a filter bar to the task list</span>
-                <span class="s-d">Plans the change before editing.</span>
-              </button>
-            </div>
-          </div>
-
-          <div style="display:flex;align-items:center;gap:9px;padding-top:2px">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M20 6 9 17l-5-5"/></svg>
-            <span class="faint" style="font-size:13px"><!--REC_NAME--> is loaded and passed its setup checks. Balanced permissions are on. <a class="link" href="/setup/3/">What was checked</a></span>
-          </div>
-
         </div>
       </div>
+
+      <p class="vh" role="status" aria-live="polite" data-thread-status></p>
 
     </div>
   </div>
