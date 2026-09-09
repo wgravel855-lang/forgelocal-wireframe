@@ -107,7 +107,7 @@ export function extraRoutes({ write, marketing, appPage, part, workspace, esc, m
      marked by a tonal column and an eyebrow, not by an outline. */
   const plan = (name, monthly, blurb, feats, cta, primary, unit = "") => `
   <div class="plan${primary ? " is-rec" : ""}">
-    <span class="plan-eyebrow">${primary ? "Most people choose this" : "&nbsp;"}</span>
+    <span class="plan-eyebrow">${primary ? "Recommended" : "&nbsp;"}</span>
     <span class="h2">${esc(name)}</span>
     <div class="plan-price">
       <span class="num"${monthly ? ` data-price-monthly="${monthly}"` : ""}>${monthly ? `$${monthly}` : "$0"}</span>
@@ -160,7 +160,7 @@ export function extraRoutes({ write, marketing, appPage, part, workspace, esc, m
 </section>
 <section class="mwrap msec" style="padding-bottom:24px">
   <div style="max-width:820px">
-    <h2 class="h2" style="font-size:20px;margin-bottom:6px">Questions people actually ask</h2>
+    <h2 class="h2" style="font-size:20px;margin-bottom:6px">Frequently asked questions</h2>
     <div class="faq">
       ${[
         ["Do I pay for tokens?", "Not for local use: a model on your own GPU costs electricity, not credits. A cloud provider, if you connect one, is billed against a cap you set and is off by default."],
@@ -268,17 +268,10 @@ export function extraRoutes({ write, marketing, appPage, part, workspace, esc, m
      placeholder component. */
   page("changelog/", "Changelog", "Releases", "Changelog",
     "Versions, changes, fixes and known issues.",
-    `<div class="index">
-      <div class="tlrow">
-        <span class="when">&mdash;</span>
-        <div>
-          <span class="t">No releases yet</span>
-          <p class="d">There is no published build, so there are no release notes. Each release will
-            list version, date, changes, fixes, known issues and a download link with its checksum.</p>
-        </div>
-      </div>
-    </div>
-`);
+    `<p class="mut" style="margin:0;font-size:15px;line-height:24px;max-width:66ch">
+      No releases yet. Each one will list its version, date, changes, fixes, known issues and a
+      download link with its checksum.</p>
+`, "measure", true);
 
   /* /status/ — a real status table. State is a dot plus its own words, so the
      meaning does not depend on colour, and four identical capsules are gone. */
@@ -299,11 +292,12 @@ export function extraRoutes({ write, marketing, appPage, part, workspace, esc, m
         .map(([n, d, tone, state]) => `<div class="strow">
           <span class="t">${esc(n)}</span>
           <p class="d">${esc(d)}</p>
-          <span class="s"><span class="dot ${tone}" aria-hidden="true"></span>${esc(state)}</span>
+          <span class="s">${esc(state)}</span>
         </div>`).join("\n")}
     </div>
     <p class="mut" style="margin:20px 0 0;font-size:14.5px;line-height:23px;max-width:70ch">
-      Component status and incident history appear here once something is running.</p>`);
+      Component status and incident history appear here once something is running.</p>`,
+    "measure", true);
 
   /* /privacy/ — a plain-language document, not content inside a card. */
   page("privacy/", "Privacy", "Legal", "Privacy",
@@ -366,7 +360,7 @@ export function extraRoutes({ write, marketing, appPage, part, workspace, esc, m
       This is a plain-language summary of intended behavior, not a legal policy. A reviewed policy
       will be published before any build ships, and it will describe what the code actually does
       rather than what the design hoped for.</p>`,
-    "measure-doc");
+    "measure-doc", true);
 
   /* /terms/ — a deliberate unpublished state, not a card and not fake legal
      text. Same ruled document language as Privacy, one row instead of three. */
@@ -386,7 +380,7 @@ export function extraRoutes({ write, marketing, appPage, part, workspace, esc, m
           the agent runs inside is described on the <a href="/security/">security page</a>.</p></dd>
       </div>
     </dl>`,
-    "measure-doc");
+    "measure-doc", true);
 
   /* ------------------------------------------------------------ /waitlist/ */
   /* There is no authentication, so the product does not draw an authentication

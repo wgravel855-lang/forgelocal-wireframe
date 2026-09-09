@@ -193,7 +193,7 @@ button.rname::after { content: ""; position: absolute; inset: 0; }
 .setwrap { display: flex; overflow-y: auto; }
 .setnav { flex-shrink: 0; width: 208px; padding: 24px 8px; position: sticky; top: 0;
   align-self: flex-start; }
-.setnav .srow.is-on { background: var(--sunk); color: var(--fg); box-shadow: inset 2px 0 0 var(--acc); }
+.setnav .srow.is-on { background: var(--sidebar-selected); color: var(--fg); font-weight: 500; }
 .setcol { flex: 1; min-width: 0; max-width: 680px; padding: 24px 28px 64px; }
 .setsec { padding-top: 32px; }
 .setsec:first-child { padding-top: 0; }
@@ -827,11 +827,20 @@ body.is-blurred .cinput::before { animation-play-state: paused; }
 .pulse { animation: fl-pulse 2s ease-in-out infinite; }
 
 /* ---- tables ------------------------------------------------------- */
+/* Row groups, not a grid. A rule under every cell drew four lines per row
+   and turned a six-row table into two dozen borders. */
 .tbl { width:100%; border-collapse:collapse; font-size:14px; }
-.tbl th, .tbl td { text-align:left; padding:14px 16px; border-bottom:1px solid var(--line-soft); }
-.tbl thead th { font-size:13px; color:var(--mut); font-weight:500; background:var(--panel); }
-.tbl tbody tr:last-child td { border-bottom:0; }
-.tbl { border:1px solid var(--line); border-radius:8px; overflow:hidden; }
+.tbl th, .tbl td { text-align:left; padding:14px 16px; }
+.tbl tbody tr { border-bottom:1px solid var(--line-soft); }
+.tbl thead tr { border-bottom:1px solid var(--line); }
+.tbl thead th { font-size:13px; color:var(--mut); font-weight:500; padding-bottom:10px; }
+/* A caution is a note with a rule, never a filled box inside a border. */
+.note-rule { display:flex; align-items:flex-start; gap:12px; margin:0;
+  padding:2px 0 2px 14px; border-left:2px solid var(--warn-line); }
+.note-rule .h3 { display:block; font-size:14.5px; line-height:22px; }
+.note-rule p { margin:4px 0 0; font-size:14px; line-height:22px; color:var(--mut);
+  text-wrap:pretty; }
+.tbl tbody tr:last-child { border-bottom:0; }
 .tbl td.num, .tbl th.num { font-variant-numeric:tabular-nums; }
 
 /* comparison table stacks into labelled rows on narrow screens */
@@ -885,25 +894,23 @@ body.is-blurred .cinput::before { animation-play-state: paused; }
 /* ---- process band -------------------------------------------------- */
 /* Four stages of one process on a shared surface, divided by a rule and a
    chevron rather than four mini-cards floating inside a larger card. */
-.band-p { display: grid; grid-template-columns: repeat(4, 1fr);
-  border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
-  background: var(--raised); }
-.band-p > .stage { position: relative; padding: 16px 18px;
-  border-left: 1px solid var(--line-soft); display: flex; flex-direction: column; gap: 5px; }
-.band-p > .stage:first-child { border-left: 0; }
-/* the chevron sits on the divider so the stages read as one flow */
-.band-p > .stage + .stage::before { content: ""; position: absolute; left: -5px; top: 50%;
-  width: 9px; height: 9px; margin-top: -5px; border-top: 1.6px solid var(--line-strong);
-  border-right: 1.6px solid var(--line-strong); transform: rotate(45deg);
-  background: var(--raised); }
-.band-p > .stage.is-key { background: color-mix(in srgb, var(--acc) 5%, var(--raised));
-  box-shadow: inset 0 2px 0 var(--acc); }
+/* A numbered sequence, not four boxes. The order carries the flow, so no
+   card, fill or perimeter is needed to hold each step together. */
+.band-p { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0 28px;
+  counter-reset: stage; border: 0; background: none; }
+.band-p > .stage { position: relative; padding: 0 0 0 0; display: flex;
+  flex-direction: column; gap: 5px; counter-increment: stage; }
+.band-p > .stage .lab::before { content: counter(stage) ". "; color: var(--faint); }
+/* the chevron sits in the gap, so the steps read as one flow */
+.band-p > .stage + .stage::before { content: ""; position: absolute; left: -18px; top: 9px;
+  width: 8px; height: 8px; border-top: 1.6px solid var(--line-strong);
+  border-right: 1.6px solid var(--line-strong); transform: rotate(45deg); }
+.band-p > .stage.is-key .h3 { color: var(--fg); }
 .band-p .h3 { font-size: 14.5px; line-height: 21px; }
 .band-p .why { font-size: 13px; line-height: 19px; color: var(--mut); }
 @media (max-width: 900px) {
-  .band-p { grid-template-columns: 1fr; }
-  .band-p > .stage { border-left: 0; border-top: 1px solid var(--line-soft); padding: 14px 16px; }
-  .band-p > .stage:first-child { border-top: 0; }
+  .band-p { grid-template-columns: 1fr; gap: 18px; }
+  .band-p > .stage + .stage::before { left: 0; top: -13px; transform: rotate(135deg); }
   .band-p > .stage + .stage::before { left: 50%; top: -5px; margin: 0 0 0 -5px;
     transform: rotate(135deg); }
   .band-p > .stage.is-key { box-shadow: inset 2px 0 0 var(--acc); }
@@ -1484,13 +1491,14 @@ button.evrow:focus-visible { outline: 2px solid var(--focus); outline-offset: -2
 .plan { display:grid; grid-template-rows:subgrid; grid-row:span 7;
   padding:24px 26px; border-left:1px solid var(--line-soft); align-content:start; }
 .plan:first-child { border-left:0; }
-.plan.is-rec { background:color-mix(in srgb, var(--acc) 4%, var(--raised));
-  box-shadow: inset 0 2px 0 var(--acc); }
-.plan-eyebrow { font-size:12.5px; line-height:18px; color:var(--acc-text); font-weight:500; }
+/* Every plan sits on the same surface. A violet panel and a violet stripe
+   made the recommendation a graphic rather than a recommendation; one
+   small label does that job. */
+.plan-eyebrow { font-size:13px; line-height:18px; color:var(--mut); font-weight:500; }
 .plan-price { display:flex; align-items:baseline; gap:5px; margin-top:8px; }
 .plan-price .num { font-size:34px; line-height:40px; font-weight:600; letter-spacing:-.02em; }
 .plan-price .mut { font-size:14px; }
-.plan-note { font-size:12.5px; line-height:18px; min-height:18px; display:block; }
+.plan-note { font-size:13px; line-height:18px; min-height:18px; display:block; }
 .plan-blurb { margin:12px 0 0; font-size:14px; line-height:21px; color:var(--mut); }
 .plan-feats { list-style:none; margin:20px 0 0; padding:0;
   display:flex; flex-direction:column; gap:10px; }
@@ -1509,7 +1517,6 @@ button.evrow:focus-visible { outline: 2px solid var(--focus); outline-offset: -2
   .plan { grid-row:auto; grid-template-rows:none; border-left:0;
     border-top:1px solid var(--line-soft); }
   .plan:first-child { border-top:0; }
-  .plan.is-rec { box-shadow: inset 2px 0 0 var(--acc); }
 }
 
 /* ---- disclosure list ---------------------------------------------- */
