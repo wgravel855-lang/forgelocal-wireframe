@@ -233,6 +233,24 @@ function fallbackSelection(s, removedId) {
 /** @param {ModelState} s @param {ModelEvent[]} events */
 export const reduceAllModels = (s, events) => events.reduce(reduceModels, s);
 
+/**
+ * Drop every loaded instance, and any selection that depended on one.
+ *
+ * A loaded instance is a claim that a runtime is holding weights in memory.
+ * With no runtime connected that cannot be true of any model, however the
+ * store was seeded, so the seed's own "loaded" flag is cleared rather than
+ * left to contradict the runtime on the same screen.
+ * @param {ModelState} s
+ * @returns {ModelState}
+ */
+export function clearLoaded(s) {
+  const ids = Object.keys(s.byId).filter((id) => s.byId[id].loadedInstances.length);
+  if (!ids.length && s.selectedId === null) return s;
+  const byId = { ...s.byId };
+  for (const id of ids) byId[id] = { ...byId[id], loadedInstances: [] };
+  return { ...s, byId, selectedId: null };
+}
+
 /* -------------------------------------------------------------- selectors -- */
 
 /** @param {ModelState} s */

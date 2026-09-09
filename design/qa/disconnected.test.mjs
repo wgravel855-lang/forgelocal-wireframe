@@ -20,7 +20,7 @@ import {
   initialRuntime, runtimeLabel, runtimeDetails, runtimeSettings,
   contextDisplay, sendBlockedReason,
 } from "../core/runtime.mjs";
-import { createState, canSend, selectedModel } from "../core/modelstore.mjs";
+import { createState, canSend, selectedModel, clearLoaded } from "../core/modelstore.mjs";
 import { composerModelLabel, pickerHtml } from "../core/modelviews.mjs";
 import { THIS_PC } from "../core/machine.mjs";
 
@@ -79,7 +79,33 @@ test("every surface renders the same disconnected answer", () => {
   assert.equal(selectedModel(models), null);
 });
 
+test("a seed cannot claim a model is resident when nothing is running", () => {
+  // The fixtures mark Qwen2.5 Coder 14B loaded. A loaded instance means a
+  // runtime is holding weights, so with none connected the claim is cleared
+  // and the composer stops naming a model it cannot send to.
+  const seeded = createState([
+    { ...seed[0], loadedInstances: [{ instanceId: "seed", contextTokens: 8192 }] },
+  ]);
+  assert.equal(composerModelLabel(seeded), "Qwen2.5 Coder 14B", "the seed does claim one");
+
+  const cleared = clearLoaded(seeded);
+  assert.equal(composerModelLabel(cleared), "No model loaded");
+  assert.equal(canSend(cleared), false);
+  assert.equal(cleared.selectedId, null);
+  assert.deepEqual(cleared.byId.a.loadedInstances, []);
+  assert.equal(cleared.byId.a.installed, true, "it is still on disk");
+});
+
 test("the shipped markup carries no runtime fixture of its own", () => {
+  // The built pages are the first paint, before any script runs.
+  for (const route of ["app", "app/running", "app/review"]) {
+    const html = readFileSync(join(root, "public", route, "index.html"), "utf8");
+    const label = html.match(/data-model-label[^>]*>([^<]*)</);
+    assert.ok(label, `${route} has no composer model label`);
+    assert.equal(label[1], "No model loaded",
+      `${route} names a loaded model in its first paint`);
+  }
+
   // A surface can only stay truthful if the value is not sitting in the HTML.
   const pub = join(root, "public");
   /** @type {string[]} */

@@ -16,7 +16,7 @@ import {
   STORE_KEY, createState as createModelState, reduceModels,
   allModels, installedModels, loadedModels, unloadedInstalled, activeDownloads,
   selectedModel as selectedModelOf, canSend as canSendWith, installedBytes,
-  recommendedParams, estimateMemory, validateParams, fitNote,
+  recommendedParams, estimateMemory, validateParams, fitNote, clearLoaded,
   downloadSummary, downloadPercent, isLoaded, isAgentReady,
 } from "../core/modelstore.mjs";
 import {
@@ -1673,11 +1673,20 @@ import {
       && Array.isArray(saved.order) && saved.order.length
       && saved.order.every((id) => saved.byId[id] && typeof saved.byId[id].id === "string");
 
-    if (valid) { MODELS.state = saved; return MODELS.state; }
+    // A loaded instance means a runtime is holding weights in memory. With none
+    // connected that cannot be true of any model, whether the claim came from
+    // the seed or from a store persisted by an earlier visit.
+    const resident = isConnected(RUNTIME.state);
+    if (valid) {
+      MODELS.state = resident ? saved : clearLoaded(saved);
+      if (MODELS.state !== saved) persistModels();
+      return MODELS.state;
+    }
 
     const raw = $("#fl-sessions");
     const seed = raw ? (JSON.parse(raw.textContent).modelSeed || []) : [];
-    MODELS.state = createModelState(seed);
+    const fresh = createModelState(seed);
+    MODELS.state = resident ? fresh : clearLoaded(fresh);
     persistModels();
     return MODELS.state;
   }

@@ -18,7 +18,7 @@ import { chatList, projectOptions, moveOptions, sessionData, modelSeed } from ".
 // The installed and downloads pages render from the same store the browser
 // hydrates, through the same functions, so the first paint and the first
 // repaint are identical markup.
-import { createState } from "./core/modelstore.mjs";
+import { createState, clearLoaded } from "./core/modelstore.mjs";
 import { THIS_PC } from "./core/machine.mjs";
 import * as V from "./core/modelviews.mjs";
 import { modeMenuHtml } from "./core/modes.mjs";
@@ -38,8 +38,10 @@ const out = (p) => join(root, "public", p);
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const write = (rel, html) => { mkdirSync(dirname(out(rel)), { recursive: true }); writeFileSync(out(rel), html); };
 const inst = installBlock();
-const SEED = createState(modelSeed());
 const WEB_RUNTIME = initialRuntime("web-preview");
+// A served page is always a web preview, and a web preview has no runtime, so
+// no model can be resident. The fixtures still say which models are on disk.
+const SEED = clearLoaded(createState(modelSeed()));
 const mine = V.installedStats(SEED, THIS_PC);
 const BIND = {
   "<!--MODE_MENU-->": () => modeMenuHtml(),
