@@ -3522,7 +3522,9 @@ import {
       const tab = $("[data-downloads-tab]");
       if (badge) {
         const n = downloadsBadge(s);
-        badge.textContent = String(n);
+        // Cleared rather than left at 0 behind a hidden attribute, so the
+        // element carries no stale value in any text extraction.
+        badge.textContent = n === 0 ? "" : String(n);
         badge.hidden = n === 0;
         if (tab) {
           if (n === 0) tab.removeAttribute("aria-label");
