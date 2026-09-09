@@ -19,9 +19,13 @@
   <!-- Attached files, above the input they belong to. -->
   <div class="catt" data-attachments hidden aria-label="Attached files"></div>
 
+  <!-- Send sits on the message row, beside the field it sends, which is where
+       it was before the composer became one geometry. It stays pinned to the
+       first line so a growing draft never moves it. -->
   <div class="cinput">
     <label class="vh" for="composer-input">Describe a task or ask a question</label>
     <textarea id="composer-input" class="ta" rows="1" placeholder="{{placeholder}}"></textarea>
+    {{send}}
   </div>
 
   <div class="cbar">
@@ -102,8 +106,6 @@
           hidden data-ctx-pop
           style="bottom:calc(100% + 8px);top:auto;right:0;left:auto;width:320px"></div>
       </div>
-
-      {{send}}
     </div>
   </div>
   </div>

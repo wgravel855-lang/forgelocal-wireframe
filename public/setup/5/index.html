@@ -424,9 +424,16 @@
   <!-- Attached files, above the input they belong to. -->
   <div class="catt" data-attachments hidden aria-label="Attached files"></div>
 
+  <!-- Send sits on the message row, beside the field it sends, which is where
+       it was before the composer became one geometry. It stays pinned to the
+       first line so a growing draft never moves it. -->
   <div class="cinput">
     <label class="vh" for="composer-input">Describe a task or ask a question</label>
     <textarea id="composer-input" class="ta" rows="1" placeholder="Describe a task or ask a question"></textarea>
+    <button class="btn ico sendbtn" type="submit" data-send aria-label="Send">
+  <svg class="i-send" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5.5M5.5 12 12 5.5 18.5 12"/></svg>
+  <span class="i-stop" aria-hidden="true"></span>
+</button>
   </div>
 
   <div class="cbar">
@@ -535,11 +542,6 @@
           hidden data-ctx-pop
           style="bottom:calc(100% + 8px);top:auto;right:0;left:auto;width:320px"></div>
       </div>
-
-      <button class="btn ico sendbtn" type="submit" data-send aria-label="Send">
-  <svg class="i-send" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5.5M5.5 12 12 5.5 18.5 12"/></svg>
-  <span class="i-stop" aria-hidden="true"></span>
-</button>
     </div>
   </div>
   </div>
