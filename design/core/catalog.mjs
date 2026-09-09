@@ -253,7 +253,7 @@ export function catalogHtml(models, selectedId, desktop) {
   const selected = models.find((m) => m.id === selectedId) || models[0] || null;
   const id = selected ? selected.id : null;
 
-  return `<div class="cat" data-catalog data-filter-root="explore">
+  return `<div class="cat" data-catalog>
     <div class="cat-list">
       <div class="cat-rows" role="listbox" aria-label="Models" data-cat-rows>
         ${models.map((m) => `<div data-filter-item
