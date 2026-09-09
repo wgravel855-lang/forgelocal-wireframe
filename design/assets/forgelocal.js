@@ -3545,6 +3545,40 @@ import {
     };
 
     onModels(paint);
+
+    /* A search hides rows without changing the store, so the state block is
+       recomputed here rather than by re-rendering the list: re-rendering would
+       destroy the rows the filter had just hidden and run the filter again. */
+    const installedMount = $('[data-models-mount="installed"]');
+    if (installedMount) {
+      let stateHost = $("[data-local-state]");
+      if (!stateHost) {
+        stateHost = document.createElement("div");
+        stateHost.setAttribute("data-local-state", "");
+        installedMount.after(stateHost);
+      }
+      onFilter(() => {
+        const rows = $$("[data-filter-item]", installedMount);
+        if (!rows.length) { stateHost.innerHTML = ""; return; }
+        const visible = rows.filter((r) => !r.hidden).length;
+        const q = ($("[data-filter-search]") || {}).value || "";
+        const view = localViewState("installed", DESKTOP, rows.length, visible, q);
+        stateHost.innerHTML = showsRows(view) ? "" : stateBlockHtml(view, esc);
+      });
+    }
+  }
+
+  /* Clear search, wherever a state block offers it. */
+  function wireClearSearch() {
+    document.addEventListener("click", (e) => {
+      const b = e.target.closest('[data-view-action="clear-search"]');
+      if (!b) return;
+      const box = $("[data-filter-search]");
+      if (!box) return;
+      box.value = "";
+      box.dispatchEvent(new Event("input", { bubbles: true }));
+      box.focus();
+    });
   }
 
   /* Actions on those pages. One listener, delegated, so it keeps working
@@ -3645,7 +3679,7 @@ import {
     wireActivity(); wireStopRun(); wirePermission(); wireRecover(); wireSuggest();
     wireModelActions(); wireConversation(); wireChats(); renderRecents();
     hydrateModels(); wireLoaderEntryPoints(); wireModelPages(); wireStoreActions();
-    wireRuntimeSurfaces(); wireWindowFocus();
+    wireRuntimeSurfaces(); wireClearSearch(); wireWindowFocus();
     wireWaitlist(); wireCatalog(); wireDiagnostics(); wireComposerDraft();
     wireAwaiting(); wireComposerControls(); wireDensity(); wireQueue(); wireCaretMenus(); wirePaste();
     // the one setup-specific element on /setup/5/
