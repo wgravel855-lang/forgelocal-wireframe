@@ -771,9 +771,9 @@ button.pill, a.pill { height: 40px; border-radius: 20px; padding: 0 15px; font-s
 
 /* start: the composer is the subject. Two rows inside one object. */
 [data-composition="start"] .cshell { min-height: 108px; padding: 14px 14px 8px; }
-[data-composition="start"] .composer .cstrip { order: 2; justify-content: center;
-  min-height: 40px; }
-[data-composition="start"] .composer .recents { order: 3; }
+/* The strip is moved in the DOM, not reordered here, so the tab order
+   matches what is on screen. These rules only size it. */
+[data-composition="start"] .composer .cstrip { justify-content: center; min-height: 40px; }
 /* recents belong to the start cluster only */
 [data-composition="session"] .composer .recents { display: none; }
 [data-composition="start"] .cinput { flex: 1; }
@@ -784,7 +784,7 @@ button.pill, a.pill { height: 40px; border-radius: 20px; padding: 0 15px; font-s
   flex-direction: row; align-items: center; gap: 8px; padding: 8px 8px 8px 16px; }
 [data-composition="session"] .cinput { flex: 1; min-width: 0; align-items: center; }
 [data-composition="session"] .cbar { flex: 0 0 auto; }
-[data-composition="session"] .composer .cstrip { order: -1; min-height: 26px; }
+[data-composition="session"] .composer .cstrip { min-height: 26px; }
 /* Reasoning level moves into its popover when the row is tight. Permission
    mode and model stay: both change what a run is allowed to do, and mode
    changes execution risk. */

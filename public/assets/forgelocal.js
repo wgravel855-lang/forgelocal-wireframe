@@ -2264,6 +2264,21 @@ import {
     const next = hasMessages ? "session" : "start";
     if (app.dataset.composition === next) return;
     app.dataset.composition = next;
+
+    // The context strip renders below the composer in start and above it in
+    // session. Moving the node, rather than reordering with CSS, keeps the tab
+    // order matching what is on screen in both compositions.
+    const form = $("[data-composer]");
+    const strip = form && $(".cstrip", form);
+    const recents = form && $("[data-recents]", form);
+    if (form && strip) {
+      if (next === "start") {
+        form.appendChild(strip);
+        if (recents) form.appendChild(recents);
+      } else {
+        form.insertBefore(strip, form.firstElementChild);
+      }
+    }
     // A short cross-fade only, so the change reads as one layout settling
     // rather than the composer travelling across the screen.
     if (!reduced) {
