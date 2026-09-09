@@ -1,0 +1,66 @@
+<div class="app ob">
+
+  <!--#include ob-top.html {"n":"1","back":"/","backLabel":"Leave setup"} -->
+
+  <div class="ob-body">
+    <div class="ob-col">
+
+      <div class="stack" style="gap:14px">
+        <h1 class="ob-h1">Set up your local coding agent.</h1>
+        <p class="ob-lede">ForgeLocal will check this computer, recommend a model, and keep the
+          technical settings out of your way.</p>
+      </div>
+
+      <!-- Replaces the actions in place once the scan starts, so the decision
+           and its result never live on two different screens. -->
+      <div class="ob-scan" data-scan hidden aria-live="polite">
+        <div class="ob-check" data-check="gpu">
+          <span class="ob-check-i" aria-hidden="true"></span>
+          <span class="ob-check-n">Graphics</span>
+          <span class="ob-check-v" data-check-v>Checking</span>
+        </div>
+        <div class="ob-check" data-check="cpu">
+          <span class="ob-check-i" aria-hidden="true"></span>
+          <span class="ob-check-n">Processor</span>
+          <span class="ob-check-v" data-check-v>Checking</span>
+        </div>
+        <div class="ob-check" data-check="mem">
+          <span class="ob-check-i" aria-hidden="true"></span>
+          <span class="ob-check-n">Memory</span>
+          <span class="ob-check-v" data-check-v>Checking</span>
+        </div>
+        <div class="ob-check" data-check="disk">
+          <span class="ob-check-i" aria-hidden="true"></span>
+          <span class="ob-check-n">Available storage</span>
+          <span class="ob-check-v" data-check-v>Checking</span>
+        </div>
+        <div class="ob-check" data-check="runtime">
+          <span class="ob-check-i" aria-hidden="true"></span>
+          <span class="ob-check-n">Local runtime</span>
+          <span class="ob-check-v" data-check-v>Checking</span>
+        </div>
+        <p class="ob-note" data-scan-note hidden></p>
+      </div>
+
+      <details class="ob-what">
+        <summary>What gets read</summary>
+        <p>Graphics adapter, processor, memory, free disk and any local runtime already installed.
+          Nothing is uploaded. In this browser preview only what the browser itself exposes can be
+          read, and the rest is marked as needing the desktop app.
+          <a class="link" href="/privacy/">Privacy</a></p>
+      </details>
+
+    </div>
+  </div>
+
+  <footer class="ob-foot">
+    <div class="inner">
+      <button class="btn btnp btnl" type="button" data-scan-start>Check this PC</button>
+      <a class="btn btnl" href="/setup/model/" data-scan-manual>Set up manually</a>
+      <a class="btn btnp btnl" href="/setup/model/" data-scan-continue hidden>Continue</a>
+      <span class="grow"></span>
+      <span class="lab">No account needed</span>
+    </div>
+  </footer>
+
+</div>

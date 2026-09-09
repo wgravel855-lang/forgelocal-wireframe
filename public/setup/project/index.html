@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Setup 3 of 4: Project access — ForgeLocal</title>
+<meta name="description" content="">
+<meta property="og:title" content="Setup 3 of 4: Project access — ForgeLocal">
+<meta property="og:description" content="">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="ForgeLocal">
+<meta property="og:image" content="https://forgelocal-wireframe.vercel.app/assets/og.svg">
+<meta property="og:url" content="https://forgelocal-wireframe.vercel.app/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Setup 3 of 4: Project access — ForgeLocal">
+<meta name="twitter:description" content="">
+<meta name="twitter:image" content="https://forgelocal-wireframe.vercel.app/assets/og.svg">
+<link rel="canonical" href="https://forgelocal-wireframe.vercel.app/">
+<link rel="icon" href="/assets/mark.svg" type="image/svg+xml">
+<link rel="alternate icon" href="/favicon.ico">
+<link rel="stylesheet" href="/assets/forgelocal.css">
+</head>
+<body class="app" style="height:100%;overflow:hidden">
+<a class="vh" href="#main">Skip to content</a>
+<main id="main" style="height:100%"><div class="app ob">
+
+  <header class="ob-top">
+  <a class="btn btnq ico btns" href="/setup/model/" aria-label="Back" title="Back">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+  </a>
+  <a class="brand small" href="/" aria-label="ForgeLocal"><svg viewBox="0 0 24 24" fill="none" width="18" height="18" aria-hidden="true" focusable="false" style="flex-shrink:0">
+  <rect x="2.4" y="2.4" width="19.2" height="19.2" rx="5.6" stroke="currentColor" stroke-width="1.7"/>
+  <path d="M8.6 8.9 11.7 12l-3.1 3.1" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M13.6 15.1h3.3" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+</svg></a>
+  <span class="grow"></span>
+  <!-- A count, not a labelled stepper. The bar underneath is the same fact
+       drawn once more for people who read shape faster than text. -->
+  <span class="ob-count" role="progressbar" aria-valuenow="3" aria-valuemin="1"
+    aria-valuemax="4" aria-valuetext="Step 3 of 4" aria-label="Setup progress">3 of 4</span>
+  <div class="ob-bar" data-step="3" aria-hidden="true"><i></i></div>
+</header>
+
+  <div class="ob-body">
+    <div class="ob-col">
+
+      <div class="stack" style="gap:14px">
+        <h1 class="ob-h1">Choose what ForgeLocal can access.</h1>
+        <p class="ob-lede">ForgeLocal can read and change files only inside the project you select.</p>
+      </div>
+
+      <button class="ob-pick" type="button" data-proj-pick>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5A2 2 0 0 1 5 5.5h3.6l1.8 2H19a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+        <span>Choose project folder</span>
+      </button>
+      <input class="vh" type="file" webkitdirectory directory data-proj-input tabindex="-1" aria-hidden="true">
+
+      <!-- Named, not summarised. The folder the agent gets is stated back in
+           full before anyone agrees to it. -->
+      <div class="ob-trust" data-proj-trust hidden>
+        <div class="ob-trust-h">
+          <span class="ob-trust-n" data-proj-name></span>
+          <span class="ob-trust-p" data-proj-path></span>
+        </div>
+        <p class="ob-trust-b">ForgeLocal will read and change files under this folder, and nothing
+          outside it. Files in a project, including its instructions and configuration, can
+          influence what the agent does, so open folders you trust.</p>
+      </div>
+
+      <div class="ob-recent" data-proj-recent hidden>
+        <span class="lab">Recent projects</span>
+        <div data-proj-recent-list></div>
+      </div>
+
+      <p class="ob-note" data-proj-note hidden></p>
+
+    </div>
+  </div>
+
+  <footer class="ob-foot">
+    <div class="inner">
+      <a class="btn btnp btnl" href="/setup/permissions/" data-proj-next aria-disabled="true">Use this project</a>
+      <span class="grow"></span>
+      <span class="lab">Step 3 of 4</span>
+    </div>
+  </footer>
+
+</div>
+</main>
+<script type="module" src="/assets/forgelocal.js"></script>
+</body>
+</html>

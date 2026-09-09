@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Setup 2 of 4: Recommended model — ForgeLocal</title>
+<meta name="description" content="">
+<meta property="og:title" content="Setup 2 of 4: Recommended model — ForgeLocal">
+<meta property="og:description" content="">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="ForgeLocal">
+<meta property="og:image" content="https://forgelocal-wireframe.vercel.app/assets/og.svg">
+<meta property="og:url" content="https://forgelocal-wireframe.vercel.app/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Setup 2 of 4: Recommended model — ForgeLocal">
+<meta name="twitter:description" content="">
+<meta name="twitter:image" content="https://forgelocal-wireframe.vercel.app/assets/og.svg">
+<link rel="canonical" href="https://forgelocal-wireframe.vercel.app/">
+<link rel="icon" href="/assets/mark.svg" type="image/svg+xml">
+<link rel="alternate icon" href="/favicon.ico">
+<link rel="stylesheet" href="/assets/forgelocal.css">
+</head>
+<body class="app" style="height:100%;overflow:hidden">
+<a class="vh" href="#main">Skip to content</a>
+<main id="main" style="height:100%"><div class="app ob">
+
+  <header class="ob-top">
+  <a class="btn btnq ico btns" href="/setup/" aria-label="Back" title="Back">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+  </a>
+  <a class="brand small" href="/" aria-label="ForgeLocal"><svg viewBox="0 0 24 24" fill="none" width="18" height="18" aria-hidden="true" focusable="false" style="flex-shrink:0">
+  <rect x="2.4" y="2.4" width="19.2" height="19.2" rx="5.6" stroke="currentColor" stroke-width="1.7"/>
+  <path d="M8.6 8.9 11.7 12l-3.1 3.1" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M13.6 15.1h3.3" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+</svg></a>
+  <span class="grow"></span>
+  <!-- A count, not a labelled stepper. The bar underneath is the same fact
+       drawn once more for people who read shape faster than text. -->
+  <span class="ob-count" role="progressbar" aria-valuenow="2" aria-valuemin="1"
+    aria-valuemax="4" aria-valuetext="Step 2 of 4" aria-label="Setup progress">2 of 4</span>
+  <div class="ob-bar" data-step="2" aria-hidden="true"><i></i></div>
+</header>
+
+  <div class="ob-body">
+    <div class="ob-col">
+
+      <div class="stack" style="gap:14px">
+        <h1 class="ob-h1" data-model-head>This model fits your PC.</h1>
+        <p class="ob-lede" data-model-lede>One recommendation, chosen from what this machine
+          reported. The full catalog is one link away.</p>
+      </div>
+
+      <!-- Aligned labels and values, not a row of pills. -->
+      <div class="ob-rec">
+        <div class="ob-rec-h">
+          <span class="ob-rec-n" data-rec-name>Qwen2.5 Coder 7B</span>
+          <span class="ob-fit" data-rec-fit>Best balance for this computer</span>
+        </div>
+        <p class="ob-rec-d" data-rec-desc>Handles multi-file edits, test runs and refactors in a
+          project this size, and leaves headroom on the GPU for everything else.</p>
+        <dl class="ob-kv">
+          <dt>Publisher</dt><dd data-rec-pub>Alibaba Qwen</dd>
+          <dt>Download size</dt><dd data-rec-size>4.7 GB</dd>
+          <dt>Estimated loaded memory</dt><dd data-rec-mem>6.4 GB</dd>
+          <dt>Recommended context</dt><dd data-rec-ctx>16k</dd>
+        </dl>
+        <details class="ob-more">
+          <summary>Model details</summary>
+          <dl class="ob-kv" style="padding-top:4px">
+            <dt>Format</dt><dd>GGUF</dd>
+            <dt>Quantization</dt><dd data-rec-quant>Q4_K_M</dd>
+            <dt>Parameters</dt><dd data-rec-params>7.6B</dd>
+            <dt>License</dt><dd data-rec-lic>Apache-2.0</dd>
+          </dl>
+        </details>
+      </div>
+
+      <!-- Download progress stays on this screen. Nothing here moves until a
+           real download store reports movement. -->
+      <div class="ob-dl" data-dl hidden aria-live="polite">
+        <div class="ob-dl-h">
+          <span class="ob-dl-n" data-dl-name>Qwen2.5 Coder 7B</span>
+          <span class="ob-dl-s" data-dl-state>Starting</span>
+        </div>
+        <div class="ob-prog" role="progressbar" data-dl-bar aria-valuemin="0" aria-valuemax="100"
+          aria-valuenow="0" aria-label="Download progress"><i style="width:0%"></i></div>
+        <p class="ob-dl-m" data-dl-meta></p>
+        <div class="ob-dl-a">
+          <button class="btn btns" type="button" data-dl-pause>Pause</button>
+          <button class="btn btns" type="button" data-dl-cancel>Cancel</button>
+        </div>
+      </div>
+
+      <p class="ob-note" data-model-note hidden></p>
+
+    </div>
+  </div>
+
+  <footer class="ob-foot">
+    <div class="inner">
+      <button class="btn btnp btnl" type="button" data-dl-start>Download model &middot; 4.7 GB</button>
+      <a class="btn btnl" href="/models/" data-model-compare>Compare other models</a>
+      <a class="btn btnp btnl" href="/setup/project/" data-model-next hidden>Continue</a>
+      <span class="grow"></span>
+    </div>
+  </footer>
+
+</div>
+</main>
+<script type="module" src="/assets/forgelocal.js"></script>
+</body>
+</html>

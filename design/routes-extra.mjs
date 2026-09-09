@@ -474,11 +474,20 @@ export function extraRoutes({ write, marketing, appPage, part, workspace, esc, m
     write(`${path}index.html`, appPage({ title: `${title} — ForgeLocal`, body: part(p) }));
   }
 
-  const setup = [["Ob1Welcome", "Welcome"], ["Ob2Recommendation", "Recommendation"],
-    ["Ob3Install", "Install"], ["Ob4Project", "Project and permissions"], ["Ob5FirstChat", "First chat"]];
-  setup.forEach(([p, title], i) => {
-    write(`setup/${i + 1}/index.html`, appPage({ title: `Setup ${i + 1} of 5: ${title} — ForgeLocal`, body: part(p) }));
-  });
+  /* Four screens, four decisions, then the real workspace. The fifth screen
+     was a picture of the app with a dismissable banner over it; the app itself
+     does that job, so the flow now hands off to /app/ directly. */
+  const setup = [
+    ["setup/", "ObWelcome", "Welcome and system check", 1],
+    ["setup/model/", "ObModel", "Recommended model", 2],
+    ["setup/project/", "ObProject", "Project access", 3],
+    ["setup/permissions/", "ObPermissions", "Permission mode", 4],
+  ];
+  for (const [path, p, title, n] of setup) {
+    write(`${path}index.html`, appPage({
+      title: `Setup ${n} of 4: ${title} — ForgeLocal`, body: part(p),
+    }));
+  }
 
   return { appRoutes, setup };
 }

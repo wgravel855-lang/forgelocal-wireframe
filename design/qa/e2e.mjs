@@ -281,3 +281,99 @@ test("the project is not repeated beneath the composer", () => {
       `/${route}/ still repeats the project path under the composer`);
   }
 });
+
+/* ---- landing and onboarding ------------------------------------------ */
+
+const LANDING = "";
+const SETUP = ["setup", "setup/model", "setup/project", "setup/permissions"];
+
+/* The product proof is a picture. If the controller could see it, it would
+   wire a second composer on a marketing page, duplicate the composer-input id,
+   and rewrite the runtime label it was given. */
+test("the landing product preview is inert and outside the controller's reach", () => {
+  const html = page(LANDING);
+  assert.match(html, /data-preview inert/, "the preview surface is marked inert");
+  // Everything interactive on the page that belongs to the app lives inside it.
+  const outside = html.replace(/<div class="app lp-proof-surface"[\s\S]*?\n<\/div>/, "");
+  assert.doesNotMatch(outside, /data-composer/, "a composer escaped the preview");
+
+  const js = readFileSync(join(pub, "assets/forgelocal.js"), "utf8");
+  assert.match(js, /closest\("\[data-preview\]"\)/,
+    "the query helpers no longer exclude preview subtrees");
+});
+
+/* The state the brief calls impossible: a preview that says it is disconnected
+   with no model, beside tool rows that are running. */
+test("the landing preview shows one coherent state, not a contradiction", () => {
+  const html = page(LANDING);
+  const surface = html.match(/<div class="app lp-proof-surface"[\s\S]*?\n<\/div>/);
+  assert.ok(surface, "the preview surface is in the page");
+  const s = surface[0];
+  const claimsActivity = /running|Edited \d|Read \d/.test(s);
+  if (claimsActivity) {
+    assert.doesNotMatch(s, /Desktop not connected/, "activity beside a disconnected runtime");
+    assert.doesNotMatch(s, /No model loaded/, "activity beside no model");
+  }
+  // and it is labelled as a preview in the page's own copy
+  assert.match(html, /Product preview/, "the preview is not labelled");
+});
+
+/* The first viewport carries one message and no hardware card. */
+test("the hero holds one headline, one paragraph, two actions and nothing else", () => {
+  const html = page(LANDING);
+  const hero = html.match(/<section class="lp-wrap"[\s\S]*?<\/section>/);
+  assert.ok(hero, "the hero section exists");
+  const h = hero[0];
+  assert.equal((h.match(/<h1/g) || []).length, 1);
+  assert.equal((h.match(/<p /g) || []).length, 2, "one lede and one support line");
+  assert.equal((h.match(/<a /g) || []).length, 2, "one primary and one secondary action");
+  // the arithmetic that used to live here
+  assert.doesNotMatch(h, /RTX|GB|Q4_K_M|quantization/i, "hardware detail is still in the hero");
+});
+
+test("every landing and setup route exposes exactly one h1", () => {
+  for (const route of [LANDING, ...SETUP]) {
+    const n = (page(route).match(/<h1[\s>]/g) || []).length;
+    assert.equal(n, 1, `/${route}/ has ${n} h1 elements`);
+  }
+});
+
+/* Four decisions, then the workspace. */
+test("onboarding is four steps and hands off to the app", () => {
+  SETUP.forEach((route, i) => {
+    const html = page(route);
+    assert.match(html, new RegExp(`aria-valuetext="Step ${i + 1} of 4"`), `/${route}/ step count`);
+    assert.match(html, /aria-valuemax="4"/);
+  });
+  assert.match(page("setup/permissions"), /data-perm-start[^>]*href="\/app\/"|href="\/app\/"[^>]*data-perm-start/,
+    "the last step opens the workspace");
+  // and there is no allow-everything option anywhere in the flow
+  for (const route of SETUP) {
+    assert.doesNotMatch(page(route), /allow every|unrestricted|bypass/i, `/${route}/`);
+  }
+});
+
+/* Inline <style> blocks ship in the HTML and were never covered by the
+   stylesheet type-scale test, so a part file could set 11px unnoticed. */
+test("no inline style block sets text below the floor or off the scale", () => {
+  for (const route of [LANDING, ...SETUP, "app", "app/review"]) {
+    const html = page(route);
+    for (const block of html.match(/<style>[\s\S]*?<\/style>/g) || []) {
+      const sizes = [...block.matchAll(/font-size:\s*([\d.]+)px/g)].map((m) => Number(m[1]));
+      const bad = sizes.filter((n) => n < 13 || !Number.isInteger(n));
+      assert.deepEqual([...new Set(bad)], [], `/${route}/ inline style: ${bad.join(", ")}`);
+    }
+  }
+});
+
+/* Nothing on the landing page hides content behind a script that may not run. */
+test("the landing reveal cannot leave the page blank", () => {
+  const css = readFileSync(join(pub, "assets/forgelocal.css"), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
+  for (const block of css.match(/[^{}]*\{[^{}]*\}/g) || []) {
+    const sel = block.slice(0, block.indexOf("{"));
+    if (!/\.lp-enter/.test(sel)) continue;
+    if (!/opacity:\s*0/.test(block)) continue;
+    assert.match(sel, /body\.lp-anim/,
+      `.lp-enter hides content without the script-added gate: ${sel.trim()}`);
+  }
+});

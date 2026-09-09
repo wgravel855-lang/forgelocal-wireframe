@@ -1889,6 +1889,187 @@ button.evrow:focus-visible { outline: 2px solid var(--focus); outline-offset: -2
   letter-spacing:-.024em; }
 .stack { display:flex; flex-direction:column; }
 
+/* ---- landing page --------------------------------------------------- */
+/* Scoped to body.lp rather than retuning the shared marketing classes,
+   because /models/, /security/, /pricing/ and /docs/ are out of this
+   brief's scope and share .mh1, .mh2 and .mlede.
+
+   The palette is the one difference the eye should notice: the rest of the
+   site is warm cream, and this page is close to neutral, so the dark
+   product surface reads as the subject rather than as another card on a
+   tinted ground. */
+body.lp {
+  --lp-bg:#FBFBFA; --lp-fg:#171717; --lp-mut:#62625F;
+  --lp-line:#DEDEDA; --lp-line-soft:#EAEAE7; --lp-sunk:#F2F2F0;
+  --lp-ink:#0E0F10;
+  background: var(--lp-bg); color: var(--lp-fg);
+}
+body.lp .mhead { background: var(--lp-bg); border-bottom-color: transparent; }
+/* The hairline appears only once the page has moved under the header. */
+body.lp .mhead[data-stuck="true"] { border-bottom-color: var(--lp-line); }
+body.lp .mhead [data-nav] a { color: var(--lp-mut); }
+body.lp .mhead [data-nav] a:hover,
+body.lp .mhead [data-nav] a[aria-current="page"] { color: var(--lp-fg); }
+
+.lp-wrap { width:100%; max-width:1240px; margin:0 auto;
+  padding:0 clamp(20px, 5vw, 64px); }
+/* One section rhythm, so no section needs its own padding override. */
+.lp-sec { padding: clamp(72px, 9vw, 152px) 0; }
+.lp-sec-tight { padding: clamp(56px, 6vw, 96px) 0; }
+
+.lp-h1 { margin:0; font-size:clamp(40px, 5.4vw, 68px); line-height:1.0;
+  font-weight:500; letter-spacing:-.03em; color:var(--lp-fg); }
+.lp-h2 { margin:0; font-size:clamp(32px, 3.8vw, 52px); line-height:1.08;
+  font-weight:500; letter-spacing:-.025em; color:var(--lp-fg); }
+.lp-h3 { margin:0; font-size:clamp(22px, 2vw, 28px); line-height:1.2;
+  font-weight:500; letter-spacing:-.02em; color:var(--lp-fg); }
+.lp-lede { margin:0; font-size:18px; line-height:27px; color:var(--lp-mut);
+  max-width:620px; }
+.lp-body { margin:0; font-size:17px; line-height:28px; color:var(--lp-mut);
+  max-width:660px; }
+.lp-cap { font-size:14px; line-height:20px; color:var(--lp-mut); }
+/* The floor for anything legal or incidental. Nothing on the page is
+   smaller, so 13px is both the minimum and the only small size. */
+.lp-fine { font-size:13px; line-height:19px; color:var(--lp-mut); }
+
+.lp-center { text-align:center; display:flex; flex-direction:column;
+  align-items:center; gap:24px; }
+.lp-center .lp-lede, .lp-center .lp-body { margin-left:auto; margin-right:auto; }
+
+/* One radius convention for every marketing control on this page. */
+body.lp .btn { border-radius:12px; }
+.lp-actions { display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+  justify-content:center; }
+.lp-btn { height:48px; min-height:48px; padding:0 24px; font-size:16px;
+  font-weight:500; border-radius:12px; }
+body.lp .btn.lp-btn.btnp { background:#171717; border-color:#171717; color:#fff; }
+body.lp .btn.lp-btn.btnp:hover { background:#000; border-color:#000; }
+.lp-quiet { display:inline-flex; align-items:center; min-height:48px;
+  padding:0 8px; font-size:16px; font-weight:500; color:var(--lp-fg); }
+.lp-quiet:hover { color:var(--lp-mut); }
+/* A link that stands alone in its own paragraph is an action, not prose, so
+   it gets a real target instead of the 22px an inline anchor would take. */
+.lp-link { display:inline-flex; align-items:center; min-height:44px;
+  font-size:17px; line-height:26px; }
+
+/* Product proof. A dark surface with one radius and one hairline: no
+   floating cards around it, no gradient under it. */
+.lp-proof { border-radius:20px; overflow:hidden; background:var(--lp-ink);
+  border:1px solid var(--lp-line); }
+.lp-proof .lp-win { height:600px; overflow:hidden; }
+.lp-proof .lp-inner { transform-origin:top center; }
+.lp-proof-note { display:flex; align-items:center; justify-content:space-between;
+  gap:16px; flex-wrap:wrap; margin:14px 2px 0; }
+
+/* A label that says what a preview is, so a static screenshot is never
+   mistaken for a running app. */
+.lp-tag { display:inline-flex; align-items:center; gap:7px; min-height:28px;
+  padding:0 10px; border:1px solid var(--lp-line); border-radius:8px;
+  background:var(--lp-bg); font-size:13px; line-height:19px; color:var(--lp-mut); }
+.lp-tag::before { content:""; width:6px; height:6px; border-radius:50%;
+  background:var(--lp-mut); flex-shrink:0; }
+
+/* Three editorial rows, not three equal cards. */
+.lp-rows { display:flex; flex-direction:column; gap:clamp(64px, 7vw, 112px); }
+.lp-row { display:grid; grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);
+  gap:clamp(32px, 5vw, 80px); align-items:center; }
+.lp-row > .lp-rowtext { display:flex; flex-direction:column; gap:14px; }
+.lp-row .lp-num { font-size:14px; line-height:20px; color:var(--lp-mut);
+  font-variant-numeric:tabular-nums; }
+.lp-shot { border-radius:16px; overflow:hidden; background:var(--lp-ink);
+  border:1px solid var(--lp-line); padding:22px; }
+
+/* The one major tonal change on the page. */
+.lp-dark { background:var(--lp-ink); color:#ECECEA; }
+.lp-dark .lp-h2 { color:#ECECEA; }
+.lp-dark .lp-body { color:#A8A8A4; }
+.lp-dark a { color:#ECECEA; text-decoration-color:#6A6A67; }
+.lp-dark a:hover { color:#fff; }
+
+/* One data surface for the memory arithmetic, rather than a row of pills. */
+.lp-data { border:1px solid var(--lp-line); border-radius:16px;
+  background:#fff; overflow:hidden; max-width:720px; }
+.lp-data-h { padding:20px 24px; border-bottom:1px solid var(--lp-line-soft);
+  display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
+.lp-kv { margin:0; padding:8px 24px 20px; display:grid;
+  grid-template-columns:minmax(0,1fr) auto; gap:0; }
+.lp-kv dt { padding:11px 0; font-size:15px; line-height:22px; color:var(--lp-mut);
+  border-bottom:1px solid var(--lp-line-soft); }
+.lp-kv dd { margin:0; padding:11px 0; font-size:15px; line-height:22px;
+  color:var(--lp-fg); text-align:right; border-bottom:1px solid var(--lp-line-soft);
+  font-variant-numeric:tabular-nums; }
+.lp-kv dt:last-of-type, .lp-kv dd:last-of-type { border-bottom:0; }
+.lp-verdict { padding:16px 24px; border-top:1px solid var(--lp-line-soft);
+  background:var(--lp-sunk); font-size:15px; line-height:23px; color:var(--lp-fg); }
+.lp-data details > summary { cursor:pointer; padding:14px 24px;
+  border-top:1px solid var(--lp-line-soft); font-size:14px; line-height:20px;
+  color:var(--lp-fg); min-height:44px; display:flex; align-items:center; }
+.lp-data details > summary:hover { background:var(--lp-sunk); }
+.lp-data details[open] > summary { border-bottom:1px solid var(--lp-line-soft); }
+.lp-calc { margin:0; padding:16px 24px 20px; font-size:14px; line-height:24px;
+  color:var(--lp-mut); font-variant-numeric:tabular-nums; }
+
+/* Pricing as columns separated by whitespace and hairlines. */
+.lp-plans { display:grid; grid-template-columns:repeat(3, minmax(0,1fr));
+  border-top:1px solid var(--lp-line); }
+.lp-plans > div { padding:28px 28px 32px; border-left:1px solid var(--lp-line-soft); }
+.lp-plans > div:first-child { border-left:0; padding-left:0; }
+.lp-plan-n { font-size:15px; line-height:22px; font-weight:500; color:var(--lp-fg); }
+.lp-plan-p { font-size:32px; line-height:40px; font-weight:500; letter-spacing:-.02em;
+  margin:8px 0 10px; color:var(--lp-fg); font-variant-numeric:tabular-nums; }
+.lp-plan-p span { font-size:15px; font-weight:400; color:var(--lp-mut);
+  letter-spacing:0; }
+.lp-plan-d { font-size:15px; line-height:23px; color:var(--lp-mut); }
+.lp-rec { display:inline-block; margin-top:12px; font-size:14px; line-height:20px;
+  color:var(--lp-fg); border-bottom:1px solid var(--lp-fg); }
+
+/* Hairline accordion. No box per question. */
+.lp-faq { border-top:1px solid var(--lp-line); max-width:820px; }
+.lp-faq details { border-bottom:1px solid var(--lp-line); }
+.lp-faq summary { cursor:pointer; list-style:none; padding:22px 40px 22px 0;
+  position:relative; font-size:17px; line-height:26px; color:var(--lp-fg); }
+.lp-faq summary::-webkit-details-marker { display:none; }
+.lp-faq summary::after { content:""; position:absolute; right:6px; top:31px;
+  width:9px; height:9px; border-right:1.6px solid var(--lp-mut);
+  border-bottom:1.6px solid var(--lp-mut); transform:rotate(45deg);
+  transition:transform 180ms ease-out; }
+.lp-faq details[open] summary::after { transform:rotate(-135deg); top:34px; }
+.lp-faq summary:hover { color:var(--lp-mut); }
+.lp-faq p { margin:0; padding:0 0 24px; font-size:17px; line-height:28px;
+  color:var(--lp-mut); max-width:70ch; }
+
+/* One entrance, once, and only for the surfaces that benefit.
+   The hidden state is gated on a class the controller adds, so a page whose
+   script fails or has not run yet shows its content rather than a column of
+   invisible sections. */
+body.lp-anim .lp-enter { opacity:0; transform:translateY(14px);
+  transition:opacity 420ms ease-out, transform 420ms ease-out; }
+body.lp-anim .lp-enter.is-in { opacity:1; transform:none; }
+
+@media (max-width: 900px) {
+  .lp-row { grid-template-columns:1fr; gap:28px; }
+  .lp-proof .lp-win { height:420px; }
+  .lp-plans { grid-template-columns:1fr; }
+  .lp-plans > div { border-left:0; padding:24px 0;
+    border-top:1px solid var(--lp-line-soft); }
+  .lp-plans > div:first-child { border-top:0; padding-top:24px; }
+}
+@media (max-width: 560px) {
+  .lp-proof .lp-win { height:360px; }
+  /* Shrinking a 1330px surface to fit a phone makes its text unreadable, so
+     the crop moves instead of the scale: the sidebar slides out of view and
+     what remains is the transcript, which is the part worth showing. */
+  .lp-proof .lp-inner { margin-left:-232px !important; }
+  .lp-actions { width:100%; flex-direction:column; align-items:stretch; }
+  .lp-actions .lp-btn { width:100%; }
+  .lp-quiet { justify-content:center; }
+}
+/* No entrance transform at all when the user has asked for less motion. */
+@media (prefers-reduced-motion: reduce) {
+  .lp-enter { opacity:1; transform:none; transition:none; }
+  .lp-faq summary::after { transition:none; }
+}
+
 @media (max-width: 860px) {
   .mwrap { padding:0 20px; }
   .mhead [data-nav-toggle] { display:inline-flex; margin-left:auto; }
@@ -1989,24 +2170,117 @@ a.vh:focus-visible { position: fixed; left: 12px; top: 12px; z-index: 400;
 .ob { height:100%; display:flex; flex-direction:column; }
 .ob-top { height:48px; flex-shrink:0; display:flex; align-items:center; gap:12px;
   padding:0 16px; border-bottom:1px solid var(--line-soft); }
-.ob-steps { display:flex; gap:5px; }
-.ob-steps i { width:22px; height:3px; border-radius:2px; background:var(--line); display:block; }
-.ob-steps[data-step="2"] i:nth-child(-n+1),
-.ob-steps[data-step="3"] i:nth-child(-n+2),
-.ob-steps[data-step="4"] i:nth-child(-n+3),
-.ob-steps[data-step="5"] i:nth-child(-n+4) { background: var(--line-strong); }
-.ob-steps[data-step="1"] i:nth-child(1),
-.ob-steps[data-step="2"] i:nth-child(2),
-.ob-steps[data-step="3"] i:nth-child(3),
-.ob-steps[data-step="4"] i:nth-child(4),
-.ob-steps[data-step="5"] i:nth-child(5) { background: var(--acc); }
+.ob-count { font-size:14px; line-height:20px; color:var(--mut);
+  font-variant-numeric:tabular-nums; }
+.ob-bar { width:64px; height:3px; border-radius:2px; background:var(--line);
+  overflow:hidden; }
+.ob-bar i { display:block; height:100%; background:var(--acc); border-radius:2px;
+  transition:width 220ms ease-out; }
+.ob-bar[data-step="1"] i { width:25%; }
+.ob-bar[data-step="2"] i { width:50%; }
+.ob-bar[data-step="3"] i { width:75%; }
+.ob-bar[data-step="4"] i { width:100%; }
+@media (prefers-reduced-motion: reduce) { .ob-bar i { transition:none; } }
 /* on a phone the bar is 130px of decoration next to "Step 4 of 5", which
    says the same thing in 29px */
-@media (max-width: 480px) { .ob-steps { display: none; } }
+/* The bar is the redundant half of the pair, so it is what goes. */
+@media (max-width: 480px) { .ob-bar { display: none; } }
 .ob-body { flex:1; min-height:0; overflow-y:auto; display:flex; flex-direction:column;
   justify-content:flex-start; }
 .ob-col { width:100%; max-width:648px; margin:auto; padding:32px 24px;
   display:flex; flex-direction:column; gap:22px; }
+/* ---- onboarding screens --------------------------------------------- */
+.ob-h1 { margin:0; font-size:clamp(26px,2.6vw,34px); line-height:1.16; font-weight:600;
+  letter-spacing:-.022em; max-width:20ch; }
+.ob-lede { margin:0; font-size:17px; line-height:27px; color:var(--mut); max-width:56ch; }
+.ob-note { margin:0; font-size:15px; line-height:23px; color:var(--mut);
+  border-left:2px solid var(--line-strong); padding:2px 0 2px 14px; }
+.ob-note-q { margin:0; font-size:14px; line-height:21px; color:var(--mut); max-width:60ch; }
+
+/* The scan. Rows resolve in place; nothing celebrates. */
+.ob-scan { display:flex; flex-direction:column; gap:2px; }
+.ob-check { display:flex; align-items:center; gap:12px; min-height:44px;
+  border-bottom:1px solid var(--line-soft); font-size:15px; line-height:22px; }
+.ob-check:last-of-type { border-bottom:0; }
+.ob-check-i { width:16px; height:16px; border-radius:50%; flex-shrink:0;
+  border:1.6px solid var(--line-strong); }
+.ob-check-n { flex:1; min-width:0; color:var(--fg); }
+.ob-check-v { color:var(--mut); font-size:14px; line-height:20px; text-align:right;
+  min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:52%; }
+.ob-check[data-state="ok"] .ob-check-i { border-color:var(--ok-line); background:var(--ok-line); }
+.ob-check[data-state="ok"] .ob-check-v { color:var(--fg); }
+/* Unavailable is a fact, not a failure: it takes the neutral treatment and
+   says which part of the product would answer it. */
+.ob-check[data-state="na"] .ob-check-i { border-style:dashed; }
+.ob-check[data-state="bad"] .ob-check-i { border-color:var(--bad-line); }
+.ob-check[data-state="bad"] .ob-check-v { color:var(--bad); }
+
+/* The single recommendation. */
+.ob-rec { border:1px solid var(--line); border-radius:12px; background:var(--raised);
+  overflow:hidden; }
+.ob-rec-h { padding:18px 20px 0; display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; }
+.ob-rec-n { font-size:20px; line-height:28px; font-weight:600; letter-spacing:-.015em; }
+.ob-fit { font-size:14px; line-height:20px; color:var(--ok); }
+.ob-rec-d { margin:0; padding:8px 20px 4px; font-size:15px; line-height:23px; color:var(--mut); }
+.ob-kv { margin:0; padding:8px 20px 16px; display:grid;
+  grid-template-columns:minmax(0,1fr) auto; }
+.ob-kv dt { padding:9px 0; font-size:15px; line-height:22px; color:var(--mut);
+  border-bottom:1px solid var(--line-soft); }
+.ob-kv dd { margin:0; padding:9px 0; font-size:15px; line-height:22px; color:var(--fg);
+  text-align:right; border-bottom:1px solid var(--line-soft);
+  font-variant-numeric:tabular-nums; }
+.ob-kv dt:last-of-type, .ob-kv dd:last-of-type { border-bottom:0; }
+.ob-more > summary { cursor:pointer; padding:12px 20px; min-height:44px;
+  display:flex; align-items:center; border-top:1px solid var(--line-soft);
+  font-size:14px; line-height:20px; color:var(--fg); }
+.ob-more > summary:hover { background:var(--sunk); }
+
+/* Download. One bar, and only real numbers beside it. */
+.ob-dl { border:1px solid var(--line); border-radius:12px; background:var(--raised);
+  padding:18px 20px; display:flex; flex-direction:column; gap:12px; }
+.ob-dl-h { display:flex; align-items:baseline; gap:12px; }
+.ob-dl-n { flex:1; min-width:0; font-size:17px; line-height:25px; font-weight:600; }
+.ob-dl-s { font-size:14px; line-height:20px; color:var(--mut); }
+.ob-prog { height:6px; border-radius:3px; background:var(--sunk); overflow:hidden; }
+.ob-prog i { display:block; height:100%; background:var(--acc); border-radius:3px;
+  transition:width 200ms ease-out; }
+.ob-dl-m { margin:0; font-size:14px; line-height:21px; color:var(--mut);
+  font-variant-numeric:tabular-nums; }
+.ob-dl-a { display:flex; gap:8px; }
+
+/* Project. One large target. */
+.ob-pick { display:flex; align-items:center; justify-content:center; gap:12px;
+  width:100%; min-height:96px; padding:20px; border:1px dashed var(--line-strong);
+  border-radius:12px; background:var(--raised); color:var(--fg);
+  font-size:17px; line-height:25px; font-weight:500; cursor:pointer;
+  transition:background 160ms ease-out, border-color 160ms ease-out; }
+.ob-pick:hover { background:var(--sunk); border-color:var(--faint); }
+.ob-pick:focus-visible { outline:2px solid var(--focus); outline-offset:2px; }
+.ob-trust { border:1px solid var(--line); border-radius:12px; background:var(--raised);
+  padding:16px 18px; display:flex; flex-direction:column; gap:8px; }
+.ob-trust-h { display:flex; flex-direction:column; gap:3px; }
+.ob-trust-n { font-size:17px; line-height:25px; font-weight:600; }
+.ob-trust-p { font-size:14px; line-height:21px; color:var(--mut); word-break:break-all; }
+.ob-trust-b { margin:0; font-size:15px; line-height:23px; color:var(--mut); }
+.ob-recent { display:flex; flex-direction:column; gap:8px; }
+
+/* Permission modes as full-width rows. */
+.ob-modes { display:flex; flex-direction:column; gap:8px; }
+.ob-mode { display:flex; flex-direction:column; gap:4px; align-items:flex-start;
+  width:100%; padding:14px 16px 15px 46px; position:relative; text-align:left;
+  border:1px solid var(--line); border-radius:12px; background:var(--raised);
+  cursor:pointer; transition:border-color 160ms ease-out, background 160ms ease-out; }
+.ob-mode:hover { background:var(--sunk); }
+.ob-mode:focus-visible { outline:2px solid var(--focus); outline-offset:2px; }
+.ob-mode::before { content:""; position:absolute; left:16px; top:18px;
+  width:18px; height:18px; border-radius:50%; border:1.6px solid var(--line-strong); }
+.ob-mode[aria-checked="true"] { border-color:var(--acc); }
+.ob-mode[aria-checked="true"]::before { border-color:var(--acc); border-width:5.5px; }
+.ob-mode-t { font-size:16px; line-height:24px; font-weight:600; color:var(--fg);
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.ob-mode-r { font-size:14px; line-height:20px; font-weight:400; color:var(--mut); }
+.ob-mode-d { font-size:15px; line-height:23px; color:var(--mut); }
+
 .ob-foot { flex-shrink:0; border-top:1px solid var(--line-soft); }
 .ob-foot .inner { width:100%; max-width:648px; margin:0 auto; padding:12px 24px;
   display:flex; align-items:center; gap:10px; flex-wrap:wrap; row-gap:10px; }

@@ -22,6 +22,14 @@ const ROUTES = [
   "/app/models/installed/",
   "/app/models/downloads/",
   "/app/settings/",
+  // The landing page now runs controller code of its own (the header hairline,
+  // the reveal observer) and embeds a full workspace render, so it belongs in
+  // the gate rather than being assumed static.
+  "/",
+  "/setup/",
+  "/setup/model/",
+  "/setup/project/",
+  "/setup/permissions/",
 ];
 
 let failed = 0;

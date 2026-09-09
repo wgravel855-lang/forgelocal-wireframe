@@ -31,13 +31,12 @@ const GROUPS = [
   },
   {
     name: "Onboarding",
-    note: "Five steps in the application shell. Step five is the real workspace rather than a congratulations page.",
+    note: "Four decisions in the application shell, then the real workspace.",
     items: [
-      ["1. Welcome and scan", "/setup/1/", 1440, 900],
-      ["2. Hardware and recommendation", "/setup/2/", 1440, 900],
-      ["3. Install runtime and model", "/setup/3/", 1440, 900],
-      ["4. Project and permissions", "/setup/4/", 1440, 900],
-      ["5. First chat", "/setup/5/", 1440, 900],
+      ["1. Welcome and system check", "/setup/", 1440, 900],
+      ["2. Recommended model", "/setup/model/", 1440, 900],
+      ["3. Project access", "/setup/project/", 1440, 900],
+      ["4. Permission mode", "/setup/permissions/", 1440, 900],
     ],
   },
   {

@@ -72,6 +72,7 @@ const BIND = {
   "<!--REC_TOTAL-->": () => inst.total,
   "<!--REC_DONE-->": () => inst.done,
   "<!--REC_FREE-->": () => inst.freeAfter,
+  "<!--PROOF-->": () => proofSurface(),
 };
 const part = (name) => {
   let html = expand(readFileSync(join(partsDir, `${name}.body.html`), "utf8"));
@@ -81,6 +82,74 @@ const part = (name) => {
   return html;
 };
 const inc = (s) => expand(s);
+
+/* The landing page's product proof.
+ *
+ * It renders the same workspace the app routes render, from the same sidebar
+ * and composer partials, so the picture on the marketing page cannot drift
+ * from the product the way a hand-built copy did.
+ *
+ * Two things are then made true of it. The runtime and model labels are
+ * rewritten, because a preview that says "Desktop not connected" and "No model
+ * loaded" beside a running command is an impossible state, and showing one
+ * would be worse than showing none. And the whole subtree is marked
+ * `data-preview` and `inert`, so the controller does not wire it and a keyboard
+ * user does not tab through a picture.
+ */
+/* The workspace renders its transcript in the browser from the thread
+   fixtures. The preview is deliberately outside the controller's reach, so its
+   transcript would be empty; it is written here instead, at build time, from
+   the same row classes the app uses. The shell around it — sidebar, topbar,
+   composer — is the real partials, which is where drift would actually
+   matter. */
+const PROOF_THREAD = `
+<article class="turn turn-user">
+  <div class="umsg"><div class="umsg-body">Save the task list to localStorage so it survives a refresh, and add a test for it.</div></div>
+</article>
+<article class="turn turn-assistant">
+  <div class="prose amsg"><p>I will move state into a small hook so the components stay unaware of storage,
+    then cover the reload behaviour with one test.</p></div>
+  <div class="act">
+    <div class="hd">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 6.5h16M4 12h16M4 17.5h10"/></svg>
+      <span style="flex:1">Plan</span><span class="lab">3 of 4 complete</span>
+    </div>
+    <div class="arow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span style="flex:1">Read 4 files</span><span class="lab num">1.2s</span></div>
+    <div class="arow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span style="flex:1">Searched 21 files for localStorage</span><span class="lab num">0.4s</span></div>
+    <div class="arow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span style="flex:1">Edited <span class="m">useTasks.js</span> and <span class="m">App.jsx</span></span><span class="num" style="color:var(--ok)">+46</span><span class="num" style="color:var(--bad)">&minus;12</span></div>
+    <div class="arow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span class="m" style="flex:1">npm test</span><span class="lab num">exit 0</span></div>
+  </div>
+  <div class="prose amsg"><p>Tasks now persist through a reload. The new test fails if the hook stops writing,
+    and the four existing tests still pass.</p></div>
+</article>`;
+
+const proofSurface = () => {
+  const html = workspace({
+    active: "s2", title: "Persist tasks to localStorage", thread: "route:running",
+  })
+    .replace(
+      /(<div class="thread col" data-thread data-thread-id="[^"]*">)(<\/div>)/,
+      `$1${PROOF_THREAD}$2`,
+    )
+    .replace(
+      /(<span data-env-label>)[\s\S]*?(<\/span>)/,
+      "$1Connected &middot; RTX 4070$2",
+    )
+    .replace(
+      /(<span data-model-label>)[\s\S]*?(<\/span>)/,
+      "$1Qwen2.5 Coder 14B$2",
+    )
+    // The workspace titles itself with an h1. A picture of the product must not
+    // add a second top-level heading to the marketing page's outline, so the
+    // element changes and the styling does not.
+    .replace(/<h1 class="ws-h1"([^>]*)>/, '<div class="ws-h1"$1>')
+    .replace(/<\/h1>/, "</div>");
+  // .app carries the dark palette. On an app route it sits on <body>; here it
+  // has to be on the surface itself, or the workspace renders with the
+  // marketing page's light tokens.
+  return `<div class="app lp-proof-surface" data-preview inert
+    style="width:1330px;height:748px">${html}</div>`;
+};
 
 // One workspace shell for every conversation route.
 const workspace = ({ active, title, thread }) => {
@@ -184,9 +253,9 @@ const utilityFooter = () => inc(`
   </div>
 </footer>`);
 
-const marketing = ({ path, title, desc, main, canonical, jsonld, compact }) =>
+const marketing = ({ path, title, desc, main, canonical, jsonld, compact, cls }) =>
   doc({
-    title, desc, cls: "site", canonical: canonical ?? path, jsonld,
+    title, desc, cls: cls ? `site ${cls}` : "site", canonical: canonical ?? path, jsonld,
     body: `${header(path)}\n<main id="main">\n${main}\n</main>\n${
       compact ? utilityFooter() : footer()}`,
   });
@@ -235,6 +304,7 @@ write("index.html", marketing({
   path: "/", title: "ForgeLocal — a coding agent that runs on your PC",
   desc: "ForgeLocal reads your hardware, installs a coding model that will actually run on it, and gives that model reviewable tools for files, commands and tests.",
   main: part("Homepage"),
+  cls: "lp",
   jsonld: {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",

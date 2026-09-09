@@ -1,0 +1,49 @@
+<div class="app ob">
+
+  <!--#include ob-top.html {"n":"3","back":"/setup/model/","backLabel":"Back"} -->
+
+  <div class="ob-body">
+    <div class="ob-col">
+
+      <div class="stack" style="gap:14px">
+        <h1 class="ob-h1">Choose what ForgeLocal can access.</h1>
+        <p class="ob-lede">ForgeLocal can read and change files only inside the project you select.</p>
+      </div>
+
+      <button class="ob-pick" type="button" data-proj-pick>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5A2 2 0 0 1 5 5.5h3.6l1.8 2H19a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+        <span>Choose project folder</span>
+      </button>
+      <input class="vh" type="file" webkitdirectory directory data-proj-input tabindex="-1" aria-hidden="true">
+
+      <!-- Named, not summarised. The folder the agent gets is stated back in
+           full before anyone agrees to it. -->
+      <div class="ob-trust" data-proj-trust hidden>
+        <div class="ob-trust-h">
+          <span class="ob-trust-n" data-proj-name></span>
+          <span class="ob-trust-p" data-proj-path></span>
+        </div>
+        <p class="ob-trust-b">ForgeLocal will read and change files under this folder, and nothing
+          outside it. Files in a project, including its instructions and configuration, can
+          influence what the agent does, so open folders you trust.</p>
+      </div>
+
+      <div class="ob-recent" data-proj-recent hidden>
+        <span class="lab">Recent projects</span>
+        <div data-proj-recent-list></div>
+      </div>
+
+      <p class="ob-note" data-proj-note hidden></p>
+
+    </div>
+  </div>
+
+  <footer class="ob-foot">
+    <div class="inner">
+      <a class="btn btnp btnl" href="/setup/permissions/" data-proj-next aria-disabled="true">Use this project</a>
+      <span class="grow"></span>
+      <span class="lab">Step 3 of 4</span>
+    </div>
+  </footer>
+
+</div>

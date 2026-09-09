@@ -1,0 +1,46 @@
+<div class="app ob">
+
+  <!--#include ob-top.html {"n":"4","back":"/setup/project/","backLabel":"Back"} -->
+
+  <div class="ob-body">
+    <div class="ob-col">
+
+      <div class="stack" style="gap:14px">
+        <h1 class="ob-h1">How should the agent make changes?</h1>
+        <p class="ob-lede" data-perm-scope>This applies to the project you just chose.</p>
+      </div>
+
+      <!-- Full-width rows, described by what happens rather than by policy
+           vocabulary. There is deliberately no allow-everything option. -->
+      <div class="ob-modes" role="radiogroup" aria-label="Permission mode">
+        <button class="ob-mode" type="button" role="radio" aria-checked="true" data-perm="manual">
+          <span class="ob-mode-t">Ask before changes<span class="ob-mode-r">Recommended</span></span>
+          <span class="ob-mode-d">Review file edits and commands before they run.</span>
+        </button>
+        <button class="ob-mode" type="button" role="radio" aria-checked="false" data-perm="allow_edits">
+          <span class="ob-mode-t">Allow file edits</span>
+          <span class="ob-mode-d">Apply edits inside this project. Commands still require approval.</span>
+        </button>
+        <button class="ob-mode" type="button" role="radio" aria-checked="false" data-perm="plan">
+          <span class="ob-mode-t">Plan only</span>
+          <span class="ob-mode-d">Explore the project and propose an approach without changing files.</span>
+        </button>
+      </div>
+
+      <p class="ob-note-q">You can change this for any session. Destructive commands, administrator
+        access, network access and anything outside this project ask every time, in every mode.</p>
+
+      <p class="ob-note" data-perm-note hidden></p>
+
+    </div>
+  </div>
+
+  <footer class="ob-foot">
+    <div class="inner">
+      <a class="btn btnp btnl" href="/app/" data-perm-start>Start building</a>
+      <span class="grow"></span>
+      <span class="lab">Step 4 of 4</span>
+    </div>
+  </footer>
+
+</div>

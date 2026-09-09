@@ -38,8 +38,20 @@ import {
 (() => {
   "use strict";
 
-  const $ = (s, r = document) => r.querySelector(s);
-  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  /* The landing page embeds a real workspace render as its product proof. It
+     is a picture of the product, not a running one, so the controller must not
+     hydrate it: wiring a composer inside a marketing page would give it live
+     handlers, a duplicate `composer-input` id, and a runtime label that
+     rewrites itself. Excluding the subtree here rather than at each call site
+     means a wiring function added later cannot reach into it by accident. */
+  const inPreview = (el) => !!(el && el.closest && el.closest("[data-preview]"));
+  const $ = (s, r = document) => {
+    const found = r.querySelector(s);
+    if (!found) return null;
+    if (!inPreview(found)) return found;
+    return [...r.querySelectorAll(s)].find((el) => !inPreview(el)) ?? null;
+  };
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)].filter((el) => !inPreview(el));
   const store = {
     get(k, d) { try { const v = localStorage.getItem("fl:" + k); return v === null ? d : JSON.parse(v); } catch { return d; } },
     set(k, v) { try { localStorage.setItem("fl:" + k, JSON.stringify(v)); } catch { /* private mode */ } },
@@ -2623,7 +2635,7 @@ import {
   }
 
   /* ------------------------------------------------- composer, no thread */
-  /* /setup/5/ and /app/review/ have a real composer but no transcript, so
+  /* /app/review/ has a real composer but no transcript, so
      wireConversation bails on them and nothing gated Send or handled submit.
      The button was enabled on an empty draft, and pressing it ran a native
      form submission: the page reloaded, which is what made a closed artifact
@@ -3323,6 +3335,260 @@ import {
     paint();
   }
 
+  /* ------------------------------------------------------------- onboarding */
+
+  /* Setup state persists after every completed step, so Back keeps the scan,
+     the model choice and the project, and closing the app does not restart the
+     flow. One key, because it is one decision sequence. */
+  const setupState = () => store.get("setup", {}) || {};
+  const setupSave = (patch) => { store.set("setup", { ...setupState(), ...patch }); };
+
+  /* The system check reads what this environment can actually answer and says
+     so for the rest.
+     A browser genuinely knows the GPU string (through WebGL), the thread count
+     and a coarse memory bucket. It cannot see video memory, free disk, or an
+     installed runtime, and inventing those would be exactly the fabrication the
+     product is supposed to avoid. Those rows resolve to "Needs the desktop
+     app", which is a real answer, not a failure. */
+  function readGpu() {
+    try {
+      const c = document.createElement("canvas");
+      const gl = c.getContext("webgl") || c.getContext("experimental-webgl");
+      if (!gl) return null;
+      const ext = gl.getExtension("WEBGL_debug_renderer_info");
+      const raw = ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
+      if (!raw) return null;
+      /* Chrome reports something like
+           ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 Direct3D11 vs_5_0 ps_5_0, D3D11)
+           ANGLE (AMD, AMD Radeon(TM) Graphics (0x00001638), D3D11)
+         Splitting on commas cuts the second one in half, because the adapter
+         name contains its own brackets. So the wrapper is peeled, the leading
+         vendor token and trailing backend token are dropped by position, and
+         the driver noise is stripped by name. */
+      let s = String(raw).trim();
+      const wrapped = s.match(/^ANGLE \((.*)\)$/s);
+      if (wrapped) {
+        s = wrapped[1];
+        const first = s.indexOf(",");
+        const last = s.lastIndexOf(",");
+        if (first !== -1 && last > first) s = s.slice(first + 1, last);
+      }
+      const name = s
+        .replace(/\(0x[0-9a-f]+\)/gi, " ")
+        .replace(/\bDirect3D\d*\b|\bvs_\d_\d\b|\bps_\d_\d\b|\bD3D\d*\b|\bOpenGL\b.*/gi, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .replace(/[,;]$/, "");
+      return name || null;
+    } catch { return null; }
+  }
+
+  function wireScan() {
+    const scan = $("[data-scan]");
+    const start = $("[data-scan-start]");
+    if (!scan || !start) return;
+
+    const rows = {};
+    $$("[data-check]", scan).forEach((r) => { rows[r.dataset.check] = r; });
+    const set = (key, state, value) => {
+      const row = rows[key];
+      if (!row) return;
+      row.dataset.state = state;
+      $("[data-check-v]", row).textContent = value;
+    };
+
+    // A completed scan survives Back.
+    const saved = setupState().scan;
+    const paint = (res) => {
+      scan.hidden = false;
+      start.hidden = true;
+      const manual = $("[data-scan-manual]");
+      if (manual) manual.hidden = true;
+      set("gpu", res.gpu ? "ok" : "na", res.gpu || "Needs the desktop app");
+      set("cpu", res.cpu ? "ok" : "na", res.cpu ? `${res.cpu} threads` : "Needs the desktop app");
+      set("mem", res.mem ? "ok" : "na", res.mem ? `${res.mem} GB or more` : "Needs the desktop app");
+      set("disk", "na", "Needs the desktop app");
+      set("runtime", "na", "Needs the desktop app");
+      const note = $("[data-scan-note]");
+      if (note) {
+        note.hidden = false;
+        note.textContent = res.gpu
+          ? "A browser can name the graphics adapter but not its video memory, your free disk space, or an installed runtime. The desktop app reads all five, and the recommendation on the next screen uses whichever of them it has."
+          : "This browser does not expose the graphics adapter. The desktop app reads it directly. You can continue and pick a model yourself.";
+      }
+      const cont = $("[data-scan-continue]");
+      if (cont) cont.hidden = false;
+    };
+
+    if (saved) { paint(saved); return; }
+
+    start.addEventListener("click", () => {
+      const res = {
+        gpu: readGpu(),
+        cpu: Number(navigator.hardwareConcurrency) || null,
+        mem: Number(navigator.deviceMemory) || null,
+      };
+      scan.hidden = false;
+      start.disabled = true;
+      // Rows resolve one at a time so the change is followable, not animated.
+      const keys = ["gpu", "cpu", "mem", "disk", "runtime"];
+      keys.forEach((k, i) => setTimeout(() => {
+        if (i === keys.length - 1) { setupSave({ scan: res }); paint(res); }
+      }, reduced ? 0 : 160 * (i + 1)));
+    });
+  }
+
+  function wireSetupProject() {
+    const btn = $("[data-proj-pick]");
+    if (!btn) return;
+    const input = $("[data-proj-input]");
+    const trust = $("[data-proj-trust]");
+    const next = $("[data-proj-next]");
+    const note = $("[data-proj-note]");
+
+    const show = (name, path) => {
+      setupSave({ project: { name, path: path || null } });
+      if (trust) {
+        trust.hidden = false;
+        $("[data-proj-name]", trust).textContent = name;
+        const p = $("[data-proj-path]", trust);
+        p.textContent = path || "The full path is only available in the desktop app.";
+        // Monospace is for paths. The sentence that stands in for one is prose.
+        p.classList.toggle("m", !!path);
+      }
+      if (next) { next.removeAttribute("aria-disabled"); next.classList.add("btnp"); }
+      // The "choose a folder first" message is answered now.
+      if (note) { note.hidden = true; note.textContent = ""; }
+      announce(`Project selected: ${name}.`);
+    };
+
+    const saved = setupState().project;
+    if (saved && saved.name) show(saved.name, saved.path);
+    else if (next) next.setAttribute("aria-disabled", "true");
+
+    btn.addEventListener("click", async () => {
+      if (typeof window.showDirectoryPicker === "function") {
+        try {
+          const handle = await window.showDirectoryPicker({ id: "forgelocal-project", mode: "read" });
+          show(handle.name, null);
+          return;
+        } catch (err) {
+          if (err && err.name === "AbortError") return;
+        }
+      }
+      if (input) input.click();
+      else if (note) {
+        note.hidden = false;
+        note.textContent = "This browser cannot open a folder picker. Choosing a project needs the desktop app.";
+      }
+    });
+
+    if (input) {
+      input.addEventListener("change", () => {
+        const first = input.files && input.files[0];
+        if (!first) return;
+        const rel = first.webkitRelativePath || "";
+        show(rel.split("/")[0] || first.name, null);
+        input.value = "";
+      });
+    }
+
+    if (next) {
+      next.addEventListener("click", (e) => {
+        if (next.getAttribute("aria-disabled") !== "true") return;
+        e.preventDefault();
+        if (note) {
+          note.hidden = false;
+          note.textContent = "Choose a project folder first. ForgeLocal needs to know which files it may read before it can start.";
+        }
+      });
+    }
+  }
+
+  function wireSetupPermissions() {
+    const modes = $$("[data-perm]");
+    if (!modes.length) return;
+    const scope = $("[data-perm-scope]");
+    const proj = setupState().project;
+    if (scope && proj && proj.name) {
+      scope.textContent = `This applies to ${proj.name}, and you can change it for any session.`;
+    }
+
+    const pick = (id) => {
+      modes.forEach((m) => m.setAttribute("aria-checked", String(m.dataset.perm === id)));
+      setupSave({ mode: id });
+      // The workspace reads the same key the composer's mode control writes.
+      store.set("mode", normalizeMode(id));
+    };
+    const saved = setupState().mode;
+    pick(saved && modes.some((m) => m.dataset.perm === saved) ? saved : "manual");
+
+    modes.forEach((m) => {
+      m.addEventListener("click", () => pick(m.dataset.perm));
+      // Arrow keys move between radios, which is what a radiogroup owes people.
+      m.addEventListener("keydown", (e) => {
+        const i = modes.indexOf(m);
+        let to = null;
+        if (e.key === "ArrowDown" || e.key === "ArrowRight") to = modes[(i + 1) % modes.length];
+        if (e.key === "ArrowUp" || e.key === "ArrowLeft") to = modes[(i - 1 + modes.length) % modes.length];
+        if (!to) return;
+        e.preventDefault();
+        pick(to.dataset.perm);
+        to.focus();
+      });
+    });
+  }
+
+  /* Download progress belongs to a real download store. There is none in the
+     web preview, so the button says what it needs rather than animating a bar
+     that measures nothing. */
+  function wireSetupDownload() {
+    const start = $("[data-dl-start]");
+    if (!start) return;
+    const note = $("[data-model-note]");
+    start.addEventListener("click", () => {
+      if (note) {
+        note.hidden = false;
+        note.textContent = "Downloading a model needs the desktop app. This preview has no download store, so nothing here reports bytes or speed. You can still look at the recommendation and continue through setup.";
+      }
+      const next = $("[data-model-next]");
+      if (next) next.hidden = false;
+      start.disabled = true;
+      announce("Model download needs the desktop app.");
+    });
+  }
+
+  /* ---------------------------------------------------------------- landing */
+
+  /* The header carries no border until the page has moved under it, and the
+     product surfaces fade in once. Both are no-ops on every other route, and
+     both are skipped entirely under reduced motion: the reveal sets the final
+     state immediately rather than animating to it. */
+  function wireLanding() {
+    if (!document.body.classList.contains("lp")) return;
+
+    const head = $(".mhead");
+    if (head) {
+      const sync = () => { head.dataset.stuck = String(window.scrollY > 4); };
+      sync();
+      addEventListener("scroll", sync, { passive: true });
+    }
+
+    const targets = $$(".lp-enter");
+    if (!targets.length) return;
+    if (reduced || typeof IntersectionObserver !== "function") return; // stays visible
+    // Only now does hiding become safe: the observer that reveals these exists.
+    document.body.classList.add("lp-anim");
+    const io = new IntersectionObserver((entries) => {
+      for (const e of entries) {
+        if (!e.isIntersecting) continue;
+        e.target.classList.add("is-in");
+        io.unobserve(e.target); // once, never on the way back up
+      }
+    }, { rootMargin: "0px 0px -12% 0px" });
+    targets.forEach((el) => io.observe(el));
+  }
+
   /* ------------------------------------------------------------------ inert */
   function wireInert() {
     $$("[data-inert]").forEach((el) => {
@@ -3849,14 +4115,9 @@ import {
     wireWaitlist(); wireCatalog(); wireDiagnostics(); wireComposerDraft();
     wireAwaiting(); wireComposerControls(); wireProjectPicker(); wireAttach();
     wireDensity(); wireQueue(); wireCaretMenus(); wirePaste();
-    // the one setup-specific element on /setup/5/
-    const sd = $("[data-setup-done]");
-    if (sd) {
-      const hide = () => { sd.hidden = true; };
-      $("[data-setup-dismiss]", sd).addEventListener("click", hide);
-      const ta = $("[data-composer] textarea");
-      if (ta) ta.addEventListener("input", () => { if (ta.value.trim()) hide(); }, { once: true });
-    } wireSettings(); wireShortcuts(); wireDownloadRow(); wireInert();
+    wireSettings(); wireShortcuts(); wireDownloadRow(); wireLanding();
+    wireScan(); wireSetupProject(); wireSetupPermissions(); wireSetupDownload();
+    wireInert();
     document.documentElement.dataset.reducedMotion = String(reduced);
   };
   document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", boot) : boot();

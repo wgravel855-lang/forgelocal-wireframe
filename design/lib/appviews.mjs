@@ -47,7 +47,7 @@ export function recommendationBlock(models) {
                 <div class="faint" style="font-size:13px;line-height:19px">${esc(x.displayName)} ${esc(x.quantization)} &middot; ${F.gb(x.downloadBytes, 1)} GB &middot; ${esc(note)}</div>
               </div>
               ${F.fitFor(x).rank <= 1
-                ? `<a class="btn btns" href="/setup/3/" style="flex-shrink:0">Use this instead</a>`
+                ? `<a class="btn btns" href="/setup/model/" style="flex-shrink:0">Use this instead</a>`
                 : `<span class="pill ${tone[F.fitFor(x).tone]}" style="flex-shrink:0">${esc(F.fitFor(x).label)}</span>`}
             </div>`;
 
