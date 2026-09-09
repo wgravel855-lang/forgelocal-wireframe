@@ -5,32 +5,17 @@
 
     <div class="main">
 
-      <!--#include topbar.html {"title":"Downloads"} -->
+      <!--#include topbar.html {"title":"Models"} -->
 
-      <div class="scroll" style="overflow-y:auto">
-        <div class="mcol">
+      <div class="scroll mc-scroll">
+        <div class="mc">
 
-          <!-- The shell names the route. This page opens with the navigation,
-               then one line of state, then the rows. -->
-          <div class="mtabs">
-            <nav class="tabline" aria-label="Model views">
-              <a href="/app/models/">Explore</a>
-              <a href="/app/models/installed/">My models</a>
-              <span aria-current="page">Downloads</span>
-            </nav>
-            <details class="dl-info">
-              <summary>How downloads work</summary>
-              <p>One at a time, so a partial file is never left behind by a second one starting.
-                Weights come from the publisher. A paused download keeps the bytes already on
-                disk and resumes from there.</p>
-            </details>
-          </div>
+          <!--#include model-center.html {"downloads":" aria-current=\"page\"","tools":"<span class=\"grow\"></span><details class=\"dl-info\"><summary>How downloads work</summary><p>One at a time, so a partial file is never left behind by a second one starting. Weights come from the publisher. A paused download keeps the bytes already on disk and resumes from there.</p></details>"} -->
 
-          <p class="lab" data-downloads-summary><!--DOWNLOADS_SUMMARY--></p>
+          <p class="mc-summary" data-downloads-summary><!--DOWNLOADS_SUMMARY--></p>
 
           <!-- Every row below is rendered from the shared model store, by the
-               same function the browser re-renders with. This page owns no
-               download list of its own. -->
+               same function the browser re-renders with. -->
           <div data-models-mount="downloads"><!--DOWNLOADS--></div>
 
         </div>

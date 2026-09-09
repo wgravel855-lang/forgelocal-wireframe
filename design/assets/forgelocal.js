@@ -20,13 +20,15 @@ import {
   downloadSummary, downloadPercent, isLoaded, isAgentReady,
 } from "../core/modelstore.mjs";
 import {
-  installedList, installedStats, downloadsHtml, downloadStrip,
+  installedSections, installedFooter, installedStats, downloadsHtml, downloadStrip,
   downloadsBadge, downloadsSummary, pickerHtml, composerModelLabel,
 } from "../core/modelviews.mjs";
 import { THIS_PC } from "../core/machine.mjs";
-import { gb } from "../core/units.mjs";
+import { gb, fmtCtx as fmtCtxUI } from "../core/units.mjs";
 import { renderCard } from "../core/modelcard.mjs";
 import { normalizeMode, modeLabel } from "../core/modes.mjs";
+import { readDemoFlag, desktopState, applyDesktopState, NO_HARDWARE_NOTE as NO_HARDWARE } from "../core/localstate.mjs";
+import { catalogHtml, modelDetail } from "../core/catalog.mjs";
 import {
   detectEnvironment, initialRuntime, reduceRuntime, isConnected,
   runtimeLabel, runtimeTone, runtimeDetails, runtimeSettings, contextDisplay, sendBlockedReason,
@@ -225,7 +227,10 @@ import {
             g.hidden = !$$("[data-model-row]", g).some((r) => !r.hidden);
           });
           const empty = $("[data-model-empty]", pop);
-          if (empty) empty.hidden = shown > 0;
+          // "No match" only when there was something to match against: an empty
+      // list has its own message and does not need a search failure too.
+      const total = $("[data-filter-item]", root).length;
+      if (empty) empty.hidden = shown > 0 || total === 0;
         }, 120);
       });
     }
@@ -430,116 +435,100 @@ import {
   /* The detail pane is rendered from the same record the row came from, and the
      selection lives in the URL so a refresh keeps it. Search and filter state
      survive selecting a model, because the list is never re-created. */
+  /* --------------------------------------------------------- model catalog */
+  /* Explore renders from the shared store through core/catalog.mjs, the same
+     module the build used for the first paint. Selection lives in the URL, so
+     a refresh and the back button both restore it.
+
+     The default selection is a replaceState, not a push: landing on the page
+     is not a navigation the user made, and it should not need a Back press to
+     leave. */
   function wireCatalog() {
     const root = $("[data-catalog]");
     if (!root) return;
-    const raw = $("#fl-sessions");
-    const data = raw ? JSON.parse(raw.textContent) : {};
-    const byId = Object.fromEntries((data.models || []).map((m) => [m.id, m]));
+    hydrateModels();
 
-    const paint = (id, push) => {
+    const models = () => allModels(MODELS.state);
+    const has = (id) => !!(id && MODELS.state.byId[id]);
+    const firstVisible = () => {
+      const row = $$("[data-cat-row]", root).find((a) => a.offsetParent !== null);
+      return row ? row.dataset.catRow : (models()[0] || {}).id || null;
+    };
+
+    // mode: how the URL should change. explicit: whether the user chose this
+    // model, which is what decides the narrow-screen list/detail view.
+    const paint = (id, mode, explicit = mode === "push") => {
       const rows = $$("[data-cat-row]", root);
       rows.forEach((a) => {
         const on = a.dataset.catRow === id;
         a.classList.toggle("is-on", on);
-        if (on) a.setAttribute("aria-current", "true");
-        else a.removeAttribute("aria-current");
+        a.setAttribute("aria-selected", String(on));
+        a.tabIndex = on ? 0 : -1;
       });
-      root.toggleAttribute("data-selected", !!id);
+      // On a narrow screen the list is the page and a selection opens its own
+      // detail view. A default selection is not a selection the user made, so
+      // it does not navigate them away from the list.
+      // On a narrow screen the list is the page and a selection opens its own
+      // detail view. A default selection is not a selection the user made, so
+      // it does not navigate them away from the list.
+      root.toggleAttribute("data-selected", !!id && explicit);
 
-      const host = $("[data-cat-detail]", root);
-      const m = id && byId[id];
-      if (host && m) host.replaceWith(detailNode(m));
-      else if (host && !id) host.replaceWith(emptyNode());
+      const wrap = $("[data-cat-detail-wrap]", root);
+      const m = id ? MODELS.state.byId[id] : null;
+      if (wrap) wrap.innerHTML = m ? modelDetail(m, DESKTOP) : "";
 
       const url = id ? `?model=${encodeURIComponent(id)}` : location.pathname;
-      if (push) history.pushState({ model: id }, "", url);
-      const h = $(".cat-h", root);
-      if (h && push) { h.setAttribute("tabindex", "-1"); h.focus({ preventScroll: true }); }
-    };
-
-    const detailNode = (m) => {
-      const d = document.createElement("div");
-      d.className = "cat-detail";
-      d.setAttribute("data-cat-detail", "");
-      d.innerHTML = `
-        <a class="cat-back" href="${location.pathname}">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
-          Back to results</a>
-        <h2 class="cat-h">${esc(m.name)}</h2>
-        <p class="cat-sub">${esc(m.publisher)} &middot; ${esc(m.license)}
-          ${m.source ? ` &middot; <a class="link" href="${esc(m.source)}" rel="noreferrer noopener" target="_blank">Model card</a>` : ""}</p>
-        <p class="cat-desc">${esc(m.strength)}</p>
-
-        <h3 class="cat-h3">Capabilities</h3>
-        <ul class="cat-caplist">
-          <li>${capIcon("chat")}<span>Chat</span></li>
-          ${m.agentReady ? `<li>${capIcon("tool_use")}<span>Tool use</span></li>
-          <li>${capIcon("agent_ready")}<span>Agent-ready</span></li>` : ""}
-          <li>${capIcon("fim")}<span>Fill in the middle</span></li>
-        </ul>
-        <p class="cat-note">${m.agentReady
-          ? "Agent-ready means this model produced valid structured tool calls in ForgeLocal's conformance check."
-          : "Not verified for tool use. It can answer questions about code, but ForgeLocal will not let it drive tools."}</p>
-
-        <h3 class="cat-h3">Specification</h3>
-        <dl class="cat-kv">
-          <dt>Format</dt><dd>${esc(m.format)} &middot; ${esc(m.quant)}</dd>
-          <dt>Max context</dt><dd class="num">${esc(m.context)}</dd>
-          <dt>Revision</dt><dd class="m">${esc(m.revision)}</dd>
-        </dl>
-
-        <h3 class="cat-h3">On this PC</h3>
-        <dl class="cat-kv">
-          <dt>Fit</dt><dd><span class="dot ${esc(m.fitTone === "ok" ? "ok" : m.fitTone === "warn" ? "warn" : "bad")}" aria-hidden="true"></span> ${esc(m.fitLabel)}</dd>
-          <dt>Video memory</dt><dd class="num">${esc(m.needGB)} GB of ${esc(m.vramGB)} GB</dd>
-          <dt>Download</dt><dd class="num">${esc(m.downloadGB)} GB</dd>
-          <dt>On disk</dt><dd class="num">${esc(m.diskGB)} GB</dd>
-        </dl>
-        <p class="cat-note">${esc(m.fitReason)}</p>
-
-        <div class="cat-actions">
-          ${m.installed
-            ? `<a class="btn btnp" href="/app/models/installed/">In My models</a>`
-            : `<button class="btn btnp" type="button" data-model-install="${esc(m.name)}">Download ${esc(m.downloadGB)} GB</button>`}
-        </div>`;
-      wireModelActions(d);
-      return d;
-    };
-
-    const emptyNode = () => {
-      const d = document.createElement("div");
-      d.className = "cat-detail cat-empty";
-      d.setAttribute("data-cat-detail", "");
-      d.innerHTML = "<p>Select a model to see its capabilities, licence and how it fits this PC.</p>";
-      return d;
+      if (mode === "push") history.pushState({ model: id }, "", url);
+      else if (mode === "replace") history.replaceState({ model: id }, "", url);
+      // Focus moves to the detail only when the user chose it, never when the
+      // page picked a default or a search narrowed the list.
+      if (mode === "push") {
+        const h = $(".mdet-name", root);
+        if (h) { h.setAttribute("tabindex", "-1"); h.focus({ preventScroll: true }); }
+      }
     };
 
     root.addEventListener("click", (e) => {
-      const a = e.target.closest("[data-cat-row]");
-      const back = e.target.closest(".cat-back");
-      if (back) { e.preventDefault(); paint(null, true); return; }
-      if (!a) return;
+      const row = e.target.closest("[data-cat-row]");
+      if (!row) return;
       e.preventDefault();
-      paint(a.dataset.catRow, true);
+      paint(row.dataset.catRow, "push");
     });
 
-    // Arrow keys walk the results the way a list should.
     root.addEventListener("keydown", (e) => {
-      if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
       const rows = $$("[data-cat-row]", root).filter((r) => r.offsetParent !== null);
-      const i = rows.indexOf(document.activeElement.closest("[data-cat-row]"));
+      const current = document.activeElement.closest("[data-cat-row]");
+      const i = rows.indexOf(current);
+      if (e.key === "Enter" && current) { e.preventDefault(); paint(current.dataset.catRow, "push"); return; }
+      if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
       if (i < 0) return;
       e.preventDefault();
       const next = rows[e.key === "ArrowDown" ? Math.min(i + 1, rows.length - 1) : Math.max(i - 1, 0)];
       next.focus();
+      paint(next.dataset.catRow, "replace");
     });
 
-    addEventListener("popstate", () =>
-      paint(new URLSearchParams(location.search).get("model"), false));
+    addEventListener("popstate", () => {
+      const id = new URLSearchParams(location.search).get("model");
+      paint(has(id) ? id : firstVisible(), null, has(id));
+    });
+
+    // Re-selecting after a search: if the selected model is filtered out, the
+    // first visible result takes over rather than leaving an empty pane.
+    onFilter(() => {
+      const selected = $(".mrow2.is-on");
+      if (selected && selected.offsetParent !== null) return;
+      const next = firstVisible();
+      if (next) paint(next, "replace");
+      else if ($("[data-cat-detail-wrap]", root)) $("[data-cat-detail-wrap]", root).innerHTML = "";
+    });
 
     const initial = new URLSearchParams(location.search).get("model");
-    if (initial && byId[initial]) paint(initial, false);
+    // A model named in the URL is an explicit choice and opens its detail on
+    // every width. Otherwise desktop opens on the first result, and narrow
+    // screens open on the list.
+    if (has(initial)) paint(initial, null, true);
+    else paint(firstVisible(), "replace");
   }
 
   const CAP_PATHS = {
@@ -675,8 +664,19 @@ import {
               <h3 class="loader-n">${esc(m.displayName)}</h3>
               <p class="loader-sub">${esc(m.publisher)} &middot; ${esc(m.quantization || "")} &middot; <span class="num">${gb(m.fileSizeBytes, 2)} GB</span></p>
 
+              <!-- The pane always carries the model's facts, so it is never a
+                   half-empty modal waiting for a control the runtime cannot
+                   accept. Compatibility appears only with hardware to judge. -->
+              <dl class="loader-facts">
+                <dt>Format</dt><dd>${esc(m.format || "GGUF")} &middot; ${esc(m.quantization || "")}</dd>
+                <dt>Parameters</dt><dd>${esc(m.parameterCount || "—")}</dd>
+                <dt>Max context</dt><dd class="num">${esc(fmtCtxUI(m.maxContextTokens || 8192))}</dd>
+                <dt>Architecture</dt><dd>${esc(m.architecture || m.family || "—")}</dd>
+              </dl>
+              ${connected ? "" : `<p class="loader-why" style="margin-top:14px">${esc(NO_HARDWARE)}</p>`}
+
               <details class="loader-params"${LOADER.params ? " open" : ""}>
-                <summary>Manually choose load parameters</summary>
+                <summary>Customize load parameters</summary>
 
                 ${numField("Context length", "contextTokens", params.contextTokens, errors.contextTokens,
     `Up to ${(m.maxContextTokens || 8192).toLocaleString()}`)}
@@ -1682,7 +1682,7 @@ import {
     if (MODELS.state) return MODELS.state;
     let saved = null;
     try {
-      const raw = localStorage.getItem(STORE_KEY);
+      const raw = localStorage.getItem(MODEL_KEY);
       if (raw) saved = JSON.parse(raw);
     } catch { saved = null; }
 
@@ -1698,21 +1698,29 @@ import {
     // the seed or from a store persisted by an earlier visit.
     const resident = isConnected(RUNTIME.state);
     if (valid) {
-      MODELS.state = resident ? saved : clearLoaded(saved);
+      // A cached store is not evidence either. Outside demo mode a disconnected
+      // preview has no local state, whatever an earlier visit wrote.
+      const trusted = (resident || DESKTOP.demo)
+        ? saved
+        : createModelState(applyDesktopState(Object.values(saved.byId), DESKTOP));
+      MODELS.state = resident ? trusted : clearLoaded(trusted);
       if (MODELS.state !== saved) persistModels();
       return MODELS.state;
     }
 
+    // The seed carries catalog facts and, in demo mode, local ones. Outside
+    // demo mode every local claim is stripped before the store ever sees it,
+    // so no surface can read an installed model this device does not have.
     const raw = $("#fl-sessions");
     const seed = raw ? (JSON.parse(raw.textContent).modelSeed || []) : [];
-    const fresh = createModelState(seed);
+    const fresh = createModelState(applyDesktopState(seed, DESKTOP));
     MODELS.state = resident ? fresh : clearLoaded(fresh);
     persistModels();
     return MODELS.state;
   }
 
   function persistModels() {
-    try { localStorage.setItem(STORE_KEY, JSON.stringify(MODELS.state)); } catch { /* private mode */ }
+    try { localStorage.setItem(MODEL_KEY, JSON.stringify(MODELS.state)); } catch { /* private mode */ }
   }
 
   /** @param {any} event */
@@ -1727,6 +1735,11 @@ import {
   }
   const onModels = (fn) => { MODELS.subs.add(fn); fn(); return () => MODELS.subs.delete(fn); };
 
+  /* Filter repaints, so a surface that renders rows can re-select after one. */
+  /** @type {Set<() => void>} */
+  const FILTER_SUBS = new Set();
+  const onFilter = (fn) => { FILTER_SUBS.add(fn); return () => FILTER_SUBS.delete(fn); };
+
   /* ------------------------------------------------------- runtime state */
   /* One answer to "is a local runtime connected", for every surface that used
      to carry its own. The environment is detected once, here; no component
@@ -1735,6 +1748,16 @@ import {
     state: initialRuntime(detectEnvironment(window)),
     /** @type {Set<() => void>} */ subs: new Set(),
   };
+
+  /* What this machine can be said to have. Demo mode is opt-in per visit and
+     the model center labels itself when it is on, so a fixture is never
+     mistaken for a measurement. */
+  const DEMO = readDemoFlag(location, window.localStorage);
+  const DESKTOP = desktopState(RUNTIME.state, DEMO);
+  if (DEMO) { try { localStorage.setItem("forgelocal:demo", "1"); } catch { /* private mode */ } }
+  /* Demo state is stored under its own key. A normal visit cannot read a store
+     a demo visit wrote, so leaving demo mode leaves its fixtures behind too. */
+  const MODEL_KEY = STORE_KEY + (DEMO ? ":demo" : "");
   /** @param {any} event */
   function dispatchRuntime(event) {
     const next = reduceRuntime(RUNTIME.state, event);
@@ -3263,6 +3286,8 @@ import {
       const clear = $("[data-filter-clear]", root);
       if (clear) clear.hidden = active.size === 0 && !q;
       store.set(key, [...active]);
+      // A list that re-rendered may have hidden the selected row.
+      FILTER_SUBS.forEach((fn) => fn());
     };
 
     $$("[data-filter]", root).forEach((b) => b.addEventListener("click", () => {
@@ -3600,6 +3625,8 @@ import {
      Anything that would need a local runtime carries data-load-model instead
      and opens the loader, which explains why nothing was loaded. */
   function wireModelPages() {
+    const demoFlag = document.querySelector("[data-demo-flag]");
+    if (demoFlag) demoFlag.hidden = !DEMO;
     const mounts = $$("[data-models-mount]");
     const stats = $("[data-mine-stats]");
     if (!mounts.length && !stats) return;
@@ -3609,7 +3636,7 @@ import {
       const s = MODELS.state;
       for (const el of mounts) {
         const kind = el.dataset.modelsMount;
-        const html = kind === "installed" ? installedList(s, THIS_PC)
+        const html = kind === "installed" ? installedSections(s, THIS_PC)
           : kind === "downloads" ? downloadsHtml(s)
             : kind === "strip" ? downloadStrip(s)
               : kind === "picker" ? pickerHtml(s, THIS_PC) : null;
@@ -3619,7 +3646,7 @@ import {
       const label = $("[data-model-label]");
       if (label) label.textContent = composerModelLabel(s);
       const st = installedStats(s, THIS_PC);
-      if (stats) stats.innerHTML = `${st.totalGB} GB of models on disk &middot; ${st.freeGB} GB free`;
+      if (stats) stats.textContent = installedFooter(s, DESKTOP);
       const badge = $("[data-downloads-badge]");
       if (badge) {
         const n = downloadsBadge(s);

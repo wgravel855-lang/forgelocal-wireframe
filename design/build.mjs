@@ -12,7 +12,7 @@ import { fileURLToPath } from "node:url";
 import { expand } from "./lib/assemble.mjs";
 import { models } from "./data/models.mjs";
 import * as F from "./lib/fit.mjs";
-import { catalogHtml } from "./lib/catalog.mjs";
+
 import { recommendationBlock, installBlock, exploreList, scanVerdict } from "./lib/appviews.mjs";
 import { chatList, projectOptions, moveOptions, sessionData, modelSeed } from "./lib/chatlist.mjs";
 // The installed and downloads pages render from the same store the browser
@@ -25,6 +25,8 @@ import { modeMenuHtml } from "./core/modes.mjs";
 // The build renders the disconnected state, because a served page is always a
 // web preview. The desktop shell replaces it after its own handshake.
 import { initialRuntime, runtimeLabel } from "./core/runtime.mjs";
+import { desktopState, applyDesktopState } from "./core/localstate.mjs";
+import { catalogHtml } from "./core/catalog.mjs";
 
 F.registerModels(models);
 
@@ -39,10 +41,11 @@ const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replac
 const write = (rel, html) => { mkdirSync(dirname(out(rel)), { recursive: true }); writeFileSync(out(rel), html); };
 const inst = installBlock();
 const WEB_RUNTIME = initialRuntime("web-preview");
-// A served page is always a web preview, and a web preview has no runtime, so
-// no model can be resident. The fixtures still say which models are on disk.
-const SEED = clearLoaded(createState(modelSeed()));
-const mine = V.installedStats(SEED, THIS_PC);
+// A served page is always a web preview. It has no runtime, so it has no local
+// state: nothing installed, nothing resident, nothing downloading. The catalog
+// facts survive; every claim about a machine does not.
+const DESKTOP = desktopState(WEB_RUNTIME, false);
+const SEED = clearLoaded(createState(applyDesktopState(modelSeed(), DESKTOP)));
 const BIND = {
   "<!--MODE_MENU-->": () => modeMenuHtml(),
   "<!--RUNTIME_LABEL-->": () => runtimeLabel(WEB_RUNTIME),
@@ -53,10 +56,9 @@ const BIND = {
   "<!--SCAN_HEAD-->": () => scanVerdict().head,
   "<!--SCAN_SUB-->": () => scanVerdict().sub,
   "<!--EXPLORE_LIST-->": () => exploreList(models),
-  "<!--CATALOG-->": () => catalogHtml(models, null),
-  "<!--MINE_LIST-->": () => V.installedList(SEED, THIS_PC),
-  "<!--MINE_TOTAL-->": () => mine.totalGB,
-  "<!--MINE_FREE-->": () => mine.freeGB,
+  "<!--CATALOG-->": () => catalogHtml(V.allCatalog(SEED), null, DESKTOP),
+  "<!--MINE_LIST-->": () => V.installedSections(SEED, THIS_PC),
+  "<!--MINE_FOOT-->": () => V.installedFooter(SEED, DESKTOP),
   "<!--DOWNLOADS-->": () => V.downloadsHtml(SEED),
   "<!--DOWNLOADS_STRIP-->": () => V.downloadStrip(SEED),
   "<!--DOWNLOADS_SUMMARY-->": () => V.downloadsSummary(SEED),
@@ -65,7 +67,6 @@ const BIND = {
   "<!--PROJECT_OPTIONS-->": () => projectOptions(),
   "<!--MOVE_OPTIONS-->": () => moveOptions(),
   "<!--SESSION_DATA-->": () => sessionData(),
-  "<!--MINE_COUNT-->": () => mine.countLabel,
   "<!--EXPLORE_COUNT-->": () => `${models.length} model${models.length === 1 ? "" : "s"}`,
   "<!--REC_NAME-->": () => inst.name,
   "<!--REC_TOTAL-->": () => inst.total,

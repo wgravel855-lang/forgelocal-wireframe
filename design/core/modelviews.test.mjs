@@ -29,39 +29,38 @@ const dl = (id, state, gotGiB = 4) => model({
 const summary = (...models) => downloadsSummary(createState(models));
 
 test("an empty list says so rather than counting to zero", () => {
-  assert.equal(summary(), "No active downloads.");
-  assert.equal(summary(model({ id: "a", installed: true })), "No active downloads.");
+  assert.equal(summary(), "No downloads");
+  assert.equal(summary(model({ id: "a", installed: true })), "No downloads");
 });
 
-test("a completed download is not an active one", () => {
-  assert.equal(summary(dl("a", "completed", 10)), "No active downloads.");
+test("a completed download is counted as completed, not as pending work", () => {
+  assert.equal(summary(dl("a", "completed", 10)), "1 completed");
   assert.equal(downloadsBadge(createState([dl("a", "completed", 10)])), 0);
 });
 
-test("downloading counts as in progress", () => {
-  assert.equal(summary(dl("a", "downloading")), "1 download in progress · 6 GB remaining.");
+test("downloading counts as active", () => {
+  assert.equal(summary(dl("a", "downloading")), "1 active");
 });
 
-test("paused counts as paused, not as in progress", () => {
+test("paused counts as paused, not as active", () => {
   const text = summary(dl("a", "paused"));
-  assert.doesNotMatch(text, /in progress/, "a paused download was still called in progress");
-  assert.match(text, /^1 paused/);
-  assert.match(text, /6 GB remaining/, "its bytes are still owed");
+  assert.doesNotMatch(text, /active/, "a paused download was still called active");
+  assert.equal(text, "1 paused");
 });
 
 test("queued and verifying count separately", () => {
-  assert.match(summary(dl("a", "queued", 0)), /^1 queued/);
-  assert.match(summary(dl("a", "verifying", 10)), /^1 verifying/);
+  assert.equal(summary(dl("a", "queued", 0)), "1 queued");
+  assert.equal(summary(dl("a", "verifying", 10)), "1 verifying");
 });
 
-test("failed is reported as stopped and never folded into progress", () => {
+test("a stopped download is named as needing attention, never as progress", () => {
   const text = summary(dl("a", "failed", 6));
-  assert.equal(text, "1 stopped.");
-  assert.doesNotMatch(text, /in progress|remaining/);
+  assert.equal(text, "1 needs attention");
+  assert.doesNotMatch(text, /active|completed/);
 });
 
 test("a cancelled download leaves the summary entirely", () => {
-  assert.equal(summary(dl("a", "canceled", 0)), "No active downloads.");
+  assert.equal(summary(dl("a", "canceled", 0)), "No downloads");
 });
 
 test("a mixed list names every state it contains", () => {
@@ -69,18 +68,14 @@ test("a mixed list names every state it contains", () => {
     dl("a", "downloading", 2), dl("b", "paused", 4), dl("c", "failed", 6),
     dl("d", "completed", 10), dl("e", "queued", 0),
   );
-  assert.match(text, /1 download in progress/);
-  assert.match(text, /1 paused/);
-  assert.match(text, /1 queued/);
-  assert.match(text, /1 stopped/);
-  assert.doesNotMatch(text, /completed|installed/i, "a finished download is not pending work");
-  // 8 + 6 + 10 GiB still owed across downloading, paused and queued
-  assert.match(text, /24 GB remaining/);
+  assert.equal(text, "1 active · 1 paused · 1 queued · 1 needs attention");
+  // a finished download is not pending work, so it does not crowd the line
+  assert.doesNotMatch(text, /completed/);
 });
 
-test("plurals follow the count", () => {
-  assert.match(summary(dl("a", "downloading"), dl("b", "downloading")), /2 downloads in progress/);
-  assert.match(summary(dl("a", "downloading")), /1 download in progress/);
+test("counts follow the number of downloads in each state", () => {
+  assert.equal(summary(dl("a", "downloading"), dl("b", "downloading")), "2 active");
+  assert.equal(summary(dl("a", "downloading")), "1 active");
 });
 
 test("the badge counts work the user still owes an outcome", () => {

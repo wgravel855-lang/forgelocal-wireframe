@@ -1127,7 +1127,7 @@
       background: color-mix(in srgb, #05060a 62%, transparent); }
     .loader { position: fixed; z-index: 200; top: 50%; left: 50%;
       transform: translate(-50%, -50%);
-      width: min(820px, calc(100vw - 48px)); max-height: min(680px, calc(100vh - 48px));
+      width: min(920px, calc(100vw - 48px)); max-height: min(600px, calc(100dvh - 48px));
       display: flex; flex-direction: column;
       border: 1px solid var(--line-strong); border-radius: 10px;
       background: var(--panel); box-shadow: var(--shadow-menu); overflow: hidden; }
@@ -1137,7 +1137,7 @@
        own content. Without it the implicit auto row grew past the footer and
        the last parameter control was clipped by the dialog's overflow. */
     .loader-b { flex: 1; min-height: 0; display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(0, 340px);
+      grid-template-columns: minmax(0, 38%) minmax(0, 1fr);
       grid-template-rows: minmax(0, 1fr); }
     .loader-list { display: flex; flex-direction: column; min-height: 0;
       border-right: 1px solid var(--line-soft); }
@@ -1188,6 +1188,10 @@
       justify-content: space-between; gap: 12px; }
     .lfield-row select { max-width: 210px; }
 
+    .loader-facts { margin: 14px 0 0; display: grid; grid-template-columns: 118px minmax(0,1fr);
+      gap: 7px 14px; }
+    .loader-facts dt { font-size: 13px; line-height: 19px; color: var(--faint); }
+    .loader-facts dd { margin: 0; font-size: 13.5px; line-height: 19px; color: var(--fg); }
     .loader-est { display: flex; flex-direction: column; gap: 4px; margin-top: 14px;
       padding-top: 12px; border-top: 1px solid var(--line-soft);
       font-size: 13px; color: var(--mut); }
@@ -1358,23 +1362,194 @@
       font-family: "Geist Mono", "Cascadia Mono", ui-monospace, Consolas, monospace; }
     .pd-note { margin: 10px 0 0; font-size: 13px; line-height: 18px; color: var(--faint); }
 
-    /* ---- model routes: one column, one tab row --------------------------- */
-    .mcol { width: 100%; max-width: 960px; margin: 0 auto; padding: 20px 24px 40px;
+    /* ---- model center ---------------------------------------------------- */
+    /* One shell for Explore, My models and Downloads. The task bar says
+       "Models" on all three; these tabs say which view is open, and the
+       toolbar keeps its geometry so nothing jumps between routes. */
+    .mc-scroll { overflow-y: auto; }
+    .mc { width: 100%; max-width: 1180px; margin: 0 auto; padding: 20px 28px 40px;
       display: flex; flex-direction: column; gap: 16px; }
-    .mtabs { display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    .mc-head { display: flex; flex-direction: column; gap: 10px; }
+    .mc-title { display: flex; align-items: center; gap: 10px; }
+    .mc-h1 { margin: 0; font-size: 22px; line-height: 30px; font-weight: 600;
+      letter-spacing: -.01em; }
+    /* Said once, for the whole centre, never per row. */
+    .mc-demo { display: inline-flex; align-items: center; height: 24px; padding: 0 9px;
+      border: 1px solid var(--line-strong); border-radius: 6px;
+      font-size: 13px; line-height: 18px; color: var(--mut); }
+    .mc-tabs { display: flex; align-items: center; gap: 2px;
       border-bottom: 1px solid var(--line-soft); }
-    /* A quiet selected label, not a violet underline competing with the rows. */
-    .tabline { display: flex; align-items: center; gap: 2px; flex: 1; min-width: 0; }
-    .tabline > a, .tabline > span { display: inline-flex; align-items: center; gap: 6px;
-      height: 40px; padding: 0 12px; font-size: 14px; line-height: 20px; color: var(--mut);
+    .mc-tabs > a { display: inline-flex; align-items: center; gap: 6px; height: 40px;
+      padding: 0 12px; font-size: 14px; line-height: 20px; font-weight: 500;
+      color: var(--mut); text-decoration: none;
       border-bottom: 2px solid transparent; margin-bottom: -1px; }
-    .tabline > a:hover { color: var(--fg); text-decoration: none; }
-    .tabline > [aria-current="page"] { color: var(--fg); font-weight: 600;
+    .mc-tabs > a:hover { color: var(--fg); text-decoration: none; }
+    .mc-tabs > [aria-current="page"] { color: var(--fg); font-weight: 600;
       border-bottom-color: var(--line-strong); }
-    .tabline-n { font-size: 13px; color: var(--faint); font-variant-numeric: tabular-nums; }
-    .msearch { width: 232px; height: 38px; margin-bottom: 2px; }
-    .mhead { display: flex; align-items: center; gap: 10px; }
-    .mfoot { margin: 4px 0 0; font-size: 13px; line-height: 19px; }
+    .mc-n { font-size: 13px; color: var(--faint); font-variant-numeric: tabular-nums; }
+    .mc-tools { display: flex; align-items: center; gap: 8px; min-height: 40px; }
+    .mc-tools-r { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+    .mc-search { width: 380px; max-width: 100%; height: 40px; }
+    .mc-search input { font-size: 14px; }
+    .mc-summary { margin: 0; font-size: 13.5px; line-height: 20px; color: var(--mut); }
+    .mc-foot { margin: 6px 0 0; font-size: 13px; line-height: 19px; color: var(--faint); }
+    .mc-sec { display: flex; flex-direction: column; gap: 6px; }
+    .mc-sec + .mc-sec { margin-top: 18px; }
+    .mc-filters { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chipf { min-height: 32px; padding: 0 11px; border: 1px solid var(--line);
+      border-radius: 7px; background: none; font-size: 13px; color: var(--mut); }
+    .chipf:hover { background: var(--sunk); color: var(--fg); }
+    .chipf[aria-pressed="true"] { background: var(--sunk); color: var(--fg);
+      border-color: var(--line-strong); font-weight: 500; }
+
+    /* ---- Explore: list beside detail -------------------------------------- */
+    /* The list is the index and the detail is the decision, so the detail gets
+       the larger share. Both are work surfaces on the canvas: no card around
+       either, and one structural line between them. */
+    .mc-explore .cat { display: grid; grid-template-columns: 400px minmax(0, 1fr);
+      gap: 0 24px; align-items: start; min-height: 0; }
+    .cat-list { display: flex; flex-direction: column; min-width: 0;
+      border-right: 1px solid var(--line-soft); padding-right: 24px; }
+    .cat-rows { display: flex; flex-direction: column; }
+    .cat-detail-wrap { min-width: 0; }
+
+    /* One row primitive, shared by Explore and the loader. */
+    .mrow2 { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto;
+      grid-template-rows: auto auto auto; gap: 1px 12px;
+      padding: 12px; border-radius: 8px; text-decoration: none;
+      transition: background 140ms ease-out; }
+    .mrow2:hover { background: var(--sunk); text-decoration: none; }
+    .mrow2.is-on { background: var(--sidebar-selected); }
+    .mrow2:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+    .mrow2-mark { grid-column: 1; grid-row: 1 / 3; width: 34px; height: 34px;
+      display: inline-flex; align-items: center; justify-content: center;
+      border-radius: 8px; background: var(--sunk); color: var(--mut);
+      font-size: 13px; font-weight: 600; letter-spacing: .02em; }
+    .mrow2.is-on .mrow2-mark { background: var(--raised); }
+    .mrow2-n { grid-column: 2; grid-row: 1; font-size: 15.5px; line-height: 22px;
+      font-weight: 600; color: var(--fg); overflow: hidden;
+      text-overflow: ellipsis; white-space: nowrap; }
+    .mrow2-pub { grid-column: 2; grid-row: 2; font-size: 13px; line-height: 19px;
+      color: var(--faint); }
+    .mrow2-use { grid-column: 2 / -1; grid-row: 3; font-size: 13.5px; line-height: 20px;
+      color: var(--mut); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      margin-top: 3px; }
+    /* a fixed right track, so labels never shift between rows */
+    .mrow2-right { grid-column: 3; grid-row: 1 / 3; display: flex;
+      flex-direction: column; align-items: flex-end; justify-content: center; gap: 2px;
+      text-align: right; min-width: 128px; }
+    .mrow2-size { font-size: 13.5px; line-height: 19px; color: var(--fg);
+      font-variant-numeric: tabular-nums; }
+    .mrow2-fit { font-size: 13px; line-height: 18px; color: var(--mut); }
+    .mrow2-fit.is-over { color: var(--bad); }
+    .mrow2-inst { display: inline-flex; align-items: center; gap: 5px;
+      font-size: 13px; line-height: 18px; color: var(--mut); }
+
+    /* ---- Explore: detail --------------------------------------------------- */
+    .mdet { display: flex; flex-direction: column; gap: 0; padding: 4px 0 32px;
+      max-width: 760px; }
+    .mdet-back { display: none; align-items: center; gap: 6px; min-height: 40px;
+      font-size: 13.5px; color: var(--mut); text-decoration: none; }
+    .mdet-h { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto;
+      gap: 0 14px; align-items: start; }
+    .mdet-mark { width: 44px; height: 44px; display: inline-flex; align-items: center;
+      justify-content: center; border-radius: 10px; background: var(--sunk);
+      color: var(--mut); font-size: 15px; font-weight: 600; }
+    .mdet-id { min-width: 0; }
+    .mdet-name { margin: 0; font-size: 21px; line-height: 29px; font-weight: 600;
+      letter-spacing: -.01em; }
+    .mdet-sub { margin: 3px 0 0; font-size: 13.5px; line-height: 20px; color: var(--faint); }
+    .mdet-sub a { color: var(--mut); }
+    .mdet-act { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .mdet-state { display: inline-flex; align-items: center; gap: 6px;
+      font-size: 13.5px; color: var(--mut); }
+    .mdet-desc { margin: 16px 0 0; font-size: 15px; line-height: 23px; color: var(--mut);
+      max-width: 70ch; }
+    .mdet-caps { list-style: none; display: flex; flex-wrap: wrap; gap: 6px;
+      margin: 16px 0 0; padding: 0; }
+    .mdet-caps li { display: inline-flex; align-items: center; height: 28px;
+      padding: 0 10px; border: 1px solid var(--line); border-radius: 7px;
+      font-size: 13px; line-height: 18px; color: var(--mut); }
+    .mdet-note { margin: 12px 0 0; font-size: 13.5px; line-height: 20px;
+      color: var(--faint); max-width: 68ch; }
+    .mdet-sec { margin-top: 28px; }
+    .mdet-h3 { margin: 0 0 10px; font-size: 13px; line-height: 19px; font-weight: 600;
+      color: var(--mut); }
+    .mdet-kv { margin: 0; display: grid; grid-template-columns: 150px minmax(0, 1fr);
+      gap: 8px 16px; }
+    .mdet-kv dt { font-size: 13.5px; line-height: 20px; color: var(--faint); }
+    .mdet-kv dd { margin: 0; font-size: 13.5px; line-height: 20px; color: var(--fg); }
+    .mdet-fitline { margin: 0; font-size: 14px; line-height: 21px; color: var(--fg); }
+    .mdet-fitline.is-over { color: var(--bad); }
+    /* the one bordered surface in the pane: the artifact being decided on */
+    .mdet-variant { margin-top: 28px; padding: 14px 16px 12px;
+      border: 1px solid var(--line); border-radius: 10px; }
+    .mdet-variant .mdet-h3 { margin-bottom: 8px; }
+    .mvar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 16px;
+      align-items: center; min-height: 46px; }
+    .mvar-q { grid-column: 1; grid-row: 1; font-size: 14px; line-height: 21px;
+      font-weight: 500; color: var(--fg); }
+    .mvar-m { grid-column: 1; grid-row: 2; font-size: 13px; line-height: 19px;
+      color: var(--faint); }
+    .mvar-s { grid-column: 2; grid-row: 1 / 3; font-size: 14px; line-height: 21px;
+      color: var(--fg); font-variant-numeric: tabular-nums; }
+
+    /* ---- My models: one row primitive -------------------------------------- */
+    .ilist { list-style: none; margin: 0; padding: 0; }
+    .ilist > li { border-top: 1px solid var(--line-soft); }
+    .ilist > li:first-child { border-top: 0; }
+    .irow { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto;
+      gap: 2px 14px; align-items: center; padding: 14px 8px; min-height: 88px; }
+    .irow-mark { grid-row: 1; width: 38px; height: 38px; display: inline-flex;
+      align-items: center; justify-content: center; border-radius: 9px;
+      background: var(--sunk); color: var(--mut); font-size: 13.5px; font-weight: 600; }
+    .irow-id { min-width: 0; }
+    .irow-n { display: block; font-size: 15.5px; line-height: 22px; font-weight: 600;
+      color: var(--fg); background: none; border: 0; padding: 0; text-align: left; }
+    .irow-n:hover { color: var(--fg); text-decoration: underline; }
+    .irow-use { margin: 2px 0 0; font-size: 13.5px; line-height: 20px; color: var(--mut);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .irow-res { margin: 4px 0 0; font-size: 13px; line-height: 19px; color: var(--faint); }
+    .irow-act { display: flex; align-items: center; gap: 10px; justify-self: end; }
+    .irow-state { font-size: 13.5px; color: var(--mut); }
+    .ilist > li.is-current .irow { background: var(--sidebar-selected); }
+
+    /* ---- downloads: progress and recovery lead ------------------------------ */
+    .dl-head { margin: 6px 0 0; font-size: 14.5px; line-height: 21px; font-weight: 500;
+      color: var(--fg); }
+    .dlrow.is-bad .dl-head { color: var(--bad); }
+    .dl-det { margin-top: 8px; }
+    .dl-det > summary { cursor: pointer; font-size: 13px; line-height: 19px; color: var(--mut);
+      min-height: 32px; display: flex; align-items: center; }
+    .dl-det > p { margin: 4px 0 0; font-size: 13.5px; line-height: 20px; color: var(--faint);
+      max-width: 70ch; }
+    .dlrow.is-done { min-height: 64px; padding-top: 12px; padding-bottom: 12px; }
+    .dlrow.is-done .dl-main { gap: 3px; }
+
+    @media (max-width: 1099px) {
+      .mc-explore .cat { grid-template-columns: minmax(0, 38%) minmax(0, 1fr); gap: 0 18px; }
+      .cat-list { padding-right: 18px; }
+      .mrow2-use { display: none; }
+    }
+    /* Below 800 the list is the page and a selection opens its own detail. */
+    @media (max-width: 799px) {
+      .mc { padding: 16px 16px 32px; }
+      .mc-explore .cat { grid-template-columns: minmax(0, 1fr); gap: 0; }
+      .cat-list { border-right: 0; padding-right: 0; }
+      .mrow2-use { display: block; }
+      .cat[data-selected] .cat-list { display: none; }
+      .cat:not([data-selected]) .cat-detail-wrap { display: none; }
+      .mdet-back { display: inline-flex; }
+      .mdet-h { grid-template-columns: 40px minmax(0, 1fr); }
+      .mdet-act { grid-column: 1 / -1; margin-top: 14px; }
+      .irow { grid-template-columns: 38px minmax(0, 1fr); }
+      .irow-act { grid-column: 1 / -1; justify-self: start; margin-top: 10px; }
+      .mc-search { width: 100%; }
+    }
+    @media (max-width: 720px) {
+      .chipf, .mc-tabs > a { min-height: 44px; }
+      .irow-act .btn { min-height: 44px; }
+    }
 
     /* ---- model picker ---------------------------------------------------- */
     .mpick { width: 360px; padding: 6px; max-height: 420px; overflow-y: auto; }

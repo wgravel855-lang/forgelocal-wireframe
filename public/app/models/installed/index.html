@@ -329,7 +329,7 @@
     <button class="hit" style="gap:7px;padding:0 8px;border-radius:7px;min-width:0"
       data-popover="project-details" aria-expanded="false" aria-haspopup="dialog"
       aria-label="Project and session details">
-      <h1 class="ws-h1" data-ws-title>My models</h1>
+      <h1 class="ws-h1" data-ws-title>Models</h1>
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="m6 9.5 6 6 6-6"/></svg>
     </button>
     <div class="menu popover pdetails" id="project-details" role="dialog" aria-label="Project and session details" hidden>
@@ -384,92 +384,42 @@
   </div>
 </header>
 
-      <div class="scroll" style="overflow-y:auto">
-        <div data-filter-root="mine" class="mcol">
+      <div class="scroll mc-scroll">
+        <div class="mc" data-filter-root="mine">
 
-          <!-- The shell already names the route, so this page opens with the
-               navigation and the one fact the title cannot carry. -->
-          <div class="mtabs">
-            <nav class="tabline" aria-label="Model views">
-              <a href="/app/models/">Explore</a>
-              <span aria-current="page">My models</span>
-              <a href="/app/models/downloads/">Downloads <span class="tabline-n" data-downloads-badge>2</span></a>
-            </nav>
-            <label class="field msearch"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="flex-shrink:0"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg><span class="vh">Search models</span><input type="search" data-filter-search placeholder="Search models"></label>
-          </div>
+          <!-- One header for every model view. The shell's task bar says "Models" and is
+     not relabelled per route; the tabs below it say which view is open, and the
+     toolbar keeps its geometry so nothing jumps between routes. -->
+<header class="mc-head">
+  <!-- The shell's task bar already titles this page Models. Repeating it
+       here would be the second page title the brief removed everywhere else. -->
+  <nav class="mc-tabs" aria-label="Model views">
+    <a href="/app/models/">Explore</a>
+    <a href="/app/models/installed/" aria-current="page">My models</a>
+    <a href="/app/models/downloads/">Downloads<span class="mc-n" data-downloads-badge hidden></span></a>
+  </nav>
 
-          <!-- What is downloading right now, taken from the store the Downloads
-               page reads. This page keeps no copy: when that page is empty, so
-               is this strip. -->
-          <div data-models-mount="strip"><div class="box" style="padding:12px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-      <span class="dot acc pulse" aria-hidden="true"></span>
-      <div style="flex:1;min-width:0">
-        <div style="font-size:13.5px;font-weight:600">Downloading DeepSeek-Coder-V2 Lite 16B</div>
-        <div class="lab num" style="margin-top:2px">4.56 GB of 10.36 GB · 44% · 28.6 MB/s · about 3 min left</div>
-      </div>
-      <div class="track" style="width:120px;flex-shrink:0" role="progressbar" aria-valuemin="0"
-        aria-valuemax="100" aria-valuenow="44" aria-label="DeepSeek-Coder-V2 Lite 16B download progress">
-        <div class="fillbar" style="width:44%"></div>
-      </div>
-      <button class="btn btnq btns" type="button" style="border-color:var(--line);flex-shrink:0"
-        data-model-act="download.paused" data-model-id="deepseek-coder-v2-lite-q4km">Pause</button>
-    </div></div>
+  <div class="mc-tools"><label class="field mc-search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="flex-shrink:0"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg><span class="vh">Search installed models</span><input type="search" data-filter-search placeholder="Search installed models"></label>
+    <!-- Local model state is a fact about a machine. When the fixtures are on,
+         the whole centre says so once, here, and never per row. -->
+    <span class="mc-demo" data-demo-flag hidden>Demo data</span>
+  </div>
+</header>
 
-          <div class="mhead">
-            <span class="lab" data-filter-count>2 models</span>
-            <span class="grow"></span>
-            <button class="btn btns" type="button" data-filter-clear hidden>Clear</button>
-          </div>
+          <!-- Rendered from the shared store. When a real download is running
+               it appears here as one strip; with none, nothing is drawn. -->
+          <div data-models-mount="strip"></div>
 
-          <ul class="reg" data-models-mount="installed"><li data-filter-item data-name="Qwen2.5 Coder 7B Alibaba Qwen"
-      data-tags="installed agent"
-      data-model-item="qwen25-coder-7b-q4km">
-      <div class="rrow has-action">
-        <div style="min-width:0">
-          <button class="rname" type="button" data-model-detail="qwen25-coder-7b-q4km">Qwen2.5 Coder 7B</button>
-          <p class="ruse">Quick single-file edits, short scripts and focused fixes.</p>
-          <p class="rmeta"><span data-load-pill>On disk</span>
-            &middot; Q4_K_M &middot; Alibaba Qwen</p>
-        </div>
-        <span class="rfit">On disk only</span>
-        <div class="rnums">
-          <span class="rnum"><b>4.68 GB</b><span>on disk</span></span>
-          <span class="rnum"><b>5.2 GB</b><span>when loaded, estimated</span></span>
-          <span class="rnum"><b>32k</b><span>context, recommended</span></span>
-        </div>
-        <button class="btn btns" type="button" data-load-model="qwen25-coder-7b-q4km">Load</button>
-      </div>
-    </li>
-<li data-filter-item data-name="Qwen2.5 Coder 14B Alibaba Qwen"
-      data-tags="installed agent"
-      data-model-item="qwen25-coder-14b-q4km">
-      <div class="rrow has-action">
-        <div style="min-width:0">
-          <button class="rname" type="button" data-model-detail="qwen25-coder-14b-q4km">Qwen2.5 Coder 14B</button>
-          <p class="ruse">Multi-file edits, running commands, tests and previews.</p>
-          <p class="rmeta"><span data-load-pill>On disk</span>
-            &middot; Q4_K_M &middot; Alibaba Qwen</p>
-        </div>
-        <span class="rfit">On disk only</span>
-        <div class="rnums">
-          <span class="rnum"><b>8.99 GB</b><span>on disk</span></span>
-          <span class="rnum"><b>9.6 GB</b><span>when loaded, estimated</span></span>
-          <span class="rnum"><b>32k</b><span>context, recommended</span></span>
-        </div>
-        <button class="btn btns" type="button" data-load-model="qwen25-coder-14b-q4km">Load</button>
-      </div>
-    </li></ul>
+          <div data-models-mount="installed"><p class="chat-empty" style="padding:28px 2px">No models are installed on this
+      device. Find one in <a class="link" href="/app/models/">Explore</a>.</p></div>
 
           <p class="chat-empty" data-filter-empty hidden style="margin:8px 0 0">
-            No installed model matches that search. Clear it to see everything on disk,
-            or look in <a class="link" href="/app/models/">Explore</a>.</p>
+            No installed model matches that search.</p>
 
-          <!-- Storage is one line under the list it describes, not a card. -->
-          <p class="mut mfoot" data-mine-stats>13.67 GB of models on disk &middot; 234 GB free</p>
+          <p class="mc-foot" data-mine-stats></p>
 
         </div>
       </div>
-
     </div>
   </div>
 </div>

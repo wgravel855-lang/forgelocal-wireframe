@@ -16,6 +16,7 @@
 
 import { gb, fmtCtx, commas } from "./units.mjs";
 import { escapeHtml as esc } from "./html.mjs";
+import { monogram } from "./catalog.mjs";
 import {
   allModels, installedModels, installedBytes, isLoaded, isAgentReady,
   runningDownloads, failedDownloads, completedDownloads,
@@ -71,23 +72,28 @@ export function installedRow(m, pc) {
         data-model-id="${esc(m.id)}">Eject</button>`
     : `<button class="btn btns" type="button" data-load-model="${esc(m.id)}">Load</button>`;
 
+  // One resource line, not five columns. Disk is measured; memory and context
+  // are what the model would take, and the line says which is which once.
+  const resources = [
+    `${gb(m.fileSizeBytes, 2)} GB disk`,
+    mem ? `~${mem.value} memory` : "",
+    `${ctx.value} context`,
+  ].filter(Boolean).join(" &middot; ");
+
   return `<li data-filter-item data-name="${esc(m.displayName)} ${esc(m.publisher)}"
       data-tags="installed${loaded ? " loaded" : ""}${isAgentReady(m) ? " agent" : ""}"
       data-model-item="${esc(m.id)}"${loaded ? ' class="is-current"' : ""}>
-      <div class="rrow has-action">
-        <div style="min-width:0">
-          <button class="rname" type="button" data-model-detail="${esc(m.id)}">${esc(m.displayName)}</button>
-          <p class="ruse">${esc(m.bestFor || "")}</p>
-          <p class="rmeta"><span data-load-pill>${loaded ? "Loaded" : "On disk"}</span>
-            &middot; ${esc(m.quantization || "")} &middot; ${esc(m.publisher)}</p>
+      <div class="irow">
+        <span class="irow-mark" aria-hidden="true">${esc(monogram(m.publisher))}</span>
+        <div class="irow-id">
+          <button class="irow-n" type="button" data-model-detail="${esc(m.id)}">${esc(m.displayName)}</button>
+          <p class="irow-use">${esc(m.bestFor || "")}</p>
+          <p class="irow-res num" title="Memory and context are estimates until a runtime loads the model.">${resources}</p>
         </div>
-        <span class="rfit">${loaded ? "In video memory" : "On disk only"}</span>
-        <div class="rnums">
-          <span class="rnum"><b>${gb(m.fileSizeBytes, 2)} GB</b><span>on disk</span></span>
-          <span class="rnum"><b>${esc(mem.value)}</b><span>${esc(mem.label)}</span></span>
-          <span class="rnum"><b>${esc(ctx.value)}</b><span>${esc(ctx.label)}</span></span>
+        <div class="irow-act">
+          ${loaded ? `<span class="irow-state">Loaded</span>` : ""}
+          ${action}
         </div>
-        ${action}
       </div>
     </li>`;
 }
@@ -115,6 +121,45 @@ export function installedStats(s, pc) {
   };
 }
 
+/**
+ * The storage footer. Disk totals are a filesystem measurement, so without a
+ * desktop state to supply one the line says where the figure lives instead of
+ * printing a number nothing measured.
+ * @param {ModelState} s
+ * @param {import('./localstate.mjs').DesktopModelState} desktop
+ */
+export function installedFooter(s, desktop) {
+  const count = installedModels(s).length;
+  if (!count) return "";
+  const used = `${gb(installedBytes(s), 2)} GB used by models`;
+  return desktop.hardware
+    ? `${used} · ${gb(desktop.hardware.diskFreeBytes, 0)} GB available`
+    : `${used}. Available disk space is shown in the desktop app.`;
+}
+
+/**
+ * The installed list, in sections. A section already says what state its rows
+ * are in, so no row repeats it as a label.
+ * @param {ModelState} s
+ * @param {MachineProfile} pc
+ */
+export function installedSections(s, pc) {
+  const loaded = installedModels(s).filter(isLoaded);
+  const idle = installedModels(s).filter((m) => !isLoaded(m));
+  if (!loaded.length && !idle.length) {
+    return `<p class="chat-empty" style="padding:28px 2px">No models are installed on this
+      device. Find one in <a class="link" href="/app/models/">Explore</a>.</p>`;
+  }
+  const section = (title, rows) => rows.length
+    ? `<section class="mc-sec"><h2 class="lab">${title}</h2>
+        <ul class="ilist">${rows.join("\n")}</ul></section>`
+    : "";
+  return [
+    section("Loaded", loaded.map((m) => installedRow(m, pc))),
+    section("Installed", idle.map((m) => installedRow(m, pc))),
+  ].filter(Boolean).join("\n");
+}
+
 /* ------------------------------------------------------------- downloads -- */
 
 /**
@@ -130,25 +175,36 @@ const STATE_WORD = {
   verifying: "Verifying", completed: "Installed", failed: "Stopped", canceled: "Cancelled",
 };
 
-/** @param {ModelRecord} m */
+/**
+ * An active download. Progress is the loudest thing in the row, because it is
+ * the only thing the user is waiting on. The word "Downloading" is not
+ * repeated: the row is inside Active and the bar is visibly moving.
+ * @param {ModelRecord} m
+ */
 function runningRow(m) {
   const d = m.downloadState;
   if (!d) return "";
-  const running = d.state === "downloading";
   const pct = downloadPercent(d);
-  const toggle = d.state === "paused"
+  const paused = d.state === "paused";
+  const toggle = paused
     ? `<button class="btn btns" type="button" data-model-act="download.resumed" data-model-id="${esc(m.id)}">Resume</button>`
     : `<button class="btn btns" type="button" data-model-act="download.paused" data-model-id="${esc(m.id)}">Pause</button>`;
+  // Rate and estimate appear only when a downloader reported them.
+  const facts = [`${gb(d.receivedBytes, 2)} GB of ${gb(d.totalBytes, 2)} GB`, `${pct}%`];
+  if (paused) facts.push("Paused");
+  if (d.state === "queued") facts.push("Queued");
+  if (d.bytesPerSecond) facts.push(`${(d.bytesPerSecond / 1e6).toFixed(1)} MB/s`);
+  if (d.etaSeconds) facts.push(`about ${Math.round(d.etaSeconds / 60)} min left`);
+
   return `<div class="dlrow" data-download-row="${esc(m.id)}">
       <div class="dl-main">
         <span class="dl-n">${esc(m.displayName)} <span class="faint">${esc(m.quantization || "")}</span></span>
         <div class="track dl-track" role="progressbar" aria-valuemin="0" aria-valuemax="100"
-          aria-valuenow="${pct}" aria-label="${esc(m.displayName)} download progress">
-          <div class="fillbar" style="width:${pct}%${running ? "" : ";opacity:.45"}"></div>
+          aria-valuenow="${pct}" aria-label="${esc(m.displayName)} download, ${pct} percent">
+          <div class="fillbar" style="width:${pct}%${paused ? ";opacity:.45" : ""}"></div>
         </div>
-        <p class="dl-m num">${esc(downloadDetail(m))}</p>
+        <p class="dl-m num">${esc(facts.join(" · "))}</p>
       </div>
-      <span class="rfit dl-s"><span class="dot ${running ? "acc pulse" : "warn"}" aria-hidden="true"></span>${STATE_WORD[d.state]}</span>
       <div class="dl-a">
         ${d.state === "verifying" ? "" : toggle}
         <button class="btn btns btnq" type="button" style="border-color:var(--line)"
@@ -157,16 +213,27 @@ function runningRow(m) {
     </div>`;
 }
 
-/** @param {ModelRecord} m */
+/**
+ * A stopped download. One human first line, the two numbers that explain it,
+ * and the long technical text behind Details.
+ * @param {ModelRecord} m
+ */
 function failedRow(m) {
   const d = m.downloadState;
   if (!d) return "";
-  return `<div class="dlrow" data-download-row="${esc(m.id)}">
+  const reason = d.failure || "The reason was not reported.";
+  // The headline is the class of problem; the sentence carries the specifics.
+  const headline = /disk|space/i.test(reason) ? "Not enough disk space"
+    : /network|connection|timed out/i.test(reason) ? "The download could not reach the publisher"
+      : "The download stopped";
+  return `<div class="dlrow is-bad" data-download-row="${esc(m.id)}">
       <div class="dl-main">
         <span class="dl-n">${esc(m.displayName)} <span class="faint">${esc(m.quantization || "")}</span></span>
-        <p class="dl-m">${esc(downloadDetail(m))}</p>
+        <p class="dl-head">${esc(headline)}</p>
+        <p class="dl-m num">${gb(d.receivedBytes, 2)} GB of ${gb(d.totalBytes, 2)} GB received</p>
+        <details class="dl-det"><summary>Details</summary>
+          <p>${esc(reason)}</p></details>
       </div>
-      <span class="rfit dl-s is-bad">Stopped</span>
       <div class="dl-a">
         <button class="btn btns" type="button" data-model-act="download.retried" data-model-id="${esc(m.id)}">Retry</button>
         <button class="btn btns btnq" type="button" style="border-color:var(--line)"
@@ -175,20 +242,23 @@ function failedRow(m) {
     </div>`;
 }
 
-/** @param {ModelRecord} m */
+/**
+ * A finished download. Short, because there is nothing left to decide: the
+ * local path is behind Details rather than printed across the row.
+ * @param {ModelRecord} m
+ */
 function completedRow(m) {
   const d = m.downloadState;
   if (!d) return "";
   const gone = !m.installed;
-  return `<div class="dlrow" data-download-row="${esc(m.id)}">
+  return `<div class="dlrow is-done" data-download-row="${esc(m.id)}">
       <div class="dl-main">
         <span class="dl-n">${esc(m.displayName)} <span class="faint">${esc(m.quantization || "")}</span></span>
-        <p class="dl-m num">${gb(d.totalBytes, 2)} GB &middot; checksum verified &middot;
-          ${gone ? "deleted from disk" : "C:\\Users\\you\\ForgeLocal\\models"}</p>
+        <p class="dl-m num">${gb(d.totalBytes, 2)} GB${gone ? " · deleted from disk" : " · verified"}</p>
       </div>
-      <span class="rfit dl-s">${gone ? "Deleted" : "Installed"}</span>
       <div class="dl-a">
         ${gone || isLoaded(m) ? "" : `<button class="btn btns" type="button" data-load-model="${esc(m.id)}">Load</button>`}
+        <a class="btn btns btnq" style="border-color:var(--line)" href="/app/models/installed/">My models</a>
       </div>
     </div>`;
 }
@@ -212,7 +282,7 @@ export function downloadsHtml(s) {
 
   const body = [
     section("active", "Active", running.map(runningRow)),
-    section("failed", "Stopped", failed.map(failedRow)),
+    section("failed", "Needs attention", failed.map(failedRow)),
     section("done", "Completed", done.map(completedRow)),
   ].filter(Boolean).join("\n");
 
@@ -270,24 +340,16 @@ export function downloadsSummary(s) {
     const state = m.downloadState && m.downloadState.state;
     if (state && by[state]) by[state].push(m);
   }
-
-  const outstanding = [...by.downloading, ...by.paused, ...by.queued, ...by.verifying];
-  if (!outstanding.length && !by.failed.length) return "No active downloads.";
+  const done = completedDownloads(s).length;
 
   const parts = [];
-  if (by.downloading.length) parts.push(`${by.downloading.length} download${by.downloading.length === 1 ? "" : "s"} in progress`);
+  if (by.downloading.length) parts.push(`${by.downloading.length} active`);
   if (by.paused.length) parts.push(`${by.paused.length} paused`);
   if (by.queued.length) parts.push(`${by.queued.length} queued`);
   if (by.verifying.length) parts.push(`${by.verifying.length} verifying`);
-
-  // The remaining bytes cover everything still owed, so the sentence names that
-  // scope rather than implying it belongs to the downloads that are running.
-  const remaining = outstanding.reduce((n, m) =>
-    n + (m.downloadState ? m.downloadState.totalBytes - m.downloadState.receivedBytes : 0), 0);
-  if (remaining > 0) parts.push(`${gb(remaining, 1)} GB remaining`);
-
-  if (by.failed.length) parts.push(`${by.failed.length} stopped`);
-  return parts.join(" · ") + ".";
+  if (by.failed.length) parts.push(`${by.failed.length} needs attention`);
+  if (!parts.length && done) parts.push(`${done} completed`);
+  return parts.length ? parts.join(" · ") : "No downloads";
 }
 
 /** @param {ModelState} s */
@@ -358,3 +420,10 @@ export function composerModelLabel(s) {
   const m = s.selectedId ? s.byId[s.selectedId] : null;
   return m && isLoaded(m) ? m.displayName : "No model loaded";
 }
+
+/**
+ * Every catalog record, in catalog order. Explore lists all of them; the
+ * installed and downloads views filter the same array.
+ * @param {ModelState} s
+ */
+export const allCatalog = (s) => allModels(s);

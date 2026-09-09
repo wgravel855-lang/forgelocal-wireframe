@@ -1,0 +1,18 @@
+<!-- One header for every model view. The shell's task bar says "Models" and is
+     not relabelled per route; the tabs below it say which view is open, and the
+     toolbar keeps its geometry so nothing jumps between routes. -->
+<header class="mc-head">
+  <!-- The shell's task bar already titles this page Models. Repeating it
+       here would be the second page title the brief removed everywhere else. -->
+  <nav class="mc-tabs" aria-label="Model views">
+    <a href="/app/models/"{{explore}}>Explore</a>
+    <a href="/app/models/installed/"{{installed}}>My models</a>
+    <a href="/app/models/downloads/"{{downloads}}>Downloads<span class="mc-n" data-downloads-badge hidden></span></a>
+  </nav>
+
+  <div class="mc-tools">{{tools}}
+    <!-- Local model state is a fact about a machine. When the fixtures are on,
+         the whole centre says so once, here, and never per row. -->
+    <span class="mc-demo" data-demo-flag hidden>Demo data</span>
+  </div>
+</header>

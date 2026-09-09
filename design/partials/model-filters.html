@@ -1,0 +1,39 @@
+<!-- Sort and filters live in one popover each, so the header never fills with
+     chips. Only filters the user has actually applied appear as removable
+     chips beneath the toolbar. -->
+<div style="position:relative">
+  <button class="btn btnq btns" type="button" data-popover="sort-pop" aria-expanded="false"
+    aria-haspopup="menu">
+    <span data-sort-label>Recommended</span>
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9.5 6 6 6-6"/></svg>
+  </button>
+  <div class="menu popover" id="sort-pop" role="menu" hidden
+    style="top:calc(100% + 6px);right:0;left:auto;width:230px;padding:6px">
+    <button role="menuitemradio" aria-checked="true" class="srow on" type="button" data-sort="recommended"><span class="t">Recommended</span></button>
+    <button role="menuitemradio" aria-checked="false" class="srow" type="button" data-sort="smallest"><span class="t">Smallest download</span></button>
+    <button role="menuitemradio" aria-checked="false" class="srow" type="button" data-sort="context"><span class="t">Largest context</span></button>
+    <button role="menuitemradio" aria-checked="false" class="srow" type="button" data-sort="name"><span class="t">Name</span></button>
+  </div>
+</div>
+
+<div style="position:relative">
+  <button class="btn btnq btns" type="button" data-popover="filter-pop" aria-expanded="false"
+    aria-haspopup="dialog">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
+    Filters<span class="mc-n" data-filter-count-badge hidden></span>
+  </button>
+  <div class="menu popover pdetails" id="filter-pop" role="dialog" aria-label="Filter models" hidden
+    style="top:calc(100% + 6px);right:0;left:auto;width:260px">
+    <p class="pd-h">Capability</p>
+    <div class="mc-filters">
+      <button class="chipf" type="button" data-filter="tool_use" aria-pressed="false">Tool use</button>
+      <button class="chipf" type="button" data-filter="agent_ready" aria-pressed="false">Agent-ready</button>
+      <button class="chipf" type="button" data-filter="fim" aria-pressed="false">Fill-in-the-middle</button>
+    </div>
+    <p class="pd-h" style="margin-top:12px">Status</p>
+    <div class="mc-filters">
+      <button class="chipf" type="button" data-filter="installed" aria-pressed="false">Installed</button>
+    </div>
+    <p class="pd-note">Compatibility filters need a connected desktop app.</p>
+  </div>
+</div>

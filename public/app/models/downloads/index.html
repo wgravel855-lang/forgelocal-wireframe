@@ -329,7 +329,7 @@
     <button class="hit" style="gap:7px;padding:0 8px;border-radius:7px;min-width:0"
       data-popover="project-details" aria-expanded="false" aria-haspopup="dialog"
       aria-label="Project and session details">
-      <h1 class="ws-h1" data-ws-title>Downloads</h1>
+      <h1 class="ws-h1" data-ws-title>Models</h1>
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="m6 9.5 6 6 6-6"/></svg>
     </button>
     <div class="menu popover pdetails" id="project-details" role="dialog" aria-label="Project and session details" hidden>
@@ -384,89 +384,34 @@
   </div>
 </header>
 
-      <div class="scroll" style="overflow-y:auto">
-        <div class="mcol">
+      <div class="scroll mc-scroll">
+        <div class="mc">
 
-          <!-- The shell names the route. This page opens with the navigation,
-               then one line of state, then the rows. -->
-          <div class="mtabs">
-            <nav class="tabline" aria-label="Model views">
-              <a href="/app/models/">Explore</a>
-              <a href="/app/models/installed/">My models</a>
-              <span aria-current="page">Downloads</span>
-            </nav>
-            <details class="dl-info">
-              <summary>How downloads work</summary>
-              <p>One at a time, so a partial file is never left behind by a second one starting.
-                Weights come from the publisher. A paused download keeps the bytes already on
-                disk and resumes from there.</p>
-            </details>
-          </div>
+          <!-- One header for every model view. The shell's task bar says "Models" and is
+     not relabelled per route; the tabs below it say which view is open, and the
+     toolbar keeps its geometry so nothing jumps between routes. -->
+<header class="mc-head">
+  <!-- The shell's task bar already titles this page Models. Repeating it
+       here would be the second page title the brief removed everywhere else. -->
+  <nav class="mc-tabs" aria-label="Model views">
+    <a href="/app/models/">Explore</a>
+    <a href="/app/models/installed/">My models</a>
+    <a href="/app/models/downloads/" aria-current="page">Downloads<span class="mc-n" data-downloads-badge hidden></span></a>
+  </nav>
 
-          <p class="lab" data-downloads-summary>1 download in progress · 5.8 GB remaining · 1 stopped.</p>
+  <div class="mc-tools"><span class="grow"></span><details class="dl-info"><summary>How downloads work</summary><p>One at a time, so a partial file is never left behind by a second one starting. Weights come from the publisher. A paused download keeps the bytes already on disk and resumes from there.</p></details>
+    <!-- Local model state is a fact about a machine. When the fixtures are on,
+         the whole centre says so once, here, and never per row. -->
+    <span class="mc-demo" data-demo-flag hidden>Demo data</span>
+  </div>
+</header>
+
+          <p class="mc-summary" data-downloads-summary>No downloads</p>
 
           <!-- Every row below is rendered from the shared model store, by the
-               same function the browser re-renders with. This page owns no
-               download list of its own. -->
-          <div data-models-mount="downloads"><section aria-labelledby="dl-active" data-dl-group="active">
-        <h2 class="lab" id="dl-active" style="margin:0 0 8px">Active</h2>
-        <div class="index"><div class="dlrow" data-download-row="deepseek-coder-v2-lite-q4km">
-      <div class="dl-main">
-        <span class="dl-n">DeepSeek-Coder-V2 Lite 16B <span class="faint">Q4_K_M</span></span>
-        <div class="track dl-track" role="progressbar" aria-valuemin="0" aria-valuemax="100"
-          aria-valuenow="44" aria-label="DeepSeek-Coder-V2 Lite 16B download progress">
-          <div class="fillbar" style="width:44%"></div>
-        </div>
-        <p class="dl-m num">4.56 GB of 10.36 GB · 44% · 28.6 MB/s · about 3 min left</p>
-      </div>
-      <span class="rfit dl-s"><span class="dot acc pulse" aria-hidden="true"></span>Downloading</span>
-      <div class="dl-a">
-        <button class="btn btns" type="button" data-model-act="download.paused" data-model-id="deepseek-coder-v2-lite-q4km">Pause</button>
-        <button class="btn btns btnq" type="button" style="border-color:var(--line)"
-          data-model-act="download.canceled" data-model-id="deepseek-coder-v2-lite-q4km">Cancel</button>
-      </div>
-    </div></div>
-      </section>
-<section aria-labelledby="dl-failed" data-dl-group="failed">
-        <h2 class="lab" id="dl-failed" style="margin:0 0 8px">Stopped</h2>
-        <div class="index"><div class="dlrow" data-download-row="llama33-70b-q4km">
-      <div class="dl-main">
-        <span class="dl-n">Llama 3.3 70B <span class="faint">Q4_K_M</span></span>
-        <p class="dl-m">Stopped at 6.20 GB of 42.52 GB · 15% · The disk had 19 GB free and this profile needs 42.5 GB. Free space or choose a smaller profile, then retry.</p>
-      </div>
-      <span class="rfit dl-s is-bad">Stopped</span>
-      <div class="dl-a">
-        <button class="btn btns" type="button" data-model-act="download.retried" data-model-id="llama33-70b-q4km">Retry</button>
-        <button class="btn btns btnq" type="button" style="border-color:var(--line)"
-          data-model-act="download.canceled" data-model-id="llama33-70b-q4km">Remove</button>
-      </div>
-    </div></div>
-      </section>
-<section aria-labelledby="dl-done" data-dl-group="done">
-        <h2 class="lab" id="dl-done" style="margin:0 0 8px">Completed</h2>
-        <div class="index"><div class="dlrow" data-download-row="qwen25-coder-7b-q4km">
-      <div class="dl-main">
-        <span class="dl-n">Qwen2.5 Coder 7B <span class="faint">Q4_K_M</span></span>
-        <p class="dl-m num">4.68 GB &middot; checksum verified &middot;
-          C:\Users\you\ForgeLocal\models</p>
-      </div>
-      <span class="rfit dl-s">Installed</span>
-      <div class="dl-a">
-        <button class="btn btns" type="button" data-load-model="qwen25-coder-7b-q4km">Load</button>
-      </div>
-    </div>
-<div class="dlrow" data-download-row="qwen25-coder-14b-q4km">
-      <div class="dl-main">
-        <span class="dl-n">Qwen2.5 Coder 14B <span class="faint">Q4_K_M</span></span>
-        <p class="dl-m num">8.99 GB &middot; checksum verified &middot;
-          C:\Users\you\ForgeLocal\models</p>
-      </div>
-      <span class="rfit dl-s">Installed</span>
-      <div class="dl-a">
-        <button class="btn btns" type="button" data-load-model="qwen25-coder-14b-q4km">Load</button>
-      </div>
-    </div></div>
-      </section></div>
+               same function the browser re-renders with. -->
+          <div data-models-mount="downloads"><p class="chat-empty" style="padding:36px 2px">Nothing is downloading.
+    Start one from <a class="link" href="/app/models/">Explore</a> and it appears here with its progress.</p></div>
 
         </div>
       </div>
