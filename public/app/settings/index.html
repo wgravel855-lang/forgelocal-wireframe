@@ -25,7 +25,7 @@
 <main id="main" style="height:100%"><div class="app" style="height:100%;position:relative">
   <div class="shell">
 
-    <aside class="sidebar" data-active="settings" data-mode="normal" aria-label="Chats and projects">
+    <aside class="sidebar" data-active="settings" data-sidebar-mode="normal" aria-label="Chats and projects">
 
   <!-- Header: the collapse control stays where it has always been, with the
        section name beside it and compose on the right. -->
@@ -90,10 +90,13 @@
       <div class="cgroup-body">
       <div class="chat" data-chat="c3" data-project="task-tracker"
         data-bucket="needs" data-route="/app/stopped/">
-        <button class="chat-open" type="button" title="Switch the date helper to Temporal"
-          aria-label="Switch the date helper to Temporal, stopped">
+        <button class="chat-open" type="button" title="Switch the date helper to Temporal">
           <span class="t" data-chat-title>Switch the date helper to Temporal</span>
           <span class="chat-mark is-need" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" aria-hidden="true"><path d="M12 7.5v5.5"/><circle cx="12" cy="16.6" r=".9" fill="currentColor" stroke="none"/></svg></span>
+          <!-- Status is its own node, so selection (aria-current) and execution
+               state stay separate in the accessibility tree. An idle chat says
+               nothing: "idle" on every row is noise, not information. -->
+          <span class="vh" data-chat-state>stopped</span>
         </button>
         <button class="chat-more" type="button" aria-haspopup="menu" aria-expanded="false"
           aria-label="Actions for Switch the date helper to Temporal">
@@ -112,10 +115,13 @@
       <div class="cgroup-body">
       <div class="chat" data-chat="c1" data-project="task-tracker"
         data-bucket="working" data-pinned data-route="/app/running/">
-        <button class="chat-open" type="button" title="Persist tasks to localStorage"
-          aria-label="Persist tasks to localStorage, running">
+        <button class="chat-open" type="button" title="Persist tasks to localStorage">
           <span class="t" data-chat-title>Persist tasks to localStorage</span>
           <span class="chat-mark" data-chat-running aria-hidden="true"><span class="dot acc pulse" aria-hidden="true"></span></span>
+          <!-- Status is its own node, so selection (aria-current) and execution
+               state stay separate in the accessibility tree. An idle chat says
+               nothing: "idle" on every row is noise, not information. -->
+          <span class="vh" data-chat-state>running</span>
         </button>
         <button class="chat-more" type="button" aria-haspopup="menu" aria-expanded="false"
           aria-label="Actions for Persist tasks to localStorage">
@@ -145,10 +151,13 @@
       <div class="cgroup-body">
       <div class="chat" data-chat="c2" data-project="task-tracker"
         data-bucket="recent">
-        <button class="chat-open" type="button" title="Add a filter bar to the list"
-          aria-label="Add a filter bar to the list, finished">
+        <button class="chat-open" type="button" title="Add a filter bar to the list">
           <span class="t" data-chat-title>Add a filter bar to the list</span>
           
+          <!-- Status is its own node, so selection (aria-current) and execution
+               state stay separate in the accessibility tree. An idle chat says
+               nothing: "idle" on every row is noise, not information. -->
+          <span class="vh" data-chat-state>finished</span>
         </button>
         <button class="chat-more" type="button" aria-haspopup="menu" aria-expanded="false"
           aria-label="Actions for Add a filter bar to the list">
@@ -157,10 +166,13 @@
       </div>
       <div class="chat" data-chat="c4" data-project="task-tracker"
         data-bucket="recent">
-        <button class="chat-open" type="button" title="Scaffold the project"
-          aria-label="Scaffold the project, finished">
+        <button class="chat-open" type="button" title="Scaffold the project">
           <span class="t" data-chat-title>Scaffold the project</span>
           
+          <!-- Status is its own node, so selection (aria-current) and execution
+               state stay separate in the accessibility tree. An idle chat says
+               nothing: "idle" on every row is noise, not information. -->
+          <span class="vh" data-chat-state>finished</span>
         </button>
         <button class="chat-more" type="button" aria-haspopup="menu" aria-expanded="false"
           aria-label="Actions for Scaffold the project">
@@ -169,10 +181,13 @@
       </div>
       <div class="chat" data-chat="c5" data-project="task-tracker"
         data-bucket="recent">
-        <button class="chat-open" type="button" title="Set up Vitest"
-          aria-label="Set up Vitest, finished">
+        <button class="chat-open" type="button" title="Set up Vitest">
           <span class="t" data-chat-title>Set up Vitest</span>
           
+          <!-- Status is its own node, so selection (aria-current) and execution
+               state stay separate in the accessibility tree. An idle chat says
+               nothing: "idle" on every row is noise, not information. -->
+          <span class="vh" data-chat-state>finished</span>
         </button>
         <button class="chat-more" type="button" aria-haspopup="menu" aria-expanded="false"
           aria-label="Actions for Set up Vitest">
@@ -181,10 +196,13 @@
       </div>
       <div class="chat" data-chat="c6" data-project="task-tracker"
         data-bucket="recent">
-        <button class="chat-open" type="button" title="Move request logging behind a flag"
-          aria-label="Move request logging behind a flag, finished">
+        <button class="chat-open" type="button" title="Move request logging behind a flag">
           <span class="t" data-chat-title>Move request logging behind a flag</span>
           
+          <!-- Status is its own node, so selection (aria-current) and execution
+               state stay separate in the accessibility tree. An idle chat says
+               nothing: "idle" on every row is noise, not information. -->
+          <span class="vh" data-chat-state>finished</span>
         </button>
         <button class="chat-more" type="button" aria-haspopup="menu" aria-expanded="false"
           aria-label="Actions for Move request logging behind a flag">
@@ -193,10 +211,13 @@
       </div>
       <div class="chat" data-chat="c7" data-project="portfolio-site"
         data-bucket="recent">
-        <button class="chat-open" type="button" title="Extract the card grid into a component"
-          aria-label="Extract the card grid into a component, finished">
+        <button class="chat-open" type="button" title="Extract the card grid into a component">
           <span class="t" data-chat-title>Extract the card grid into a component</span>
           
+          <!-- Status is its own node, so selection (aria-current) and execution
+               state stay separate in the accessibility tree. An idle chat says
+               nothing: "idle" on every row is noise, not information. -->
+          <span class="vh" data-chat-state>finished</span>
         </button>
         <button class="chat-more" type="button" aria-haspopup="menu" aria-expanded="false"
           aria-label="Actions for Extract the card grid into a component">
@@ -205,10 +226,13 @@
       </div>
       <div class="chat" data-chat="c8" data-project="portfolio-site"
         data-bucket="recent">
-        <button class="chat-open" type="button" title="Fix the contrast on the dark header"
-          aria-label="Fix the contrast on the dark header, finished">
+        <button class="chat-open" type="button" title="Fix the contrast on the dark header">
           <span class="t" data-chat-title>Fix the contrast on the dark header</span>
           
+          <!-- Status is its own node, so selection (aria-current) and execution
+               state stay separate in the accessibility tree. An idle chat says
+               nothing: "idle" on every row is noise, not information. -->
+          <span class="vh" data-chat-state>finished</span>
         </button>
         <button class="chat-more" type="button" aria-haspopup="menu" aria-expanded="false"
           aria-label="Actions for Fix the contrast on the dark header">
@@ -217,10 +241,13 @@
       </div>
       <div class="chat" data-chat="c9" data-project="api-gateway"
         data-bucket="recent">
-        <button class="chat-open" type="button" title="Rate limit the public endpoints"
-          aria-label="Rate limit the public endpoints, finished">
+        <button class="chat-open" type="button" title="Rate limit the public endpoints">
           <span class="t" data-chat-title>Rate limit the public endpoints</span>
           
+          <!-- Status is its own node, so selection (aria-current) and execution
+               state stay separate in the accessibility tree. An idle chat says
+               nothing: "idle" on every row is noise, not information. -->
+          <span class="vh" data-chat-state>finished</span>
         </button>
         <button class="chat-more" type="button" aria-haspopup="menu" aria-expanded="false"
           aria-label="Actions for Rate limit the public endpoints">
@@ -341,24 +368,11 @@
 
           <section class="setsec" id="models">
             <h1 class="h1" style="font-size:20px">Models &amp; runtime</h1>
-            <div class="setrow">
-              <div><span class="set-l">Runtime</span></div>
-              <span class="m set-v">llama.cpp b4021</span>
-            </div>
-            <div class="setrow">
-              <div><span class="set-l">Default model</span>
-                <p class="set-d">Used for new sessions.</p></div>
-              <span class="set-v">Qwen2.5 Coder 14B</span>
-            </div>
-            <div class="setrow">
-              <div><span class="set-l">Model folder</span>
-                <p class="set-d"><span class="num">13.7 GB</span> on disk.</p></div>
-              <span class="m set-v">C:\Users\you\ForgeLocal\models</span>
-            </div>
-            <div class="setrow">
-              <div><span class="set-l">Unload after idle</span></div>
-              <span class="set-v">30 minutes</span>
-            </div>
+            <!-- Rendered from core/runtime.mjs. A runtime version, a device, a
+                 model folder and an idle policy are facts only a connected
+                 runtime reports, so there is no markup here to print them from
+                 when none is connected. -->
+            <div data-runtime-settings></div>
           </section>
 
           <!-- Every "always allow" made in a permission prompt lands here, with
@@ -369,27 +383,17 @@
               approvals are listed underneath and can be revoked one at a time.</p>
             <div class="setrow">
               <div><span class="set-l">Preset for task-tracker</span>
-                <p class="set-d">Edits and the project's own test and build commands run on their
-                  own. Installing packages, network access, Git writes and deletes ask first.</p></div>
+                <p class="set-d">Edits and the project's own test and build commands would run on
+                  their own. Installing packages, network access, Git writes and deletes ask first.
+                  Nothing enforces this until a runtime is connected.</p></div>
               <span class="set-v" data-preset-label>Balanced</span>
             </div>
             <h3 class="set-h3">Remembered approvals</h3>
-            <div class="index" data-approvals>
-              <div class="setrow" data-approval="npm-install">
-                <div><span class="m set-l">npm install</span>
-                  <p class="set-d">Always allowed in <span class="m">~/projects/task-tracker</span>.
-                    Reaches the npm registry, writes inside node_modules and package.json.</p></div>
-                <button class="btn btns" type="button" data-revoke="npm install in task-tracker">Revoke</button>
-              </div>
-              <div class="setrow" data-approval="vitest">
-                <div><span class="m set-l">npm test</span>
-                  <p class="set-d">Always allowed in <span class="m">~/projects/task-tracker</span>.
-                    Runs the project's own test script. No network.</p></div>
-                <button class="btn btns" type="button" data-revoke="npm test in task-tracker">Revoke</button>
-              </div>
-            </div>
-            <p class="set-empty" data-approvals-empty hidden>No remembered approvals. Every command
-              in this project stops and asks.</p>
+            <!-- Approvals appear here when the user grants one. Nothing was
+                 granted in the web preview, because no executor ever asked. -->
+            <div class="index" data-approvals hidden></div>
+            <p class="set-empty" data-approvals-empty>No remembered approvals. Every command in
+              this project would stop and ask.</p>
             <div class="setrow" style="border-top:1px solid var(--line)">
               <div><span class="set-l">Always blocked</span>
                 <p class="set-d">Deletes outside the project root, reads of files matching a secret

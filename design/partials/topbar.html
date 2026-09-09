@@ -40,20 +40,11 @@
       aria-expanded="false" aria-haspopup="dialog" aria-label="Runtime status">
       <span class="dot warn" aria-hidden="true"></span><span data-runtime-word>Runtime</span>
     </button>
-    <div class="menu popover pdetails" id="runtime-pop" role="dialog" aria-label="Local runtime" hidden>
-      <p class="pd-h"><span class="dot ok" aria-hidden="true"></span>Runtime healthy</p>
-      <dl class="pd-kv">
-        <dt>Runtime</dt><dd><span class="m">llama.cpp b4021</span></dd>
-        <dt>Loaded model</dt><dd>Qwen2.5 Coder 14B</dd>
-        <dt>Video memory</dt><dd><span class="num">11.1 GB of 12 GB</span></dd>
-        <dt>Runs on</dt><dd>This device</dd>
-      </dl>
-      <div class="sep"></div>
-      <div class="pd-a">
-        <a class="btn btns" href="/app/models/installed/">Loaded models</a>
-        <a class="btn btns" href="/app/settings/#models">Runtime settings</a>
-      </div>
-    </div>
+    <!-- Rendered from core/runtime.mjs. There is no markup here for a version,
+         a device or a memory figure, so none can be printed without a real
+         handshake having supplied it. -->
+    <div class="menu popover pdetails" id="runtime-pop" role="dialog" aria-label="Local runtime"
+      hidden data-runtime-pop></div>
   </div>
 
   {{artifacts}}

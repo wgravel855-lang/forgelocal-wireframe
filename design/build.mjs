@@ -21,6 +21,10 @@ import { chatList, projectOptions, moveOptions, sessionData, modelSeed } from ".
 import { createState } from "./core/modelstore.mjs";
 import { THIS_PC } from "./core/machine.mjs";
 import * as V from "./core/modelviews.mjs";
+import { modeMenuHtml } from "./core/modes.mjs";
+// The build renders the disconnected state, because a served page is always a
+// web preview. The desktop shell replaces it after its own handshake.
+import { initialRuntime, runtimeLabel } from "./core/runtime.mjs";
 
 F.registerModels(models);
 
@@ -35,8 +39,11 @@ const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replac
 const write = (rel, html) => { mkdirSync(dirname(out(rel)), { recursive: true }); writeFileSync(out(rel), html); };
 const inst = installBlock();
 const SEED = createState(modelSeed());
+const WEB_RUNTIME = initialRuntime("web-preview");
 const mine = V.installedStats(SEED, THIS_PC);
 const BIND = {
+  "<!--MODE_MENU-->": () => modeMenuHtml(),
+  "<!--RUNTIME_LABEL-->": () => runtimeLabel(WEB_RUNTIME),
   "<!--MODEL_PICKER-->": () => V.pickerHtml(SEED, THIS_PC),
   "<!--MODEL_LABEL-->": () => V.composerModelLabel(SEED),
   "<!--RECOMMENDATION-->": () => recommendationBlock(models),

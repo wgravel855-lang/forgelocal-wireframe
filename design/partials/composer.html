@@ -6,7 +6,7 @@
   <div class="cstrip">
     <button class="cchip" type="button" data-popover="runtime-pop" aria-expanded="false"
       aria-haspopup="dialog" aria-label="Runtime status">
-      <span data-env-label>Local</span>
+      <span data-env-label><!--RUNTIME_LABEL--></span>
     </button>
     <button class="cchip" type="button" data-popover="folder-pop" aria-expanded="false"
       aria-haspopup="dialog" aria-label="Project folder">
@@ -49,26 +49,10 @@
           <span data-mode-label>{{mode}}</span>
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9.5 6 6 6-6"/></svg>
         </button>
-        <div class="menu popover" id="mode-pop" role="menu" hidden
-          style="bottom:calc(100% + 8px);left:0;width:320px;padding:6px">
-          <button role="menuitemradio" aria-checked="false" class="srow mrow" type="button" data-mode="Plan">
-            <span class="mrow-t">Plan<span class="kbd">Ctrl 1</span></span>
-            <span class="mrow-d">Reads and proposes. Changes nothing.</span>
-          </button>
-          <button role="menuitemradio" aria-checked="false" class="srow mrow" type="button" data-mode="Manual">
-            <span class="mrow-t">Manual<span class="kbd">Ctrl 2</span></span>
-            <span class="mrow-d">Asks before every edit, command and network call.</span>
-          </button>
-          <button role="menuitemradio" aria-checked="true" class="srow mrow on" type="button" data-mode="Allow edits">
-            <span class="mrow-t">Allow edits<span class="kbd">Ctrl 3</span></span>
-            <span class="mrow-d">Edits inside the project. Commands and network still ask.</span>
-          </button>
-          <button role="menuitemradio" aria-checked="false" class="srow mrow" type="button" data-mode="Auto"
-            disabled aria-disabled="true">
-            <span class="mrow-t">Auto</span>
-            <span class="mrow-d">Requires an isolated runtime.</span>
-          </button>
-        </div>
+        <!-- Rendered from core/modes.mjs, so the menu and the label can never
+             disagree about which modes exist. -->
+        <div class="menu popover" id="mode-pop" role="menu" hidden data-mode-pop
+          style="bottom:calc(100% + 8px);left:0;width:320px;padding:6px"><!--MODE_MENU--></div>
       </div>
 
       <div style="position:relative">
@@ -122,29 +106,17 @@
       </div>
 
       <div style="position:relative">
+        <!-- A percentage is a fraction of a real model's window. With nothing
+             loaded there is no denominator, so the control shows an em dash
+             rather than the 34% it used to keep. -->
         <button class="btn btnq btns cbar-ctx" type="button" data-popover="opts-pop"
-          aria-expanded="false" aria-haspopup="dialog" aria-label="Context used, 34 percent">
-          <span class="ring" data-ctx-ring style="--pct:34" aria-hidden="true"></span>
-          <span class="num" data-ctx-pct>34%</span>
+          aria-expanded="false" aria-haspopup="dialog" data-ctx-btn aria-label="Context usage">
+          <span class="ring" data-ctx-ring style="--pct:0" aria-hidden="true" hidden></span>
+          <span class="num" data-ctx-pct>&mdash;</span>
         </button>
-        <div class="menu popover pdetails" id="opts-pop" role="dialog" aria-label="Context usage" hidden
-          style="bottom:calc(100% + 8px);top:auto;right:0;left:auto;width:320px">
-          <p class="pd-h">Context</p>
-          <dl class="pd-kv">
-            <dt>Used</dt><dd><span class="num">5.6k of 16k tokens</span></dd>
-            <dt>Held back</dt><dd><span class="num">2k</span> for the reply</dd>
-            <dt>Auto-compacts at</dt><dd><span class="num">82%</span></dd>
-          </dl>
-          <div class="pd-bar"><div class="track"><div class="fillbar" style="width:34%"></div></div></div>
-          <p class="pd-h" style="margin-top:12px">Largest parts</p>
-          <dl class="pd-kv">
-            <dt>Messages</dt><dd><span class="num">3.0k</span></dd>
-            <dt>Files read</dt><dd><span class="num">1.2k</span></dd>
-            <dt>Tool schemas</dt><dd><span class="num">0.9k</span></dd>
-          </dl>
-          <p class="pd-note">Older command output is dropped from the prompt before anything is
-            summarized. The full transcript stays readable here.</p>
-        </div>
+        <div class="menu popover pdetails" id="opts-pop" role="dialog" aria-label="Context usage"
+          hidden data-ctx-pop
+          style="bottom:calc(100% + 8px);top:auto;right:0;left:auto;width:320px"></div>
       </div>
 
       {{send}}

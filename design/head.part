@@ -134,7 +134,7 @@
     .srow[aria-current="true"], .srow.on { background: var(--sidebar-selected); color: var(--fg);
       font-weight: 500; }
     .srow .t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .sgroup { font-size: 12px; line-height: 16px; font-weight: 500;
+    .sgroup { font-size: 13px; line-height: 18px; font-weight: 500;
       color: var(--sidebar-secondary); padding: 0 10px; height: 30px;
       display: flex; align-items: center; letter-spacing: .02em; }
 
@@ -175,11 +175,11 @@
     /* ---- first run ---------------------------------------------------------- */
     /* A new user has no history, no second project and no settings to manage
        yet, so none of that is drawn. */
-    .sidebar[data-mode="first-run"] .side-search,
-    .sidebar[data-mode="first-run"] .cgroup,
-    .sidebar[data-mode="first-run"] .chat-archived,
-    .sidebar[data-mode="first-run"] .side-foot { display: none; }
-    .sidebar[data-mode="first-run"] [data-first-run] { display: block; }
+    .sidebar[data-sidebar-mode="first-run"] .side-search,
+    .sidebar[data-sidebar-mode="first-run"] .cgroup,
+    .sidebar[data-sidebar-mode="first-run"] .chat-archived,
+    .sidebar[data-sidebar-mode="first-run"] .side-foot { display: none; }
+    .sidebar[data-sidebar-mode="first-run"] [data-first-run] { display: block; }
 
     /* ---- downloads ---------------------------------------------------------- */
     .dlrow { display: grid; grid-template-columns: minmax(0,1fr) 168px auto; gap: 6px 20px;
@@ -637,9 +637,11 @@
       transition: background 140ms ease-out; }
     .rrow:hover { background: var(--sunk); }
     /* the current row is marked by the rule at its edge, not by a coloured block */
-    .reg > li.is-current .rrow { background: color-mix(in srgb, var(--acc) 4%, var(--raised));
-      box-shadow: inset 2px 0 0 var(--acc); }
-    .reg > li.is-current .rrow:hover { background: color-mix(in srgb, var(--acc) 7%, var(--raised)); }
+    /* The loaded row uses the same neutral selected fill an active chat gets.
+       A violet rail and a violet tint made "loaded" look like the accent's job
+       rather than a state, and repeated the word beside it in colour. */
+    .reg > li.is-current .rrow { background: var(--sidebar-selected); box-shadow: none; }
+    .reg > li.is-current .rrow:hover { background: var(--sidebar-selected); }
     .rname { font-size: 15.5px; line-height: 22px; font-weight: 600; color: var(--fg); }
     .rname:hover { text-decoration: none; }
     /* the whole row is the target; the title is the only link in it */
@@ -1063,8 +1065,12 @@
       background: var(--panel); box-shadow: var(--shadow-menu); overflow: hidden; }
     .loader-h { display: flex; align-items: center; gap: 10px; flex-shrink: 0;
       padding: 12px 14px; border-bottom: 1px solid var(--line-soft); }
+    /* One explicit row, so the body is bounded by the dialog rather than by its
+       own content. Without it the implicit auto row grew past the footer and
+       the last parameter control was clipped by the dialog's overflow. */
     .loader-b { flex: 1; min-height: 0; display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(0, 340px); }
+      grid-template-columns: minmax(0, 1fr) minmax(0, 340px);
+      grid-template-rows: minmax(0, 1fr); }
     .loader-list { display: flex; flex-direction: column; min-height: 0;
       border-right: 1px solid var(--line-soft); }
     .loader-search { margin: 12px 14px 8px; flex-shrink: 0; }
@@ -1129,7 +1135,10 @@
     @media (max-width: 860px) {
       .loader { inset: 12px; width: auto; max-height: none;
         transform: none; top: 12px; left: 12px; }
-      .loader-b { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr; }
+      /* minmax(0, 1fr), not 1fr: a plain fr row keeps a min-content floor, so
+         the configuration pane grew instead of scrolling and its last inputs
+         sat outside the dialog. */
+      .loader-b { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
       .loader-list { border-right: 0; border-bottom: 1px solid var(--line-soft); max-height: 44vh; }
     }
     @media (max-width: 720px) {
@@ -1202,16 +1211,19 @@
       grid-column: 3; grid-row: 3; font-size: 13px; color: var(--mut);
       justify-self: end; white-space: nowrap; }
 
+    /* A flush pane separated by one vertical rule. A bordered, filled card
+       floating beside the results read as a widget rather than as the other
+       half of the same view. */
     .cat-detail { position: sticky; top: 0; display: flex; flex-direction: column;
-      padding: 16px 18px 20px; border: 1px solid var(--line); border-radius: 10px;
-      background: var(--panel); max-height: calc(100vh - 140px); overflow-y: auto; }
+      padding: 4px 0 20px 28px; border: 0; border-left: 1px solid var(--line-soft);
+      border-radius: 0; background: none; max-height: calc(100vh - 140px); overflow-y: auto; }
     .cat-back { display: none; align-items: center; gap: 6px; min-height: 40px;
       font-size: 13.5px; color: var(--mut); text-decoration: none; }
     .cat-h { margin: 0; font-size: 19px; line-height: 27px; font-weight: 600; }
     .cat-sub { margin: 3px 0 0; font-size: 13px; line-height: 19px; color: var(--faint); }
     .cat-desc { margin: 12px 0 0; font-size: 14px; line-height: 21px; color: var(--mut); }
-    .cat-h3 { margin: 20px 0 8px; font-size: 13px; font-weight: 600;
-      letter-spacing: .04em; text-transform: uppercase; color: var(--faint); }
+    .cat-h3 { margin: 20px 0 8px; font-size: 13px; line-height: 19px; font-weight: 600;
+      color: var(--mut); }
     .cat-caplist { list-style: none; margin: 0; padding: 0; display: flex;
       flex-direction: column; gap: 7px; }
     .cat-caplist li { display: flex; align-items: center; gap: 9px;
@@ -1222,8 +1234,9 @@
     .cat-kv dd { margin: 0; font-size: 13.5px; line-height: 19px; }
     .cat-note { margin: 10px 0 0; font-size: 13px; line-height: 18px; color: var(--faint); }
     .cat-actions { margin-top: 20px; display: flex; gap: 8px; }
-    .cat-empty { align-items: center; justify-content: center; min-height: 220px; }
-    .cat-empty p { margin: 0; max-width: 34ch; text-align: center;
+    /* No box is drawn to reserve space: the instruction is the only thing here. */
+    .cat-empty { justify-content: flex-start; min-height: 0; padding-top: 10px; }
+    .cat-empty p { margin: 0; max-width: 34ch; text-align: left;
       font-size: 13.5px; line-height: 20px; color: var(--faint); }
 
     /* Below the split point the results are the page and a selection navigates

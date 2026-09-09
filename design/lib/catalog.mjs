@@ -48,15 +48,16 @@ const fitWord = {
 const resultRow = (m, selectedId) => {
   const fit = F.fitFor(m);
   const on = m.id === selectedId;
-  const caps = capabilitiesOf(m).filter((c) => c !== "chat").slice(0, 3);
+  // One text indicator, not a row of tiny glyphs. The full capability list is
+  // in the detail pane, where it has room for its own labels.
+  const agentReady = capabilitiesOf(m).includes("agent_ready");
   return `<a class="cat-row${on ? " is-on" : ""}" href="?model=${esc(m.id)}"
     data-cat-row="${esc(m.id)}"${on ? ' aria-current="true"' : ""}>
     <span class="cat-name">${esc(m.displayName)}</span>
     ${m.installed ? '<span class="cat-state">Installed</span>' : ""}
     <span class="cat-pub">${esc(m.publisher)}</span>
     <span class="cat-use">${esc((m.strength || "").split(". ")[0])}</span>
-    <span class="cat-caps">${caps.map((c) =>
-      `<span class="cat-cap" title="${CAP_LABEL[c]}"><span class="vh">${CAP_LABEL[c]}</span>${capIcon(c)}</span>`).join("")}</span>
+    <span class="cat-caps">${agentReady ? '<span class="badge-agent">Agent-ready</span>' : ""}</span>
     <span class="cat-fit"><span class="dot ${fit.tone === "ok" ? "ok" : fit.tone === "warn" ? "warn" : fit.tone === "bad" ? "bad" : ""}" aria-hidden="true"></span>${esc(fitWord[fit.state] || fit.label)}</span>
     <span class="cat-size num">${F.gb(m.downloadBytes, 1)} GB</span>
   </a>`;

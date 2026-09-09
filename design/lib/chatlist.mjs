@@ -92,10 +92,14 @@ function row(c) {
       : "";
   return `<div class="chat" data-chat="${esc(c.id)}" data-project="${esc(c.project)}"
         data-bucket="${esc(groupFor(c))}"${c.pinned ? " data-pinned" : ""}${c.route ? ` data-route="${esc(c.route)}"` : ""}>
-        <button class="chat-open" type="button" title="${esc(c.title)}"
-          aria-label="${esc(c.title)}, ${stateWord[c.state] || "idle"}">
+        <button class="chat-open" type="button" title="${esc(c.title)}">
           <span class="t" data-chat-title>${esc(c.title)}</span>
           ${mark}
+          <!-- Status is its own node, so selection (aria-current) and execution
+               state stay separate in the accessibility tree. An idle chat says
+               nothing: "idle" on every row is noise, not information. -->
+          ${c.state && c.state !== "idle"
+    ? `<span class="vh" data-chat-state>${stateWord[c.state] || c.state}</span>` : ""}
         </button>
         <button class="chat-more" type="button" aria-haspopup="menu" aria-expanded="false"
           aria-label="Actions for ${esc(c.title)}">

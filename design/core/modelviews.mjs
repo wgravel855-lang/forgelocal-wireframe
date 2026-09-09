@@ -262,16 +262,32 @@ export function downloadStrip(s) {
  * @param {ModelState} s
  */
 export function downloadsSummary(s) {
-  const running = runningDownloads(s);
-  const failed = failedDownloads(s);
-  if (!running.length && !failed.length) return "Nothing is downloading.";
-  const parts = [];
-  if (running.length) {
-    const bytes = running.reduce((n, m) => n + (m.downloadState ? m.downloadState.totalBytes - m.downloadState.receivedBytes : 0), 0);
-    parts.push(`${running.length} download${running.length === 1 ? "" : "s"} in progress, ${gb(bytes, 1)} GB to go`);
+  // Each state counts as itself. Pausing a download used to leave the sentence
+  // reading "1 download in progress" while both rows below said Paused.
+  /** @type {Record<string, ModelRecord[]>} */
+  const by = { downloading: [], paused: [], queued: [], verifying: [], failed: [] };
+  for (const m of runningDownloads(s).concat(failedDownloads(s))) {
+    const state = m.downloadState && m.downloadState.state;
+    if (state && by[state]) by[state].push(m);
   }
-  if (failed.length) parts.push(`${failed.length} stopped`);
-  return parts.join(" · ");
+
+  const outstanding = [...by.downloading, ...by.paused, ...by.queued, ...by.verifying];
+  if (!outstanding.length && !by.failed.length) return "No active downloads.";
+
+  const parts = [];
+  if (by.downloading.length) parts.push(`${by.downloading.length} download${by.downloading.length === 1 ? "" : "s"} in progress`);
+  if (by.paused.length) parts.push(`${by.paused.length} paused`);
+  if (by.queued.length) parts.push(`${by.queued.length} queued`);
+  if (by.verifying.length) parts.push(`${by.verifying.length} verifying`);
+
+  // The remaining bytes cover everything still owed, so the sentence names that
+  // scope rather than implying it belongs to the downloads that are running.
+  const remaining = outstanding.reduce((n, m) =>
+    n + (m.downloadState ? m.downloadState.totalBytes - m.downloadState.receivedBytes : 0), 0);
+  if (remaining > 0) parts.push(`${gb(remaining, 1)} GB remaining`);
+
+  if (by.failed.length) parts.push(`${by.failed.length} stopped`);
+  return parts.join(" · ") + ".";
 }
 
 /** @param {ModelState} s */

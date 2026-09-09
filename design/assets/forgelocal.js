@@ -26,6 +26,11 @@ import {
 import { THIS_PC } from "../core/machine.mjs";
 import { gb } from "../core/units.mjs";
 import { renderCard } from "../core/modelcard.mjs";
+import { normalizeMode, modeLabel } from "../core/modes.mjs";
+import {
+  detectEnvironment, initialRuntime, reduceRuntime, isConnected,
+  runtimeLabel, runtimeTone, runtimeDetails, runtimeSettings, contextDisplay, sendBlockedReason,
+} from "../core/runtime.mjs";
 
 (() => {
   "use strict";
@@ -542,10 +547,20 @@ import { renderCard } from "../core/modelcard.mjs";
   const LOADER = { open: false, modelId: null, opener: null, params: null, sort: "recent", query: "" };
 
   function openLoader(modelId, opener) {
+    // A modal is the only active floating layer. The model picker stayed open
+    // behind the dialog, so two menus were open at once and Escape was
+    // ambiguous about which one it would close.
+    //
+    // Focus returns to the row that opened the dialog, unless that row lives
+    // inside the popover being closed: then it returns to the popover's
+    // trigger, which is the control still on screen.
+    const inPopover = openPop && opener && openPop.pop.contains(opener);
+    const returnTo = inPopover ? openPop.trigger : opener;
+    closePop(false);
     hydrateModels();
     LOADER.open = true;
     LOADER.modelId = modelId || null;
-    LOADER.opener = opener || null;
+    LOADER.opener = returnTo || null;
     LOADER.params = null;               // an unsubmitted dialog restores defaults
     LOADER.query = "";
     paintLoader();
@@ -605,6 +620,8 @@ import { renderCard } from "../core/modelcard.mjs";
     const est = m && params ? estimateMemory(m, params) : null;
     const note = m && params ? fitNote(m, params, THIS_PC) : null;
     const invalid = Object.keys(errors).length > 0;
+    // The dialog asks the one runtime store, like every other surface.
+    const connected = isConnected(RUNTIME.state);
 
     host.innerHTML = `
       <div class="loader-scrim" data-loader-close></div>
@@ -688,11 +705,20 @@ import { renderCard } from "../core/modelcard.mjs";
         </div>
 
         <footer class="loader-f">
-          <p class="loader-why">No local runtime is connected, so nothing can be loaded from the web preview.</p>
+          <p class="loader-why">${connected
+    ? "These parameters are sent to the local runtime when you load."
+    : "Loading a model needs the desktop app, which is not released yet. Nothing here can load one."}</p>
           <span class="grow"></span>
-          <button class="btn btns btnq" type="button" data-loader-close style="border-color:var(--line)">Cancel</button>
-          <button class="btn btnp btns" type="button" data-loader-load
-            ${!m || invalid ? "disabled" : ""}>Connect local runtime to load</button>
+          ${connected
+    ? `<button class="btn btns btnq" type="button" data-loader-close style="border-color:var(--line)">Cancel</button>
+       <button class="btn btnp btns" type="button" data-loader-load
+         ${!m || invalid ? "disabled" : ""}>Load model</button>`
+    // No primary button, because there is no primary action to take. A purple
+    // button whose only effect is a toast promises a connection that never
+    // happens.
+    : `<button class="btn btns" type="button" disabled aria-disabled="true"
+         title="The desktop app is not released yet.">Desktop app required</button>
+       <button class="btn btnp btns" type="button" data-loader-close>Close</button>`}
         </footer>
       </div>`;
 
@@ -775,12 +801,13 @@ import { renderCard } from "../core/modelcard.mjs";
       toast("Reset to the recommended parameters for this model.");
     });
 
+    // Only rendered when a runtime is connected, so the request has somewhere
+    // to go. A model becomes loaded when the adapter reports it, never here.
     const load = $("[data-loader-load]", host);
     if (load) load.addEventListener("click", () => {
-      // The request is real; nothing else is. A model becomes loaded only when
-      // an adapter reports model.load.completed, which cannot happen here.
       dispatchModel({ type: "model.load.requested", modelId: LOADER.modelId, params: current() });
-      toast("Loading needs the desktop app. Nothing was loaded.");
+      dispatchRuntime({ type: "runtime.model.loading", modelId: LOADER.modelId });
+      closeLoader();
     });
   }
 
@@ -1671,6 +1698,97 @@ import { renderCard } from "../core/modelcard.mjs";
   }
   const onModels = (fn) => { MODELS.subs.add(fn); fn(); return () => MODELS.subs.delete(fn); };
 
+  /* ------------------------------------------------------- runtime state */
+  /* One answer to "is a local runtime connected", for every surface that used
+     to carry its own. The environment is detected once, here; no component
+     asks again, and nothing may substitute a fixture when the answer is no. */
+  const RUNTIME = {
+    state: initialRuntime(detectEnvironment(window)),
+    /** @type {Set<() => void>} */ subs: new Set(),
+  };
+  /** @param {any} event */
+  function dispatchRuntime(event) {
+    const next = reduceRuntime(RUNTIME.state, event);
+    if (next === RUNTIME.state) return RUNTIME.state;
+    RUNTIME.state = next;
+    RUNTIME.subs.forEach((fn) => fn());
+    return next;
+  }
+  const onRuntime = (fn) => { RUNTIME.subs.add(fn); fn(); return () => RUNTIME.subs.delete(fn); };
+
+  /* Every runtime-dependent control, painted from that one state. */
+  function wireRuntimeSurfaces() {
+    const paint = () => {
+      const r = RUNTIME.state;
+
+      $$("[data-env-label]").forEach((el) => { el.textContent = runtimeLabel(r); });
+      const tone = runtimeTone(r);
+      $$("[data-runtime-word]").forEach((el) => { el.textContent = runtimeLabel(r); });
+      $$("[data-runtime-pill] .dot").forEach((d) => {
+        d.className = "dot" + (tone ? " " + tone : "");
+      });
+
+      const pop = $("[data-runtime-pop]");
+      if (pop) {
+        const d = runtimeDetails(r);
+        pop.innerHTML = `
+          <p class="pd-h">${tone ? `<span class="dot ${tone}" aria-hidden="true"></span>` : ""}${esc(d.title)}</p>
+          ${d.body ? `<p class="pd-note" style="margin-top:6px">${esc(d.body)}</p>` : ""}
+          ${d.rows.length ? `<dl class="pd-kv" style="margin-top:10px">${d.rows.map(([k, v]) =>
+    `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>` : ""}
+          <div class="sep" style="margin-top:12px"></div>
+          <div class="pd-a">
+            <a class="btn btns" href="/app/models/installed/">My models</a>
+            <a class="btn btns" href="/app/settings/#models">Runtime settings</a>
+          </div>`;
+      }
+
+      // Context: a percentage needs a loaded model's window to be a fraction of.
+      const ctx = contextDisplay(r);
+      $$("[data-ctx-pct]").forEach((el) => { el.textContent = ctx.text; });
+      $$("[data-ctx-ring]").forEach((el) => {
+        el.hidden = ctx.percent === null;
+        if (ctx.percent !== null) el.style.setProperty("--pct", String(ctx.percent));
+      });
+      $$("[data-ctx-btn]").forEach((el) => { el.setAttribute("aria-label", ctx.label); });
+      const ctxPop = $("[data-ctx-pop]");
+      if (ctxPop) {
+        ctxPop.innerHTML = ctx.percent === null
+          ? `<p class="pd-h">Context</p>
+             <p class="pd-note" style="margin-top:6px">No model is loaded, so there is no context
+             window to measure against. The budget appears here once one is.</p>`
+          : `<p class="pd-h">Context</p>
+             <div class="pd-bar"><div class="track"><div class="fillbar" style="width:${ctx.percent}%"></div></div></div>`;
+      }
+
+      const rs = $("[data-runtime-settings]");
+      if (rs) {
+        const s = runtimeSettings(r);
+        rs.innerHTML = `
+          <div class="setrow">
+            <div><span class="set-l">Connection</span>
+              ${s.note ? `<p class="set-d">${esc(s.note)}</p>` : ""}</div>
+            <span class="set-v">${esc(s.state)}</span>
+          </div>
+          ${s.rows.map(([k, v]) => `<div class="setrow">
+            <div><span class="set-l">${esc(k)}</span></div>
+            <span class="set-v">${esc(v)}</span>
+          </div>`).join("")}`;
+      }
+
+      // Send: disabled, and its accessible name names the missing thing.
+      const why = sendBlockedReason(r, canSendWith(MODELS.state || { byId: {}, order: [], selectedId: null }));
+      $$("[data-send][type=submit]").forEach((b) => {
+        b.disabled = !!why;
+        b.setAttribute("aria-disabled", String(!!why));
+        b.setAttribute("aria-label", why || "Send");
+        if (why) b.title = why;
+      });
+    };
+    onRuntime(paint);
+    onModels(paint);          // send also depends on whether a model is loaded
+  }
+
   /* --------------------------------------------------- reading position */
   /* Where each session was left. Coming back to a finished chat should return
      you to what you were reading, not throw you to the end of it. Only a chat
@@ -1957,11 +2075,17 @@ import { renderCard } from "../core/modelcard.mjs";
     const adds = files.reduce((n, f) => n + (parseInt(f[1], 10) || 0), 0);
     const dels = files.reduce((n, f) => n + (parseInt(String(f[2]).replace(/[^\d]/g, ""), 10) || 0), 0);
     const stopped = a.state === "stopped";
+    // A run that is waiting for an answer is not done. "Done 22s" used to sit
+    // directly above an unanswered "Run this command?", which made it ambiguous
+    // whether the task had finished. The rows below keep their own marks: the
+    // edit batch did complete, the run did not.
+    const waiting = a.state === "paused" || a.state === "awaiting";
+    const head = stopped ? esc(a.label) : waiting ? "Waiting for approval" : "Done";
     return `
       <div class="done is-${esc(a.state)}">
         <p class="done-h">
-          <span class="done-i">${stopped ? ICON.stop() : ICON.done()}</span>
-          <span>${stopped ? esc(a.label) : "Done"}</span>
+          <span class="done-i">${stopped ? ICON.stop() : waiting ? ICON.stop() : ICON.done()}</span>
+          <span>${head}</span>
           ${a.elapsed ? `<span class="num done-t">${esc(a.elapsed)}</span>` : ""}
         </p>
         ${files.length ? `<button class="evidence" type="button" data-open-pane="diff">
@@ -2205,8 +2329,10 @@ import { renderCard } from "../core/modelcard.mjs";
       setTimeout(settle, 220);
       if (CONVO.thread?.composer && ta) {
         ta.placeholder = CONVO.thread.composer.placeholder;
+        // A session's stored mode is normalised before it can reach the label,
+        // so switching to an older chat cannot show a raw enum value.
         const mode = $("[data-mode-label]", form);
-        if (mode) mode.textContent = CONVO.thread.composer.mode;
+        if (mode) mode.textContent = modeLabel(CONVO.thread.composer.mode);
       }
       // Artifacts is only offered when the open turn actually produced some
       const files = (CONVO.thread?.turns || [])
@@ -2556,12 +2682,12 @@ import { renderCard } from "../core/modelcard.mjs";
     });
 
     // Ctrl+1..3 switch mode, matching the shortcuts the menu shows.
-    const modeKeys = { 1: "Plan", 2: "Manual", 3: "Allow edits" };
+    const modeKeys = { 1: "plan", 2: "manual", 3: "allow_edits" };
     document.addEventListener("keydown", (e) => {
       if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey) return;
       const want = modeKeys[e.key];
       if (!want) return;
-      const btn = $(`[data-mode="${want}"]`);
+      const btn = $(`[data-mode-pop] [data-mode="${want}"]`);
       if (!btn || btn.disabled) return;
       e.preventDefault();
       btn.click();
@@ -2595,13 +2721,34 @@ import { renderCard } from "../core/modelcard.mjs";
       }
     };
 
-    pickOne("data-mode", "[data-mode-label]", (v) =>
-      announce(`Mode: ${v}. ${v === "Plan" ? "Nothing will be changed." : ""}`));
+    /* The mode is an enum, not a label. Every read goes through normalizeMode
+       and every write is an id, so a stored "normal" from an older build
+       migrates instead of appearing in the control. */
+    const setMode = (value) => {
+      const id = normalizeMode(value, (m) => console.debug("[forgelocal] " + m));
+      $$("[data-mode-pop] [data-mode]").forEach((x) => {
+        const on = x.getAttribute("data-mode") === id;
+        x.setAttribute("aria-checked", String(on));
+        x.classList.toggle("on", on);
+      });
+      $$("[data-mode-label]").forEach((l) => { l.textContent = modeLabel(id); });
+      store.set("mode", id);
+      return id;
+    };
+    $$("[data-mode-pop] [data-mode]").forEach((b) => b.addEventListener("click", () => {
+      if (b.disabled) return;
+      const id = setMode(b.getAttribute("data-mode"));
+      closePop();
+      announce(`Mode: ${modeLabel(id)}.${id === "plan" ? " Nothing will be changed." : ""}`);
+    }));
+    // Legacy key: older builds stored the visible label under "data-mode".
+    setMode(store.get("mode", null) ?? store.get("data-mode", null));
+
     pickOne("data-effort", "[data-effort-label]");
 
     // Auto needs a sandbox this build does not have, so it says why rather
     // than looking available.
-    $$('[data-mode][disabled]').forEach((b) => {
+    $$("[data-mode-pop] [data-mode][disabled]").forEach((b) => {
       b.title = "Auto needs an isolated runtime. Not available in the web preview.";
     });
   }
@@ -3495,7 +3642,7 @@ import { renderCard } from "../core/modelcard.mjs";
     wireActivity(); wireStopRun(); wirePermission(); wireRecover(); wireSuggest();
     wireModelActions(); wireConversation(); wireChats();
     hydrateModels(); wireLoaderEntryPoints(); wireModelPages(); wireStoreActions();
-    wireWindowFocus();
+    wireRuntimeSurfaces(); wireWindowFocus();
     wireWaitlist(); wireModelDetail(); wireCatalog(); wireDiagnostics(); wireComposerDraft();
     wireAwaiting(); wireComposerControls(); wireDensity(); wireQueue(); wireCaretMenus(); wirePaste();
     // the one setup-specific element on /setup/5/
