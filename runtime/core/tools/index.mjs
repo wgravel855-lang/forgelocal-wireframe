@@ -18,6 +18,7 @@ import {
 } from "./read.mjs";
 import { applyPatch, applyPatchSchema } from "./patch.mjs";
 import { runCommand, runCommandSchema } from "./command.mjs";
+import { updatePlan, updatePlanSchema, askUser, askUserSchema } from "./plan.mjs";
 
 /**
  * @typedef {object} ToolDef
@@ -80,6 +81,24 @@ export const TOOLS = {
     run: runCommand,
     streams: true,
   },
+  update_plan: {
+    name: "update_plan",
+    description:
+      "Record the plan for a multi-step task. Send every step each time, with one marked "
+      + "active. Use it before starting work and again whenever a step finishes or blocks. "
+      + "Skip it for a task that is a single step.",
+    schema: updatePlanSchema,
+    run: updatePlan,
+  },
+  ask_user: {
+    name: "ask_user",
+    description:
+      "Stop and ask the person one question. Use it only when the answer cannot be found by "
+      + "reading the project and choosing wrong would waste the work. The turn pauses until "
+      + "they reply.",
+    schema: askUserSchema,
+    run: askUser,
+  },
 };
 
 export const TOOL_NAMES = Object.freeze(Object.keys(TOOLS));
@@ -92,6 +111,46 @@ for (const name of TOOL_NAMES) {
 }
 
 /**
+ * Keywords that are load-bearing for validation but ruinous on the wire.
+ *
+ * A local server builds a GBNF grammar from the tool schemas to constrain the
+ * model's output, and a length bound becomes a bounded repetition in that
+ * grammar: `maxLength: 500000` on apply_patch's `content` is half a million
+ * alternatives. Sent together, the eight tools produced
+ * "Failed to initialize samplers: failed to parse grammar" and then killed the
+ * inference engine outright.
+ *
+ * So the wire schema drops the size and range bounds and keeps the shape. This
+ * costs nothing in safety: the grammar is guidance for the model, while
+ * validateCall() below still checks the full strict schema before anything
+ * runs, and that is the check that actually gates execution.
+ */
+const WIRE_STRIP = new Set([
+  "minLength", "maxLength", "minimum", "maximum",
+  "minItems", "maxItems", "pattern",
+]);
+
+/** @param {any} schema */
+function wireSchema(schema) {
+  if (!schema || typeof schema !== "object") return schema;
+  /** @type {any} */
+  const out = {};
+  for (const [k, v] of Object.entries(schema)) {
+    if (WIRE_STRIP.has(k)) continue;
+    if (k === "properties") {
+      out.properties = Object.fromEntries(
+        Object.entries(v).map(([name, sub]) => [name, wireSchema(sub)]),
+      );
+    } else if (k === "items") {
+      out.items = wireSchema(v);
+    } else {
+      out[k] = v;
+    }
+  }
+  return out;
+}
+
+/**
  * The tool list in the shape an OpenAI-compatible server expects.
  * @returns {any[]}
  */
@@ -101,7 +160,7 @@ export function toolSpecs() {
     function: {
       name,
       description: TOOLS[name].description,
-      parameters: TOOLS[name].schema,
+      parameters: wireSchema(TOOLS[name].schema),
     },
   }));
 }

@@ -398,7 +398,11 @@ export function reduce(prev, ev) {
 
     case EventType.TURN_COMPLETED:
       if (ev.turn_id) s.completedTurns.push(ev.turn_id);
-      s.state = SessionState.IDLE;
+      // A turn that ended because the provider failed is still a turn that
+      // ended, but the session is not idle: it is in an error the user has not
+      // seen resolved. Returning to idle here would erase the only signal that
+      // something went wrong, which is how an error becomes a silent no-op.
+      s.state = s.error ? SessionState.ERROR : SessionState.IDLE;
       s.status = null;
       s.turnId = null;
       s.stopReason = p.stop_reason ?? null;

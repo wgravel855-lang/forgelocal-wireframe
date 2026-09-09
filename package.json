@@ -9,8 +9,10 @@
     "typecheck": "tsc --noEmit",
     "test": "node --test \"design/core/*.test.mjs\" \"design/qa/*.test.mjs\"",
     "test:e2e": "node --test design/qa/e2e.mjs && npm run test:console",
-    "check": "npm run lint && npm run typecheck && npm test && npm run test:e2e",
-    "test:console": "node design/qa/console-run.mjs"
+    "check": "npm run lint && npm run typecheck && npm test && npm run test:runtime && npm run test:e2e",
+    "test:console": "node design/qa/console-run.mjs",
+    "test:runtime": "node --test \"runtime/core/*.test.mjs\" \"runtime/core/tools/*.test.mjs\" \"runtime/core/providers/*.test.mjs\"",
+    "golden": "node runtime/golden.mjs"
   },
   "devDependencies": {
     "@types/node": "^26.5.0",

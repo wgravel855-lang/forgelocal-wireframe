@@ -53,6 +53,10 @@ export const TOOL_EFFECTS = Object.freeze({
   grep: Effect.READ,
   apply_patch: Effect.WRITE,
   run_command: Effect.EXECUTE,
+  // Neither touches the machine: one records intent, the other suspends the
+  // turn. They are classified READ so every mode, Plan included, can use them.
+  update_plan: Effect.READ,
+  ask_user: Effect.READ,
 });
 
 export const Decision = Object.freeze({

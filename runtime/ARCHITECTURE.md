@@ -48,11 +48,20 @@ runtime/
     paths.mjs           canonicalisation and root containment
     events.mjs          the normalized event protocol and its reducer
     permissions.mjs     Plan / Manual / Allow edits policy
-    tools/              one module per tool, each with a JSON Schema
-    providers/          fake (deterministic) and openai-compatible
+    danger.mjs          the always-block and always-confirm classifier
+    schema.mjs          the strict JSON Schema validator
+    secrets.mjs         redaction and the child-process env allowlist
+    context.mjs         system prompt, project instructions, ledger, accounting
     orchestrator.mjs    the agent loop
+    tools/              read, patch, command, plan; index.mjs is the registry
+    providers/          fake (deterministic) and openai-compatible
+  golden.mjs            the end-to-end task, run against a real model
   host/                 the Node host: local HTTP surface, session wiring
 ```
+
+`host/` does not exist yet. The orchestrator is driven directly by
+`runtime/golden.mjs` and by the integration tests, which is the same entry point
+a host would use.
 
 ## The loop
 
@@ -70,6 +79,40 @@ integration test drives the identical code path the desktop app would:
 9. call the model again;
 10. stop on a final response, a user interrupt, a limit, or an unrecoverable
     error — never because a tool merely finished.
+
+## What the first real runs taught
+
+Three defects only a real model on a real server could have found. All three
+were in this code, not the model's.
+
+**The tool grammar.** A local server builds a GBNF grammar from the tool schemas
+to constrain output. A JSON Schema length bound becomes a bounded repetition in
+that grammar, and `apply_patch` declared `maxLength: 500000` on `content`. Sent
+together, the eight tools produced `Failed to initialize samplers: failed to
+parse grammar` and then killed the inference engine outright — after which every
+later request failed with `fetch failed`, which made the bisect look like five
+broken tools instead of one. `toolSpecs()` now sends a slimmed wire schema with
+the size and range bounds removed. This costs nothing in safety: the grammar is
+guidance, and `validateCall()` still checks the full strict schema before
+anything executes. That check, not the grammar, is what gates execution.
+
+**A doubled tool name.** This server repeats the complete function name on every
+chunk of a streaming tool call. The adapter appended, so `list_directory` became
+`list_directorylist_directory`, and the model was told three times that its tool
+did not exist before the loop gave up. Repeats are now ignored and genuine
+fragments still append.
+
+**An empty stream read as a final answer.** When the grammar failed, the server
+answered 200 and streamed nothing. The adapter normalized "no text, no calls, no
+finish reason" to `final`, so a server-side failure looked like a model that had
+nothing to say and the run reported success with zero work done. That case is
+now a `BAD_RESPONSE` error.
+
+There was also a fourth finding that was not a defect in the runtime at all: the
+golden fixture documented its tests as `node --test src/`, which fails on Node 24
+even when the code is correct, because `src` is treated as a test file rather
+than a directory. The agent said so in its transcript and was right; the harness
+was wrong.
 
 ## What is deliberately not here yet
 
