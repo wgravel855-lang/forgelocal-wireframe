@@ -148,7 +148,7 @@ const proofSurface = () => {
   // has to be on the surface itself, or the workspace renders with the
   // marketing page's light tokens.
   return `<div class="app lp-proof-surface" data-preview inert
-    style="width:1330px;height:748px">${html}</div>`;
+    style="width:1240px;height:760px">${html}</div>`;
 };
 
 // One workspace shell for every conversation route.

@@ -976,6 +976,10 @@ body.is-blurred .cshell::after { animation-play-state: paused; }
   font-weight:600; font-size:15px; letter-spacing:-.01em; }
 .brand:hover { text-decoration:none; }
 .brand.small { font-size:13px; gap:7px; }
+/* Was an inline style on the footer's platform note. It is a class now so
+   the landing page can raise it without !important; every other marketing
+   page keeps the 13px it had. */
+.mfoot-note { font-size:13px; line-height:19px; }
 .mhead { border-bottom:1px solid var(--line); position:sticky; top:0; z-index:50;
   background:var(--bg); }
 .mhead-in { height:72px; display:flex; align-items:center; gap:22px; }
@@ -1918,7 +1922,7 @@ body.lp .mhead [data-nav] a[aria-current="page"] { color: var(--lp-fg); }
 .lp-sec-tight { padding: clamp(56px, 6vw, 96px) 0; }
 
 .lp-h1 { margin:0; font-size:clamp(40px, 5.4vw, 68px); line-height:1.0;
-  font-weight:500; letter-spacing:-.03em; color:var(--lp-fg); }
+  font-weight:500; letter-spacing:-.03em; color:var(--lp-fg); max-width:22ch; }
 .lp-h2 { margin:0; font-size:clamp(32px, 3.8vw, 52px); line-height:1.08;
   font-weight:500; letter-spacing:-.025em; color:var(--lp-fg); }
 .lp-h3 { margin:0; font-size:clamp(22px, 2vw, 28px); line-height:1.2;
@@ -1953,11 +1957,18 @@ body.lp .btn.lp-btn.btnp:hover { background:#000; border-color:#000; }
   font-size:17px; line-height:26px; }
 
 /* Product proof. A dark surface with one radius and one hairline: no
-   floating cards around it, no gradient under it. */
+   floating cards around it, no gradient under it.
+
+   It has its own wrapper rather than sitting inside .lp-wrap, because the
+   section padding capped it at 1112px on a 1366px screen. It now takes
+   min(1240px, 100vw - 64px), which is about 91% of a 1366 viewport, and the
+   workspace inside renders at its natural size: no transform, so the app's
+   own type is at its real scale rather than optically shrunk to 90%. */
+.lp-proof-wrap { width:min(1240px, calc(100vw - 40px)); margin:0 auto; }
 .lp-proof { border-radius:20px; overflow:hidden; background:var(--lp-ink);
   border:1px solid var(--lp-line); }
-.lp-proof .lp-win { height:600px; overflow:hidden; }
-.lp-proof .lp-inner { transform-origin:top center; }
+.lp-proof .lp-win { height:420px; overflow:hidden; }
+.lp-proof .lp-inner { width:1240px; }
 .lp-proof-note { display:flex; align-items:center; justify-content:space-between;
   gap:16px; flex-wrap:wrap; margin:14px 2px 0; }
 
@@ -2045,6 +2056,92 @@ body.lp .btn.lp-btn.btnp:hover { background:#000; border-color:#000; }
 body.lp-anim .lp-enter { opacity:0; transform:translateY(14px);
   transition:opacity 420ms ease-out, transform 420ms ease-out; }
 body.lp-anim .lp-enter.is-in { opacity:1; transform:none; }
+
+/* ---- landing: desktop scale ------------------------------------------
+   The page read small at 100% zoom: a 68px hero over an 831px column, 17px
+   body copy, and a product surface using 81% of a 1366 screen. Everything
+   below is the real type, control and width tokens moved up, not a zoom or
+   a transform, so text stays crisp and breakpoints keep meaning what they
+   say.
+
+   The whole tier is gated at 768px, so the mobile composition below it is
+   literally the same CSS it was before this pass. Each clamp reaches its
+   full value at 1280 and eases down to the old value at 768, which is the
+   smooth 1024-1280 ramp the brief asks for. */
+@media (min-width: 768px) {
+  /* header */
+  body.lp .mhead [data-nav] a { font-size:15px; }
+  body.lp .mhead [data-nav] a.btn { font-size:15px; height:42px; }
+  body.lp .brand span { font-size:17px; }
+  body.lp .brand svg { width:26px; height:26px; }
+
+  /* hero */
+  .lp-h1 { font-size:clamp(48px, calc(5.86vw + 3px), 78px); line-height:.99;
+    max-width:1000px; }
+  .lp-lede { font-size:clamp(18px, calc(.39vw + 15px), 20px); line-height:1.5;
+    max-width:690px; }
+  .lp-fine { font-size:15px; line-height:22px; }
+  .lp-btn { height:52px; min-height:52px; padding:0 26px; font-size:17px; }
+  .lp-quiet { min-height:52px; font-size:17px; }
+
+  /* sections */
+  .lp-h2 { font-size:clamp(36px, calc(4.49vw + 1.5px), 59px); }
+  .lp-h3 { font-size:clamp(24px, calc(1.37vw + 13.5px), 31px); }
+  .lp-body { font-size:clamp(17px, calc(.39vw + 14px), 19px); line-height:1.53;
+    max-width:700px; }
+  .lp-cap { font-size:15px; line-height:22px; }
+  .lp-num { font-size:15px; line-height:22px; }
+  .lp-link { font-size:18px; min-height:48px; }
+  .lp-tag { font-size:14px; line-height:20px; min-height:32px; padding:0 12px; }
+  .lp-tag::before { width:7px; height:7px; }
+
+  /* data surface */
+  .lp-data { max-width:780px; }
+  .lp-data-h { padding:22px 26px; }
+  .lp-kv { padding:8px 26px 22px; }
+  .lp-kv dt, .lp-kv dd { font-size:16px; line-height:24px; padding:12px 0; }
+  .lp-verdict { padding:18px 26px; font-size:16px; line-height:25px; }
+  .lp-data details > summary { padding:15px 26px; font-size:15px; line-height:22px; }
+  .lp-calc { padding:18px 26px 22px; font-size:15px; line-height:26px; }
+
+  /* pricing */
+  .lp-plan-n { font-size:16px; line-height:24px; }
+  .lp-plan-p { font-size:36px; line-height:44px; margin:10px 0 12px; }
+  .lp-plan-p span { font-size:16px; }
+  .lp-plan-d { font-size:16px; line-height:25px; }
+  .lp-rec { font-size:15px; line-height:22px; }
+
+  /* faq */
+  .lp-faq summary { font-size:18px; line-height:28px; padding:24px 44px 24px 0; }
+  .lp-faq summary::after { width:10px; height:10px; top:33px; }
+  .lp-faq details[open] summary::after { top:37px; }
+  .lp-faq p { font-size:18px; line-height:29px; padding:0 0 26px; }
+
+  /* The cropped product views render real app components, whose metadata
+     floor is 13px. That is right inside the application and too small in a
+     marketing screenshot, so the floor is raised here and nowhere else.
+     These carry body.lp because `.kv dt` and `.faint` are defined later in
+     the sheet at the same specificity, and a tie is settled by order. */
+  body.lp .lp-shot dt, body.lp .lp-shot dd,
+  body.lp .lp-shot .lab, body.lp .lp-shot .pill,
+  body.lp .lp-shot .arow, body.lp .lp-shot .m { font-size:15px; line-height:22px; }
+  body.lp .lp-shot pre.m { font-size:15px; line-height:23px; }
+  body.lp .lp-shot svg { width:16px; height:16px; }
+
+  /* The footer is shared, so only the landing copy of it moves. Links were
+     already 14px; the group labels and legal lines were not. */
+  body.lp .mfoot .lab { font-size:14px; line-height:20px; }
+  body.lp .mfoot .mfoot-note { font-size:14px; line-height:21px; }
+  /* The legal row sets 13px on the container, so the children inherit it;
+     raising the row is what actually moves them. */
+  body.lp .mfoot .mfoot-legal { font-size:14px; line-height:21px; }
+  body.lp .mfoot .brand.small { font-size:14px; }
+  body.lp .mfoot a:not(.btn) { font-size:15px; }
+
+  /* product proof: the reason the page looked small */
+  .lp-proof-wrap { width:min(1240px, calc(100vw - 64px)); }
+  .lp-proof .lp-win { height:700px; }
+}
 
 @media (max-width: 900px) {
   .lp-row { grid-template-columns:1fr; gap:28px; }
