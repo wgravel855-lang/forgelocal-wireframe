@@ -1,51 +1,40 @@
 <form class="composer" style="{{style}}" data-composer {{running}} aria-label="Message ForgeLocal">
 
-  <!-- Context strip: where the work happens and what it can reach. Facts about
-       the session, so they never compete with the controls that change what
-       happens next. CSS order puts it under the shell in the start
-       composition and above it in the session one; the markup is the same. -->
+  <!-- Context strip: the connection status, and nothing else. The project used
+       to be repeated here as a full path chip; it is one fact, so it now lives
+       only on the control that changes it, inside the composer. -->
   <div class="cstrip">
     <button class="cchip" type="button" data-popover="runtime-pop" aria-expanded="false"
       aria-haspopup="dialog" aria-label="Runtime status">
       <span data-env-label><!--RUNTIME_LABEL--></span>
     </button>
-    <button class="cchip" type="button" data-popover="folder-pop" aria-expanded="false"
-      aria-haspopup="dialog" aria-label="Project folder">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5A2 2 0 0 1 5 5.5h3.6l1.8 2H19a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
-      <span class="m" data-folder-label>~/projects/task-tracker</span>
-    </button>
-    <div class="folder-anchor">
-      <div class="menu popover pdetails" id="folder-pop" role="dialog" aria-label="Project folder" hidden>
-        <dl class="pd-kv">
-          <dt>Root</dt><dd><span class="m" data-pd-path>~/projects/task-tracker</span></dd>
-          <dt>Repository</dt><dd><span data-pd-branch>Git repo, on main</span></dd>
-          <dt>Stack</dt><dd><span data-pd-stack>Vite + React detected</span></dd>
-          <dt>Access</dt><dd>Files under this root. Anything outside asks first.</dd>
-        </dl>
-        <div class="sep"></div>
-        <div class="pd-a">
-          <button class="btn btns" type="button" data-open-folder>Show in Explorer</button>
-          <a class="btn btns" href="/app/settings/#permissions">Permissions</a>
-        </div>
-        <p class="pd-note">Choosing a different folder needs the desktop app.</p>
-      </div>
-    </div>
   </div>
 
   <div class="queue" data-queue hidden aria-label="Queued messages"></div>
 
-  <!-- The input and its controls are one object. Two rows in the start
-       composition, one row in the session composition, the same shell and the
-       same handlers in both. -->
+  <!-- The input and its controls are one object, at one size, in every state:
+       an empty chat, a chat with messages, a running turn and a stopped one.
+       Nothing here resizes with conversation state. -->
   <div class="cshell">
+  <!-- Attached files, above the input they belong to. -->
+  <div class="catt" data-attachments hidden aria-label="Attached files"></div>
+
   <div class="cinput">
     <label class="vh" for="composer-input">Describe a task or ask a question</label>
     <textarea id="composer-input" class="ta" rows="1" placeholder="{{placeholder}}"></textarea>
   </div>
 
   <div class="cbar">
-    <!-- Left: what the agent is allowed to do, and what it can see. -->
+    <!-- Left: attach, then what the agent is allowed to do. -->
     <div class="cbar-l">
+      <!-- The plus opens the file picker directly. It used to open a popover
+           listing two things it could not do. -->
+      <button class="btn btnq ico btns" type="button" data-attach
+        aria-label="Attach files" title="Attach files">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M12 5.5v13M5.5 12h13"/></svg>
+      </button>
+      <input class="vh" type="file" multiple data-attach-input tabindex="-1" aria-hidden="true">
+
       <div style="position:relative">
         <button class="btn btnq btns" type="button" data-popover="mode-pop" aria-expanded="false" aria-haspopup="menu">
           <span data-mode-label>{{mode}}</span>
@@ -56,28 +45,21 @@
         <div class="menu popover" id="mode-pop" role="menu" hidden data-mode-pop
           style="bottom:calc(100% + 8px);left:0;width:320px;padding:6px"><!--MODE_MENU--></div>
       </div>
-
-      <div style="position:relative">
-        <button class="btn btnq ico btns" type="button" data-popover="ctx-pop" aria-expanded="false"
-          aria-haspopup="dialog" aria-label="Add context">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M12 5.5v13M5.5 12h13"/></svg>
-        </button>
-        <div class="menu popover pdetails" id="ctx-pop" role="dialog" aria-label="Add context"
-          hidden style="bottom:calc(100% + 8px);top:auto;left:0;width:300px">
-          <p class="pd-h">Add to this task</p>
-          <div class="pd-a" style="flex-direction:column;align-items:stretch;gap:4px">
-            <button class="srow" type="button" data-inert="Attaching a specific file needs the desktop app."><span class="t">A file from the project</span></button>
-            <button class="srow" type="button" data-inert="Attaching an image needs the desktop app."><span class="t">An image or screenshot</span></button>
-          </div>
-          <p class="pd-note">Type <span class="m">@</span> in the composer to reference a path.</p>
-        </div>
-      </div>
     </div>
 
     <span class="grow"></span>
 
-    <!-- Right: which model, how hard it thinks, how much room is left. -->
+    <!-- Right: which project, which model, how hard it thinks, and send. -->
     <div class="cbar-r">
+      <!-- Opens the browser's own directory chooser. The label is the folder's
+           name; the title carries whatever fuller path is actually known. -->
+      <button class="btn btnq btns projbtn" type="button" data-project-choose data-empty="true"
+        aria-label="Choose project folder">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5A2 2 0 0 1 5 5.5h3.6l1.8 2H19a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+        <span data-project-name>Choose project</span>
+      </button>
+      <input class="vh" type="file" webkitdirectory directory data-project-input tabindex="-1" aria-hidden="true">
+
       <div style="position:relative">
         <button class="btn btnq btns" type="button" data-popover="model-pop" aria-expanded="false"
           aria-haspopup="menu" aria-keyshortcuts="Control+L">

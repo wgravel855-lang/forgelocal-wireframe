@@ -223,3 +223,61 @@ test("13px text is never paired with the faintest grey", () => {
       `a 13px rule still uses the faintest grey: ${block.slice(0, 90)}`);
   }
 });
+
+/* Each composer control is addressed by an attribute the controller treats as
+   unique. `data-project` was already the sidebar's marker for which project a
+   chat belongs to, so a composer button carrying it wired a directory picker
+   onto nine chat rows. The same shape of bug has now appeared three times
+   (`data-mode` on the sidebar aside, `data-sort` outside its root, this), so
+   the uniqueness is asserted rather than eyeballed. */
+test("every composer control selector matches exactly one element per route", () => {
+  const unique = [
+    "data-composer", "data-attach", "data-attach-input", "data-attachments",
+    "data-project-choose", "data-project-name", "data-project-input",
+    "data-mode-label", "data-model-label", "data-effort-label", "data-send",
+  ];
+  for (const route of ["app", "app/running", "app/permission", "app/stopped", "app/review"]) {
+    const html = page(route);
+    for (const attr of unique) {
+      const n = (html.match(new RegExp(`${attr}(?![a-z-])`, "g")) || []).length;
+      assert.equal(n, 1, `${attr} appears ${n} times on /${route}/, expected exactly one`);
+    }
+  }
+});
+
+/* The composer is one object at one size. The session composition used to
+   collapse it to a 56px row, move the controls inline and hide the reasoning
+   selector; nothing may reintroduce a rule that resizes it by chat state. */
+test("no rule resizes the composer by conversation state", () => {
+  // Comments are stripped first: they sit in front of a rule and would
+  // otherwise be read as part of its selector.
+  const css = readFileSync(join(pub, "assets/forgelocal.css"), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
+  for (const block of css.match(/[^{}]*\{[^{}]*\}/g) || []) {
+    const [selector, body] = [block.slice(0, block.indexOf("{")), block.slice(block.indexOf("{"))];
+    if (!/data-composition/.test(selector)) continue;
+    if (!/\.cshell|\.cinput|\.cbar|\.ta\b/.test(selector)) continue;
+    assert.doesNotMatch(body, /min-height|height|padding|flex-direction|border-radius|display:\s*none/,
+      `a composition rule still resizes the composer: ${selector.trim()}`);
+  }
+});
+
+/* The plus attaches files. It used to open a popover offering two things the
+   prototype could not do, both of them marked inert. */
+test("the attach control opens a file input, not a popover", () => {
+  const html = page("app");
+  assert.match(html, /data-attach\b[^>]*>/, "the attach button exists");
+  assert.doesNotMatch(html, /data-attach\b[^>]*data-popover/, "the attach button still opens a popover");
+  assert.match(html, /<input[^>]*type="file"[^>]*data-attach-input/, "a real file input backs it");
+});
+
+/* One fact, one place. The project path used to appear both under the composer
+   and in the topbar panel. */
+test("the project is not repeated beneath the composer", () => {
+  for (const route of ["app", "app/running", "app/review"]) {
+    const html = page(route);
+    const strip = html.match(/<div class="cstrip">([\s\S]*?)<\/div>\s*\n/);
+    assert.ok(strip, `/${route}/ has a context strip`);
+    assert.doesNotMatch(strip[1], /~\/projects|data-folder-label/,
+      `/${route}/ still repeats the project path under the composer`);
+  }
+});

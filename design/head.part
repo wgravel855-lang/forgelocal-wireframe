@@ -161,15 +161,6 @@
       color: var(--sidebar-secondary); padding: 0 10px; height: 30px;
       display: flex; align-items: center; letter-spacing: .02em; }
 
-    /* Stop replaces Send in the same control, in the same place. */
-    .sendbtn .i-stop { width: 10px; height: 10px; border-radius: 2px; background: currentColor;
-      display: none; }
-    .sendbtn[data-stop="true"] { background: var(--sunk); border-color: var(--line-strong);
-      color: var(--fg); }
-    .sendbtn[data-stop="true"]:hover { background: var(--line-soft); }
-    .sendbtn[data-stop="true"] .i-send { display: none; }
-    .sendbtn[data-stop="true"] .i-stop { display: block; }
-
     /* ---- model detail drawer -------------------------------------------------- */
     .mdrawer-host { position: absolute; inset: 0; z-index: 80; }
     .mdrawer-host[hidden] { display: none !important; }
@@ -669,6 +660,36 @@
     .ico { width: 40px; min-width: 40px; padding: 0; flex-shrink: 0; }
     .ico.btns { width: 40px; min-width: 40px; }
 
+    /* Stop replaces Send in the same control, in the same place.
+       The control is an icon, not a button object: no fill, no border, no
+       rounded container in its default state. The 36x36 hit area stays, and so
+       does the icon size, so nothing moves when Send becomes Stop.
+       These carry .btn as well as .sendbtn so they beat the generic .btn
+       disabled and hover rules further down the sheet, which are the same
+       specificity and would otherwise win on order alone. */
+    .btn.sendbtn { background: none; border: 0; border-radius: 8px;
+      width: 36px; min-width: 36px; height: 36px; min-height: 36px; padding: 0;
+      color: var(--acc);
+      transition: background 140ms ease, color 140ms ease; }
+    .btn.sendbtn:hover:not(:disabled) { background: var(--sunk); color: var(--acc-hi); }
+    .btn.sendbtn:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+    /* Muted when there is nothing to send, brighter when there is. Opacity is
+       not used, so the disabled icon stays legible rather than ghosted. */
+    .btn.sendbtn:disabled, .btn.sendbtn[aria-disabled="true"],
+    .btn.sendbtn:disabled:hover, .btn.sendbtn[aria-disabled="true"]:hover {
+      background: none; border-color: transparent; color: var(--faint);
+      opacity: 1; cursor: default; }
+    .btn.sendbtn:disabled svg, .btn.sendbtn[aria-disabled="true"] svg { opacity: 1; }
+    .btn.sendbtn .i-stop { width: 12px; height: 12px; border-radius: 2px; background: currentColor;
+      display: none; }
+    /* Stop is the same box and the same 15px optical size as the arrow, so the
+       swap costs no layout. */
+    .btn.sendbtn[data-stop="true"] { background: none; border: 0; color: var(--fg); }
+    .btn.sendbtn[data-stop="true"]:hover { background: var(--sunk); color: var(--fg); }
+    .btn.sendbtn[data-stop="true"] .i-send { display: none; }
+    .btn.sendbtn[data-stop="true"] .i-stop { display: block; }
+
+
     /* ---- segmented control ------------------------------------------- */
     /* One object instead of a row of loose pills. Children keep whatever
        pressed/unpressed behaviour the page already wired. */
@@ -787,42 +808,31 @@
       inherits: false;
       initial-value: 0deg;
     }
-    /* ---- composer: one shell, two compositions --------------------------- */
-    /* A new session and a running session are different moments. The start
-       composition is a centred cluster whose composer is the subject of the
-       screen; the session composition is a compact bar that gives the canvas
-       to the transcript. Same markup, same handlers, same draft: only the
-       geometry and the order of the context strip change. */
+    /* ---- composer: one shell, one geometry ------------------------------- */
+    /* The composer is the same object in every state.
+       It used to be two compositions: the session one collapsed the shell to a
+       56px single row the moment a message existed, turned .cbar into an
+       inline group, and hid the reasoning selector outright. That made the
+       controls move and change size exactly when the user started depending on
+       them. The geometry below is therefore unconditional. `data-composition`
+       still arranges the page around the composer (centred cluster with
+       recents, or transcript above it), but nothing resizes the composer. */
     .composer { display: flex; flex-direction: column; gap: 8px;
       border: 0; background: none; padding: 0; }
     .cshell { position: relative; isolation: isolate;
       border: 1px solid var(--line-strong); background: var(--raised);
       border-radius: 14px;
       display: flex; flex-direction: column;
-      transition: border-color 160ms ease-out, min-height 200ms ease-out; }
-    .cinput { display: flex; align-items: flex-start; }
+      min-height: 108px; padding: 14px 14px 8px;
+      transition: border-color 160ms ease-out; }
+    .cinput { display: flex; align-items: flex-start; flex: 1; }
     .cinput > .ta { flex: 1; }
 
-    /* start: the composer is the subject. Two rows inside one object. */
-    [data-composition="start"] .cshell { min-height: 108px; padding: 14px 14px 8px; }
     /* The strip is moved in the DOM, not reordered here, so the tab order
        matches what is on screen. These rules only size it. */
-    [data-composition="start"] .composer .cstrip { justify-content: center; min-height: 40px; }
+    [data-composition="start"] .composer .cstrip { justify-content: center; }
     /* recents belong to the start cluster only */
     [data-composition="session"] .composer .recents { display: none; }
-    [data-composition="start"] .cinput { flex: 1; }
-
-    /* session: one 56px row, input and controls side by side. */
-    [data-composition="session"] .composer { gap: 6px; }
-    [data-composition="session"] .cshell { min-height: 56px; border-radius: 13px;
-      flex-direction: row; align-items: center; gap: 8px; padding: 8px 8px 8px 16px; }
-    [data-composition="session"] .cinput { flex: 1; min-width: 0; align-items: center; }
-    [data-composition="session"] .cbar { flex: 0 0 auto; }
-    [data-composition="session"] .composer .cstrip { min-height: 26px; }
-    /* Reasoning level moves into its popover when the row is tight. Permission
-       mode and model stay: both change what a run is allowed to do, and mode
-       changes execution risk. */
-    [data-composition="session"] .cbar-r > div:nth-child(2) { display: none; }
     [data-composition="session"] .dock { padding-bottom: 20px; }
 
     .cshell::before, .cshell::after {
@@ -888,13 +898,20 @@
     .cbar-ctx { font-size: var(--t-label); line-height: var(--lh-label); color: var(--faint); padding: 0 8px; }
     .cbar > .btn { min-width: 0; }
     .cbar [data-model-label] { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    /* Narrow is handled by wrapping the row, not by shrinking the controls.
+       `nowrap` here belonged to the old compact composer, which had two
+       controls; with six it pushed Send outside the shell and overlapped the
+       labels. Every control keeps its size and its place in the order, and the
+       row becomes two lines when it has to. */
     @media (max-width: 560px) {
-      .cbar { flex-wrap: nowrap; }
-      .cbar [data-model-label] { max-width: 9ch; }
+      .cbar { flex-wrap: wrap; row-gap: 8px; }
+      .cbar-l, .cbar-r { flex-wrap: wrap; row-gap: 8px; }
+      .cbar [data-model-label] { max-width: 12ch; }
     }
     @media (max-width: 460px) {
-      .cbar [data-model-label] { max-width: 6ch; }
-      .cbar > .btn { padding: 0 8px; }
+      /* The spacer stops earning its place once the row wraps. */
+      .cbar > .grow { display: none; }
+      .cbar [data-model-label] { max-width: 10ch; }
     }
 
     /* ---- activity group ---------------------------------------------- */
@@ -1355,6 +1372,36 @@
     .cchip svg { flex-shrink: 0; }
     .folder-anchor { position: relative; }
     .folder-anchor .popover { bottom: auto; top: calc(100% + 6px); left: 0; }
+
+    /* ---- project selector ------------------------------------------------ */
+    /* A folder icon and the folder's own name. The full path used to sit in a
+       chip under the composer; it is one fact and it now lives in one place,
+       on the control that changes it. A long name truncates here rather than
+       pushing the model selector off the row. */
+    .projbtn { max-width: 180px; }
+    .projbtn [data-project-name] { overflow: hidden; text-overflow: ellipsis;
+      white-space: nowrap; min-width: 0; }
+    .projbtn svg { flex-shrink: 0; }
+    .projbtn[data-empty="true"] { color: var(--faint); }
+    @media (max-width: 900px) { .projbtn { max-width: 132px; } }
+    @media (max-width: 560px) { .projbtn { max-width: 96px; } }
+
+    /* ---- attachments ----------------------------------------------------- */
+    /* Sits above the input, inside the shell, so an attachment reads as part of
+       the message being written. Reserves no height when empty. */
+    .catt { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 0 8px; }
+    .catt[hidden] { display: none; }
+    .cattc { display: inline-flex; align-items: center; gap: 6px; min-height: 32px;
+      max-width: 240px; padding: 0 4px 0 10px; border: 1px solid var(--line);
+      border-radius: 8px; background: var(--sunk);
+      font-size: var(--t-label); line-height: var(--lh-label); color: var(--fg); }
+    .cattc .t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .cattc .z { color: var(--faint); flex-shrink: 0; }
+    .cattc svg { flex-shrink: 0; }
+    .cattc .x { display: inline-flex; align-items: center; justify-content: center;
+      width: 28px; height: 28px; min-height: 28px; border: 0; border-radius: 6px;
+      background: none; color: var(--mut); cursor: pointer; flex-shrink: 0; }
+    .cattc .x:hover { background: var(--line-soft); color: var(--fg); }
 
     .cbar-l, .cbar-r { display: flex; align-items: center; gap: 4px; min-width: 0; }
     .cbar-r [data-model-label] { max-width: 168px; overflow: hidden;

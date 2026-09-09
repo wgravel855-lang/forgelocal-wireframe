@@ -2756,6 +2756,140 @@ import {
     });
   }
 
+  /* --------------------------------------------- project and attachments */
+
+  /* The project selector and the plus button both open a real OS dialog.
+   *
+   * One honest limit runs through this: a web page is never told where a
+   * chosen folder lives. showDirectoryPicker() returns a handle with a name,
+   * and a webkitdirectory input returns paths relative to the chosen folder.
+   * Neither exposes an absolute path, by design. So the control shows the
+   * folder's name, which is what is actually known, and the tooltip carries a
+   * fuller path only when the desktop runtime has supplied one. It never
+   * assembles a plausible-looking path out of the name.
+   */
+  function projectState() {
+    return store.get("project", null); // { name, path|null }
+  }
+
+  function paintProject() {
+    const p = projectState();
+    $$("[data-project-choose]").forEach((btn) => {
+      const label = $("[data-project-name]", btn);
+      if (!label) return;
+      label.textContent = p ? p.name : "Choose project";
+      btn.dataset.empty = p ? "false" : "true";
+      btn.title = p
+        ? (p.path || `${p.name} — the full path is only available in the desktop app`)
+        : "Choose a project folder";
+      btn.setAttribute("aria-label", p ? `Project: ${p.name}. Choose a different folder` : "Choose project folder");
+    });
+    // The topbar details panel names the same project, so the two cannot
+    // disagree after a change.
+    if (p) {
+      $$("[data-pd-name]").forEach((el) => { el.textContent = p.name; });
+      $$("[data-pd-path]").forEach((el) => {
+        el.textContent = p.path || p.name;
+        el.title = p.path ? "" : "The full path is only available in the desktop app.";
+      });
+    }
+  }
+
+  function setProject(name, path) {
+    if (!name) return;
+    store.set("project", { name, path: path || null });
+    paintProject();
+    announce(`Project: ${name}.`);
+  }
+
+  function wireProjectPicker() {
+    const buttons = $$("[data-project-choose]");
+    if (!buttons.length) return;
+    paintProject();
+
+    buttons.forEach((btn) => {
+      const input = $("[data-project-input]", btn.parentElement || document);
+      btn.addEventListener("click", async () => {
+        // The File System Access API gives a folder handle without reading
+        // every file inside it, so it is the better dialog where it exists.
+        if (typeof window.showDirectoryPicker === "function") {
+          try {
+            const handle = await window.showDirectoryPicker({ id: "forgelocal-project", mode: "read" });
+            setProject(handle.name, null);
+            return;
+          } catch (err) {
+            // AbortError is the user closing the dialog, which is not a failure.
+            if (err && err.name === "AbortError") return;
+            // Anything else falls through to the input below rather than
+            // leaving the button dead.
+          }
+        }
+        if (input) input.click();
+        else toast("This browser cannot open a folder picker. The desktop app can.");
+      });
+
+      if (!input) return;
+      input.addEventListener("change", () => {
+        const first = input.files && input.files[0];
+        if (!first) return;
+        // webkitRelativePath is "<folder>/<...>", so the first segment is the
+        // folder the user actually chose.
+        const rel = first.webkitRelativePath || "";
+        const name = rel.split("/")[0] || first.name;
+        setProject(name, null);
+        input.value = "";
+      });
+    });
+  }
+
+  /* Files the user attached to the message being written. They are real File
+     objects from a real picker; nothing is uploaded, because there is nowhere
+     to upload them to yet. */
+  const ATTACHED = [];
+
+  function fmtBytes(n) {
+    if (!Number.isFinite(n)) return "";
+    if (n < 1024) return `${n} B`;
+    if (n < 1024 * 1024) return `${Math.round(n / 1024)} KB`;
+    return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  function paintAttachments() {
+    const host = $("[data-attachments]");
+    if (!host) return;
+    host.hidden = ATTACHED.length === 0;
+    host.innerHTML = ATTACHED.map((f, i) => `
+      <span class="cattc">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3.5v5h5"/><path d="M14 3.5H7a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8.5z"/></svg>
+        <span class="t" title="${esc(f.name)}">${esc(f.name)}</span>
+        <span class="z">${esc(fmtBytes(f.size))}</span>
+        <button class="x" type="button" data-drop-attachment="${i}" aria-label="Remove ${esc(f.name)}">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+      </span>`).join("");
+    $$("[data-drop-attachment]", host).forEach((b) => b.addEventListener("click", () => {
+      ATTACHED.splice(Number(b.dataset.dropAttachment), 1);
+      paintAttachments();
+    }));
+  }
+
+  function wireAttach() {
+    const btn = $("[data-attach]");
+    const input = $("[data-attach-input]");
+    if (!btn || !input) return;
+    // Straight to the OS file dialog. This used to open a popover offering two
+    // things the prototype could not do.
+    btn.addEventListener("click", () => input.click());
+    input.addEventListener("change", () => {
+      for (const f of input.files || []) {
+        if (!ATTACHED.some((a) => a.name === f.name && a.size === f.size)) ATTACHED.push(f);
+      }
+      input.value = "";
+      paintAttachments();
+      announce(`${ATTACHED.length} file${ATTACHED.length === 1 ? "" : "s"} attached.`);
+    });
+  }
+
   /* ------------------------------------------------------ transcript detail */
   /* A pending permission is the loudest thing on screen; the composer edge
      steps back while one is open. */
@@ -3713,7 +3847,8 @@ import {
     hydrateModels(); wireLoaderEntryPoints(); wireModelPages(); wireStoreActions();
     wireRuntimeSurfaces(); wireClearSearch(); wireWindowFocus();
     wireWaitlist(); wireCatalog(); wireDiagnostics(); wireComposerDraft();
-    wireAwaiting(); wireComposerControls(); wireDensity(); wireQueue(); wireCaretMenus(); wirePaste();
+    wireAwaiting(); wireComposerControls(); wireProjectPicker(); wireAttach();
+    wireDensity(); wireQueue(); wireCaretMenus(); wirePaste();
     // the one setup-specific element on /setup/5/
     const sd = $("[data-setup-done]");
     if (sd) {
