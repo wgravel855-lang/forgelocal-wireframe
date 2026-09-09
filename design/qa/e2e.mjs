@@ -134,15 +134,22 @@ test("the model picker, catalog and installed page read one payload", () => {
   const payload = JSON.parse(
     (app.match(/id="fl-sessions">([\s\S]*?)<\/script>/) || [])[1]
       .split("\\u003c").join("<"));
-  assert.ok(Array.isArray(payload.models) && payload.models.length > 0);
-  for (const m of payload.models) {
-    assert.equal(typeof m.installed, "boolean", `${m.id} declares installed`);
-    assert.equal(typeof m.agentReady, "boolean", `${m.id} declares agentReady`);
+
+  // One model schema, not two. The legacy `models` array carried a second
+  // representation whose fields were machine facts (vramGB, fitReason, local
+  // paths) the web preview cannot know; it was the reason contradictory states
+  // kept appearing, and it is gone.
+  assert.equal(payload.models, undefined, "the legacy model schema is not shipped");
+  assert.ok(Array.isArray(payload.modelSeed) && payload.modelSeed.length > 0);
+  const legacyFields = ["vramGB", "fitReason", "diskGB", "downloadGB", "store", "runtime"];
+  for (const m of payload.modelSeed) {
+    for (const f of legacyFields) {
+      assert.equal(m[f], undefined, `${m.id} still carries the legacy field ${f}`);
+    }
+    // catalog identity is present, because a catalog is servable
+    assert.equal(typeof m.displayName, "string");
+    assert.equal(typeof m.fileSizeBytes, "number");
   }
-  // the loaded model in the payload is the one the composer names
-  const loaded = payload.models.filter((m) => m.loaded);
-  assert.ok(loaded.length <= 1, "at most one model is loaded at a time");
-  if (loaded.length) assert.ok(app.includes(loaded[0].name), "the composer names the loaded model");
 });
 
 test("the module graph the browser loads is complete", () => {

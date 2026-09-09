@@ -178,6 +178,28 @@ function compatibility(m, desktop) {
 }
 
 /**
+ * Known specifications only. A row whose value is missing is omitted rather
+ * than printed as an em dash: "Architecture —" exposes a gap in the catalog
+ * without telling the reader anything.
+ * @param {ModelRecord} m
+ */
+function specification(m) {
+  const rows = [
+    ["Architecture", m.architecture || m.family],
+    ["Parameters", m.parameterCount],
+    ["Format", [m.format, m.quantization].filter(Boolean).join(" · ")],
+    ["Max context", m.maxContextTokens ? fmtCtx(m.maxContextTokens) : ""],
+  ].filter(([, v]) => v && String(v).trim() && String(v).trim() !== "—");
+  if (!rows.length) return "";
+  return `<section class="mdet-sec">
+    <h3 class="mdet-h3">Specification</h3>
+    <dl class="mdet-kv">
+      ${rows.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("\n      ")}
+    </dl>
+  </section>`;
+}
+
+/**
  * The detail pane.
  * @param {ModelRecord} m
  * @param {DesktopModelState} desktop
@@ -194,7 +216,7 @@ export function modelDetail(m, desktop) {
       <div class="mdet-id">
         <h2 class="mdet-name">${esc(m.displayName)}</h2>
         <p class="mdet-sub">${esc(m.publisher)}${m.license ? ` &middot; ${esc(m.license)}` : ""}${
-  m.sourceUrl ? ` &middot; <a class="link" href="${esc(m.sourceUrl)}" rel="noreferrer noopener" target="_blank">Source model card ${EXTERNAL}</a>` : ""}</p>
+  m.sourceUrl ? ` &middot; <a class="link" href="${esc(m.sourceUrl)}" rel="noreferrer noopener" target="_blank" aria-label="Source model card for ${esc(m.displayName)}, opens the publisher page in a new tab">Source model card ${EXTERNAL}</a>` : ""}</p>
       </div>
       <div class="mdet-act">${actionHtml(m, desktop)}</div>
     </header>
@@ -204,13 +226,17 @@ export function modelDetail(m, desktop) {
     ${caps.length ? `<ul class="mdet-caps">
       ${caps.map((c) => `<li${c === "agent_ready" ? ' class="is-verified"' : ""}>${esc(CAP_LABEL[c] || c)}</li>`).join("")}
     </ul>` : ""}
-    ${isAgentReady(m)
-    ? `<p class="mdet-note">Agent-ready means this model produced valid structured tool calls in
-        ForgeLocal's conformance check.</p>`
-    : `<p class="mdet-note">Not verified for tool use. It can answer questions about code, but
-        ForgeLocal will not let it drive tools.</p>`}
+    <!-- The definition is available on demand rather than spending a paragraph
+         on every model in the catalog. -->
+    <details class="mdet-help">
+      <summary>What Agent-ready means</summary>
+      <p>${isAgentReady(m)
+    ? "This model produced valid structured tool calls in ForgeLocal's conformance check."
+    : "This model has not passed ForgeLocal's tool-call conformance check. It can answer questions about code, but ForgeLocal will not let it drive tools."}</p>
+    </details>
 
-    <!-- The one bordered surface in the pane: the artifact being decided on. -->
+    <!-- The one bordered surface in the pane: the artifact being decided on.
+         One artifact means one compact row; several would mean a real selector. -->
     <section class="mdet-variant">
       <h3 class="mdet-h3">Download</h3>
       <div class="mvar">
@@ -218,25 +244,11 @@ export function modelDetail(m, desktop) {
         <span class="mvar-m">${esc(m.parameterCount || "")} &middot; ${esc(fmtCtx(m.maxContextTokens || 8192))} context</span>
         <span class="mvar-s num">${gb(m.fileSizeBytes, 2)} GB</span>
       </div>
-      <p class="mdet-note">One artifact is published for this model in ForgeLocal's catalog.</p>
     </section>
 
     ${compatibility(m, desktop)}
 
-    <section class="mdet-sec">
-      <h3 class="mdet-h3">Specification</h3>
-      <dl class="mdet-kv">
-        <dt>Architecture</dt><dd>${esc(m.architecture || m.family || "—")}</dd>
-        <dt>Parameters</dt><dd>${esc(m.parameterCount || "—")}</dd>
-        <dt>Format</dt><dd>${esc(m.format || "GGUF")} &middot; ${esc(m.quantization || "")}</dd>
-        <dt>Max context</dt><dd class="num">${esc(fmtCtx(m.maxContextTokens || 8192))}</dd>
-      </dl>
-    </section>
-
-    <!-- No README is fetched, so the catalog description stands and the source
-         is one click away. An empty bordered card would be worse than neither. -->
-    <p class="mdet-note">ForgeLocal does not copy publishers' model cards.
-      ${m.sourceUrl ? `<a class="link" href="${esc(m.sourceUrl)}" rel="noreferrer noopener" target="_blank">Read the source model card ${EXTERNAL}</a>` : ""}</p>
+    ${specification(m)}
   </div>`;
 }
 
@@ -261,7 +273,10 @@ export function catalogHtml(models, selectedId, desktop) {
           data-tags="${(m.capabilities || []).join(" ")}${m.installed ? " installed" : ""}"
           >${modelRow(m, id, desktop)}</div>`).join("\n")}
       </div>
-      <p class="chat-empty" data-filter-empty hidden>No model matches that search.</p>
+      <!-- Filled by the controller when a search empties the list. A zero-result
+           list cannot also have a selected result, so the detail is removed
+           rather than left showing the last selection. -->
+      <div data-cat-state></div>
     </div>
     <div class="cat-detail-wrap" data-cat-detail-wrap>${selected ? modelDetail(selected, desktop) : ""}</div>
   </div>`;

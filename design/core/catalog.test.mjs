@@ -117,3 +117,31 @@ test("the normal web state renders no installed or downloading claim", () => {
   const demo = catalogHtml(applyDesktopState(seeded, DEMO), null, DEMO);
   assert.match(demo, /Downloading · 20%/);
 });
+
+test("an empty result set renders no detail and no selected option", () => {
+  const html = catalogHtml([], null, OFF);
+  assert.doesNotMatch(html, /mdet-name/, "no model detail survives an empty list");
+  assert.doesNotMatch(html, /aria-selected="true"/, "and nothing stays selected");
+});
+
+test("specification omits a row whose value the catalog does not have", () => {
+  const known = modelDetail(model({ architecture: "llama" }), OFF);
+  assert.match(known, /Architecture/);
+  const unknown = modelDetail(model({ architecture: "", family: "" }), OFF);
+  assert.doesNotMatch(unknown, /Architecture/, "an unknown value is omitted, not printed as a dash");
+  assert.doesNotMatch(unknown, /<dd>—<\/dd>/);
+});
+
+test("exactly one source model-card link appears, and it says it is external", () => {
+  const d = modelDetail(model({ sourceUrl: "https://example.com/card" }), OFF);
+  assert.equal((d.match(/target="_blank"/g) || []).length, 1);
+  assert.match(d, /opens the publisher page in a new tab/);
+  assert.doesNotMatch(d, /does not copy publishers/, "the bottom disclaimer is gone");
+});
+
+test("the Agent-ready definition is a disclosure, not a paragraph on every model", () => {
+  const d = modelDetail(model(), OFF);
+  assert.match(d, /<details class="mdet-help">/);
+  assert.match(d, /What Agent-ready means/);
+  assert.doesNotMatch(d, /One artifact is published/);
+});

@@ -17,6 +17,7 @@
 import { gb, fmtCtx, commas } from "./units.mjs";
 import { escapeHtml as esc } from "./html.mjs";
 import { monogram } from "./catalog.mjs";
+import { localViewState, showsRows, stateBlockHtml } from "./viewstate.mjs";
 import {
   allModels, installedModels, installedBytes, isLoaded, isAgentReady,
   runningDownloads, failedDownloads, completedDownloads,
@@ -86,7 +87,7 @@ export function installedRow(m, pc) {
       <div class="irow">
         <span class="irow-mark" aria-hidden="true">${esc(monogram(m.publisher))}</span>
         <div class="irow-id">
-          <button class="irow-n" type="button" data-model-detail="${esc(m.id)}">${esc(m.displayName)}</button>
+          <a class="irow-n" href="/app/models/?model=${esc(m.id)}">${esc(m.displayName)}</a>
           <p class="irow-use">${esc(m.bestFor || "")}</p>
           <p class="irow-res num" title="Memory and context are estimates until a runtime loads the model.">${resources}</p>
         </div>
@@ -143,13 +144,16 @@ export function installedFooter(s, desktop) {
  * @param {ModelState} s
  * @param {MachineProfile} pc
  */
-export function installedSections(s, pc) {
+export function installedSections(s, pc, desktop, query = "", matches = null) {
   const loaded = installedModels(s).filter(isLoaded);
   const idle = installedModels(s).filter((m) => !isLoaded(m));
-  if (!loaded.length && !idle.length) {
-    return `<p class="chat-empty" style="padding:28px 2px">No models are installed on this
-      device. Find one in <a class="link" href="/app/models/">Explore</a>.</p>`;
-  }
+  const total = loaded.length + idle.length;
+  // One state, decided in viewstate.mjs. The build passes no match count, so it
+  // asks for the unfiltered state; the controller passes the real one after a
+  // search. Neither can render a second state alongside the rows.
+  const view = localViewState("installed", desktop, total, matches === null ? total : matches, query);
+  if (!showsRows(view)) return stateBlockHtml(view, esc);
+
   const section = (title, rows) => rows.length
     ? `<section class="mc-sec"><h2 class="lab">${title}</h2>
         <ul class="ilist">${rows.join("\n")}</ul></section>`
@@ -268,10 +272,16 @@ function completedRow(m) {
  * with a zero, and when every group is empty the page says so once.
  * @param {ModelState} s
  */
-export function downloadsHtml(s) {
+export function downloadsHtml(s, desktop, query = "") {
   const running = runningDownloads(s);
   const failed = failedDownloads(s);
   const done = completedDownloads(s);
+  const total = running.length + failed.length + done.length;
+
+  // Disconnected is not empty: the preview has never seen a queue. And a
+  // connected-empty queue must not invite a download this build cannot start.
+  const view = localViewState("downloads", desktop, total, total, query);
+  if (!showsRows(view)) return stateBlockHtml(view, esc);
 
   const section = (id, title, rows) => rows.length
     ? `<section aria-labelledby="dl-${id}" data-dl-group="${id}">
@@ -286,8 +296,8 @@ export function downloadsHtml(s) {
     section("done", "Completed", done.map(completedRow)),
   ].filter(Boolean).join("\n");
 
-  return body || `<p class="chat-empty" style="padding:36px 2px">Nothing is downloading.
-    Start one from <a class="link" href="/app/models/">Explore</a> and it appears here with its progress.</p>`;
+  // Unreachable in practice: total > 0 is what got us past the state block.
+  return body;
 }
 
 /**
@@ -405,9 +415,12 @@ export function pickerHtml(s, pc) {
   return `${section("Loaded", loaded)}
     ${section("Installed", idle)}
     ${loaded.length ? "" : `<p class="pd-note" style="padding:8px 9px">No model is loaded, so nothing can be sent yet.</p>`}
+    <!-- Browsing the catalog is the useful first action while nothing is
+         installed. "Model manager" named a page that, disconnected, has
+         nothing to manage. -->
     <div class="mpick-foot">
-      <a class="btn btns" href="/app/models/installed/" data-open-manager>Model manager</a>
-      <a class="btn btns btnq" href="/app/models/" style="border-color:var(--line)">Find a model</a>
+      <a class="btn btns" href="/app/models/">Browse models</a>
+      <a class="btn btns btnq" href="/app/models/installed/" style="border-color:var(--line)">My models</a>
     </div>`;
 }
 

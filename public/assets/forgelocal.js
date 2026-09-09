@@ -29,6 +29,7 @@ import { renderCard } from "../core/modelcard.mjs";
 import { normalizeMode, modeLabel } from "../core/modes.mjs";
 import { readDemoFlag, desktopState, applyDesktopState, NO_HARDWARE_NOTE as NO_HARDWARE } from "../core/localstate.mjs";
 import { catalogHtml, modelDetail } from "../core/catalog.mjs";
+import { catalogViewState, localViewState, showsRows, showsDetail, stateBlockHtml } from "../core/viewstate.mjs";
 import {
   detectEnvironment, initialRuntime, reduceRuntime, isConnected,
   runtimeLabel, runtimeTone, runtimeDetails, runtimeSettings, contextDisplay, sendBlockedReason,
@@ -513,14 +514,47 @@ import {
       paint(has(id) ? id : firstVisible(), null, has(id));
     });
 
-    // Re-selecting after a search: if the selected model is filtered out, the
-    // first visible result takes over rather than leaving an empty pane.
+    /* One state at a time. With no results there is no selected result either:
+       the detail is removed and no option stays selected in the accessibility
+       tree, rather than a stale pane sitting beside "no matches". */
+    const stateHost = $("[data-cat-state]", root);
+    const searchBox = $("[data-filter-search]");
+    let lastGood = null;
+
     onFilter(() => {
+      const rows = $$("[data-filter-item]", root);
+      const visible = rows.filter((r) => !r.hidden);
+      const view = catalogViewState(rows.length, visible.length, searchBox ? searchBox.value : "");
+      if (stateHost) stateHost.innerHTML = stateBlockHtml(view, esc);
+
+      if (!showsDetail(view)) {
+        const wrap = $("[data-cat-detail-wrap]", root);
+        if (wrap) wrap.innerHTML = "";
+        $$("[data-cat-row]", root).forEach((a) => {
+          a.classList.remove("is-on");
+          a.setAttribute("aria-selected", "false");
+        });
+        root.removeAttribute("data-selected");
+        return;
+      }
+
       const selected = $(".mrow2.is-on");
-      if (selected && selected.offsetParent !== null) return;
-      const next = firstVisible();
-      if (next) paint(next, "replace");
-      else if ($("[data-cat-detail-wrap]", root)) $("[data-cat-detail-wrap]", root).innerHTML = "";
+      if (selected && selected.offsetParent !== null) { lastGood = selected.dataset.catRow; return; }
+      // Clearing the query restores what was selected before it, when that
+      // model is back; otherwise the first remaining result takes over.
+      const restore = lastGood && visible.some((r) => $("[data-cat-row]", r)?.dataset.catRow === lastGood)
+        ? lastGood : firstVisible();
+      if (restore) paint(restore, "replace");
+    });
+
+    // Clear search from the no-results block, without touching the query text
+    // for any other reason.
+    root.addEventListener("click", (e) => {
+      const b = e.target.closest('[data-view-action="clear-search"]');
+      if (!b || !searchBox) return;
+      searchBox.value = "";
+      searchBox.dispatchEvent(new Event("input", { bubbles: true }));
+      searchBox.focus();
     });
 
     const initial = new URLSearchParams(location.search).get("model");
@@ -834,188 +868,10 @@ import {
   /* Model details open inside the app shell. The public /models/<id>/ page
      stays for visitors; it is not the app's management surface, because
      leaving the shell threw away the tab, query, filters and scroll. */
-  function wireModelDetail() {
-    const rows = $$("[data-model-detail]");
-    if (!rows.length) return;
-    const raw = $("#fl-sessions");
-    const data = raw ? JSON.parse(raw.textContent) : {};
-    const byId = Object.fromEntries((data.models || []).map((m) => [m.id, m]));
-
-    let host = $(".mdrawer-host");
-    if (!host) {
-      host = document.createElement("div");
-      host.className = "mdrawer-host";
-      host.hidden = true;
-      $(".app").appendChild(host);
-    }
-    let opener = null;
-    let restore = null;
-    let openId = null;
-
-    const close = () => {
-      host.hidden = true;
-      host.innerHTML = "";
-      openId = null;
-      document.removeEventListener("keydown", onKey, true);
-      // the list comes back exactly as it was left
-      if (restore) {
-        const s = $(".scroll", $(".main"));
-        if (s) s.scrollTop = restore.scroll;
-        restore = null;
-      }
-      if (opener && opener.isConnected) opener.focus();
-      opener = null;
-    };
-    const onKey = (e) => {
-      if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); close(); return; }
-      if (e.key !== "Tab") return;
-      const items = $$("a[href], button, [tabindex]:not([tabindex='-1'])", host)
-        .filter((el) => el.offsetParent !== null);
-      if (!items.length) return;
-      const first = items[0], last = items[items.length - 1];
-      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
-      else if (!host.contains(document.activeElement)) { e.preventDefault(); first.focus(); }
-    };
-
-    const open = (id, trigger) => {
-      const m = byId[id];
-      if (!m) return;
-      opener = trigger;
-      const s = $(".scroll", $(".main"));
-      restore = { scroll: s ? s.scrollTop : 0 };
-
-      const state = drawerState(id, m);
-      const action = drawerAction(id, m);
-
-      host.innerHTML = `
-        <div class="mdrawer-scrim" data-md-scrim></div>
-        <aside class="mdrawer" role="dialog" aria-modal="true" aria-labelledby="md-t">
-          <header class="mdrawer-h">
-            <h2 class="h2" id="md-t">${esc(m.name)}</h2>
-            <span class="grow"></span>
-            <button class="btn btnq ico btns" type="button" data-md-close aria-label="Close model details">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
-            </button>
-          </header>
-          <div class="mdrawer-b">
-            <p class="mdrawer-s" data-md-state><span class="dot ${state[0]}" aria-hidden="true"></span>${state[1]}</p>
-            <p class="ruse" style="margin:10px 0 0">${esc(m.strength)}</p>
-
-            <dl class="specs" style="margin-top:18px;gap:14px 24px">
-              <div><dt>Publisher</dt><dd>${esc(m.publisher)}</dd></div>
-              <div><dt>Quantization</dt><dd>${esc(m.quant)} &middot; ${esc(m.format)}</dd></div>
-              <div><dt>Download</dt><dd>${esc(m.downloadGB)} GB</dd></div>
-              <div><dt>On disk</dt><dd>${esc(m.diskGB)} GB</dd></div>
-              <div><dt>License</dt><dd>${esc(m.license)}</dd></div>
-              <div><dt>Runtime</dt><dd>${esc(m.runtime)}</dd></div>
-            </dl>
-
-            <h3 class="set-h3" style="margin-top:22px">Fit on this PC</h3>
-            <p class="dl-m" style="margin-top:6px">${esc(m.fitReason)}</p>
-            <table class="tbl flat" style="margin-top:12px">
-              <thead><tr><th>Context</th><th>Needs</th><th>Fit</th></tr></thead>
-              <tbody>${m.contexts.map((c) => `<tr>
-                <td class="num">${esc(c.ctx)}</td>
-                <td class="num">${esc(c.need)} GB</td>
-                <td><span class="rfit"><span class="dot ${esc({ ok: "ok", warn: "warn", bad: "bad" }[c.tone] || "")}" aria-hidden="true"></span>${esc(c.label)}</span></td>
-              </tr>`).join("")}</tbody>
-            </table>
-            <p class="dl-m" style="margin-top:10px">Weights plus the key-value cache at that context
-              plus runtime overhead, against ${esc(m.vramGB)} GB of video memory. Throughput is not
-              shown because nothing here has been benchmarked.</p>
-
-            <h3 class="set-h3" style="margin-top:22px">Current defaults</h3>
-            <p class="dl-m" style="margin:6px 0 0">Read-only here. Change them in
-              <a class="link" href="/app/settings/#models">Settings, under Models and runtime</a>.</p>
-            <div class="setrow" style="border-top:1px solid var(--line);margin-top:10px">
-              <div><span class="set-l">Context</span>
-                <p class="set-d">Used when this model is loaded.</p></div>
-              <span class="set-v num">${esc(m.context)}</span>
-            </div>
-            <div class="setrow">
-              <div><span class="set-l">GPU offload</span>
-                <p class="set-d">Layers placed on the GPU. The rest run on the CPU.</p></div>
-              <span class="set-v num">${esc(m.offload)}</span>
-            </div>
-            <div class="setrow">
-              <div><span class="set-l">Stored in</span>
-                <p class="set-d">Changing the model folder is not built yet.</p></div>
-              <span class="set-v m">${esc(m.store)}</span>
-            </div>
-
-            <h3 class="set-h3" style="margin-top:22px">Source</h3>
-            <div class="setrow" style="border-top:1px solid var(--line);margin-top:10px">
-              <div><span class="set-l">Repository</span>
-                <p class="set-d">Weights come from the publisher, not from ForgeLocal.</p></div>
-              <a class="set-v link" href="${esc(m.source)}" rel="noreferrer noopener" target="_blank">
-                ${esc(String(m.source).replace("https://huggingface.co/", ""))}
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="margin-left:5px"><path d="M14 5h5v5"/><path d="M19 5 11 13"/><path d="M18 14v4.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/></svg></a>
-            </div>
-            <div class="setrow">
-              <div><span class="set-l">Revision</span>
-                <p class="set-d">Pinned, so an upstream change cannot alter what is installed.</p></div>
-              <span class="set-v m">${esc(m.revision)}</span>
-            </div>
-          </div>
-          <footer class="mdrawer-f">
-            <span data-md-action>${action}</span>
-            <a class="btn btns" href="/models/${esc(m.id)}/">Public page</a>
-            <span class="grow"></span>
-            <button class="btn btns btnq" type="button" data-md-close style="border-color:var(--line)">Close</button>
-          </footer>
-        </aside>`;
-      host.hidden = false;
-      $$("[data-md-close], [data-md-scrim]", host).forEach((b) =>
-        b.addEventListener("click", close));
-      document.addEventListener("keydown", onKey, true);
-      $("[data-md-close]", host).focus();
-      wireModelActions(host);
-      openId = id;
-    };
-
-    rows.forEach((b) => b.addEventListener("click", () => open(b.dataset.modelDetail, b)));
-
-    // Ejecting from inside the drawer has to change the drawer, not just the
-    // list behind it. Only the two parts that depend on state are re-rendered,
-    // so the reader's scroll position and focus survive.
-    onModels(() => {
-      if (host.hidden || !openId) return;
-      const m = byId[openId];
-      if (!m) return;
-      const state = drawerState(openId, m);
-      const line = $("[data-md-state]", host);
-      if (line) line.innerHTML = `<span class="dot ${state[0]}" aria-hidden="true"></span>${state[1]}`;
-      const slot = $("[data-md-action]", host);
-      if (slot) {
-        const wasFocused = slot.contains(document.activeElement);
-        slot.innerHTML = drawerAction(openId, m);
-        wireModelActions(slot);
-        if (wasFocused) { const b = $("button", slot); if (b) b.focus(); }
-      }
-    });
-  }
-
-  /* The drawer's two state-dependent pieces. Specifications come from the
-     build's view model; whether a model is loaded comes from the store, which
-     is the only thing that can change while the drawer is open. */
-  function drawerState(id, m) {
-    const rec = MODELS.state ? MODELS.state.byId[id] : null;
-    const loaded = rec ? isLoaded(rec) : false;
-    const installed = rec ? rec.installed : !!m.installed;
-    return loaded ? ["ok", "Loaded in video memory"]
-      : installed ? ["ok", "Installed, not loaded"]
-        : ["", "Not installed"];
-  }
-
-  function drawerAction(id, m) {
-    const rec = MODELS.state ? MODELS.state.byId[id] : null;
-    const loaded = rec ? isLoaded(rec) : false;
-    const installed = rec ? rec.installed : !!m.installed;
-    if (loaded) return `<button class="btn btns" type="button" data-model-act="model.unloaded" data-model-id="${esc(id)}">Eject</button>`;
-    if (installed) return `<button class="btn btnp btns" type="button" data-load-model="${esc(id)}">Load</button>`;
-    return `<button class="btn btnp btns" type="button" data-model-install="${esc(m.name)}" data-model-id="${esc(id)}">Install</button>`;
-  }
+  /* The model detail drawer is gone. Explore now has a real detail pane, and
+     the drawer was the only consumer of the legacy `models` payload: a second
+     model schema carrying machine facts (vramGB, fitReason, local paths) that
+     the web preview cannot know. A row title links to the catalog detail. */
 
   /* ------------------------------------------------------------- settings */
   /* Toggles, and the revocation path that every "always allow this here"
@@ -3636,8 +3492,11 @@ import {
       const s = MODELS.state;
       for (const el of mounts) {
         const kind = el.dataset.modelsMount;
-        const html = kind === "installed" ? installedSections(s, THIS_PC)
-          : kind === "downloads" ? downloadsHtml(s)
+        const q = (document.querySelector("[data-filter-search]") || {}).value || "";
+        const matched = kind === "installed"
+          ? $$("[data-filter-item]", el).filter((r) => !r.hidden).length : null;
+        const html = kind === "installed" ? installedSections(s, THIS_PC, DESKTOP, q, matched)
+          : kind === "downloads" ? downloadsHtml(s, DESKTOP)
             : kind === "strip" ? downloadStrip(s)
               : kind === "picker" ? pickerHtml(s, THIS_PC) : null;
         if (html !== null && el.innerHTML !== html) el.innerHTML = html;
@@ -3647,14 +3506,37 @@ import {
       if (label) label.textContent = composerModelLabel(s);
       const st = installedStats(s, THIS_PC);
       if (stats) stats.textContent = installedFooter(s, DESKTOP);
+      // A search control implies a local dataset to search. While the desktop
+      // app is disconnected there is none, so the control is removed from the
+      // page and from the accessibility tree rather than left inert.
+      const localView = $("[data-filter-root=mine]") || $("[data-models-mount=downloads]");
+      if (localView) {
+        const searchWrap = $(".mc-search");
+        if (searchWrap) searchWrap.hidden = DESKTOP.connection !== "ready" && !DESKTOP.demo;
+      }
+
+      // The count is decorative in the tab's name, which read "Downloads0";
+      // it is hidden from the accessibility tree and the tab carries the
+      // number in words instead. A zero count shows nothing at all.
       const badge = $("[data-downloads-badge]");
+      const tab = $("[data-downloads-tab]");
       if (badge) {
         const n = downloadsBadge(s);
         badge.textContent = String(n);
         badge.hidden = n === 0;
+        if (tab) {
+          if (n === 0) tab.removeAttribute("aria-label");
+          else tab.setAttribute("aria-label", `Downloads, ${n} needing attention`);
+        }
       }
+      // The state block is the message when there are no rows; a summary line
+      // above it would be a second answer to the same question.
       const summary = $("[data-downloads-summary]");
-      if (summary) summary.textContent = downloadsSummary(s);
+      if (summary) {
+        const hasRows = !$("[data-models-mount=downloads] [data-view-state]");
+        summary.hidden = !hasRows;
+        if (hasRows) summary.textContent = downloadsSummary(s);
+      }
       // Rows are new elements after a repaint, so the search and chips are
       // re-applied here rather than only at boot.
       repaintFilters();
@@ -3762,7 +3644,7 @@ import {
     wireModelActions(); wireConversation(); wireChats(); renderRecents();
     hydrateModels(); wireLoaderEntryPoints(); wireModelPages(); wireStoreActions();
     wireRuntimeSurfaces(); wireWindowFocus();
-    wireWaitlist(); wireModelDetail(); wireCatalog(); wireDiagnostics(); wireComposerDraft();
+    wireWaitlist(); wireCatalog(); wireDiagnostics(); wireComposerDraft();
     wireAwaiting(); wireComposerControls(); wireDensity(); wireQueue(); wireCaretMenus(); wirePaste();
     // the one setup-specific element on /setup/5/
     const sd = $("[data-setup-done]");

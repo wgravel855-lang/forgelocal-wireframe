@@ -1118,7 +1118,7 @@ h1.ws-h1 { margin: 0; font-size: 13.5px; line-height: 20px; font-weight: 600;
   background: color-mix(in srgb, #05060a 62%, transparent); }
 .loader { position: fixed; z-index: 200; top: 50%; left: 50%;
   transform: translate(-50%, -50%);
-  width: min(920px, calc(100vw - 48px)); max-height: min(600px, calc(100dvh - 48px));
+  width: min(840px, calc(100vw - 48px)); max-height: min(600px, calc(100dvh - 48px));
   display: flex; flex-direction: column;
   border: 1px solid var(--line-strong); border-radius: 10px;
   background: var(--panel); box-shadow: var(--shadow-menu); overflow: hidden; }
@@ -1392,6 +1392,23 @@ h1.ws-h1 { margin: 0; font-size: 13.5px; line-height: 20px; font-weight: 600;
 .chipf:hover { background: var(--sunk); color: var(--fg); }
 .chipf[aria-pressed="true"] { background: var(--sunk); color: var(--fg);
   border-color: var(--line-strong); font-weight: 500; }
+
+/* One state block, aligned to the content column: a heading, one sentence
+   and at most one action. Not a card, not centred in the viewport. */
+.vstate { display: flex; flex-direction: column; align-items: flex-start; gap: 8px;
+  padding: 26px 8px 8px; max-width: 52ch; }
+.vstate-h { margin: 0; font-size: 15.5px; line-height: 22px; font-weight: 500; color: var(--fg); }
+.vstate-b { margin: 0; font-size: 13.5px; line-height: 20px; color: var(--mut); }
+.vstate-a { align-self: flex-start; min-height: 32px; padding: 0; border: 0; background: none;
+  font-size: 13.5px; line-height: 20px; color: var(--acc-text); text-decoration: none; }
+.vstate-a:hover { text-decoration: underline; }
+.mdet-help { margin-top: 12px; }
+.mdet-help > summary { cursor: pointer; min-height: 32px; display: flex; align-items: center;
+  font-size: 13.5px; line-height: 20px; color: var(--mut); }
+.mdet-help > summary:hover { color: var(--fg); }
+.mdet-help > p { margin: 4px 0 0; font-size: 13.5px; line-height: 20px; color: var(--faint);
+  max-width: 68ch; }
+.vstate-a:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
 
 /* ---- Explore: list beside detail -------------------------------------- */
 /* The list is the index and the detail is the decision, so the detail gets
