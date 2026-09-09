@@ -827,11 +827,10 @@
       transition: border-color 160ms ease-out; }
     .cinput { display: flex; align-items: flex-start; flex: 1; gap: 8px; }
     .cinput > .ta { flex: 1; min-width: 0; }
-    /* Optically centred on the first line rather than on the whole field: the
-       line box is 24px and the control 36px, so without the offset the icon
-       would sit 6px below the text it belongs to, and it would drift further
-       every time the draft gained a line. */
-    .cinput > .sendbtn { align-self: flex-start; margin-top: -6px; }
+    /* Top-aligned with the field rather than pulled up onto the first line's
+       optical centre, which read as sitting above the text. It stays anchored
+       to the top so a growing draft never drags it down the composer. */
+    .cinput > .sendbtn { align-self: flex-start; }
 
     /* The strip is moved in the DOM, not reordered here, so the tab order
        matches what is on screen. These rules only size it. */
