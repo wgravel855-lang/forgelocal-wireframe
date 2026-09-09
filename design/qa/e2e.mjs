@@ -190,3 +190,36 @@ test("the composition is derived from messages, not from the URL", () => {
       `${route} ships more than one composer shell`);
   }
 });
+
+/* The type scale, asserted against the built stylesheet. */
+test("no shipped rule sets text below the floor or off the scale", () => {
+  const css = readFileSync(join(pub, "assets/forgelocal.css"), "utf8");
+  const sizes = [...css.matchAll(/font-size:\s*([\d.]+)px/g)].map((m) => Number(m[1]));
+  assert.ok(sizes.length > 50, "the stylesheet was read");
+
+  // 13px is the floor for anything visible. Nothing may sit below it.
+  const below = [...new Set(sizes.filter((n) => n < 13))];
+  assert.deepEqual(below, [], `sizes below the 13px floor: ${below.join(", ")}`);
+
+  // Fractional sizes were the residue of fitting text to a column rather than
+  // choosing a role for it, and every one of them is gone.
+  const fractional = [...new Set(sizes.filter((n) => !Number.isInteger(n)))];
+  assert.deepEqual(fractional, [], `fractional sizes: ${fractional.join(", ")}`);
+
+  // The scale's tokens exist and carry their own line heights, so raising a
+  // size cannot leave a cramped line box behind.
+  for (const t of ["--t-meta", "--t-label", "--t-copy", "--t-body", "--t-title", "--t-hero"]) {
+    assert.match(css, new RegExp(`${t}:\\s*\\d+px`), `${t} is defined`);
+    assert.match(css, new RegExp(`${t.replace("--t-", "--lh-")}:\\s*\\d+px`), `${t} has a line height`);
+  }
+});
+
+test("13px text is never paired with the faintest grey", () => {
+  const css = readFileSync(join(pub, "assets/forgelocal.css"), "utf8");
+  // Small and faint together is what made the interface read as undersized.
+  for (const block of css.match(/\{[^{}]*\}/g) || []) {
+    if (!/font-size:\s*13px/.test(block)) continue;
+    assert.doesNotMatch(block, /color:\s*var\(--faint\)/,
+      `a 13px rule still uses the faintest grey: ${block.slice(0, 90)}`);
+  }
+});
