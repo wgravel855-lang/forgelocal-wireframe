@@ -12,6 +12,20 @@ import {
 } from "../core/events.mjs";
 import { createFixtureRuntime } from "../core/adapters.mjs";
 import { capture as captureReading, restore as restoreReadingPos, remember as rememberPos } from "../core/reading.mjs";
+import {
+  STORE_KEY, createState as createModelState, reduceModels,
+  allModels, installedModels, loadedModels, unloadedInstalled, activeDownloads,
+  selectedModel as selectedModelOf, canSend as canSendWith, installedBytes,
+  recommendedParams, estimateMemory, validateParams, fitNote,
+  downloadSummary, downloadPercent, isLoaded, isAgentReady,
+} from "../core/modelstore.mjs";
+import {
+  installedList, installedStats, downloadsHtml, downloadStrip,
+  downloadsBadge, downloadsSummary, pickerHtml, composerModelLabel,
+} from "../core/modelviews.mjs";
+import { THIS_PC } from "../core/machine.mjs";
+import { gb } from "../core/units.mjs";
+import { renderCard } from "../core/modelcard.mjs";
 
 (() => {
   "use strict";
@@ -521,6 +535,264 @@ import { capture as captureReading, restore as restoreReadingPos, remember as re
   };
   const capIcon = (k) => svg(CAP_PATHS[k][0], "currentColor", CAP_PATHS[k][1]);
 
+  /* ------------------------------------------------- Surface B: the loader */
+  /* Every entry point passes a model ID and nothing else. The dialog resolves
+     the record from the store each time it paints, so it can never render a
+     stale clone that a page happened to be holding. */
+  const LOADER = { open: false, modelId: null, opener: null, params: null, sort: "recent", query: "" };
+
+  function openLoader(modelId, opener) {
+    hydrateModels();
+    LOADER.open = true;
+    LOADER.modelId = modelId || null;
+    LOADER.opener = opener || null;
+    LOADER.params = null;               // an unsubmitted dialog restores defaults
+    LOADER.query = "";
+    paintLoader();
+  }
+
+  function closeLoader() {
+    if (!LOADER.open) return;
+    LOADER.open = false;
+    const host = $(".loader-host");
+    if (host) { host.hidden = true; host.innerHTML = ""; }
+    document.removeEventListener("keydown", loaderKeys, true);
+    const back = LOADER.opener;
+    LOADER.opener = null;
+    if (back && back.isConnected) back.focus();
+  }
+
+  function loaderKeys(e) {
+    if (!LOADER.open) return;
+    const host = $(".loader-host");
+    if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); closeLoader(); return; }
+    if (e.key !== "Tab" || !host) return;
+    const items = $$("a[href], button:not([disabled]), input, select, summary", host)
+      .filter((el) => el.offsetParent !== null);
+    if (!items.length) return;
+    const first = items[0], last = items[items.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    else if (!host.contains(document.activeElement)) { e.preventDefault(); first.focus(); }
+  }
+
+  const SORTS = [["recent", "Recent"], ["size", "Size"], ["downloaded", "Downloaded"]];
+
+  function loaderRows() {
+    const s = MODELS.state;
+    let list = installedModels(s);
+    const q = LOADER.query.trim().toLowerCase();
+    if (q) list = list.filter((m) =>
+      (m.displayName + " " + m.publisher + " " + m.quantization).toLowerCase().includes(q));
+    if (LOADER.sort === "size") list = [...list].sort((a, b) => b.fileSizeBytes - a.fileSizeBytes);
+    if (LOADER.sort === "downloaded") list = [...list].sort((a, b) => a.displayName.localeCompare(b.displayName));
+    return list;
+  }
+
+  function paintLoader() {
+    if (!LOADER.open) return;
+    let host = $(".loader-host");
+    if (!host) {
+      host = document.createElement("div");
+      host.className = "loader-host";
+      ($(".app") || document.body).appendChild(host);
+    }
+    const s = MODELS.state;
+    // resolved fresh from the store on every paint, never cached
+    const m = LOADER.modelId ? s.byId[LOADER.modelId] : null;
+    const params = LOADER.params || (m ? recommendedParams(m, THIS_PC) : null);
+    const errors = m && params ? validateParams(m, params) : {};
+    const est = m && params ? estimateMemory(m, params) : null;
+    const note = m && params ? fitNote(m, params, THIS_PC) : null;
+    const invalid = Object.keys(errors).length > 0;
+
+    host.innerHTML = `
+      <div class="loader-scrim" data-loader-close></div>
+      <div class="loader" role="dialog" aria-modal="true" aria-labelledby="loader-t">
+        <header class="loader-h">
+          <h2 class="h2" id="loader-t">Load a model</h2>
+          <span class="grow"></span>
+          <button class="btn btnq ico btns" type="button" data-loader-close aria-label="Close">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </button>
+        </header>
+
+        <div class="loader-b">
+          <div class="loader-list">
+            <label class="field loader-search">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="flex-shrink:0"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>
+              <span class="vh">Search installed models</span>
+              <input type="search" data-loader-search placeholder="Search installed models" value="${esc(LOADER.query)}">
+            </label>
+            <div class="loader-sort" role="group" aria-label="Sort by">
+              ${SORTS.map(([id, label]) => `<button class="lsort" type="button" data-loader-sort="${id}"
+                aria-pressed="${LOADER.sort === id}">${label}</button>`).join("")}
+            </div>
+            <div class="loader-rows" role="listbox" aria-label="Installed models">
+              ${loaderRows().map((r) => {
+    const on = r.id === LOADER.modelId;
+    return `<button class="lrow${on ? " is-on" : ""}" type="button" role="option"
+                  aria-selected="${on}" data-loader-pick="${esc(r.id)}">
+                  <span class="lrow-tick" aria-hidden="true">${on ? "&#10003;" : ""}</span>
+                  <span class="lrow-n">${esc(r.displayName)}</span>
+                  <span class="lrow-state">${isLoaded(r) ? "Loaded" : "On disk"}</span>
+                  <span class="lrow-meta">${esc(r.publisher)} &middot; ${esc(r.parameterCount || "")} &middot; ${esc(r.architecture || r.family)}</span>
+                  <span class="lrow-meta">${esc(r.format)} &middot; ${esc(r.quantization || "")} &middot; <span class="num">${gb(r.fileSizeBytes, 2)} GB</span></span>
+                </button>`;
+  }).join("") || `<p class="pd-note" style="padding:10px">No installed model matches that search.</p>`}
+            </div>
+          </div>
+
+          <div class="loader-cfg">
+            ${m ? `
+              <h3 class="loader-n">${esc(m.displayName)}</h3>
+              <p class="loader-sub">${esc(m.publisher)} &middot; ${esc(m.quantization || "")} &middot; <span class="num">${gb(m.fileSizeBytes, 2)} GB</span></p>
+
+              <details class="loader-params"${LOADER.params ? " open" : ""}>
+                <summary>Manually choose load parameters</summary>
+
+                ${numField("Context length", "contextTokens", params.contextTokens, errors.contextTokens,
+    `Up to ${(m.maxContextTokens || 8192).toLocaleString()}`)}
+                ${numField("GPU offload, layers", "gpuLayers", params.gpuLayers, errors.gpuLayers, "0 to 99")}
+
+                <div class="lfield lfield-row">
+                  <label for="lp-flash">Flash attention</label>
+                  <button class="switch" type="button" id="lp-flash" role="switch"
+                    aria-checked="${params.flashAttention}" data-loader-flash><span></span></button>
+                </div>
+
+                <div class="lfield lfield-row">
+                  <label for="lp-kv">KV cache type</label>
+                  <select id="lp-kv" data-loader-kv>
+                    <option value="f16"${params.kvCacheType === "f16" ? " selected" : ""}>f16, full precision</option>
+                    <option value="q8_0"${params.kvCacheType === "q8_0" ? " selected" : ""}>q8_0, half the memory</option>
+                  </select>
+                </div>
+
+                <details class="loader-adv">
+                  <summary>Advanced</summary>
+                  ${numField("CPU threads", "cpuThreads", params.cpuThreads, errors.cpuThreads, "1 to 64")}
+                  ${numField("Batch size", "batchSize", params.batchSize, errors.batchSize, "32 to 4096")}
+                </details>
+
+                <div class="loader-est">
+                  <span>Estimated video memory <b class="num">${gb(est.vramBytes, 1)} GB</b></span>
+                  <span>Estimated system memory <b class="num">${gb(est.ramBytes, 1)} GB</b></span>
+                </div>
+                ${note ? `<p class="loader-note">${esc(note)}</p>` : ""}
+                <button class="btn btns btnq" type="button" data-loader-reset
+                  style="border-color:var(--line);margin-top:10px">Reset to recommended</button>
+              </details>
+            ` : `<p class="pd-note">Choose an installed model to configure how it loads.</p>`}
+          </div>
+        </div>
+
+        <footer class="loader-f">
+          <p class="loader-why">No local runtime is connected, so nothing can be loaded from the web preview.</p>
+          <span class="grow"></span>
+          <button class="btn btns btnq" type="button" data-loader-close style="border-color:var(--line)">Cancel</button>
+          <button class="btn btnp btns" type="button" data-loader-load
+            ${!m || invalid ? "disabled" : ""}>Connect local runtime to load</button>
+        </footer>
+      </div>`;
+
+    host.hidden = false;
+    wireLoaderControls(host);
+    if (!host.contains(document.activeElement)) {
+      const first = $("[data-loader-search]", host) || $("[data-loader-close]", host);
+      if (first) first.focus();
+    }
+    document.addEventListener("keydown", loaderKeys, true);
+  }
+
+  const numField = (label, name, value, error, hint) => `
+    <div class="lfield">
+      <label for="lp-${name}">${label}</label>
+      <input id="lp-${name}" type="number" inputmode="numeric" data-loader-num="${name}"
+        value="${esc(String(value))}" ${error ? 'aria-invalid="true"' : ""}
+        aria-describedby="lp-${name}-h">
+      <span class="lfield-h" id="lp-${name}-h">${error ? `<span class="lfield-e">${esc(error)}</span>` : esc(hint)}</span>
+    </div>`;
+
+  function wireLoaderControls(host) {
+    $$("[data-loader-close]", host).forEach((b) => b.addEventListener("click", closeLoader));
+
+    const search = $("[data-loader-search]", host);
+    if (search) search.addEventListener("input", () => {
+      LOADER.query = search.value;
+      const at = search.selectionStart;
+      paintLoader();
+      const again = $("[data-loader-search]");
+      if (again) { again.focus(); again.setSelectionRange(at, at); }
+    });
+
+    $$("[data-loader-sort]", host).forEach((b) => b.addEventListener("click", () => {
+      LOADER.sort = b.dataset.loaderSort;
+      paintLoader();
+      const again = $(`[data-loader-sort="${LOADER.sort}"]`);
+      if (again) again.focus();
+    }));
+
+    $$("[data-loader-pick]", host).forEach((b) => b.addEventListener("click", () => {
+      LOADER.modelId = b.dataset.loaderPick;
+      LOADER.params = null;              // parameters are per model
+      paintLoader();
+    }));
+
+    const m = LOADER.modelId ? MODELS.state.byId[LOADER.modelId] : null;
+    const current = () => LOADER.params || (m ? recommendedParams(m, THIS_PC) : null);
+
+    $$("[data-loader-num]", host).forEach((input) => input.addEventListener("input", () => {
+      const next = { ...current(), [input.dataset.loaderNum]: Number(input.value) };
+      LOADER.params = next;
+      const at = input.selectionStart;
+      const name = input.dataset.loaderNum;
+      paintLoader();
+      const again = $(`[data-loader-num="${name}"]`);
+      if (again) { again.focus(); try { again.setSelectionRange(at, at); } catch { /* number input */ } }
+    }));
+
+    const flash = $("[data-loader-flash]", host);
+    if (flash) flash.addEventListener("click", () => {
+      LOADER.params = { ...current(), flashAttention: flash.getAttribute("aria-checked") !== "true" };
+      paintLoader();
+      const again = $("[data-loader-flash]");
+      if (again) again.focus();
+    });
+
+    const kv = $("[data-loader-kv]", host);
+    if (kv) kv.addEventListener("change", () => {
+      LOADER.params = { ...current(), kvCacheType: kv.value };
+      paintLoader();
+      const again = $("[data-loader-kv]");
+      if (again) again.focus();
+    });
+
+    const reset = $("[data-loader-reset]", host);
+    if (reset) reset.addEventListener("click", () => {
+      LOADER.params = null;              // back to what the store recommends
+      paintLoader();
+      toast("Reset to the recommended parameters for this model.");
+    });
+
+    const load = $("[data-loader-load]", host);
+    if (load) load.addEventListener("click", () => {
+      // The request is real; nothing else is. A model becomes loaded only when
+      // an adapter reports model.load.completed, which cannot happen here.
+      dispatchModel({ type: "model.load.requested", modelId: LOADER.modelId, params: current() });
+      toast("Loading needs the desktop app. Nothing was loaded.");
+    });
+  }
+
+  function wireLoaderEntryPoints() {
+    document.addEventListener("click", (e) => {
+      const b = e.target.closest("[data-load-model]");
+      if (!b) return;
+      e.preventDefault();
+      openLoader(b.dataset.loadModel, b);
+    });
+  }
+
   /* -------------------------------------------------------- model details */
   /* Model details open inside the app shell. The public /models/<id>/ page
      stays for visitors; it is not the app's management surface, because
@@ -541,10 +813,12 @@ import { capture as captureReading, restore as restoreReadingPos, remember as re
     }
     let opener = null;
     let restore = null;
+    let openId = null;
 
     const close = () => {
       host.hidden = true;
       host.innerHTML = "";
+      openId = null;
       document.removeEventListener("keydown", onKey, true);
       // the list comes back exactly as it was left
       if (restore) {
@@ -574,14 +848,8 @@ import { capture as captureReading, restore as restoreReadingPos, remember as re
       const s = $(".scroll", $(".main"));
       restore = { scroll: s ? s.scrollTop : 0 };
 
-      const state = m.loaded ? ["ok", "Loaded in video memory"]
-        : m.installed ? ["ok", "Installed, not loaded"]
-          : ["", "Not installed"];
-      const action = m.loaded
-        ? `<button class="btn btns" type="button" data-load-toggle data-model="${esc(m.name)}">Eject</button>`
-        : m.installed
-          ? `<button class="btn btnp btns" type="button" data-load-toggle data-model="${esc(m.name)}">Load</button>`
-          : `<button class="btn btnp btns" type="button" data-model-install="${esc(m.name)}">Install</button>`;
+      const state = drawerState(id, m);
+      const action = drawerAction(id, m);
 
       host.innerHTML = `
         <div class="mdrawer-scrim" data-md-scrim></div>
@@ -594,7 +862,7 @@ import { capture as captureReading, restore as restoreReadingPos, remember as re
             </button>
           </header>
           <div class="mdrawer-b">
-            <p class="mdrawer-s"><span class="dot ${state[0]}" aria-hidden="true"></span>${state[1]}</p>
+            <p class="mdrawer-s" data-md-state><span class="dot ${state[0]}" aria-hidden="true"></span>${state[1]}</p>
             <p class="ruse" style="margin:10px 0 0">${esc(m.strength)}</p>
 
             <dl class="specs" style="margin-top:18px;gap:14px 24px">
@@ -654,7 +922,7 @@ import { capture as captureReading, restore as restoreReadingPos, remember as re
             </div>
           </div>
           <footer class="mdrawer-f">
-            ${action}
+            <span data-md-action>${action}</span>
             <a class="btn btns" href="/models/${esc(m.id)}/">Public page</a>
             <span class="grow"></span>
             <button class="btn btns btnq" type="button" data-md-close style="border-color:var(--line)">Close</button>
@@ -666,10 +934,50 @@ import { capture as captureReading, restore as restoreReadingPos, remember as re
       document.addEventListener("keydown", onKey, true);
       $("[data-md-close]", host).focus();
       wireModelActions(host);
-      wireLoadToggle(host);
+      openId = id;
     };
 
     rows.forEach((b) => b.addEventListener("click", () => open(b.dataset.modelDetail, b)));
+
+    // Ejecting from inside the drawer has to change the drawer, not just the
+    // list behind it. Only the two parts that depend on state are re-rendered,
+    // so the reader's scroll position and focus survive.
+    onModels(() => {
+      if (host.hidden || !openId) return;
+      const m = byId[openId];
+      if (!m) return;
+      const state = drawerState(openId, m);
+      const line = $("[data-md-state]", host);
+      if (line) line.innerHTML = `<span class="dot ${state[0]}" aria-hidden="true"></span>${state[1]}`;
+      const slot = $("[data-md-action]", host);
+      if (slot) {
+        const wasFocused = slot.contains(document.activeElement);
+        slot.innerHTML = drawerAction(openId, m);
+        wireModelActions(slot);
+        if (wasFocused) { const b = $("button", slot); if (b) b.focus(); }
+      }
+    });
+  }
+
+  /* The drawer's two state-dependent pieces. Specifications come from the
+     build's view model; whether a model is loaded comes from the store, which
+     is the only thing that can change while the drawer is open. */
+  function drawerState(id, m) {
+    const rec = MODELS.state ? MODELS.state.byId[id] : null;
+    const loaded = rec ? isLoaded(rec) : false;
+    const installed = rec ? rec.installed : !!m.installed;
+    return loaded ? ["ok", "Loaded in video memory"]
+      : installed ? ["ok", "Installed, not loaded"]
+        : ["", "Not installed"];
+  }
+
+  function drawerAction(id, m) {
+    const rec = MODELS.state ? MODELS.state.byId[id] : null;
+    const loaded = rec ? isLoaded(rec) : false;
+    const installed = rec ? rec.installed : !!m.installed;
+    if (loaded) return `<button class="btn btns" type="button" data-model-act="model.unloaded" data-model-id="${esc(id)}">Eject</button>`;
+    if (installed) return `<button class="btn btnp btns" type="button" data-load-model="${esc(id)}">Load</button>`;
+    return `<button class="btn btnp btns" type="button" data-model-install="${esc(m.name)}" data-model-id="${esc(id)}">Install</button>`;
   }
 
   /* ------------------------------------------------------------- settings */
@@ -1311,6 +1619,57 @@ import { capture as captureReading, restore as restoreReadingPos, remember as re
     });
     render();
   }
+
+  /* --------------------------------------------------------- model store */
+  /* ForgeLocal serves separate documents, so module memory dies on every
+     navigation. The store is persisted under a versioned namespace, hydrated
+     and validated before the first render, and seeded only when there is no
+     valid state. Navigating never re-seeds, or a paused download would restart
+     itself every time the user opened another page. */
+  const MODELS = {
+    /** @type {any} */ state: null,
+    /** @type {Set<() => void>} */ subs: new Set(),
+  };
+
+  function hydrateModels() {
+    if (MODELS.state) return MODELS.state;
+    let saved = null;
+    try {
+      const raw = localStorage.getItem(STORE_KEY);
+      if (raw) saved = JSON.parse(raw);
+    } catch { saved = null; }
+
+    // Validate rather than trust: a partial or older shape is discarded and
+    // reseeded, which is safer than rendering half a store.
+    const valid = saved && saved.version === 1
+      && saved.byId && typeof saved.byId === "object"
+      && Array.isArray(saved.order) && saved.order.length
+      && saved.order.every((id) => saved.byId[id] && typeof saved.byId[id].id === "string");
+
+    if (valid) { MODELS.state = saved; return MODELS.state; }
+
+    const raw = $("#fl-sessions");
+    const seed = raw ? (JSON.parse(raw.textContent).modelSeed || []) : [];
+    MODELS.state = createModelState(seed);
+    persistModels();
+    return MODELS.state;
+  }
+
+  function persistModels() {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(MODELS.state)); } catch { /* private mode */ }
+  }
+
+  /** @param {any} event */
+  function dispatchModel(event) {
+    const before = MODELS.state;
+    const next = reduceModels(before, event);
+    if (next === before) return before;      // idempotent: no write, no repaint
+    MODELS.state = next;
+    persistModels();
+    MODELS.subs.forEach((fn) => fn());
+    return next;
+  }
+  const onModels = (fn) => { MODELS.subs.add(fn); fn(); return () => MODELS.subs.delete(fn); };
 
   /* --------------------------------------------------- reading position */
   /* Where each session was left. Coming back to a finished chat should return
@@ -2635,10 +2994,13 @@ import { capture as captureReading, restore as restoreReadingPos, remember as re
   }
 
   /* ---------------------------------------------------------------- filters */
+  /* Set by wireFilters so a store repaint can re-apply the current search and
+     chips to rows that did not exist when the filter was wired. */
+  let repaintFilters = () => {};
+
   function wireFilters() {
     const root = $("[data-filter-root]");
     if (!root) return;
-    const rows = $$("[data-filter-item]", root);
     const count = $("[data-filter-count]");
     const empty = $("[data-filter-empty]");
     const search = $("[data-filter-search]", root);
@@ -2655,7 +3017,9 @@ import { capture as captureReading, restore as restoreReadingPos, remember as re
       });
       const q = (search?.value || "").trim().toLowerCase();
       let shown = 0;
-      rows.forEach((r) => {
+      // re-queried every paint: the installed list is re-rendered from the
+      // store, so holding the original elements would filter a dead list
+      $$("[data-filter-item]", root).forEach((r) => {
         const tags = (r.dataset.tags || "").split(" ");
         const okTags = [...active].every((f) => tags.includes(f));
         const okText = !q || (r.dataset.name || "").toLowerCase().includes(q);
@@ -2677,6 +3041,7 @@ import { capture as captureReading, restore as restoreReadingPos, remember as re
     const clear = $("[data-filter-clear]", root);
     if (clear) clear.addEventListener("click", () => { active.clear(); if (search) search.value = ""; paint(); });
     if (search) { let t; search.addEventListener("input", () => { clearTimeout(t); t = setTimeout(paint, 120); }); }
+    repaintFilters = paint;
     paint();
   }
 
@@ -2979,29 +3344,111 @@ import { capture as captureReading, restore as restoreReadingPos, remember as re
       $$("[data-model-label]").forEach((l) => { l.textContent = b.dataset.modelUse; });
       toast(`${b.dataset.modelUse} is the model this project will use.`);
     }));
+    // Queueing is a real store transition; downloading is not, and the toast
+    // says which of the two just happened.
     $$("[data-model-install]", root).forEach((b) => b.addEventListener("click", () => {
+      const id = b.dataset.modelId;
+      if (id) dispatchModel({ type: "download.queued", modelId: id });
       b.textContent = "Queued";
       b.disabled = true;
       b.setAttribute("aria-disabled", "true");
-      b.title = "Queued for download. Progress appears under My models.";
-      toast(`${b.dataset.modelInstall} queued. Progress shows under My models.`);
+      b.title = "Queued. Downloading needs the desktop app.";
+      toast(`${b.dataset.modelInstall} is queued and listed under Downloads. Downloading needs the desktop app, so no bytes are being fetched.`);
     }));
   }
 
-  /* ------------------------------------------------ load / eject a model */
-  function wireLoadToggle(root = document) {
-    $$("[data-load-toggle]", root).forEach((btn) => {
-      const row = btn.closest("li");
-      const pill = row && $("[data-load-pill]", row);
-      btn.addEventListener("click", () => {
-        const loading = btn.textContent.trim() === "Load";
-        btn.textContent = loading ? "Eject" : "Load";
-        if (pill) { pill.textContent = loading ? "Loaded" : "Idle"; pill.classList.toggle("ok", loading); }
-        if (row) row.style.borderColor = loading ? "var(--acc)" : "";
-        toast(loading
-          ? `${btn.dataset.model} is loaded into video memory.`
-          : `${btn.dataset.model} was ejected. Video memory is free again.`);
-      });
+  /* ---------------------------------------- the model pages, from the store */
+  /* Every model surface renders from MODELS.state through core/modelviews.mjs,
+     which is the same module the build used for the first paint. A page holds
+     no list of its own, so a pause on the downloads page and the strip on the
+     installed page cannot disagree.
+
+     Buttons name the event they dispatch rather than a verb, so what a control
+     does is readable in the markup:
+       data-model-act="download.paused" data-model-id="..."
+     Anything that would need a local runtime carries data-load-model instead
+     and opens the loader, which explains why nothing was loaded. */
+  function wireModelPages() {
+    const mounts = $$("[data-models-mount]");
+    const stats = $("[data-mine-stats]");
+    if (!mounts.length && !stats) return;
+    hydrateModels();
+
+    const paint = () => {
+      const s = MODELS.state;
+      for (const el of mounts) {
+        const kind = el.dataset.modelsMount;
+        const html = kind === "installed" ? installedList(s, THIS_PC)
+          : kind === "downloads" ? downloadsHtml(s)
+            : kind === "strip" ? downloadStrip(s)
+              : kind === "picker" ? pickerHtml(s, THIS_PC) : null;
+        if (html !== null && el.innerHTML !== html) el.innerHTML = html;
+      }
+      // The composer must not name a model it cannot send to.
+      const label = $("[data-model-label]");
+      if (label) label.textContent = composerModelLabel(s);
+      const dot = $("[data-model-dot]");
+      if (dot) dot.classList.toggle("ok", canSendWith(s));
+      const st = installedStats(s, THIS_PC);
+      if (stats) stats.innerHTML = `${st.totalGB} GB of models on disk &middot; ${st.freeGB} GB free`;
+      const total = $("[data-mine-total]");
+      if (total) total.textContent = `${st.totalGB} GB used by models`;
+      const bar = $("[data-mine-bar]");
+      if (bar) bar.style.width = `${st.usedPercent}%`;
+      const badge = $("[data-downloads-badge]");
+      if (badge) {
+        const n = downloadsBadge(s);
+        badge.textContent = String(n);
+        badge.hidden = n === 0;
+      }
+      const summary = $("[data-downloads-summary]");
+      if (summary) summary.textContent = downloadsSummary(s);
+      // Rows are new elements after a repaint, so the search and chips are
+      // re-applied here rather than only at boot.
+      repaintFilters();
+    };
+
+    onModels(paint);
+  }
+
+  /* Actions on those pages. One listener, delegated, so it keeps working
+     across the repaints above. */
+  function wireStoreActions() {
+    document.addEventListener("click", async (e) => {
+      const b = e.target.closest("[data-model-act]");
+      if (!b) return;
+      const type = b.dataset.modelAct;
+      const modelId = b.dataset.modelId;
+      const m = MODELS.state && MODELS.state.byId[modelId];
+      if (!m) return;
+
+      if (type === "download.canceled") {
+        const failed = m.downloadState && m.downloadState.state === "failed";
+        const ok = await flConfirm({
+          title: failed ? `Remove ${m.displayName} from the list?` : `Cancel this download?`,
+          body: failed
+            ? "The partial file is deleted. Downloading again starts from the beginning."
+            : "The part already downloaded stays on disk, so resuming later does not start over.",
+          scope: failed
+            ? [["Partial file", `${gb(m.downloadState.receivedBytes, 2)} GB, deleted`],
+              ["The model", "Stays in the catalog and can be downloaded again"]]
+            : [["Downloaded so far", `${gb(m.downloadState.receivedBytes, 2)} GB, kept on disk`],
+              ["Reversible", "Yes, the download can be restarted at any time"]],
+          confirm: failed ? "Remove" : "Cancel download",
+          cancel: failed ? "Keep it listed" : "Keep downloading",
+          danger: true });
+        if (!ok) return;
+      }
+
+      const before = MODELS.state;
+      dispatchModel({ type, modelId });
+      if (MODELS.state === before) return;   // an illegal transition says nothing
+
+      if (type === "download.paused") toast(`Paused. ${m.displayName} resumes from ${gb(m.downloadState.receivedBytes, 2)} GB.`);
+      if (type === "download.resumed") toast("Download resumed.");
+      if (type === "download.canceled") toast("Cancelled. Nothing else was changed.");
+      if (type === "download.retried") toast(`${m.displayName} is queued again. Downloading needs the desktop app, so it will not start here.`);
+      if (type === "model.unloaded") toast(`${m.displayName} was ejected. Video memory is free again.`);
     });
   }
 
@@ -3047,9 +3494,10 @@ import { capture as captureReading, restore as restoreReadingPos, remember as re
   const boot = () => {
     wireSidebar(); wireComposer(); wireModelPicker(); wireTabs(); wireDrawer();
     wireReview(); wireFilters(); wireNav(); wirePricing(); wirePlatform(); wireSignin();
-    wireDownloadRows(); wireFilesTab(); wireLoadToggle(); wirePresets(); showPreset();
+    wireDownloadRows(); wireFilesTab(); wirePresets(); showPreset();
     wireActivity(); wireStopRun(); wirePermission(); wireRecover(); wireSuggest();
     wireModelActions(); wireConversation(); wireChats();
+    hydrateModels(); wireLoaderEntryPoints(); wireModelPages(); wireStoreActions();
     wireWaitlist(); wireModelDetail(); wireCatalog(); wireDiagnostics(); wireComposerDraft();
     wireAwaiting(); wireComposerControls(); wireDensity(); wireQueue(); wireCaretMenus(); wirePaste();
     // the one setup-specific element on /setup/5/

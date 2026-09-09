@@ -74,7 +74,7 @@ test("pause and resume agree across surfaces and drop live figures", () => {
   assert.equal(dl?.state, "paused");
   assert.equal(dl?.bytesPerSecond, undefined, "no speed while stopped");
   assert.doesNotMatch(downloadSummary(dl), /MB\/s|min left/);
-  assert.match(downloadSummary(dl), /Paused$/);
+  assert.match(downloadSummary(dl), /Paused, and the bytes so far are kept/);
   assert.equal(activeDownloads(paused).length, 1, "still on the downloads page");
 
   const twice = reduceModels(paused, ev({ type: "download.paused", modelId: "c" }));
@@ -240,5 +240,27 @@ test("events for an unknown model are ignored", () => {
   const s = state();
   for (const type of ["download.paused", "model.unloaded", "model.deleted", "model.selected"]) {
     assert.equal(reduceModels(s, ev(/** @type {any} */({ type, modelId: "nope" }))), s, type);
+  }
+});
+
+test("send stays disabled until a model is actually loaded", () => {
+  const unloaded = state(model({ installed: true }));
+  assert.equal(unloaded.selectedId, null, "nothing is selected when nothing is loaded");
+  assert.equal(canSend(unloaded), false);
+
+  // Selecting an unloaded model is refused rather than quietly enabling send.
+  const tried = reduceModels(unloaded, ev({ type: "model.selected", modelId: "m1" }));
+  assert.equal(tried, unloaded);
+  assert.equal(canSend(tried), false);
+
+  const loaded = state(model({ loadedInstances: [{ instanceId: "i1", contextTokens: 16384 }] }));
+  assert.equal(canSend(loaded), true);
+  assert.equal(selectedModel(loaded)?.id, "m1");
+});
+
+test("a download event for a model with no download is a no-op", () => {
+  const s = state(model({ installed: true, downloadState: undefined }));
+  for (const type of ["download.paused", "download.resumed", "download.retried", "download.canceled"]) {
+    assert.equal(reduceModels(s, ev(/** @type {any} */({ type, modelId: "m1" }))), s, type);
   }
 });

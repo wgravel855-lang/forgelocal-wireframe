@@ -9,24 +9,15 @@
 // verdict of a different, smaller context.
 
 import { kvCacheBytes, requiredBytes, RUNTIME_OVERHEAD_BYTES } from "../data/models.mjs";
+// Units and the machine profile come from core so the build and the browser
+// format and size the same record identically.
+import { GB, gb } from "../core/units.mjs";
+import { THIS_PC } from "../core/machine.mjs";
 export { requiredBytes, kvCacheBytes, RUNTIME_OVERHEAD_BYTES };
-
-const GB = 1024 ** 3;
-
-export const gb = (bytes, dp = 1) => (bytes / GB).toFixed(dp).replace(/\.0$/, "");
+export { GB, gb };
 
 /** The example machine every screen is written against. */
-export const thisPC = {
-  id: "rtx4070-12gb-32gb",
-  label: "RTX 4070 12 GB, 32 GB RAM",
-  gpu: "NVIDIA GeForce RTX 4070",
-  vramBytes: 12 * GB,
-  ramBytes: 32 * GB,
-  ramFreeBytes: 19 * GB,
-  diskFreeBytes: 248 * GB,
-  os: "Windows 11, 64-bit",
-  cores: 16,
-};
+export const thisPC = THIS_PC;
 
 export const FIT = {
   great: { label: "Great fit", tone: "ok", rank: 0 },

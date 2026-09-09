@@ -91,10 +91,12 @@
         <button class="btn btnq btns" type="button" data-popover="model-pop" aria-expanded="false"
           aria-haspopup="menu" aria-keyshortcuts="Control+L">
           <span class="dot ok" aria-hidden="true" data-model-dot></span>
-          <span data-model-label>Qwen2.5 Coder 14B</span>
+          <span data-model-label><!--MODEL_LABEL--></span>
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9.5 6 6 6-6"/></svg>
         </button>
-        <!--MODEL_PICKER-->
+        <div class="menu popover mpick" id="model-pop" role="menu" aria-label="Choose a model"
+          hidden style="bottom:calc(100% + 8px);top:auto;right:0;left:auto"
+          data-models-mount="picker"><!--MODEL_PICKER--></div>
       </div>
 
       <div style="position:relative">

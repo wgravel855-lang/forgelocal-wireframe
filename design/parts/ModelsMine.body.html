@@ -13,7 +13,7 @@
           <div style="display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap">
             <div style="flex:1;min-width:260px;display:flex;flex-direction:column;gap:6px">
               <h2 class="h1">My models</h2>
-              <p class="mut" style="margin:0;font-size:14px"><!--MINE_TOTAL--> GB of models on disk &middot; <!--MINE_FREE--> GB free</p>
+              <p class="mut" style="margin:0;font-size:14px" data-mine-stats><!--MINE_TOTAL--> GB of models on disk &middot; <!--MINE_FREE--> GB free</p>
             </div>
             <label class="field" style="width:240px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="flex-shrink:0"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg><span class="vh">Search models</span><input type="search" data-filter-search placeholder="Search models"></label>
           </div>
@@ -22,21 +22,13 @@
           <nav aria-label="Model views" style="display:flex;gap:2px;border-bottom:1px solid var(--line-soft)">
             <a href="/app/models/" style="display:inline-flex;align-items:center;padding:9px 12px;font-size:13.5px;color:var(--mut)">Explore</a>
             <span aria-current="page" style="display:inline-flex;align-items:center;padding:9px 12px;font-size:13.5px;font-weight:600;border-bottom:2px solid var(--acc);margin-bottom:-1px">My models</span>
-            <a href="/app/models/downloads/" style="display:inline-flex;align-items:center;padding:9px 12px;font-size:13.5px;color:var(--mut)">Downloads <span class="pill" style="padding:0 6px;margin-left:4px">1</span></a>
+            <a href="/app/models/downloads/" style="display:inline-flex;align-items:center;padding:9px 12px;font-size:13.5px;color:var(--mut)">Downloads <span class="pill" style="padding:0 6px;margin-left:4px" data-downloads-badge><!--DOWNLOADS_BADGE--></span></a>
           </nav>
 
-          <div class="box" data-download data-dl-done="4.13" data-dl-total="9.40"
-            data-dl-pct="44" data-dl-rate="28.6 MB/s" data-dl-left="about 3 min left"
-            style="padding:12px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-            <span class="dot acc pulse" data-dl-dot aria-hidden="true"></span>
-            <div style="flex:1;min-width:0">
-              <div style="font-size:13.5px;font-weight:600"><span data-dl-verb>Downloading</span> DeepSeek-Coder-V2 Lite 16B</div>
-              <div class="lab num" style="margin-top:2px" data-dl-detail>4.13 GB of 9.40 GB &middot; 44% &middot; 28.6 MB/s &middot; about 3 min left</div>
-            </div>
-            <span class="lab-fn mut" data-dl-state style="flex-shrink:0">Downloading</span>
-            <div class="track" style="width:120px;flex-shrink:0"><div class="fillbar" data-dl-bar style="width:44%"></div></div>
-            <button class="btn btnq btns" type="button" style="border-color:var(--line);flex-shrink:0" data-dl-toggle>Pause</button>
-          </div>
+          <!-- What is downloading right now, taken from the store the Downloads
+               page reads. This page keeps no copy: when that page is empty, so
+               is this strip. -->
+          <div data-models-mount="strip"><!--DOWNLOADS_STRIP--></div>
 
           <div style="display:flex;align-items:center;gap:10px">
             <span class="lab-fn mut" data-filter-count><!--MINE_COUNT--></span>
@@ -44,7 +36,7 @@
             <button class="btn btns" type="button" data-filter-clear hidden>Clear</button>
           </div>
 
-          <ul class="reg"><!--MINE_LIST--></ul>
+          <ul class="reg" data-models-mount="installed"><!--MINE_LIST--></ul>
 
           <div class="box" data-filter-empty hidden style="padding:26px 20px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center">
             <span class="h3">No installed model matches that search</span>
@@ -55,11 +47,10 @@
             <div style="flex:1;min-width:200px;display:flex;flex-direction:column;gap:7px">
               <div style="display:flex;align-items:center;gap:10px">
                 <span class="h3" style="flex:1">Storage</span>
-                <span class="lab"><!--MINE_TOTAL--> GB used by models</span>
+                <span class="lab" data-mine-total><!--MINE_TOTAL--> GB used by models</span>
               </div>
-              <div class="track" style="height:7px"><div class="fillbar" style="width:5%;background:var(--line-strong)"></div></div>
+              <div class="track" style="height:7px"><div class="fillbar" data-mine-bar style="width:<!--MINE_BAR-->%;background:var(--line-strong)"></div></div>
             </div>
-              
           </div>
 
         </div>

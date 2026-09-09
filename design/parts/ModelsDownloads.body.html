@@ -13,6 +13,7 @@
           <div style="display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap">
             <div style="flex:1;min-width:260px;display:flex;flex-direction:column;gap:6px">
               <h2 class="h1">Downloads</h2>
+              <p class="mut" style="margin:0;font-size:14px" data-downloads-summary><!--DOWNLOADS_SUMMARY--></p>
               <details class="dl-info"><summary>How downloads work</summary>
                 <p>One at a time, so a partial file is never left behind by a second one starting.
                   Weights come from the publisher, not from ForgeLocal. A paused download keeps the
@@ -26,76 +27,10 @@
             <span aria-current="page" style="display:inline-flex;align-items:center;padding:9px 12px;font-size:13.5px;font-weight:600;border-bottom:2px solid var(--acc);margin-bottom:-1px">Downloads</span>
           </nav>
 
-          <!-- Active. Precise progress, not the word "Downloading" repeated. -->
-          <section aria-labelledby="dl-active" data-dl-group="active">
-            <h2 class="lab" id="dl-active" style="margin:0 0 8px">Active</h2>
-            <div class="index">
-              <div class="dlrow" data-download data-dl-done="4.13" data-dl-total="9.40"
-                data-dl-pct="44" data-dl-rate="28.6 MB/s" data-dl-left="about 3 min left">
-                <div class="dl-main">
-                  <span class="dl-n">DeepSeek-Coder-V2 Lite 16B <span class="faint">Q4_K_M</span></span>
-                  <div class="track dl-track"><div class="fillbar" data-dl-bar style="width:44%"></div></div>
-                  <p class="dl-m num" data-dl-detail>4.13 GB of 9.40 GB &middot; 44% &middot; 28.6 MB/s &middot; about 3 min left</p>
-                </div>
-                <span class="rfit dl-s"><span class="dot acc pulse" data-dl-dot aria-hidden="true"></span><span data-dl-state>Downloading</span></span>
-                <div class="dl-a">
-                  <button class="btn btns" type="button" data-dl-toggle>Pause</button>
-                  <button class="btn btns btnq" type="button" style="border-color:var(--line)" data-dl-cancel>Cancel</button>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <!-- Failed, with the actual reason and the action that fixes it. -->
-          <section aria-labelledby="dl-failed">
-            <h2 class="lab" id="dl-failed" style="margin:0 0 8px">Failed</h2>
-            <div class="index">
-              <div class="dlrow">
-                <div class="dl-main">
-                  <span class="dl-n">Llama 3.3 70B <span class="faint">Q4_K_M</span></span>
-                  <p class="dl-m">Stopped at 6.20 GB of 42.52 GB. The disk had 19 GB free and this
-                    profile needs 42.5 GB. Free space or choose a smaller profile, then retry.</p>
-                </div>
-                <span class="rfit dl-s"><span class="dot bad" aria-hidden="true"></span>Not enough disk</span>
-                <div class="dl-a">
-                  <button class="btn btns" type="button" data-inert-note>Retry</button>
-                  <button class="btn btns btnq" type="button" style="border-color:var(--line)" data-dl-remove>Remove</button>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <!-- Completed, with what verification actually checked. -->
-          <section aria-labelledby="dl-done">
-            <h2 class="lab" id="dl-done" style="margin:0 0 8px">Completed</h2>
-            <div class="index">
-              <div class="dlrow">
-                <div class="dl-main">
-                  <span class="dl-n">Qwen2.5 Coder 14B <span class="faint">Q4_K_M</span></span>
-                  <p class="dl-m num">8.99 GB &middot; checksum verified &middot; C:\Users\you\ForgeLocal\models</p>
-                </div>
-                <span class="rfit dl-s"><span class="dot ok" aria-hidden="true"></span>Installed</span>
-                <div class="dl-a">
-                  <a class="btn btns" href="/app/models/installed/">My models</a>
-                </div>
-              </div>
-              <div class="dlrow">
-                <div class="dl-main">
-                  <span class="dl-n">Qwen2.5 Coder 7B <span class="faint">Q4_K_M</span></span>
-                  <p class="dl-m num">4.68 GB &middot; checksum verified &middot; C:\Users\you\ForgeLocal\models</p>
-                </div>
-                <span class="rfit dl-s"><span class="dot ok" aria-hidden="true"></span>Installed</span>
-                <div class="dl-a">
-                  <a class="btn btns" href="/app/models/installed/">My models</a>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <p class="chat-empty" data-dl-empty hidden style="padding:36px 2px">
-            Nothing is downloading. Start one from Explore and it appears here with its progress.</p>
-
-
+          <!-- Every row below is rendered from the shared model store, by the
+               same function the browser re-renders with. This page owns no
+               download list of its own. -->
+          <div data-models-mount="downloads"><!--DOWNLOADS--></div>
 
         </div>
       </div>

@@ -18,6 +18,64 @@ const dot = {
 
 const stateWord = { running: "running", done: "finished", failed: "stopped", idle: "idle" };
 
+/**
+ * The download state a fixture model starts in. An installed model reached the
+ * disk by finishing a download, so it seeds as completed rather than as no
+ * history at all; that is also what the store itself produces on
+ * download.completed, so the seeded and the earned record have one shape.
+ */
+function downloadSeed(m) {
+  const bytes = m.installedBytes || m.downloadBytes;
+  if (m.downloading) {
+    return { modelId: m.id, state: "downloading", receivedBytes: Math.round(m.downloadBytes * 0.44),
+      totalBytes: m.downloadBytes, bytesPerSecond: 28.6e6, etaSeconds: 180 };
+  }
+  if (m.downloadFailed) {
+    return { modelId: m.id, state: "failed", receivedBytes: m.downloadFailed.receivedBytes,
+      totalBytes: m.downloadBytes, failure: m.downloadFailed.reason };
+  }
+  if (m.installed) {
+    return { modelId: m.id, state: "completed", receivedBytes: bytes, totalBytes: bytes };
+  }
+  return undefined;
+}
+
+/**
+ * The seed for the shared model store, in ModelRecord shape.
+ *
+ * The build renders the first paint of every model surface from
+ * createState(modelSeed()), and the browser hydrates the same array out of the
+ * page. One function, so the server-rendered list and the store cannot disagree
+ * before the first event is even dispatched.
+ */
+export function modelSeed() {
+  return models.map((m) => ({
+    id: m.id,
+    displayName: m.displayName,
+    publisher: m.publisher,
+    family: m.family || m.architecture || "",
+    architecture: m.architecture || m.family || "",
+    parameterCount: (m.parameterCount / 1e9).toFixed(m.parameterCount >= 1e10 ? 0 : 1).replace(/\.0$/, "") + "B",
+    format: "GGUF",
+    quantization: m.quantization,
+    fileSizeBytes: m.installedBytes || m.downloadBytes,
+    maxContextTokens: Math.max(...m.contextOptions),
+    capabilities: ["chat"]
+      .concat(m.tasks.includes("tool-use") ? ["tool_use"] : [])
+      .concat(m.tasks.includes("coding") && m.parameterCount >= 7e9 ? ["agent_ready"] : [])
+      .concat(m.tasks.includes("coding") ? ["fim"] : []),
+    license: m.licenseId,
+    sourceUrl: m.sourceUrl,
+    installed: !!m.installed,
+    loadedInstances: m.loaded
+      ? [{ instanceId: "seed-" + m.id, contextTokens: F.fitFor(m).context }]
+      : [],
+    downloadState: downloadSeed(m),
+    hardwareFit: ({ great: "excellent", tradeoffs: "good", offload: "tight", none: "unsupported" })[F.fitFor(m).state] || "unknown",
+    bestFor: (m.strength || "").split(". ")[0],
+  }));
+}
+
 function row(c) {
   return `<div class="chat" data-chat="${esc(c.id)}" data-project="${esc(c.project)}"
         data-bucket="${esc(groupFor(c))}"${c.pinned ? " data-pinned" : ""}${c.route ? ` data-route="${esc(c.route)}"` : ""}>
@@ -69,6 +127,9 @@ export function sessionData() {
       route: c.route || null, hasThread: !!threads[c.id],
     })),
     threads,
+    // The seed for the shared model store. This is the ONLY place model data
+    // enters the client; every surface then reads the store, never this.
+    modelSeed: modelSeed(),
     models: models.map((m) => {
       const fit = F.fitFor(m);
       return { id: m.id, name: m.displayName, publisher: m.publisher, quant: m.quantization,

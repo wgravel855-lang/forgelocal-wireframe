@@ -12,10 +12,15 @@ import { fileURLToPath } from "node:url";
 import { expand } from "./lib/assemble.mjs";
 import { models } from "./data/models.mjs";
 import * as F from "./lib/fit.mjs";
-import { pickerHtml } from "./lib/picker.mjs";
 import { catalogHtml } from "./lib/catalog.mjs";
-import { recommendationBlock, installBlock, exploreList, myModelsList, scanVerdict } from "./lib/appviews.mjs";
-import { chatList, projectOptions, moveOptions, sessionData } from "./lib/chatlist.mjs";
+import { recommendationBlock, installBlock, exploreList, scanVerdict } from "./lib/appviews.mjs";
+import { chatList, projectOptions, moveOptions, sessionData, modelSeed } from "./lib/chatlist.mjs";
+// The installed and downloads pages render from the same store the browser
+// hydrates, through the same functions, so the first paint and the first
+// repaint are identical markup.
+import { createState } from "./core/modelstore.mjs";
+import { THIS_PC } from "./core/machine.mjs";
+import * as V from "./core/modelviews.mjs";
 
 F.registerModels(models);
 
@@ -28,25 +33,31 @@ const out = (p) => join(root, "public", p);
 
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const write = (rel, html) => { mkdirSync(dirname(out(rel)), { recursive: true }); writeFileSync(out(rel), html); };
-const SELECTED = "qwen25-coder-14b-q4km";
 const inst = installBlock();
-const mine = myModelsList(models);
+const SEED = createState(modelSeed());
+const mine = V.installedStats(SEED, THIS_PC);
 const BIND = {
-  "<!--MODEL_PICKER-->": () => pickerHtml(models, SELECTED),
+  "<!--MODEL_PICKER-->": () => V.pickerHtml(SEED, THIS_PC),
+  "<!--MODEL_LABEL-->": () => V.composerModelLabel(SEED),
   "<!--RECOMMENDATION-->": () => recommendationBlock(models),
   "<!--SCAN_ICON-->": () => scanVerdict().svg,
   "<!--SCAN_HEAD-->": () => scanVerdict().head,
   "<!--SCAN_SUB-->": () => scanVerdict().sub,
   "<!--EXPLORE_LIST-->": () => exploreList(models),
   "<!--CATALOG-->": () => catalogHtml(models, null),
-  "<!--MINE_LIST-->": () => mine.rows,
+  "<!--MINE_LIST-->": () => V.installedList(SEED, THIS_PC),
   "<!--MINE_TOTAL-->": () => mine.totalGB,
   "<!--MINE_FREE-->": () => mine.freeGB,
+  "<!--MINE_BAR-->": () => String(mine.usedPercent),
+  "<!--DOWNLOADS-->": () => V.downloadsHtml(SEED),
+  "<!--DOWNLOADS_STRIP-->": () => V.downloadStrip(SEED),
+  "<!--DOWNLOADS_SUMMARY-->": () => V.downloadsSummary(SEED),
+  "<!--DOWNLOADS_BADGE-->": () => String(V.downloadsBadge(SEED)),
   "<!--CHAT_LIST-->": () => chatList(),
   "<!--PROJECT_OPTIONS-->": () => projectOptions(),
   "<!--MOVE_OPTIONS-->": () => moveOptions(),
   "<!--SESSION_DATA-->": () => sessionData(),
-  "<!--MINE_COUNT-->": () => `${mine.count} model${mine.count === 1 ? "" : "s"}`,
+  "<!--MINE_COUNT-->": () => mine.countLabel,
   "<!--EXPLORE_COUNT-->": () => `${models.length} model${models.length === 1 ? "" : "s"}`,
   "<!--REC_NAME-->": () => inst.name,
   "<!--REC_TOTAL-->": () => inst.total,
@@ -80,9 +91,12 @@ const css = readFileSync(join(here, "head.part"), "utf8").match(/<style>([\s\S]*
 mkdirSync(out("assets"), { recursive: true });
 writeFileSync(out("assets/forgelocal.css"), css.replace(/^ {4}/gm, ""));
 copyFileSync(join(here, "assets/forgelocal.js"), out("assets/forgelocal.js"));
-// the controller is an ES module now, so its imports ship next to it
+// The controller is an ES module, so its imports ship next to it. Every core
+// module is copied rather than a hand-kept list: a list means adding a module
+// builds cleanly and then 404s in the browser, which is exactly what happened.
 mkdirSync(out("core"), { recursive: true });
-for (const f of ["events.mjs", "models.mjs", "adapters.mjs", "context.mjs", "reading.mjs"]) {
+for (const f of readdirSync(join(here, "core"))) {
+  if (!f.endsWith(".mjs") || f.endsWith(".test.mjs")) continue;
   copyFileSync(join(here, "core", f), out("core/" + f));
 }
 writeFileSync(out("assets/models.json"), JSON.stringify(

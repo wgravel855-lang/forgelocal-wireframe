@@ -146,30 +146,3 @@ export function exploreList(models) {
             </li>`;
   }).join("\n");
 }
-
-/* ----------------------------------------------------------- My models --- */
-export function myModelsList(models) {
-  const t = F.storageTotals(models);
-  const rows = t.installed.map((m) => {
-    const fit = F.fitFor(m);
-    return `<li data-filter-item data-name="${esc(m.displayName)} ${esc(m.publisher)}"
-              data-tags="${m.tasks.join(" ")} installed${fit.rank <= 1 ? " fits" : ""}"${m.loaded ? ' class="is-current"' : ""}>
-              <div class="rrow has-action">
-                <div style="min-width:0">
-                  <button class="rname" type="button" data-model-detail="${esc(m.id)}">${esc(m.displayName)}</button>
-                  <p class="ruse">${esc(m.strength)}</p>
-                  <p class="rmeta"><span data-load-pill>${m.loaded ? "Loaded" : "Idle"}</span> &middot; ${esc(m.quantization)}${m.recommended ? " &middot; Default for coding" : ""}</p>
-                </div>
-                <span class="rfit"><span class="dot ${m.loaded ? "ok" : ""}" aria-hidden="true"></span>${m.loaded ? "In video memory" : "On disk only"}</span>
-                <div class="rnums">
-                  <span class="rnum"><b>${F.gb(m.installedBytes, 2)} GB</b><span>on disk</span></span>
-                  <span class="rnum"><b>${F.gb(fit.required, 1)} GB</b><span>when loaded</span></span>
-                  <span class="rnum"><b>${esc(F.fmtCtx(fit.context))}</b><span>context</span></span>
-                </div>
-                <button class="btn btns" type="button" data-load-toggle data-model="${esc(m.displayName)}">${m.loaded ? "Eject" : "Load"}</button>
-              </div>
-            </li>`;
-  }).join("\n");
-
-  return { rows, totalGB: F.gb(t.installedBytes, 2), freeGB: F.gb(F.thisPC.diskFreeBytes, 0), count: t.installed.length };
-}

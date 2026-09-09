@@ -3,8 +3,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   applyDownloadAction, canTransition, downloadSummary, downloadPercent,
-  createStore, loadedModels, installedUnloaded, selectedModel, canSend,
-  downloadAction, deleteInstalled, isAgentReady, isLoaded,
+  isAgentReady,
 } from "./models.mjs";
 
 /** @typedef {import("./models.mjs").DownloadView} DownloadView */
@@ -32,7 +31,7 @@ test("pause stops reporting a speed and an estimate", () => {
   assert.equal(paused.bytesPerSecond, undefined);
   assert.equal(paused.etaSeconds, undefined);
   assert.equal(paused.receivedBytes, 4.13e9, "paused keeps the bytes already on disk");
-  assert.match(downloadSummary(paused), /Paused$/);
+  assert.match(downloadSummary(paused), /Paused, and the bytes so far are kept/);
   assert.doesNotMatch(downloadSummary(paused), /MB\/s|min left/);
 });
 
@@ -70,46 +69,7 @@ test("verifying is a distinct state before completed", () => {
   assert.equal(downloadPercent(done), 100);
 });
 
-/* 9. One store shared by picker, catalog, installed and downloads. */
-test("a completed download immediately marks the model installed", () => {
-  const store = createStore([model({ installed: false, downloadState: dl({ state: "verifying" }) })]);
-  assert.equal(store.byId.m1.installed, false);
-  const after = downloadAction(store, "m1", "finish");
-  assert.equal(after.byId.m1.installed, true, "installed page and downloads page read the same record");
-  assert.equal(installedUnloaded(after).length, 1);
-});
-
-test("deleting an installed file keeps the catalog entry", () => {
-  const store = createStore([model({ loadedInstances: [{ instanceId: "i1", contextTokens: 16384 }] })]);
-  assert.equal(loadedModels(store).length, 1);
-  assert.equal(store.selectedId, "m1");
-  const after = deleteInstalled(store, "m1");
-  assert.equal(after.byId.m1.installed, false);
-  assert.equal(after.byId.m1.loadedInstances.length, 0);
-  assert.ok(after.byId.m1.displayName, "the catalog record survives");
-  assert.equal(after.selectedId, null, "the composer stops pointing at a deleted model");
-});
-
-test("send is disabled until a model is actually loaded", () => {
-  const unloaded = createStore([model()]);
-  assert.equal(unloaded.selectedId, null);
-  assert.equal(canSend(unloaded), false);
-
-  const loaded = createStore([model({ loadedInstances: [{ instanceId: "i1", contextTokens: 16384 }] })]);
-  assert.equal(canSend(loaded), true);
-  const sel = selectedModel(loaded);
-  assert.ok(sel);
-  assert.equal(sel.id, "m1");
-  assert.equal(isLoaded(sel), true);
-});
-
 test("agent_ready is a capability, not every model", () => {
   assert.equal(isAgentReady(model()), true);
   assert.equal(isAgentReady(model({ capabilities: ["chat"] })), false);
-});
-
-test("download actions on an unknown or non-downloading model are no-ops", () => {
-  const store = createStore([model()]);
-  assert.equal(downloadAction(store, "m1", "pause"), store, "no download to pause");
-  assert.equal(downloadAction(store, "nope", "pause"), store);
 });

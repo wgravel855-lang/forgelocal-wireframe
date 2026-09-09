@@ -112,7 +112,9 @@ window.addEventListener("error", (e) => {
 function inlineModules(src, dir) {
   /** @type {Set<string>} */ const seen = new Set();
   /** @type {string[]} */ const parts = [];
-  /** @type {string[]} */ const aliases = [];
+  // A Set, because two modules importing the same helper under the same alias
+  // need that binding once, not twice.
+  /** @type {Set<string>} */ const aliases = new Set();
 
   const strip = (code) => code
     .replace(/^import\s+\{[\s\S]*?\}\s+from\s+"[^"]+";?$/gm, "")
@@ -124,7 +126,7 @@ function inlineModules(src, dir) {
       // a renamed import needs a real binding or the alias is undefined
       for (const spec of m[1].split(",")) {
         const as = spec.trim().match(/^([A-Za-z_$][\w$]*)\s+as\s+([A-Za-z_$][\w$]*)$/);
-        if (as) aliases.push(`const ${as[2]} = ${as[1]};`);
+        if (as) aliases.add(`const ${as[2]} = ${as[1]};`);
       }
       const target = join(from, m[2]);
       if (seen.has(target)) continue;
@@ -136,9 +138,26 @@ function inlineModules(src, dir) {
   };
 
   walk(src, dir);
-  parts.push(aliases.join("\n"));
+  parts.push([...aliases].join("\n"));
   parts.push(strip(src));
-  return parts.join("\n;\n");
+  const bundle = parts.join("\n;\n");
+
+  // Flattening puts every module in one scope, so two modules that each keep a
+  // private helper of the same name collide. The browser would not care, so
+  // this must not read as a page error: name the duplicate instead, and treat
+  // it as a signal that the helper belongs in a shared module.
+  /** @type {Map<string, number>} */
+  const declared = new Map();
+  for (const m of bundle.matchAll(/^(?:const|let|function|class)\s+([A-Za-z_$][\w$]*)/gm)) {
+    declared.set(m[1], (declared.get(m[1]) || 0) + 1);
+  }
+  const clashes = [...declared].filter(([, n]) => n > 1).map(([name]) => name);
+  if (clashes.length) {
+    throw new Error(`two core modules both declare ${clashes.join(", ")} at module scope. `
+      + "The browser scopes them separately, but this gate flattens them: move the "
+      + "helper into a shared module rather than duplicating it.");
+  }
+  return bundle;
 }
 
 const entry = join(pub, "assets/forgelocal.js");

@@ -95,6 +95,7 @@ export const models = [
   },
   {
     id: "deepseek-coder-v2-lite-q4km",
+    downloading: true,
     displayName: "DeepSeek-Coder-V2 Lite 16B",
     publisher: "DeepSeek",
     sourceUrl: "https://huggingface.co/bartowski/DeepSeek-Coder-V2-Lite-Instruct-GGUF",
@@ -176,6 +177,12 @@ export const models = [
     measuredTokensPerSecond: [],
     installed: false,
     loaded: false,
+    // A failed download the Downloads page can show without inventing one in
+    // its own markup. The reason is the one the disk check would produce.
+    downloadFailed: {
+      receivedBytes: Math.round(6.2 * GB),
+      reason: "The disk had 19 GB free and this profile needs 42.5 GB. Free space or choose a smaller profile, then retry.",
+    },
   },
   {
     id: "gemma2-9b-q4km",

@@ -6,6 +6,8 @@
  * disagree about whether a model was installed.
  */
 
+import { gb } from "./units.mjs";
+
 /** @typedef {import('./events.mjs').ModelCapability} ModelCapability */
 
 /** @typedef {'queued'|'downloading'|'paused'|'verifying'|'completed'|'failed'|'canceled'} DownloadState */
@@ -133,91 +135,28 @@ export const downloadPercent = (dl) =>
  * @returns {string}
  */
 export function downloadSummary(dl) {
-  const gb = (b) => (b / 1e9).toFixed(2);
-  const head = `${gb(dl.receivedBytes)} GB of ${gb(dl.totalBytes)} GB · ${downloadPercent(dl)}%`;
+  const head = `${gb(dl.receivedBytes, 2)} GB of ${gb(dl.totalBytes, 2)} GB · ${downloadPercent(dl)}%`;
   switch (dl.state) {
-    case "downloading":
-      return dl.bytesPerSecond
-        ? `${head} · ${(dl.bytesPerSecond / 1e6).toFixed(1)} MB/s${dl.etaSeconds ? ` · about ${Math.round(dl.etaSeconds / 60)} min left` : ""}`
-        : head;
-    case "paused": return `${head} · Paused`;
-    case "queued": return `Queued · ${gb(dl.totalBytes)} GB`;
-    case "verifying": return `${gb(dl.totalBytes)} GB · Verifying`;
-    case "completed": return `${gb(dl.totalBytes)} GB · Verified`;
-    case "failed": return `${head} · ${dl.failure || "Failed"}`;
-    case "canceled": return "Canceled";
+    case "downloading": {
+      // Rate and estimate are printed only when the adapter reported them.
+      const parts = [head];
+      if (dl.bytesPerSecond) parts.push(`${(dl.bytesPerSecond / 1e6).toFixed(1)} MB/s`);
+      if (dl.etaSeconds) parts.push(etaWords(dl.etaSeconds));
+      return parts.join(" · ");
+    }
+    case "paused": return `${head} · Paused, and the bytes so far are kept`;
+    case "queued": return `Queued · ${gb(dl.totalBytes, 2)} GB · one download runs at a time`;
+    case "verifying": return `${gb(dl.totalBytes, 2)} GB received · Verifying against the publisher's checksum`;
+    case "completed": return `${gb(dl.totalBytes, 2)} GB · Verified`;
+    case "failed": return `Stopped at ${head} · ${dl.failure || "The reason was not reported."}`;
+    case "canceled": return "Cancelled";
     default: return head;
   }
 }
 
-/* ------------------------------------------------------------ model store -- */
-
-/**
- * @typedef {object} ModelStore
- * @property {Record<string, ModelRecord>} byId
- * @property {string|null} selectedId    the model the composer will use
- */
-
-/**
- * @param {ModelRecord[]} records
- * @returns {ModelStore}
- */
-export function createStore(records) {
-  /** @type {Record<string, ModelRecord>} */
-  const byId = {};
-  for (const r of records) byId[r.id] = r;
-  const loaded = records.find(isLoaded);
-  return { byId, selectedId: loaded ? loaded.id : null };
+/** @param {number} seconds */
+function etaWords(seconds) {
+  if (!Number.isFinite(seconds) || seconds <= 0) return "";
+  return seconds < 90 ? `about ${Math.round(seconds)} sec left` : `about ${Math.round(seconds / 60)} min left`;
 }
 
-/** @param {ModelStore} s */
-export const allModels = (s) => Object.values(s.byId);
-
-/** @param {ModelStore} s */
-export const loadedModels = (s) => allModels(s).filter(isLoaded);
-
-/** @param {ModelStore} s */
-export const installedUnloaded = (s) => allModels(s).filter((m) => m.installed && !isLoaded(m));
-
-/** @param {ModelStore} s */
-export const selectedModel = (s) => (s.selectedId ? s.byId[s.selectedId] || null : null);
-
-/**
- * With nothing loaded there is no model to send to, so the composer must not
- * pretend otherwise.
- * @param {ModelStore} s
- */
-export const canSend = (s) => {
-  const m = selectedModel(s);
-  return !!m && isLoaded(m);
-};
-
-/**
- * @param {ModelStore} s
- * @param {string} modelId
- * @param {DownloadAction} action
- * @returns {ModelStore}
- */
-export function downloadAction(s, modelId, action) {
-  const m = s.byId[modelId];
-  if (!m || !m.downloadState) return s;
-  const next = applyDownloadAction(m.downloadState, action);
-  if (next === m.downloadState) return s;
-  const installed = next.state === "completed" ? true : m.installed;
-  return { ...s, byId: { ...s.byId, [modelId]: { ...m, downloadState: next, installed } } };
-}
-
-/**
- * Deleting an installed file removes the file, not the catalog entry: the model
- * is still discoverable and re-downloadable.
- * @param {ModelStore} s
- * @param {string} modelId
- * @returns {ModelStore}
- */
-export function deleteInstalled(s, modelId) {
-  const m = s.byId[modelId];
-  if (!m || !m.installed) return s;
-  const next = { ...m, installed: false, loadedInstances: [], downloadState: undefined };
-  const selectedId = s.selectedId === modelId ? null : s.selectedId;
-  return { ...s, byId: { ...s.byId, [modelId]: next }, selectedId };
-}
