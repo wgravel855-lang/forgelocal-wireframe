@@ -162,3 +162,24 @@ test("the module graph the browser loads is complete", () => {
   walk(entry);
   assert.ok(seen.size >= 3, "the controller imports the core");
 });
+
+/* Two workspace compositions, selected by session state and never by route. */
+test("the composition is derived from messages, not from the URL", () => {
+  const js = readFileSync(join(pub, "assets/forgelocal.js"), "utf8");
+  // setComposition takes the message count; a route check here would mean a
+  // fixture URL could show the wrong layout for its own content.
+  assert.match(js, /function setComposition\(hasMessages\)/);
+  assert.match(js, /hasMessages \? "session" : "start"/);
+  assert.match(js, /const hasMessages = !!\(t && t\.turns && t\.turns\.length\)/);
+  assert.doesNotMatch(js, /composition[^\n]*location\.pathname/,
+    "the composition must not be chosen by inspecting the route");
+
+  // Both geometries come from one composer in the markup, not two.
+  for (const route of ["app", "app/running", "app/review"]) {
+    const html = readFileSync(join(pub, route, "index.html"), "utf8");
+    assert.equal((html.match(/class="composer"/g) || []).length, 1,
+      `${route} ships more than one composer`);
+    assert.equal((html.match(/class="cshell"/g) || []).length, 1,
+      `${route} ships more than one composer shell`);
+  }
+});

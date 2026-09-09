@@ -304,10 +304,42 @@ body.has-dlg { overflow: hidden; }
 /* the last turn's action row lives in the gutter below it, so the thread
    needs room for one before the composer starts */
 .thread { flex: 0 0 auto; padding-bottom: 48px; }
-/* The greeting sits in the upper third of the canvas. Bottom-aligning it
-   put the only content on the page two thirds of the way down. */
-.thread.is-empty { flex: 1 0 auto; justify-content: flex-start; gap: 0;
-  padding-top: min(29vh, 258px); padding-bottom: 20px; }
+/* Start composition: heading, composer, context strip and recents are one
+   centred cluster. Previously the heading sat at 34% and the composer was
+   docked at the bottom, leaving ~400px of nothing between the only two
+   things on the screen. */
+[data-composition="start"] .thread-scroll { justify-content: center; }
+[data-composition="start"] .thread { flex: 0 0 auto; padding: 0 0 30px; }
+[data-composition="start"] .dock { position: static; margin-top: 0;
+  padding-bottom: 0; background: none; }
+[data-composition="start"] .dock::before { display: none; }
+[data-composition="start"] .col { max-width: 760px; }
+/* the cluster is nudged above true centre, where a reading eye expects it */
+[data-composition="start"] .thread-scroll > :first-child { margin-top: auto; }
+[data-composition="start"] .dock { margin-bottom: auto; }
+.thread.is-empty { gap: 0; }
+/* A new session has no title and no state, so it gets no header and no
+   rule under it. The rail controls stay reachable in the corner. */
+[data-composition="start"] .topbar { border-bottom: 0; }
+[data-composition="start"] .topbar > div:nth-child(2),
+[data-composition="start"] [data-ws-title] { display: none; }
+/* The recomposition is one settle, not a flight across the canvas. */
+.is-recomposing .thread-scroll > * { animation: recompose 220ms ease-out; }
+@keyframes recompose { from { opacity: 0; transform: translateY(10px); } }
+@media (prefers-reduced-motion: reduce) {
+  .is-recomposing .thread-scroll > * { animation: none; }
+}
+
+/* Recent sessions: plain rows, no card, no chevron, no description. */
+.recents { display: flex; flex-direction: column; margin-top: 20px; }
+.recents > a { display: flex; align-items: center; gap: 11px; min-height: 44px;
+  padding: 0 12px; border-radius: 8px; font-size: 14px; line-height: 21px;
+  color: var(--mut); text-decoration: none;
+  transition: background 140ms ease-out, color 140ms ease-out; }
+.recents > a:hover { background: var(--sunk); color: var(--fg); text-decoration: none; }
+.recents > a:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+.recents svg { flex-shrink: 0; color: var(--faint); }
+.recents .t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .turn { display: flex; flex-direction: column; gap: 12px; }
 .turn-user { align-items: flex-end; }
 
@@ -452,10 +484,10 @@ body.has-dlg { overflow: hidden; }
 /* ---- empty conversation ---------------------------------------------- */
 /* A question above the input and nothing else. The mark is small and quiet
    so the eye lands on the question, then on the composer under it. */
-.empty { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
+.empty { display: flex; flex-direction: column; align-items: center; gap: 14px; }
 .empty-mark { color: var(--faint); line-height: 0; }
-.empty-q { margin: 0; font-size: 26px; line-height: 34px; font-weight: 600;
-  letter-spacing: -0.4px; color: var(--fg); }
+.empty-q { margin: 0; font-size: 25px; line-height: 33px; font-weight: 600;
+  letter-spacing: -0.3px; color: var(--fg); text-align: center; }
 @media (max-width: 720px) {
   .btn, .ico, .btn.btns, .btn.ico { min-height: 44px; }
   .composer .ico, .composer .btn { min-height: 44px; }
@@ -721,19 +753,45 @@ button.pill, a.pill { height: 40px; border-radius: 20px; padding: 0 15px; font-s
   inherits: false;
   initial-value: 0deg;
 }
-/* The composer is a group of three rows, not a card: a context strip on the
-   canvas, one bordered input, and a control rail on the canvas. Only the
-   middle row looks like a surface, so the group reads as a text field. */
-.composer { display: flex; flex-direction: column; gap: 4px;
+/* ---- composer: one shell, two compositions --------------------------- */
+/* A new session and a running session are different moments. The start
+   composition is a centred cluster whose composer is the subject of the
+   screen; the session composition is a compact bar that gives the canvas
+   to the transcript. Same markup, same handlers, same draft: only the
+   geometry and the order of the context strip change. */
+.composer { display: flex; flex-direction: column; gap: 8px;
   border: 0; background: none; padding: 0; }
-.cinput { position: relative; isolation: isolate;
+.cshell { position: relative; isolation: isolate;
   border: 1px solid var(--line-strong); background: var(--raised);
-  border-radius: 11px; padding: 5px 12px;
-  min-height: 50px; display: flex; align-items: center;
-  transition: border-color 160ms ease-out, background-color 160ms ease-out; }
+  border-radius: 14px;
+  display: flex; flex-direction: column;
+  transition: border-color 160ms ease-out, min-height 200ms ease-out; }
+.cinput { display: flex; align-items: flex-start; }
 .cinput > .ta { flex: 1; }
 
-.cinput::before, .cinput::after {
+/* start: the composer is the subject. Two rows inside one object. */
+[data-composition="start"] .cshell { min-height: 108px; padding: 14px 14px 8px; }
+[data-composition="start"] .composer .cstrip { order: 2; justify-content: center;
+  min-height: 40px; }
+[data-composition="start"] .composer .recents { order: 3; }
+/* recents belong to the start cluster only */
+[data-composition="session"] .composer .recents { display: none; }
+[data-composition="start"] .cinput { flex: 1; }
+
+/* session: one 56px row, input and controls side by side. */
+[data-composition="session"] .composer { gap: 6px; }
+[data-composition="session"] .cshell { min-height: 56px; border-radius: 13px;
+  flex-direction: row; align-items: center; gap: 8px; padding: 8px 8px 8px 16px; }
+[data-composition="session"] .cinput { flex: 1; min-width: 0; align-items: center; }
+[data-composition="session"] .cbar { flex: 0 0 auto; }
+[data-composition="session"] .composer .cstrip { order: -1; min-height: 26px; }
+/* Reasoning level moves into its popover when the row is tight. Permission
+   mode and model stay: both change what a run is allowed to do, and mode
+   changes execution risk. */
+[data-composition="session"] .cbar-r > div:nth-child(2) { display: none; }
+[data-composition="session"] .dock { padding-bottom: 20px; }
+
+.cshell::before, .cshell::after {
   content: ""; position: absolute; border-radius: inherit; pointer-events: none;
   background: conic-gradient(from var(--flow-angle),
     transparent 0deg 265deg,
@@ -749,33 +807,43 @@ button.pill, a.pill { height: 40px; border-radius: 20px; padding: 0 15px; font-s
   animation: none;
   transition: opacity 200ms ease-out;
 }
-/* Idle is a plain neutral border. The travelling light appears on focus and
-   while a run is generating, and nowhere else: an animated edge on an
-   untouched input is decoration, not state. */
-.cinput::before { inset: -1px; padding: 1px; opacity: 0; z-index: 2; }
-.cinput::after { inset: -3px; padding: 3px; opacity: 0; filter: blur(9px); z-index: -1; }
+/* A 1px edge highlight, not a halo. It rides the border itself, casts
+   nothing onto the canvas, and appears only when the input is focused or a
+   run is generating: an animated edge on an untouched composer is
+   decoration, not state. */
+.cshell::before { inset: -1px; padding: 1px; opacity: 0; z-index: 2; }
+/* one faint pass of depth on the edge only, never a glow on the page */
+.cshell::after { inset: -1px; padding: 1px; opacity: 0; filter: blur(3px); z-index: 1; }
 
-.cinput:focus-within { border-color: color-mix(in srgb, var(--line-strong) 55%, var(--flow-head)); }
-.cinput:focus-within::before { opacity: .5; animation: flow-edge 10s linear infinite; }
-.composer[data-running] .cinput::before { opacity: .55; animation: flow-edge 10s linear infinite; }
-/* A pending decision is amber at the decision surface, so the composer
-   edge stops competing for the same attention. */
-.composer[data-awaiting] .cinput::before { animation: none; opacity: 0; }
+.cshell:focus-within { border-color: color-mix(in srgb, var(--line-strong) 55%, var(--flow-head)); }
+.cshell:focus-within::before { opacity: .5; animation: flow-edge 6s linear infinite; }
+.cshell:focus-within::after { opacity: .18; animation: flow-edge 6s linear infinite; }
+/* Running moves a little faster, because it is reporting activity. */
+.composer[data-running] .cshell::before { opacity: .55; animation: flow-edge 3.2s linear infinite; }
+.composer[data-running] .cshell::after { opacity: .2; animation: flow-edge 3.2s linear infinite; }
+/* A pending decision is amber at the decision surface, and an error is a
+   border, not a light show: both stop the motion. */
+.composer[data-awaiting] .cshell::before,
+.composer[data-awaiting] .cshell::after,
+.composer[data-error] .cshell::before,
+.composer[data-error] .cshell::after { animation: none; opacity: 0; }
+.composer[data-error] .cshell { border-color: var(--bad-line); }
 /* Nothing animates in a window the user is not looking at. */
-body.is-blurred .cinput::before { animation-play-state: paused; }
+body.is-blurred .cshell::before,
+body.is-blurred .cshell::after { animation-play-state: paused; }
 
 @keyframes flow-edge { to { --flow-angle: 360deg; } }
 
 /* Static equivalent: a plain focus ring, with the light parked. */
 @media (prefers-reduced-motion: reduce) {
-  .cinput::before, .cinput::after { animation: none; --flow-angle: 302deg; }
-  .cinput:focus-within { box-shadow: 0 0 0 3px color-mix(in srgb, var(--flow-head) 16%, transparent); }
+  .cshell::before, .cshell::after { animation: none; opacity: 0; }
+  .cshell:focus-within { box-shadow: 0 0 0 3px color-mix(in srgb, var(--flow-head) 16%, transparent); }
 }
 /* Without mask compositing there is no ring to draw, so fall back to the
    neutral border and a plain focus ring. */
 @supports not ((-webkit-mask-composite: xor) or (mask-composite: exclude)) {
-  .cinput::before, .cinput::after { display: none; }
-  .cinput:focus-within { border-color: var(--flow-head);
+  .cshell::before, .cshell::after { display: none; }
+  .cshell:focus-within { border-color: var(--flow-head);
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--flow-head) 16%, transparent); }
 }
 /* The control row must wrap rather than push Send past the viewport on a
@@ -1577,6 +1645,11 @@ button.evrow:focus-visible { outline: 2px solid var(--focus); outline-offset: -2
   .shell.is-collapsed .sidebar .t,
   .shell.is-collapsed .sidebar [data-hide-collapsed] { display: none; }
   .shell.is-collapsed .sidebar .srow { justify-content: center; padding: 0; }
+  /* The chat list is what normally pushes the footer down, and it is hidden
+     when collapsed, so the utility group needs its own reason to stay at
+     the bottom of the rail. */
+  .shell.is-collapsed .side-foot { margin-top: auto; }
+  .shell.is-collapsed .side-hd { align-items: center; }
   .shell.is-collapsed .side-hd { flex-direction: column; height: auto; gap: 4px;
     padding: 8px 0; }
   .shell.is-collapsed .sidebar { transition: width 180ms ease; }

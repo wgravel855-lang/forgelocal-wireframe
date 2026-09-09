@@ -272,18 +272,28 @@ import {
       if (drawer && !collapsed) sidebar.setAttribute("data-open", "");
       else sidebar.removeAttribute("data-open");
       scrim.hidden = !(drawer && !collapsed);
-      // Exactly one toggle is reachable at a time: the sidebar's own control
-      // hides it, the top bar's brings it back.
-      if (inSidebar) inSidebar.hidden = collapsed;
-      if (inTopbar) inTopbar.hidden = !collapsed;
+      // Exactly one toggle is reachable at a time, and it lives wherever the
+      // user is looking. While the collapsed rail is on screen the rail owns
+      // it, so history is reachable from the rail itself; when the rail is
+      // gone entirely the top bar owns it.
+      const railVisible = innerWidth >= 1024;
+      const inRail = collapsed && railVisible;
+      if (inSidebar) inSidebar.hidden = collapsed && !railVisible;
+      if (inTopbar) inTopbar.hidden = !collapsed || inRail;
+      if (inSidebar) {
+        inSidebar.title = collapsed ? "Show chats" : "Hide chats";
+      }
       $$("[data-sidebar-toggle]").forEach((b) => {
         b.setAttribute("aria-expanded", String(!collapsed));
         b.setAttribute("aria-label", collapsed ? "Show sidebar" : "Hide sidebar");
       });
     };
-    // Narrow windows start collapsed regardless of the stored preference.
+    // Narrow windows start collapsed regardless of the stored preference. On a
+    // wide display a first-time user also starts collapsed, so the canvas
+    // belongs to the work rather than to an empty session list; an explicit
+    // choice is remembered and never overridden.
     const narrow = innerWidth <= 1180;
-    apply(narrow ? true : store.get("sidebar-collapsed", false));
+    apply(narrow ? true : store.get("sidebar-collapsed", true));
     $$("[data-sidebar-toggle]").forEach((b) =>
       b.addEventListener("click", () => {
         const now = !shell.classList.contains("is-collapsed");
@@ -1439,6 +1449,16 @@ import {
       render();
     };
 
+    // A recent row on the start canvas opens the same session the sidebar row
+    // does, through the same function; it is a second entry point, not a
+    // second implementation.
+    document.addEventListener("click", (e) => {
+      const row = e.target.closest("[data-open-chat]");
+      if (!row) return;
+      e.preventDefault();
+      openChat(row.dataset.openChat);
+    });
+
     list.addEventListener("click", (e) => {
       const open = e.target.closest(".chat-open");
       if (open) { openChat(open.closest(".chat").dataset.chat); return; }
@@ -1754,9 +1774,11 @@ import {
 
       // Context: a percentage needs a loaded model's window to be a fraction of.
       const ctx = contextDisplay(r);
+      // With no loaded model there is no denominator, so the control is absent
+      // rather than showing an em dash the user cannot act on.
+      $$("[data-ctx-wrap]").forEach((el) => { el.hidden = ctx.percent === null; });
       $$("[data-ctx-pct]").forEach((el) => { el.textContent = ctx.text; });
       $$("[data-ctx-ring]").forEach((el) => {
-        el.hidden = ctx.percent === null;
         if (ctx.percent !== null) el.style.setProperty("--pct", String(ctx.percent));
       });
       $$("[data-ctx-btn]").forEach((el) => { el.setAttribute("aria-label", ctx.label); });
@@ -2205,15 +2227,61 @@ import {
       <h2 class="empty-q">What do you want to build?</h2>
     </div>`;
 
+  /* Up to three stored sessions, as plain rows under the composer.
+   *
+   * These are the same sessions the sidebar lists and each one opens its real
+   * transcript. Nothing invented: with no stored session the area is absent
+   * rather than filled with sample prompts. */
+  function renderRecents() {
+    const host = $("[data-recents]");
+    if (!host) return;
+    const raw = $("#fl-sessions");
+    if (!raw) return;
+    let chats = [];
+    try { chats = JSON.parse(raw.textContent).chats || []; } catch { chats = []; }
+    const rows = chats.filter((c) => c.hasThread).slice(0, 3);
+    host.innerHTML = rows.length ? rows.map((c) => `
+      <a href="/app/" data-open-chat="${esc(c.id)}">
+        ${ICON.plan()}<span class="t">${esc(c.title)}</span>
+      </a>`).join("") : "";
+    host.hidden = rows.length === 0;
+  }
+
+  /* Which of the two workspace compositions is showing.
+   *
+   *   start    a session with no messages: the composer is the subject, and
+   *            heading, composer, context and recents form one centred cluster
+   *   session  a session with messages: the transcript is the subject and the
+   *            composer is a compact bar at the bottom
+   *
+   * Derived from session state, never from the route. Every fixture route and
+   * every saved chat picks its composition from the same rule, and the shared
+   * markup, draft, popovers and handlers survive the change.
+   */
+  function setComposition(hasMessages) {
+    const app = $(".app");
+    if (!app) return;
+    const next = hasMessages ? "session" : "start";
+    if (app.dataset.composition === next) return;
+    app.dataset.composition = next;
+    // A short cross-fade only, so the change reads as one layout settling
+    // rather than the composer travelling across the screen.
+    if (!reduced) {
+      app.classList.add("is-recomposing");
+      setTimeout(() => app.classList.remove("is-recomposing"), 240);
+    }
+  }
+
   /* ---- render --------------------------------------------------------- */
   function renderThread() {
     const el = CONVO.el;
     if (!el) return;
     const t = CONVO.thread;
-    if (!t || !t.turns?.length) {
+    const hasMessages = !!(t && t.turns && t.turns.length);
+    setComposition(hasMessages);
+    if (!hasMessages) {
       el.innerHTML = emptyState();
       el.classList.add("is-empty");
-
       return;
     }
     el.classList.remove("is-empty");
@@ -3649,7 +3717,7 @@ import {
     wireReview(); wireFilters(); wireNav(); wirePricing(); wirePlatform(); wireSignin();
     wireDownloadRows(); wireFilesTab(); wirePresets(); showPreset();
     wireActivity(); wireStopRun(); wirePermission(); wireRecover(); wireSuggest();
-    wireModelActions(); wireConversation(); wireChats();
+    wireModelActions(); wireConversation(); wireChats(); renderRecents();
     hydrateModels(); wireLoaderEntryPoints(); wireModelPages(); wireStoreActions();
     wireRuntimeSurfaces(); wireWindowFocus();
     wireWaitlist(); wireModelDetail(); wireCatalog(); wireDiagnostics(); wireComposerDraft();
