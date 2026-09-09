@@ -48,7 +48,6 @@ const BIND = {
   "<!--MINE_LIST-->": () => V.installedList(SEED, THIS_PC),
   "<!--MINE_TOTAL-->": () => mine.totalGB,
   "<!--MINE_FREE-->": () => mine.freeGB,
-  "<!--MINE_BAR-->": () => String(mine.usedPercent),
   "<!--DOWNLOADS-->": () => V.downloadsHtml(SEED),
   "<!--DOWNLOADS_STRIP-->": () => V.downloadStrip(SEED),
   "<!--DOWNLOADS_SUMMARY-->": () => V.downloadsSummary(SEED),

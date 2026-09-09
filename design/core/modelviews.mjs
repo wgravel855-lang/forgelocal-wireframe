@@ -38,7 +38,7 @@ import {
  */
 function contextFigure(m, pc) {
   const inst = m.loadedInstances[0];
-  if (inst) return { value: fmtCtx(inst.contextTokens), label: "context, loaded" };
+  if (inst) return { value: fmtCtx(inst.contextTokens), label: "context" };
   return { value: fmtCtx(recommendedParams(m, pc).contextTokens), label: "context, recommended" };
 }
 
@@ -52,7 +52,7 @@ function memoryFigure(m, pc) {
   // A loaded model whose adapter said nothing is still an estimate, and says so.
   if (inst && inst.vramBytes) return { value: `${gb(inst.vramBytes, 1)} GB`, label: "in video memory" };
   const est = estimateMemory(m, recommendedParams(m, pc));
-  return { value: `${gb(est.vramBytes, 1)} GB`, label: inst ? "in video memory, estimated" : "when loaded, estimated" };
+  return { value: `${gb(est.vramBytes, 1)} GB`, label: inst ? "in memory, estimated" : "when loaded, estimated" };
 }
 
 /**
@@ -81,7 +81,7 @@ export function installedRow(m, pc) {
           <p class="rmeta"><span data-load-pill>${loaded ? "Loaded" : "On disk"}</span>
             &middot; ${esc(m.quantization || "")} &middot; ${esc(m.publisher)}</p>
         </div>
-        <span class="rfit"><span class="dot ${loaded ? "ok" : ""}" aria-hidden="true"></span>${loaded ? "In video memory" : "On disk only"}</span>
+        <span class="rfit">${loaded ? "In video memory" : "On disk only"}</span>
         <div class="rnums">
           <span class="rnum"><b>${gb(m.fileSizeBytes, 2)} GB</b><span>on disk</span></span>
           <span class="rnum"><b>${esc(mem.value)}</b><span>${esc(mem.label)}</span></span>
@@ -112,8 +112,6 @@ export function installedStats(s, pc) {
     freeGB: gb(pc.diskFreeBytes - used, 0),
     count,
     countLabel: `${count} model${count === 1 ? "" : "s"}`,
-    // the bar is models against the disk they share, not against themselves
-    usedPercent: Math.max(1, Math.round((used / (used + pc.diskFreeBytes)) * 100)),
   };
 }
 
@@ -168,7 +166,7 @@ function failedRow(m) {
         <span class="dl-n">${esc(m.displayName)} <span class="faint">${esc(m.quantization || "")}</span></span>
         <p class="dl-m">${esc(downloadDetail(m))}</p>
       </div>
-      <span class="rfit dl-s"><span class="dot bad" aria-hidden="true"></span>Stopped</span>
+      <span class="rfit dl-s is-bad">Stopped</span>
       <div class="dl-a">
         <button class="btn btns" type="button" data-model-act="download.retried" data-model-id="${esc(m.id)}">Retry</button>
         <button class="btn btns btnq" type="button" style="border-color:var(--line)"
@@ -188,10 +186,9 @@ function completedRow(m) {
         <p class="dl-m num">${gb(d.totalBytes, 2)} GB &middot; checksum verified &middot;
           ${gone ? "deleted from disk" : "C:\\Users\\you\\ForgeLocal\\models"}</p>
       </div>
-      <span class="rfit dl-s"><span class="dot ${gone ? "" : "ok"}" aria-hidden="true"></span>${gone ? "Deleted" : "Installed"}</span>
+      <span class="rfit dl-s">${gone ? "Deleted" : "Installed"}</span>
       <div class="dl-a">
         ${gone || isLoaded(m) ? "" : `<button class="btn btns" type="button" data-load-model="${esc(m.id)}">Load</button>`}
-        <a class="btn btns btnq" style="border-color:var(--line)" href="/app/models/installed/">My models</a>
       </div>
     </div>`;
 }

@@ -8,24 +8,25 @@
       <!--#include topbar.html {"title":"Downloads"} -->
 
       <div class="scroll" style="overflow-y:auto">
-        <div data-filter-root="downloads" style="width:100%;max-width:960px;margin:0 auto;padding:26px 24px 32px;display:flex;flex-direction:column;gap:18px">
+        <div class="mcol">
 
-          <div style="display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap">
-            <div style="flex:1;min-width:260px;display:flex;flex-direction:column;gap:6px">
-              <h2 class="h1">Downloads</h2>
-              <p class="mut" style="margin:0;font-size:14px" data-downloads-summary><!--DOWNLOADS_SUMMARY--></p>
-              <details class="dl-info"><summary>How downloads work</summary>
-                <p>One at a time, so a partial file is never left behind by a second one starting.
-                  Weights come from the publisher, not from ForgeLocal. A paused download keeps the
-                  bytes already on disk and resumes from there.</p></details>
-            </div>
+          <!-- The shell names the route. This page opens with the navigation,
+               then one line of state, then the rows. -->
+          <div class="mtabs">
+            <nav class="tabline" aria-label="Model views">
+              <a href="/app/models/">Explore</a>
+              <a href="/app/models/installed/">My models</a>
+              <span aria-current="page">Downloads</span>
+            </nav>
+            <details class="dl-info">
+              <summary>How downloads work</summary>
+              <p>One at a time, so a partial file is never left behind by a second one starting.
+                Weights come from the publisher. A paused download keeps the bytes already on
+                disk and resumes from there.</p>
+            </details>
           </div>
 
-          <nav aria-label="Model views" style="display:flex;gap:2px;border-bottom:1px solid var(--line-soft)">
-            <a href="/app/models/" style="display:inline-flex;align-items:center;padding:9px 12px;font-size:13.5px;color:var(--mut)">Explore</a>
-            <a href="/app/models/installed/" style="display:inline-flex;align-items:center;padding:9px 12px;font-size:13.5px;color:var(--mut)">My models</a>
-            <span aria-current="page" style="display:inline-flex;align-items:center;padding:9px 12px;font-size:13.5px;font-weight:600;border-bottom:2px solid var(--acc);margin-bottom:-1px">Downloads</span>
-          </nav>
+          <p class="lab" data-downloads-summary><!--DOWNLOADS_SUMMARY--></p>
 
           <!-- Every row below is rendered from the shared model store, by the
                same function the browser re-renders with. This page owns no

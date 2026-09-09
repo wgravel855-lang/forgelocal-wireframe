@@ -18,6 +18,10 @@ const dot = {
 
 const stateWord = { running: "running", done: "finished", failed: "stopped", idle: "idle" };
 
+/* Needs input is amber and low saturation, not a red cross. A cross reads as
+   an error the user caused; this is the agent waiting for an answer. */
+const NEEDS = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" aria-hidden="true"><path d="M12 7.5v5.5"/><circle cx="12" cy="16.6" r=".9" fill="currentColor" stroke="none"/></svg>';
+
 /**
  * The download state a fixture model starts in. An installed model reached the
  * disk by finishing a download, so it seeds as completed rather than as no
@@ -77,12 +81,21 @@ export function modelSeed() {
 }
 
 function row(c) {
+  // The group already says whether a chat is finished, so a finished row shows
+  // nothing: a check on every line made completion the loudest thing in the
+  // list. Only the two exceptional states get a mark, and it sits on the right
+  // where it cannot push the title off its left edge.
+  const mark = c.state === "running"
+    ? `<span class="chat-mark" data-chat-running aria-hidden="true">${dot.running}</span>`
+    : c.state === "failed"
+      ? `<span class="chat-mark is-need" aria-hidden="true">${NEEDS}</span>`
+      : "";
   return `<div class="chat" data-chat="${esc(c.id)}" data-project="${esc(c.project)}"
         data-bucket="${esc(groupFor(c))}"${c.pinned ? " data-pinned" : ""}${c.route ? ` data-route="${esc(c.route)}"` : ""}>
         <button class="chat-open" type="button" title="${esc(c.title)}"
           aria-label="${esc(c.title)}, ${stateWord[c.state] || "idle"}">
-          <span class="ic" aria-hidden="true">${dot[c.state] || dot.idle}</span>
           <span class="t" data-chat-title>${esc(c.title)}</span>
+          ${mark}
         </button>
         <button class="chat-more" type="button" aria-haspopup="menu" aria-expanded="false"
           aria-label="Actions for ${esc(c.title)}">

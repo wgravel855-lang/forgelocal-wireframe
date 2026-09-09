@@ -8,50 +8,38 @@
       <!--#include topbar.html {"title":"My models"} -->
 
       <div class="scroll" style="overflow-y:auto">
-        <div data-filter-root="mine" style="width:100%;max-width:960px;margin:0 auto;padding:26px 24px 32px;display:flex;flex-direction:column;gap:18px">
+        <div data-filter-root="mine" class="mcol">
 
-          <div style="display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap">
-            <div style="flex:1;min-width:260px;display:flex;flex-direction:column;gap:6px">
-              <h2 class="h1">My models</h2>
-              <p class="mut" style="margin:0;font-size:14px" data-mine-stats><!--MINE_TOTAL--> GB of models on disk &middot; <!--MINE_FREE--> GB free</p>
-            </div>
-            <label class="field" style="width:240px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="flex-shrink:0"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg><span class="vh">Search models</span><input type="search" data-filter-search placeholder="Search models"></label>
+          <!-- The shell already names the route, so this page opens with the
+               navigation and the one fact the title cannot carry. -->
+          <div class="mtabs">
+            <nav class="tabline" aria-label="Model views">
+              <a href="/app/models/">Explore</a>
+              <span aria-current="page">My models</span>
+              <a href="/app/models/downloads/">Downloads <span class="tabline-n" data-downloads-badge><!--DOWNLOADS_BADGE--></span></a>
+            </nav>
+            <label class="field msearch"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="flex-shrink:0"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg><span class="vh">Search models</span><input type="search" data-filter-search placeholder="Search models"></label>
           </div>
-
-          <!-- These are separate pages, not panels, so they are links rather than tabs. -->
-          <nav aria-label="Model views" style="display:flex;gap:2px;border-bottom:1px solid var(--line-soft)">
-            <a href="/app/models/" style="display:inline-flex;align-items:center;padding:9px 12px;font-size:13.5px;color:var(--mut)">Explore</a>
-            <span aria-current="page" style="display:inline-flex;align-items:center;padding:9px 12px;font-size:13.5px;font-weight:600;border-bottom:2px solid var(--acc);margin-bottom:-1px">My models</span>
-            <a href="/app/models/downloads/" style="display:inline-flex;align-items:center;padding:9px 12px;font-size:13.5px;color:var(--mut)">Downloads <span class="pill" style="padding:0 6px;margin-left:4px" data-downloads-badge><!--DOWNLOADS_BADGE--></span></a>
-          </nav>
 
           <!-- What is downloading right now, taken from the store the Downloads
                page reads. This page keeps no copy: when that page is empty, so
                is this strip. -->
           <div data-models-mount="strip"><!--DOWNLOADS_STRIP--></div>
 
-          <div style="display:flex;align-items:center;gap:10px">
-            <span class="lab-fn mut" data-filter-count><!--MINE_COUNT--></span>
+          <div class="mhead">
+            <span class="lab" data-filter-count><!--MINE_COUNT--></span>
             <span class="grow"></span>
             <button class="btn btns" type="button" data-filter-clear hidden>Clear</button>
           </div>
 
           <ul class="reg" data-models-mount="installed"><!--MINE_LIST--></ul>
 
-          <div class="box" data-filter-empty hidden style="padding:26px 20px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center">
-            <span class="h3">No installed model matches that search</span>
-            <span class="mut" style="font-size:13px;line-height:20px;max-width:44ch">Clear the search to see everything on disk, or look in <a class="link" href="/app/models/">Explore</a> for something else to install.</span>
-          </div>
+          <p class="chat-empty" data-filter-empty hidden style="margin:8px 0 0">
+            No installed model matches that search. Clear it to see everything on disk,
+            or look in <a class="link" href="/app/models/">Explore</a>.</p>
 
-          <div class="box" style="padding:14px 16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-            <div style="flex:1;min-width:200px;display:flex;flex-direction:column;gap:7px">
-              <div style="display:flex;align-items:center;gap:10px">
-                <span class="h3" style="flex:1">Storage</span>
-                <span class="lab" data-mine-total><!--MINE_TOTAL--> GB used by models</span>
-              </div>
-              <div class="track" style="height:7px"><div class="fillbar" data-mine-bar style="width:<!--MINE_BAR-->%;background:var(--line-strong)"></div></div>
-            </div>
-          </div>
+          <!-- Storage is one line under the list it describes, not a card. -->
+          <p class="mut mfoot" data-mine-stats><!--MINE_TOTAL--> GB of models on disk &middot; <!--MINE_FREE--> GB free</p>
 
         </div>
       </div>

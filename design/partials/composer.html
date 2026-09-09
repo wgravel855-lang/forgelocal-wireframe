@@ -6,7 +6,7 @@
   <div class="cstrip">
     <button class="cchip" type="button" data-popover="runtime-pop" aria-expanded="false"
       aria-haspopup="dialog" aria-label="Runtime status">
-      <span class="dot ok" aria-hidden="true"></span><span data-env-label>Local</span>
+      <span data-env-label>Local</span>
     </button>
     <button class="cchip" type="button" data-popover="folder-pop" aria-expanded="false"
       aria-haspopup="dialog" aria-label="Project folder">
@@ -33,8 +33,13 @@
 
   <div class="queue" data-queue hidden aria-label="Queued messages"></div>
 
-  <label class="vh" for="composer-input">Describe a task or ask a question</label>
-  <textarea id="composer-input" class="ta" rows="1" placeholder="{{placeholder}}"></textarea>
+  <!-- Only the input is a surface. The strip above and the rail below sit on
+       the canvas, so the group reads as a text field with its context, not as
+       one large card. -->
+  <div class="cinput">
+    <label class="vh" for="composer-input">Describe a task or ask a question</label>
+    <textarea id="composer-input" class="ta" rows="1" placeholder="{{placeholder}}"></textarea>
+  </div>
 
   <div class="cbar">
     <!-- Left: what the agent is allowed to do, and what it can see. -->
@@ -90,7 +95,6 @@
       <div style="position:relative">
         <button class="btn btnq btns" type="button" data-popover="model-pop" aria-expanded="false"
           aria-haspopup="menu" aria-keyshortcuts="Control+L">
-          <span class="dot ok" aria-hidden="true" data-model-dot></span>
           <span data-model-label><!--MODEL_LABEL--></span>
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9.5 6 6 6-6"/></svg>
         </button>

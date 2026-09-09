@@ -1809,7 +1809,10 @@ import { renderCard } from "../core/modelcard.mjs";
   const svg = (d, stroke, w = "2", extra = "") =>
     `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${stroke}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"${extra}>${d}</svg>`;
   const ICON = {
-    done: () => svg('<path d="M20 6 9 17l-5-5"/>', "var(--ok)", "2.6"),
+    // A muted check, not a green one. Every read, search and edit succeeding is
+    // the ordinary case; painting each one green made success the loudest thing
+    // in the transcript and left nothing for a real result to say.
+    done: () => svg('<path d="M20 6 9 17l-5-5"/>', "var(--faint)", "2.2"),
     fail: () => svg('<path d="M18 6 6 18M6 6l12 12"/>', "var(--bad)", "2.3"),
     running: () => '<span class="spin" aria-hidden="true"></span>',
     todo: () => '<span class="box-todo" aria-hidden="true"></span>',
@@ -1985,12 +1988,13 @@ import { renderCard } from "../core/modelcard.mjs";
     }
     return `
       <section class="perm" aria-labelledby="perm-h-${i}">
-        <h3 class="perm-q" id="perm-h-${i}">Run <span class="m">${esc(p.command)}</span>?</h3>
-        <p class="perm-scope">${esc(p.scopeTag)} &middot; ${esc(p.scope)}</p>
+        <h3 class="perm-q" id="perm-h-${i}">Run this command?</h3>
+        <p class="perm-cmd">${esc(p.command)}</p>
+        <p class="perm-scope">${esc(p.scope)}</p>
         <div class="perm-a">
           <button class="btn btnp" type="button" data-perm="once" data-turn="${i}">Allow once</button>
-          <button class="btn" type="button" data-perm="always" data-turn="${i}">Always allow in this project</button>
-          <button class="btn btnq" type="button" style="border-color:var(--line)" data-perm="deny" data-turn="${i}">Deny</button>
+          <button class="btn btnq" type="button" style="border-color:var(--line)" data-perm="always" data-turn="${i}">Always allow here</button>
+          <button class="btn btnq" type="button" data-perm="deny" data-turn="${i}">Deny</button>
         </div>
         <details class="perm-d">
           <summary>Details</summary>
@@ -2059,16 +2063,13 @@ import { renderCard } from "../core/modelcard.mjs";
       </div></div>
     </article>`;
 
-  /* The empty session is guidance for the input, not a hero. One question,
-     three one-line starters, and nothing the shell already says. */
+  /* One question above the input, and nothing else. Suggestion bars filled the
+     canvas with three guesses about the user's work and pushed the greeting to
+     the bottom of the viewport; the composer already says what to do. */
   const emptyState = () => `
     <div class="empty" data-empty>
-      <h2 class="h1">What do you want to change?</h2>
-      <div class="starters">
-        <button type="button" data-starter="Explain how this project is organised">Explain this project</button>
-        <button type="button" data-starter="Fix the failing test in src/App.test.jsx">Fix a failing test</button>
-        <button type="button" data-starter="Add a small feature">Add a small feature</button>
-      </div>
+      <span class="empty-mark" aria-hidden="true"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" aria-hidden="true"><rect x="2.4" y="2.4" width="19.2" height="19.2" rx="5.6" stroke="currentColor" stroke-width="1.7"/><path d="M8.6 8.9 11.7 12l-3.1 3.1" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><path d="M13.6 15.1h3.3" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg></span>
+      <h2 class="empty-q">What do you want to build?</h2>
     </div>`;
 
   /* ---- render --------------------------------------------------------- */
@@ -2079,7 +2080,7 @@ import { renderCard } from "../core/modelcard.mjs";
     if (!t || !t.turns?.length) {
       el.innerHTML = emptyState();
       el.classList.add("is-empty");
-      wireStarters(el);
+
       return;
     }
     el.classList.remove("is-empty");
@@ -2092,15 +2093,6 @@ import { renderCard } from "../core/modelcard.mjs";
       + (CONVO.state === "thinking" || CONVO.state === "submitting" ? thinkingTurn() : "");
   }
 
-  function wireStarters(root) {
-    $$("[data-starter]", root).forEach((b) => b.addEventListener("click", () => {
-      const ta = $("[data-composer] textarea");
-      if (!ta) return;
-      ta.value = b.dataset.starter;
-      ta.dispatchEvent(new Event("input", { bubbles: true }));
-      ta.focus();
-    }));
-  }
 
   function wireConversation() {
     const el = $("[data-thread]");
@@ -3387,14 +3379,8 @@ import { renderCard } from "../core/modelcard.mjs";
       // The composer must not name a model it cannot send to.
       const label = $("[data-model-label]");
       if (label) label.textContent = composerModelLabel(s);
-      const dot = $("[data-model-dot]");
-      if (dot) dot.classList.toggle("ok", canSendWith(s));
       const st = installedStats(s, THIS_PC);
       if (stats) stats.innerHTML = `${st.totalGB} GB of models on disk &middot; ${st.freeGB} GB free`;
-      const total = $("[data-mine-total]");
-      if (total) total.textContent = `${st.totalGB} GB used by models`;
-      const bar = $("[data-mine-bar]");
-      if (bar) bar.style.width = `${st.usedPercent}%`;
       const badge = $("[data-downloads-badge]");
       if (badge) {
         const n = downloadsBadge(s);
@@ -3484,6 +3470,17 @@ import { renderCard } from "../core/modelcard.mjs";
     });
   }
 
+  /* Motion belongs to a window the user is looking at. The composer edge is
+     the only thing that animates for more than a moment, so it stops when the
+     window loses focus rather than spinning behind another application. */
+  function wireWindowFocus() {
+    const sync = () => document.body.classList.toggle("is-blurred", !document.hasFocus());
+    window.addEventListener("focus", sync);
+    window.addEventListener("blur", sync);
+    document.addEventListener("visibilitychange", sync);
+    sync();
+  }
+
   /* --------------------------------------------- reflect the chosen preset */
   function showPreset() {
     const label = store.get("preset", "balanced");
@@ -3498,6 +3495,7 @@ import { renderCard } from "../core/modelcard.mjs";
     wireActivity(); wireStopRun(); wirePermission(); wireRecover(); wireSuggest();
     wireModelActions(); wireConversation(); wireChats();
     hydrateModels(); wireLoaderEntryPoints(); wireModelPages(); wireStoreActions();
+    wireWindowFocus();
     wireWaitlist(); wireModelDetail(); wireCatalog(); wireDiagnostics(); wireComposerDraft();
     wireAwaiting(); wireComposerControls(); wireDensity(); wireQueue(); wireCaretMenus(); wirePaste();
     // the one setup-specific element on /setup/5/
