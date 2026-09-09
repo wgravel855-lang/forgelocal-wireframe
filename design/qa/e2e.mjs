@@ -77,6 +77,14 @@ test("rewind is not offered, because no checkpoint store exists", () => {
   for (const route of APP) {
     assert.doesNotMatch(page(route), /data-rewind=/, `${route} still offers rewind`);
   }
+  // The recovery row is rendered in the browser from the thread fixtures, so
+  // scanning the built HTML missed a "Rewind" button that was shipping on
+  // /app/stopped/. The fixtures are the source those controls come from.
+  const threads = readFileSync(join(root, "design/data/threads.mjs"), "utf8");
+  assert.doesNotMatch(threads, /label: "Rewind"/,
+    "a thread fixture still offers Rewind, which no checkpoint store can honour");
+  assert.doesNotMatch(threads, /action: "restore"/,
+    "a thread fixture still offers a restore action");
 });
 
 /* Truthfulness: nothing may claim an effect the prototype cannot produce. */

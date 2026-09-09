@@ -79,7 +79,9 @@ export const threads = {
       { role: "user", text: "Switch the date helper over to the Temporal API." },
       { role: "assistant",
         blocks: [
-          { t: "p", text: "Stopped after 3 repeated failures. Temporal is unavailable in this Node version and no polyfill is installed." },
+          // The activity row already says it stopped after three attempts, so
+          // this sentence carries the reason and nothing else.
+          { t: "p", text: "Temporal is unavailable in this Node version and no polyfill is installed." },
         ],
         activity: {
           state: "stopped", label: "Stopped after 3 repeated failures", summary: "", elapsed: "2m 11s",
@@ -93,12 +95,12 @@ export const threads = {
             text: "TypeError: Temporal.PlainDate.from is not a function\n  at formatDue (src/lib/date.js:14:26)",
           },
         },
+        // One recommended action and one alternative. Rewind is absent because
+        // there is no checkpoint store behind it; an entry point that cannot
+        // restore anything is worse than no entry point.
         recovery: {
           primary: { label: "Use a polyfill", href: "/app/permission/" },
-          alternatives: [
-            { label: "Keep current code", action: "keep" },
-            { label: "Rewind", action: "restore" },
-          ],
+          alternatives: [{ label: "Keep current code", action: "keep" }],
           text: { label: "Open diagnostics", action: "diagnostics" },
         } },
     ],

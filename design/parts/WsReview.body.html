@@ -3,29 +3,28 @@
 
     <div class="main">
 
-      <!--#include topbar.html {"title":"Persist tasks to localStorage","status":"<!--#include status-review.html -->","artifacts":"<!--#include artifacts-btn.html {\"n\":\"3\"} -->"} -->
+      <!--#include topbar.html {"title":"Persist tasks to localStorage","artifacts":"<!--#include artifacts-btn.html {\"n\":\"3\"} -->"} -->
 
       <div class="scroll" style="overflow-y:auto">
         <div class="col" style="max-width:720px;display:flex;flex-direction:column;gap:18px;padding-top:24px;padding-bottom:20px">
 
           <section class="act is-flat" aria-label="Activity">
             <div class="hd">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
-              <span class="h3" style="flex:1">Done</span>
-              <span class="lab">1m 04s</span>
+              <span class="h3" style="flex:1">Activity</span>
+              <span class="lab">4 steps &middot; 1m 04s</span>
               <button class="btn btnq btns" type="button" data-act-toggle aria-expanded="false"
-                aria-controls="review-activity">Show activity</button>
+                aria-controls="review-activity">Show</button>
             </div>
             <div id="review-activity" hidden>
-              <div class="arow"><span class="arow-i"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span>
+              <div class="arow"><span class="arow-i"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span>
                 <span class="t">Read 4 files</span><span class="lab">1.2s</span></div>
-              <div class="arow"><span class="arow-i"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span>
+              <div class="arow"><span class="arow-i"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span>
                 <span class="t">Searched 21 files for localStorage</span><span class="lab">0.4s</span></div>
-              <div class="arow"><span class="arow-i"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span>
+              <div class="arow"><span class="arow-i"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span>
                 <span class="t">Edited 2 files</span>
-                <span class="m" style="color:var(--ok);font-size:12.5px">+46</span>
-                <span class="m" style="color:var(--bad);font-size:12.5px">&minus;12</span></div>
-              <div class="arow"><span class="arow-i"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span>
+                <span class="m" style="color:var(--ok);font-size:13px">+46</span>
+                <span class="m" style="color:var(--bad);font-size:13px">&minus;12</span></div>
+              <div class="arow"><span class="arow-i"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span>
                 <span class="m t">npm test -- --run</span><span class="lab">4 passed, exit 0</span></div>
             </div>
           </section>
@@ -36,25 +35,19 @@
           </div>
 
           <div class="done">
-            <p class="done-h">
-              <span class="done-i"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span>
-              <span>Done</span>
-              <span class="num done-t">1m 04s</span>
-            </p>
             <button class="evidence" type="button" data-drawer-open data-pane="diff">
               <span>2 files changed</span>
               <span class="num add">+46</span>
               <span class="num del">&minus;12</span>
             </button>
             <button class="evidence" type="button" data-drawer-open data-pane="problems">
-              <span>4 tests passed &middot; build passed</span>
+              <span>4 tests passed</span>
               <span class="num">1 gap</span>
             </button>
           </div>
 
           <div class="chips">
             <button class="chip" type="button" data-suggest="Also cover a corrupt stored value">Also cover a corrupt stored value</button>
-            <button class="chip" type="button" data-suggest="Add a clear-all button">Add a clear-all button</button>
           </div>
 
         </div>
