@@ -1,7 +1,7 @@
 // @ts-check
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { catalogHtml, modelDetail, modelRow, monogram, fitStatement, primaryAction } from "./catalog.mjs";
+import { catalogHtml, modelDetail, modelRow, monogram, fitStatement, primaryAction, SORTS, sortedIds, sortLabel } from "./catalog.mjs";
 import { createState } from "./modelstore.mjs";
 import { desktopState, applyDesktopState, DEMO_HARDWARE } from "./localstate.mjs";
 import { initialRuntime, reduceRuntime } from "./runtime.mjs";
@@ -144,4 +144,45 @@ test("the Agent-ready definition is a disclosure, not a paragraph on every model
   assert.match(d, /<details class="mdet-help">/);
   assert.match(d, /What Agent-ready means/);
   assert.doesNotMatch(d, /One artifact is published/);
+});
+
+/* ------------------------------------------------------------------ sort -- */
+
+const catalog = [
+  model({ id: "b", displayName: "Bravo", fileSizeBytes: 9e9, maxContextTokens: 8192 }),
+  model({ id: "a", displayName: "Alpha", fileSizeBytes: 5e9, maxContextTokens: 32768 }),
+  model({ id: "c", displayName: "Charlie", fileSizeBytes: 5e9, maxContextTokens: 16384 }),
+];
+
+test("recommended is the catalog's own order, not a score invented here", () => {
+  assert.deepEqual(sortedIds(catalog, "recommended"), ["b", "a", "c"]);
+  assert.equal(SORTS.recommended.compare, null);
+});
+
+test("every sort orders by a fact the catalog already carries", () => {
+  assert.deepEqual(sortedIds(catalog, "smallest"), ["a", "c", "b"]);
+  assert.deepEqual(sortedIds(catalog, "context"), ["a", "c", "b"]);
+  assert.deepEqual(sortedIds(catalog, "name"), ["a", "b", "c"]);
+});
+
+test("ties keep catalog order, so every sort is stable", () => {
+  // a and c are both 5 GB; a comes first because it does in the catalog
+  assert.deepEqual(sortedIds(catalog, "smallest").slice(0, 2), ["a", "c"]);
+  const reversed = [catalog[0], catalog[2], catalog[1]];
+  assert.deepEqual(sortedIds(reversed, "smallest").slice(0, 2), ["c", "a"]);
+});
+
+test("an unknown sort falls back rather than dropping rows", () => {
+  assert.deepEqual(sortedIds(catalog, "popularity"), ["b", "a", "c"]);
+  assert.deepEqual(sortedIds(catalog, undefined), ["b", "a", "c"]);
+  assert.equal(sortLabel("popularity"), "Recommended");
+  assert.equal(sortLabel("smallest"), "Smallest download");
+});
+
+test("sorting never adds or removes a model", () => {
+  for (const id of Object.keys(SORTS)) {
+    const ids = sortedIds(catalog, id);
+    assert.equal(ids.length, catalog.length, id);
+    assert.deepEqual([...ids].sort(), ["a", "b", "c"], id);
+  }
 });

@@ -281,3 +281,73 @@ export function catalogHtml(models, selectedId, desktop) {
     <div class="cat-detail-wrap" data-cat-detail-wrap>${selected ? modelDetail(selected, desktop) : ""}</div>
   </div>`;
 }
+
+/* ------------------------------------------------------------------ sort -- */
+
+/**
+ * How Explore may be ordered.
+ *
+ * "Recommended" is the catalog's own order, which is curated, so it is the
+ * identity comparator rather than a score invented here. Every other order is
+ * a fact the catalog already carries: nothing sorts by a popularity or
+ * download count the catalog does not publish.
+ *
+ * @type {Record<string, {label: string, compare: ((a: ModelRecord, b: ModelRecord) => number) | null}>}
+ */
+export const SORTS = {
+  recommended: { label: "Recommended", compare: null },
+  smallest: { label: "Smallest download", compare: (a, b) => a.fileSizeBytes - b.fileSizeBytes },
+  context: {
+    label: "Largest context",
+    compare: (a, b) => (b.maxContextTokens || 0) - (a.maxContextTokens || 0),
+  },
+  name: { label: "Name", compare: (a, b) => a.displayName.localeCompare(b.displayName) },
+};
+
+/** @param {unknown} id */
+export const isSort = (id) => typeof id === "string" && id in SORTS;
+
+/** @param {unknown} id */
+export const sortLabel = (id) => (isSort(id) ? SORTS[/** @type {string} */(id)].label : SORTS.recommended.label);
+
+/**
+ * Sorted ids, so a caller can reorder rows it already has without re-rendering
+ * them. Ties keep catalog order, which makes every sort stable.
+ * @param {ModelRecord[]} models
+ * @param {unknown} id
+ * @returns {string[]}
+ */
+export function sortedIds(models, id) {
+  const sort = isSort(id) ? SORTS[/** @type {string} */(id)] : SORTS.recommended;
+  const compare = sort.compare;
+  if (!compare) return models.map((m) => m.id);
+  return models
+    .map((m, i) => ({ m, i }))
+    .sort((x, y) => compare(x.m, y.m) || x.i - y.i)
+    .map(({ m }) => m.id);
+}
+
+/**
+ * A row in the loader's installed list.
+ *
+ * It uses the catalog row's markup and CSS so the two lists share one identity
+ * system: the same monogram, the same name and publisher metrics, the same
+ * neutral selected fill. What differs is the element, because this one selects
+ * within a dialog rather than navigating, and the right column, which carries
+ * residency rather than a download size alone.
+ * @param {ModelRecord} m
+ * @param {string|null} selectedId
+ */
+export function loaderRow(m, selectedId) {
+  const on = m.id === selectedId;
+  return `<button class="mrow2${on ? " is-on" : ""}" type="button" role="option"
+    aria-selected="${on}" data-loader-pick="${esc(m.id)}" tabindex="${on ? 0 : -1}">
+    <span class="mrow2-mark" aria-hidden="true">${esc(monogram(m.publisher))}</span>
+    <span class="mrow2-n">${esc(m.displayName)}</span>
+    <span class="mrow2-pub">${esc(m.publisher)}${m.quantization ? ` &middot; ${esc(m.quantization)}` : ""}</span>
+    <span class="mrow2-right">
+      <span class="mrow2-size num">${gb(m.fileSizeBytes, 2)} GB</span>
+      ${isLoaded(m) ? `<span class="mrow2-inst">${CHECK}Loaded</span>` : ""}
+    </span>
+  </button>`;
+}

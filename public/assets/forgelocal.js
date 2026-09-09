@@ -28,7 +28,7 @@ import { gb, fmtCtx as fmtCtxUI } from "../core/units.mjs";
 import { renderCard } from "../core/modelcard.mjs";
 import { normalizeMode, modeLabel } from "../core/modes.mjs";
 import { readDemoFlag, desktopState, applyDesktopState, NO_HARDWARE_NOTE as NO_HARDWARE } from "../core/localstate.mjs";
-import { catalogHtml, modelDetail } from "../core/catalog.mjs";
+import { catalogHtml, modelDetail, loaderRow, isSort, sortedIds, sortLabel } from "../core/catalog.mjs";
 import { catalogViewState, localViewState, showsRows, showsDetail, stateBlockHtml } from "../core/viewstate.mjs";
 import {
   detectEnvironment, initialRuntime, reduceRuntime, isConnected,
@@ -547,6 +547,41 @@ import {
       if (restore) paint(restore, "replace");
     });
 
+    /* Sort reorders the rows already in the DOM rather than re-rendering them,
+       so the selected row keeps its element, its focus and its selection. The
+       order is remembered, because a list the user arranged should still be
+       arranged when they come back to it. */
+    const rowsHost = $("[data-cat-rows]", root);
+    const applySort = (id, remember) => {
+      const sort = isSort(id) ? id : "recommended";
+      // The sort controls live in the shared header, outside [data-catalog].
+      $$("[data-sort]").forEach((b) => {
+        const on = b.dataset.sort === sort;
+        b.setAttribute("aria-checked", String(on));
+        b.classList.toggle("on", on);
+      });
+      $$("[data-sort-label]").forEach((l) => { l.textContent = sortLabel(sort); });
+      if (rowsHost) {
+        const order = sortedIds(allModels(MODELS.state), sort);
+        const wrapperOf = (id) => {
+          const a = $(`[data-cat-row="${CSS.escape(id)}"]`, rowsHost);
+          return a ? a.closest("[data-filter-item]") : null;
+        };
+        for (const id of order) {
+          const w = wrapperOf(id);
+          if (w) rowsHost.appendChild(w);
+        }
+      }
+      if (remember) store.set("model-sort", sort);
+    };
+
+    $$("[data-sort]").forEach((b) => b.addEventListener("click", () => {
+      applySort(b.dataset.sort, true);
+      closePop();
+      announce(`Sorted by ${sortLabel(b.dataset.sort)}.`);
+    }));
+    applySort(store.get("model-sort", "recommended"), false);
+
     // Clear search from the no-results block, without touching the query text
     // for any other reason.
     root.addEventListener("click", (e) => {
@@ -679,17 +714,8 @@ import {
                 aria-pressed="${LOADER.sort === id}">${label}</button>`).join("")}
             </div>
             <div class="loader-rows" role="listbox" aria-label="Installed models">
-              ${loaderRows().map((r) => {
-    const on = r.id === LOADER.modelId;
-    return `<button class="lrow${on ? " is-on" : ""}" type="button" role="option"
-                  aria-selected="${on}" data-loader-pick="${esc(r.id)}">
-                  <span class="lrow-tick" aria-hidden="true">${on ? "&#10003;" : ""}</span>
-                  <span class="lrow-n">${esc(r.displayName)}</span>
-                  <span class="lrow-state">${isLoaded(r) ? "Loaded" : "On disk"}</span>
-                  <span class="lrow-meta">${esc(r.publisher)} &middot; ${esc(r.parameterCount || "")} &middot; ${esc(r.architecture || r.family)}</span>
-                  <span class="lrow-meta">${esc(r.format)} &middot; ${esc(r.quantization || "")} &middot; <span class="num">${gb(r.fileSizeBytes, 2)} GB</span></span>
-                </button>`;
-  }).join("") || `<p class="pd-note" style="padding:10px">No installed model matches that search.</p>`}
+              ${loaderRows().map((r) => loaderRow(r, LOADER.modelId)).join("")
+    || `<p class="pd-note" style="padding:10px">No installed model matches that search.</p>`}
             </div>
           </div>
 
@@ -701,11 +727,17 @@ import {
               <!-- The pane always carries the model's facts, so it is never a
                    half-empty modal waiting for a control the runtime cannot
                    accept. Compatibility appears only with hardware to judge. -->
+              <!-- Known values only. A row the catalog has no value for is
+                   omitted, the same rule the Explore detail follows: an em
+                   dash reports a gap in the data, not a fact about the model. -->
               <dl class="loader-facts">
-                <dt>Format</dt><dd>${esc(m.format || "GGUF")} &middot; ${esc(m.quantization || "")}</dd>
-                <dt>Parameters</dt><dd>${esc(m.parameterCount || "—")}</dd>
-                <dt>Max context</dt><dd class="num">${esc(fmtCtxUI(m.maxContextTokens || 8192))}</dd>
-                <dt>Architecture</dt><dd>${esc(m.architecture || m.family || "—")}</dd>
+                ${[
+    ["Format", [m.format, m.quantization].filter(Boolean).join(" · ")],
+    ["Parameters", m.parameterCount],
+    ["Max context", m.maxContextTokens ? fmtCtxUI(m.maxContextTokens) : ""],
+    ["Architecture", m.architecture || m.family],
+  ].filter(([, v]) => v && String(v).trim())
+    .map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("\n                ")}
               </dl>
               ${connected ? "" : `<p class="loader-why" style="margin-top:14px">${esc(NO_HARDWARE)}</p>`}
 
