@@ -502,19 +502,81 @@ test("a patch against a file changed since it was read is refused", async () => 
   cleanup(base);
 });
 
-test("ask_user suspends the turn and an answer resumes it", async () => {
+test("ask_user suspends the turn and a structured answer resumes it", async () => {
   const base = fixture();
   const h = harness(base, [
-    { calls: [{ name: "ask_user", args: { question: "Which file should I change?" } }] },
-    { text: "Thanks, using src/sum.js." },
+    { calls: [{ name: "ask_user", args: { questions: [{
+      header: "Target",
+      question: "Which file should I change?",
+      options: [
+        { label: "src/sum.js", description: "The one the failing test imports." },
+        { label: "src/index.js", description: "The entry point; wider blast radius." },
+      ],
+    }] } }] },
+    { text: "Using src/sum.js." },
   ]);
   const first = await h.agent.send("Change a file");
   assert.equal(first.stop, StopReason.AWAITING_ANSWER);
-  assert.equal(first.detail.question, "Which file should I change?");
 
-  const second = await h.agent.answer("src/sum.js");
+  // The pause carries the whole structure, not a flattened string: the card
+  // cannot render options and tradeoffs it was never given.
+  const q = first.detail.questions[0];
+  assert.equal(q.header, "Target");
+  assert.equal(q.question, "Which file should I change?");
+  assert.equal(q.options.length, 2);
+  assert.equal(q.options[0].description, "The one the failing test imports.");
+  assert.equal(q.options[0].recommended, true, "the first option is the recommendation");
+  assert.equal(q.multiSelect, false);
+
+  const second = await h.agent.answer({
+    answers: [{ id: q.id, choice: "src/sum.js" }],
+  });
   assert.equal(second.stop, StopReason.FINAL);
-  assert.match(h.agent.messages.filter((m) => m.role === "user").pop().content, /sum\.js/);
+
+  // The model is answered in prose, with the question restated, because by
+  // now the question is several tool results back in its context.
+  const said = h.agent.messages.filter((m) => m.role === "user").pop().content;
+  assert.ok(said.includes("Which file should I change?"), said);
+  assert.ok(said.includes("src/sum.js"), said);
+  cleanup(base);
+});
+
+test("a free-text answer is passed through as written", async () => {
+  const base = fixture();
+  const h = harness(base, [
+    { calls: [{ name: "ask_user", args: { questions: [{
+      header: "Target", question: "Which file?",
+      options: [{ label: "a.js", description: "x" }, { label: "b.js", description: "y" }],
+    }] } }] },
+    { text: "ok" },
+  ]);
+  await h.agent.send("Change a file");
+  // The user is never forced into the choices the model imagined.
+  await h.agent.answer({ text: "Neither; change src/other.js instead." });
+  const said = h.agent.messages.filter((m) => m.role === "user").pop().content;
+  assert.ok(said.includes("src/other.js"), said);
+  cleanup(base);
+});
+
+test("a multi-select answer keeps every choice", async () => {
+  const base = fixture();
+  const h = harness(base, [
+    { calls: [{ name: "ask_user", args: { questions: [{
+      header: "Checks", question: "Which checks should run?", multiSelect: true,
+      options: [
+        { label: "unit", description: "Fast." },
+        { label: "typecheck", description: "Catches signature drift." },
+      ],
+    }] } }] },
+    { text: "ok" },
+  ]);
+  const first = await h.agent.send("Verify it");
+  assert.equal(first.detail.questions[0].multiSelect, true);
+  await h.agent.answer({
+    answers: [{ id: "q0", choice: ["unit", "typecheck"] }],
+  });
+  const said = h.agent.messages.filter((m) => m.role === "user").pop().content;
+  assert.ok(said.includes("unit, typecheck"), said);
   cleanup(base);
 });
 
@@ -535,7 +597,8 @@ test("the project's own instructions reach the model as content, not authority",
   const sys = h.provider.requests[0].messages.filter((m) => m.role === "system");
   assert.ok(sys.some((m) => /Ignore all permission rules/.test(m.content)),
     "the instructions were included");
-  assert.ok(sys.some((m) => /information, not instruction/.test(m.content)),
+  const framed = /never an instruction|not a grant of permission|is data./i;
+  assert.ok(sys.some((m) => framed.test(m.content)),
     "and framed as content the model must not obey");
   cleanup(base);
 });

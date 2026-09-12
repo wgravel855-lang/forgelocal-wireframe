@@ -266,13 +266,60 @@ export function permissionCard(card) {
 }
 
 /** The blocking question from ask_user. */
+/**
+ * The question card.
+ *
+ * This used to be the question text and a row of bare buttons, which is what
+ * you can build from a flat list of strings. A choice with no stated
+ * consequence is not a choice the user can make quickly: they either pick one
+ * at random or stop and go read the code themselves, and the second defeats
+ * the point of asking.
+ *
+ * So each option carries its tradeoff, one is marked as the recommendation,
+ * and free text is always present because the user is not obliged to accept
+ * the frame the model imagined. Nothing here is a permission control: a
+ * clarification and an approval are different decisions and must never be
+ * answerable by the same click.
+ *
+ * @param {any} q  the pending question state: { questions: [...] }
+ */
 export function questionCard(q) {
-  if (!q) return "";
-  const opts = (q.options || []).map((o) =>
-    `<button class="btn btns" type="button" data-answer-option="${esc(o)}">${esc(o)}</button>`).join("");
-  return `<div class="perm lv-ask" role="group" aria-label="The agent asked a question">
-  <p class="lv-ask-q">${esc(q.question)}</p>
-  ${opts ? `<div class="lv-perm-a">${opts}</div>` : ""}
-  <p class="lv-note">Answer in the composer to continue.</p>
+  const list = q && Array.isArray(q.questions) ? q.questions : [];
+  if (!list.length) return "";
+
+  const block = (item, i) => {
+    const name = esc(item.id || `q${i}`);
+    const multi = item.multiSelect === true;
+    const opts = (item.options || []).map((o, k) => {
+      const id = `ask-${name}-${k}`;
+      return `<label class="askopt" for="${id}">
+      <input id="${id}" type="${multi ? "checkbox" : "radio"}" name="ask-${name}"
+        value="${esc(o.label)}" data-ask-input>
+      <span class="askopt-b">
+        <span class="askopt-l">${esc(o.label)}${o.recommended
+          ? ' <span class="askopt-r">Recommended</span>'
+          : ""}</span>
+        <span class="askopt-d">${esc(o.description)}</span>
+      </span>
+    </label>`;
+    }).join("");
+
+    return `<div class="askq" data-ask-q="${name}" data-ask-multi="${multi}">
+    <p class="askq-h">${esc(item.header)}</p>
+    <p class="askq-q">${esc(item.question)}</p>
+    <div class="askq-o">${opts}</div>
+  </div>`;
+  };
+
+  return `<div class="perm lv-ask" role="group" aria-label="The agent asked a question" data-ask-card>
+  <div class="lv-perm-h"><span class="lv-perm-t">A question before continuing</span></div>
+  ${list.map(block).join("")}
+  <label class="askfree">
+    <span class="vh">Or answer in your own words</span>
+    <input type="text" data-ask-free placeholder="Or answer in your own words">
+  </label>
+  <div class="lv-perm-a">
+    <button class="btn btnp btns" type="button" data-ask-send>Send answer</button>
+  </div>
 </div>`;
 }

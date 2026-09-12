@@ -191,8 +191,7 @@ function settle(id, s, outcome) {
   if (outcome.stop === StopReason.AWAITING_PERMISSION) return; // the card was already sent
   if (outcome.stop === StopReason.AWAITING_ANSWER) {
     send(notify(Notify.QUESTION_REQUESTED, {
-      question: outcome.detail?.question ?? "",
-      options: outcome.detail?.options ?? [],
+      questions: outcome.detail?.questions ?? [],
     }, { id, sessionId: s.id }));
     return;
   }
@@ -250,14 +249,33 @@ async function permissionResolve(id, sessionId, payload) {
   }
 }
 
+/**
+ * Resume a paused turn with the user's answer.
+ *
+ * The answer may be chosen options, free text, or both — someone can pick
+ * "localStorage" and add "but namespace the key". An empty payload is
+ * refused rather than resumed, because resuming with nothing hands the model
+ * a turn in which it asked a question and got silence, and it will usually
+ * answer the question itself.
+ */
 async function questionAnswer(id, sessionId, payload) {
   const s = sessions.get(sessionId);
   if (!s) return fail(id, ErrorCode.NO_SUCH_SESSION, "That session is gone.", sessionId);
+
   const text = typeof payload.text === "string" ? payload.text.trim() : "";
-  if (!text) return fail(id, ErrorCode.BAD_ARGUMENT, "An empty answer cannot resume the turn.", sessionId);
+  const answers = Array.isArray(payload.answers) ? payload.answers : [];
+  const chose = answers.some((a) => {
+    const c = a && a.choice;
+    return Array.isArray(c) ? c.length > 0 : typeof c === "string" && c.trim() !== "";
+  });
+  if (!text && !chose) {
+    return fail(id, ErrorCode.BAD_ARGUMENT,
+      "An empty answer cannot resume the turn.", sessionId);
+  }
+
   s.running = true;
   try {
-    settle(id, s, await s.agent.answer(text));
+    settle(id, s, await s.agent.answer({ answers, text }));
   } catch (e) {
     s.running = false;
     fail(id, ErrorCode.INTERNAL, e && e.message ? e.message : "The answer could not be applied.", sessionId);

@@ -41,6 +41,15 @@ test("the protocol defines every required event type", () => {
     "compaction_started", "compaction_completed", "background_task_started",
     "background_task_updated", "background_task_completed", "turn_completed",
     "turn_cancelled", "runtime_error",
+
+    // Milestone 2. The interaction state machine needs a turn boundary and a
+    // phase that is set rather than inferred, ask_user needs a request and an
+    // answer of its own, and the browser needs every one of its effects to
+    // arrive as an event or the work panel is showing something unauditable.
+    "turn_started", "phase_changed",
+    "question_requested", "question_answered",
+    "browser_session_started", "browser_navigated", "browser_snapshot",
+    "browser_action", "browser_finding", "browser_session_closed",
   ];
   for (const t of required) assert.ok(/** @type {string[]} */ (EVENT_TYPES).includes(t), `missing ${t}`);
   assert.equal(EVENT_TYPES.length, required.length, "an undocumented type was added");

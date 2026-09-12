@@ -4184,6 +4184,7 @@ import {
     wireLiveProject();
     wireLiveModelPicker();
     wireLiveComposer(form);
+    wireAskCard();
     paintLiveComposer();
   }
 
@@ -4369,6 +4370,58 @@ import {
   }
 
   /* Submitting starts a real turn. Stop cancels one. */
+  /**
+   * The question card's own send.
+   *
+   * Delegated from the thread rather than bound per render, because the card
+   * is re-rendered on every event and a listener attached to the old node
+   * would be answering a question that is no longer on screen.
+   */
+  function wireAskCard() {
+    const thread = liveThread();
+    if (!thread || thread.dataset.askWired === "true") return;
+    thread.dataset.askWired = "true";
+
+    const collect = (card) => {
+      const answers = $("[data-ask-q]", card).map((box) => ({
+        id: box.dataset.askQ,
+        choice: box.dataset.askMulti === "true"
+          ? $("[data-ask-input]:checked", box).map((i) => i.value)
+          : ($("[data-ask-input]:checked", box) || {}).value ?? "",
+      }));
+      const free = $("[data-ask-free]", card);
+      return { answers, text: free ? free.value.trim() : "" };
+    };
+
+    thread.addEventListener("click", async (e) => {
+      const send = e.target.closest("[data-ask-send]");
+      if (!send) return;
+      e.preventDefault();
+      const card = send.closest("[data-ask-card]");
+      if (!card || !LIVE.client) return;
+
+      const payload = collect(card);
+      const chose = payload.answers.some((a) =>
+        Array.isArray(a.choice) ? a.choice.length : String(a.choice || "").trim());
+      if (!chose && !payload.text) {
+        toast("Choose an option or type an answer.", "warn");
+        return;
+      }
+
+      LIVE.question = null;
+      LIVE.running = true;
+      paintLive();
+      try {
+        await LIVE.client.answerQuestion(payload);
+      } catch (err) {
+        showLiveError(err);
+      } finally {
+        LIVE.running = false;
+        paintLive();
+      }
+    });
+  }
+
   function wireLiveComposer(form) {
     const ta = $("textarea", form);
     const send = $("[data-send]", form);
@@ -4396,7 +4449,7 @@ import {
       paintLive();
 
       try {
-        if (answering) await LIVE.client.answerQuestion(text);
+        if (answering) await LIVE.client.answerQuestion({ answers: [], text });
         else await LIVE.client.startTurn(text, store.get("mode", "manual"),
           String(store.get("data-effort", "Standard")).toLowerCase());
       } catch (err) {

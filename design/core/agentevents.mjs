@@ -16,6 +16,8 @@
 
 export const EventType = Object.freeze({
   SESSION_STARTED: "session_started",
+  TURN_STARTED: "turn_started",
+  PHASE_CHANGED: "phase_changed",
   SESSION_STATE_CHANGED: "session_state_changed",
   USER_MESSAGE_CREATED: "user_message_created",
   ASSISTANT_TEXT_STARTED: "assistant_text_started",
@@ -23,6 +25,8 @@ export const EventType = Object.freeze({
   ASSISTANT_TEXT_COMPLETED: "assistant_text_completed",
   STATUS_CHANGED: "status_changed",
   PLAN_UPDATED: "plan_updated",
+  QUESTION_REQUESTED: "question_requested",
+  QUESTION_ANSWERED: "question_answered",
   TOOL_CALL_REQUESTED: "tool_call_requested",
   PERMISSION_REQUIRED: "permission_required",
   PERMISSION_RESOLVED: "permission_resolved",
@@ -40,6 +44,17 @@ export const EventType = Object.freeze({
   BACKGROUND_TASK_COMPLETED: "background_task_completed",
   TURN_COMPLETED: "turn_completed",
   TURN_CANCELLED: "turn_cancelled",
+  /* The browser runs in a sidecar the renderer cannot reach, so everything
+     it does has to arrive as an event or it is invisible and unauditable.
+     These are deliberately separate from the tool events: a browser action
+     is a tool call AND a state change to a page the user may be watching,
+     and the work panel needs the second without re-deriving it. */
+  BROWSER_SESSION_STARTED: "browser_session_started",
+  BROWSER_NAVIGATED: "browser_navigated",
+  BROWSER_SNAPSHOT: "browser_snapshot",
+  BROWSER_ACTION: "browser_action",
+  BROWSER_FINDING: "browser_finding",
+  BROWSER_SESSION_CLOSED: "browser_session_closed",
   RUNTIME_ERROR: "runtime_error",
 });
 
@@ -64,6 +79,53 @@ export const EVENT_TYPES = Object.freeze(Object.values(EventType));
 const KNOWN = new Set(EVENT_TYPES);
 
 /** Session-level status. The UI label is derived from this, never guessed. */
+/**
+ * The thirteen states the interface can show.
+ *
+ * SessionState below is the runtime's own coarse state and stays as it is;
+ * this is the finer one the UI reads, because "running_tool" covers both
+ * reading four files to understand something and running the test that proves
+ * it, and those should not look the same to someone watching.
+ *
+ * A phase is only ever set by a phase_changed event. It is never inferred
+ * from what tool happens to be running, because inference is how an interface
+ * ends up claiming the agent is verifying when it is actually re-reading.
+ */
+export const Phase = Object.freeze({
+  IDLE: "idle",
+  UNDERSTANDING: "understanding",
+  EXPLORING: "exploring",
+  PLANNING: "planning",
+  AWAITING_USER: "awaiting_user",
+  AWAITING_PERMISSION: "awaiting_permission",
+  ACTING: "acting",
+  VERIFYING: "verifying",
+  COMPACTING: "compacting",
+  COMPLETED: "completed",
+  BLOCKED: "blocked",
+  FAILED: "failed",
+  CANCELLED: "cancelled",
+});
+
+export const PHASES = Object.freeze(Object.values(Phase));
+
+/** What each phase says while it is current. Short, and never a claim. */
+export const PHASE_LABELS = Object.freeze({
+  [Phase.IDLE]: null,
+  [Phase.UNDERSTANDING]: "Reading the request",
+  [Phase.EXPLORING]: "Exploring the project",
+  [Phase.PLANNING]: "Planning",
+  [Phase.AWAITING_USER]: "Waiting for an answer",
+  [Phase.AWAITING_PERMISSION]: "Waiting for approval",
+  [Phase.ACTING]: "Making changes",
+  [Phase.VERIFYING]: "Verifying",
+  [Phase.COMPACTING]: "Compacting context",
+  [Phase.COMPLETED]: null,
+  [Phase.BLOCKED]: "Blocked",
+  [Phase.FAILED]: "Failed",
+  [Phase.CANCELLED]: "Stopped",
+});
+
 export const SessionState = Object.freeze({
   IDLE: "idle",
   THINKING: "thinking",
@@ -141,6 +203,8 @@ export function initialState(sessionId = null) {
     seen: /** @type {Set<string>} */ (new Set()),
     /** @type {string} */
     state: SessionState.IDLE,
+    /** the finer UI phase; only phase_changed moves it */
+    phase: Phase.IDLE,
     /** short human status line, only ever set by status_changed */
     status: /** @type {string|null} */ (null),
     turnId: /** @type {string|null} */ (null),
@@ -154,6 +218,10 @@ export function initialState(sessionId = null) {
     index: /** @type {Map<string, number>} */ (new Map()),
     plan: /** @type {{items: any[], updatedAt: number|null}} */ ({ items: [], updatedAt: null }),
     permission: /** @type {any} */ (null),
+    /** the unanswered structured question, or null */
+    question: /** @type {any} */ (null),
+    /** live browser state, when a session has one */
+    browser: /** @type {any} */ (null),
     context: /** @type {any} */ (null),
     compaction: /** @type {any} */ (null),
     files: /** @type {any[]} */ ([]),
@@ -282,6 +350,102 @@ export function reduceAgentEvent(prev, ev) {
       };
       break;
     }
+
+    case EventType.TURN_STARTED:
+      s.turnId = ev.turn_id ?? s.turnId;
+      s.stopReason = null;
+      s.cancelled = false;
+      break;
+
+    /* The phase is set, never derived. An interface that guessed the phase
+       from the running tool would say "Verifying" for a read that happened
+       to come after an edit. */
+    case EventType.PHASE_CHANGED:
+      if (PHASES.includes(p.phase)) s.phase = p.phase;
+      break;
+
+    case EventType.QUESTION_REQUESTED:
+      s.question = {
+        callId: p.call_id ?? null,
+        questions: Array.isArray(p.questions) ? p.questions : [],
+        at: ev.timestamp,
+      };
+      s.phase = Phase.AWAITING_USER;
+      pushRow(s, {
+        kind: "question", id: p.call_id ?? ev.event_id,
+        questions: s.question.questions, answered: false, answerText: null,
+        at: ev.timestamp, turnId: ev.turn_id,
+      }, p.call_id);
+      break;
+
+    case EventType.QUESTION_ANSWERED: {
+      s.question = null;
+      const row = rowFor(s, p.call_id);
+      if (row) {
+        s.rows[row.i] = {
+          ...row.row, answered: true,
+          answerText: typeof p.text === "string" ? p.text : null,
+          answers: Array.isArray(p.answers) ? p.answers : null,
+        };
+      }
+      break;
+    }
+
+    case EventType.BROWSER_SESSION_STARTED:
+      s.browser = {
+        sessionId: p.browser_session_id ?? null,
+        isolated: p.isolated !== false,
+        url: null, title: null, snapshotId: null,
+        console: [], network: [], closed: false,
+      };
+      break;
+
+    case EventType.BROWSER_NAVIGATED:
+      if (s.browser) {
+        s.browser = { ...s.browser, url: p.url ?? null, title: p.title ?? null };
+      }
+      break;
+
+    case EventType.BROWSER_SNAPSHOT:
+      if (s.browser) {
+        s.browser = {
+          ...s.browser,
+          snapshotId: p.snapshot_id ?? null,
+          url: p.url ?? s.browser.url,
+          title: p.title ?? s.browser.title,
+        };
+      }
+      break;
+
+    case EventType.BROWSER_ACTION:
+      pushRow(s, {
+        kind: "browser", id: p.action_id ?? ev.event_id,
+        action: p.action ?? "action", target: p.target ?? null,
+        url: p.url ?? null, ok: p.ok !== false, detail: p.detail ?? null,
+        at: ev.timestamp, turnId: ev.turn_id,
+      }, p.action_id);
+      break;
+
+    /* Console errors and failed requests are evidence, so they are kept on
+       the session rather than only rendered once and lost. Bounded, because a
+       page in a redirect loop can emit thousands. */
+    case EventType.BROWSER_FINDING:
+      if (s.browser) {
+        const bucket = p.kind === "network" ? "network" : "console";
+        const next = [...s.browser[bucket], {
+          level: p.level ?? "error",
+          text: p.text ?? "",
+          url: p.url ?? null,
+          status: p.status ?? null,
+          at: ev.timestamp,
+        }].slice(-50);
+        s.browser = { ...s.browser, [bucket]: next };
+      }
+      break;
+
+    case EventType.BROWSER_SESSION_CLOSED:
+      if (s.browser) s.browser = { ...s.browser, closed: true };
+      break;
 
     case EventType.PLAN_UPDATED:
       s.plan = {

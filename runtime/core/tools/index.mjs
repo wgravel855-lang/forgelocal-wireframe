@@ -101,12 +101,77 @@ export const TOOLS = {
   },
 };
 
+/**
+ * Tool groups.
+ *
+ * A local model given forty schemas answers worse than the same model given
+ * eight: the catalogue is spent context and every extra name is another way to
+ * pick wrong. So the registry knows which group a tool belongs to, and a
+ * session enables the groups the task needs. The four base groups are always
+ * on; web and browser are opt-in per session.
+ */
+export const ToolGroup = Object.freeze({
+  READ: "read",
+  EDIT: "edit",
+  COMMAND: "command",
+  PLAN: "plan",
+  WEB: "web",
+  BROWSER: "browser",
+});
+
+/** The groups a session gets when it asks for nothing in particular. */
+export const DEFAULT_GROUPS = Object.freeze([
+  ToolGroup.READ, ToolGroup.EDIT, ToolGroup.COMMAND, ToolGroup.PLAN,
+]);
+
+/**
+ * Which group each tool belongs to.
+ *
+ * Kept as a map beside the registry rather than a field on each entry, so the
+ * grouping can be read in one glance and the completeness check below is a
+ * loop rather than eight separate omissions waiting to happen.
+ * @type {Record<string, string>}
+ */
+export const TOOL_GROUPS = {
+  read_file: ToolGroup.READ,
+  list_directory: ToolGroup.READ,
+  glob: ToolGroup.READ,
+  grep: ToolGroup.READ,
+  apply_patch: ToolGroup.EDIT,
+  run_command: ToolGroup.COMMAND,
+  update_plan: ToolGroup.PLAN,
+  ask_user: ToolGroup.PLAN,
+};
+
+/** One line per tool, for the prompt's TOOLS layer. */
+export const TOOL_SUMMARIES = {
+  read_file: "Read a file, with a hash you can pass to apply_patch",
+  list_directory: "List a folder, generated directories skipped",
+  glob: "Find files by path pattern",
+  grep: "Search file contents by regular expression",
+  apply_patch: "Change files. Checkpointed, so it can be undone",
+  run_command: "Run a command in the project. Always asks first",
+  update_plan: "Post or revise the plan. Send the whole list every time",
+  ask_user: "Stop and ask a structured question. The turn pauses",
+};
+
 export const TOOL_NAMES = Object.freeze(Object.keys(TOOLS));
 
-/** Every registered tool must have a permission classification. */
+/**
+ * Every registered tool must have a permission classification, a group and a
+ * summary. All three are how a tool becomes visible to the model, and a tool
+ * that is visible without a classification would be denied at runtime after
+ * the user had already been asked about it.
+ */
 for (const name of TOOL_NAMES) {
   if (!TOOL_EFFECTS[name]) {
     throw new Error(`Tool ${name} has no entry in TOOL_EFFECTS; it would be denied at runtime`);
+  }
+  if (!TOOL_GROUPS[name]) {
+    throw new Error(`Tool ${name} has no group; it would never be offered to a model`);
+  }
+  if (!TOOL_SUMMARIES[name]) {
+    throw new Error(`Tool ${name} has no summary; the prompt's tool list would be incomplete`);
   }
 }
 
@@ -151,11 +216,34 @@ function wireSchema(schema) {
 }
 
 /**
- * The tool list in the shape an OpenAI-compatible server expects.
+ * Which tools are enabled, and their names in registry order.
+ * @param {readonly string[]} groups
+ * @returns {string[]}
+ */
+export function namesInGroups(groups = DEFAULT_GROUPS) {
+  const want = new Set(groups);
+  return TOOL_NAMES.filter((n) => want.has(TOOL_GROUPS[n]));
+}
+
+/**
+ * The one-line-per-tool list the prompt's TOOLS layer renders.
+ * @param {readonly string[]} groups
+ * @returns {Array<{name: string, summary: string, group: string}>}
+ */
+export function toolSummaries(groups = DEFAULT_GROUPS) {
+  return namesInGroups(groups).map((name) => ({
+    name, summary: TOOL_SUMMARIES[name], group: TOOL_GROUPS[name],
+  }));
+}
+
+/**
+ * The tool list in the shape an OpenAI-compatible server expects, limited to
+ * the enabled groups.
+ * @param {readonly string[]} groups
  * @returns {any[]}
  */
-export function toolSpecs() {
-  return TOOL_NAMES.map((name) => ({
+export function toolSpecs(groups = DEFAULT_GROUPS) {
+  return namesInGroups(groups).map((name) => ({
     type: "function",
     function: {
       name,
@@ -171,10 +259,17 @@ export function toolSpecs() {
  * @param {string} name @param {any} args
  * @returns {{ok: true} | {ok: false, errors: string[]}}
  */
-export function validateCall(name, args) {
+export function validateCall(name, args, groups = DEFAULT_GROUPS) {
   const tool = TOOLS[name];
+  const enabled = namesInGroups(groups);
   if (!tool) {
-    return { ok: false, errors: [`${name} is not a tool. Available: ${TOOL_NAMES.join(", ")}`] };
+    return { ok: false, errors: [`${name} is not a tool. Available: ${enabled.join(", ")}`] };
+  }
+  if (!enabled.includes(name)) {
+    return {
+      ok: false,
+      errors: [`${name} exists but is not enabled for this session. Available: ${enabled.join(", ")}`],
+    };
   }
   const result = validate(tool.schema, args ?? {});
   return result.ok ? { ok: true } : { ok: false, errors: result.errors };

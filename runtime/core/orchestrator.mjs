@@ -22,12 +22,15 @@
  */
 
 import { randomUUID } from "node:crypto";
-import { EventType, SessionState, createEmitter } from "./events.mjs";
-import { TOOLS, validateCall, toolSpecs } from "./tools/index.mjs";
+import { EventType, SessionState, Phase, createEmitter } from "./events.mjs";
+import {
+  TOOLS, validateCall, toolSpecs, toolSummaries, DEFAULT_GROUPS,
+} from "./tools/index.mjs";
 import { decide, grantForSession, Decision, normalizeMode } from "./permissions.mjs";
+import { composePrompt, normalizeStyle, OutputStyle } from "./prompt.mjs";
 import { ModelEvent, ProviderFailure } from "./providers/types.mjs";
 import {
-  systemPrompt, loadInstructions, createLedger, recordInLedger,
+  loadInstructions, createLedger, recordInLedger,
   ledgerSummary, contextUsage, isStale,
 } from "./context.mjs";
 
@@ -88,6 +91,8 @@ export const StopReason = Object.freeze({
 export function createOrchestrator({
   root, provider, mode = "manual", sessionId = randomUUID(),
   onEvent, paths = {}, limits: limitsIn = LIMITS, now = () => Date.now(),
+  style = OutputStyle.ADAPTIVE, capabilities = null, skills = [],
+  groups = DEFAULT_GROUPS,
 }) {
   let limits = limitsIn;
   // Reassigned by setEffort, which is why neither of these is a const.
@@ -104,6 +109,9 @@ export function createOrchestrator({
   const grants = new Set();
   const ctx = { root, snapshotDir: paths.snapshotDir, plan: null };
   let currentMode = normalizeMode(mode);
+  let currentStyle = normalizeStyle(style);
+  /** The compacted summary of everything trimmed out of `messages`, or null. */
+  let compacted = null;
 
   /** provider-neutral message list; the working context, not the transcript */
   /** @type {any[]} */
@@ -121,12 +129,34 @@ export function createOrchestrator({
   /** signature -> count, since the last time something actually changed */
   let seenCalls = new Map();
   let progressAt = 0;
+  /** set once this turn has changed something, so later reads read as checks */
+  let wrote = false;
 
   const started = () => {
     emit(EventType.SESSION_STARTED, {
       cwd: root, mode: currentMode, model: provider.model ?? null,
       instructions: instructions ? instructions.path : null,
     });
+  };
+
+  /** The last phase emitted, so a repeat is not a second event. */
+  let currentPhase = Phase.IDLE;
+
+  /**
+   * Move the visible phase.
+   *
+   * The phase is emitted rather than inferred because the interface cannot
+   * tell the difference between reading four files to understand a request
+   * and reading one to check an edit landed, and those are Exploring and
+   * Verifying. Only this function knows which, because only the loop knows
+   * whether anything has been written yet.
+   *
+   * @param {string} next @param {string} [turnId]
+   */
+  const setPhase = (next, turnId) => {
+    if (next === currentPhase) return;
+    currentPhase = next;
+    emit(EventType.PHASE_CHANGED, { phase: next }, { turnId });
   };
 
   const setState = (state, turnId) =>
@@ -137,7 +167,19 @@ export function createOrchestrator({
 
   /** Rebuild the working context. The ledger is a system note, not a message. */
   function buildMessages() {
-    const head = [{ role: "system", content: systemPrompt({ root, mode: currentMode, instructions }) }];
+    const head = [{
+      role: "system",
+      content: composePrompt({
+        root,
+        mode: currentMode,
+        style: currentStyle,
+        capabilities,
+        tools: toolSummaries(groups),
+        instructions,
+        skills,
+        summary: compacted,
+      }),
+    }];
     const summary = ledgerSummary(ledger);
     if (summary) {
       head.push({ role: "system", content: `Where you are so far:\n${summary}` });
@@ -177,6 +219,9 @@ export function createOrchestrator({
     seenCalls = new Map();
     progressAt = ledger.changed.size;
 
+    emit(EventType.TURN_STARTED, { turn_id: turnId }, { turnId });
+    setPhase(Phase.UNDERSTANDING, turnId);
+    wrote = false;
     emit(EventType.USER_MESSAGE_CREATED, { message_id: randomUUID(), text }, { turnId });
     messages.push({ role: "user", content: text });
 
@@ -220,7 +265,7 @@ export function createOrchestrator({
 
       try {
         const stream = provider.streamTurn(
-          { messages: buildMessages(), tools: toolSpecs() },
+          { messages: buildMessages(), tools: toolSpecs(groups) },
           { signal: abort?.signal },
         );
         for await (const ev of stream) {
@@ -337,7 +382,7 @@ export function createOrchestrator({
         }
 
         // ---- schema ---------------------------------------------------
-        const check = validateCall(call.name, parsed.value);
+        const check = validateCall(call.name, parsed.value, groups);
         if (!check.ok) {
           malformed++;
           const msg = `Those arguments do not match the tool: ${check.errors.join("; ")}`;
@@ -419,6 +464,7 @@ export function createOrchestrator({
     const tool = TOOLS[name];
     emit(EventType.TOOL_STARTED, { tool_call_id: id, tool: name }, { turnId });
     setState(SessionState.RUNNING_TOOL, turnId);
+    setPhase(phaseFor(name, wrote), turnId);
     status(describe(name, args), turnId);
 
     // A patch against a file the model has not re-read since changing it is
@@ -473,16 +519,24 @@ export function createOrchestrator({
         duration_ms: now() - startedAt,
         truncated: !!result.truncated,
       }, { turnId });
+      if (name === "apply_patch") wrote = true;
       pushToolResult(id, result);
 
       // ask_user is the one tool whose success stops the loop.
       if (name === "ask_user") {
         setState(SessionState.AWAITING_PERMISSION, turnId);
+        setPhase(Phase.AWAITING_USER, turnId);
+        /* The notify drives the card; this drives the transcript row, so a
+           replayed session shows the question that was asked and what was
+           answered rather than a gap where a pause used to be. */
+        emit(EventType.QUESTION_REQUESTED, {
+          call_id: id, questions: result.questions,
+        }, { turnId });
         status("Waiting for an answer", turnId);
         pending = {
           kind: StopReason.AWAITING_ANSWER, turnId, callId: id,
-          question: result.question, options: result.options,
-          detail: { question: result.question, options: result.options },
+          questions: result.questions,
+          detail: { questions: result.questions },
         };
         return { suspended: true, stop: StopReason.AWAITING_ANSWER, detail: pending.detail };
       }
@@ -595,19 +649,69 @@ export function createOrchestrator({
     },
 
     /** Answer an ask_user question and continue. */
-    async answer(text) {
+    /**
+     * Answer the pending question and resume the same turn.
+     *
+     * The answers go back as a user message rather than as a tool result,
+     * because that is what they are: the person said something. The tool
+     * result for the ask_user call was already pushed when the call ran, so
+     * the call/result pairing the provider expects stays intact and the
+     * lineage of the turn is unbroken.
+     *
+     * @param {{answers?: any[], text?: string}|string} input
+     */
+    async answer(input) {
       if (!pending || pending.kind !== StopReason.AWAITING_ANSWER) {
         throw new Error("No question is waiting.");
       }
       const p = pending;
       pending = null;
+      const text = formatAnswers(p.questions ?? [], input);
       messages.push({ role: "user", content: text });
+      emit(EventType.QUESTION_ANSWERED, {
+        call_id: p.callId,
+        answers: typeof input === "string" ? null : (input?.answers ?? null),
+        text,
+      }, { turnId: p.turnId });
       emit(EventType.USER_MESSAGE_CREATED, { message_id: randomUUID(), text }, { turnId: p.turnId });
       return runLoop(p.turnId, now() + limits.MAX_WALL_MS);
     },
   };
 }
 
+/**
+ * Turn structured answers back into the sentence the model will read.
+ *
+ * The model asked in a structure and is answered in prose, deliberately. It
+ * has to reason about the answer, and a JSON blob of option ids is worse for
+ * that than the words the user actually chose. The question is repeated
+ * alongside each answer because by the time the turn resumes it may be many
+ * tool results back.
+ *
+ * A free-text reply that matches no option is passed through as written: the
+ * user is never forced into the choices the model imagined.
+ *
+ * @param {any[]} questions
+ * @param {{answers?: any[], text?: string}|string} input
+ */
+function formatAnswers(questions, input) {
+  if (typeof input === "string") return input.trim();
+
+  const answers = Array.isArray(input?.answers) ? input.answers : [];
+  const free = typeof input?.text === "string" ? input.text.trim() : "";
+  const parts = [];
+
+  for (const q of questions) {
+    const found = answers.find((a) => a && a.id === q.id);
+    if (!found) continue;
+    const chosen = Array.isArray(found.choice) ? found.choice : [found.choice];
+    const said = chosen.filter((c) => typeof c === "string" && c.trim()).join(", ");
+    if (said) parts.push(`${q.question} ${said}`);
+  }
+
+  if (free) parts.push(free);
+  return parts.join("\n") || "(no answer given)";
+}
 /** @param {string} raw */
 function safeParse(raw) {
   const text = (raw ?? "").trim();
@@ -621,6 +725,28 @@ function stable(v) {
   if (v === null || typeof v !== "object") return JSON.stringify(v);
   if (Array.isArray(v)) return `[${v.map(stable).join(",")}]`;
   return `{${Object.keys(v).sort().map((k) => `${JSON.stringify(k)}:${stable(v[k])}`).join(",")}}`;
+}
+
+/**
+ * Which phase a tool call puts the session into.
+ *
+ * The same tool means different things at different points in a turn, which
+ * is why `wrote` is a parameter rather than something this could look up. A
+ * read before anything has changed is exploration; the same read after a
+ * patch is the model checking its own work, and an interface that called both
+ * "Exploring" would be describing the first half of every turn twice.
+ *
+ * @param {string} name @param {boolean} wrote
+ */
+function phaseFor(name, wrote) {
+  switch (name) {
+    case "update_plan": return Phase.PLANNING;
+    case "ask_user": return Phase.AWAITING_USER;
+    case "apply_patch": return Phase.ACTING;
+    case "run_command": return Phase.VERIFYING;
+    default:
+      return wrote ? Phase.VERIFYING : Phase.EXPLORING;
+  }
 }
 
 /** The status line, derived from the action rather than invented. */

@@ -1219,6 +1219,43 @@ body.is-blurred .cshell::after { animation-play-state: paused; }
   .cbar [data-model-label] { max-width: 22ch; }
 }
 
+/* ---- the question card -------------------------------------------- */
+/* A clarification is not an approval, so this deliberately does not look
+   like the permission card: no amber, no risk pill, and its action reads
+   "Send answer" rather than "Allow". The two decisions must never be
+   answerable by the same reflex. */
+.lv-ask { display: flex; flex-direction: column; gap: 14px; }
+.askq { display: flex; flex-direction: column; gap: 8px; }
+.askq-h { margin: 0; font-family: var(--mono); font-size: var(--t-meta);
+  line-height: var(--lh-meta); letter-spacing: .06em; text-transform: uppercase;
+  color: var(--faint); }
+.askq-q { margin: 0; font-size: var(--t-copy); line-height: var(--lh-copy); color: var(--fg); }
+.askq-o { display: flex; flex-direction: column; gap: 6px; }
+
+.askopt { display: flex; align-items: flex-start; gap: 10px;
+  padding: 9px 11px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--raised); cursor: pointer;
+  transition: border-color 120ms ease-out, background 120ms ease-out; }
+.askopt:hover { border-color: var(--line-strong); background: var(--sunk); }
+.askopt input { margin: 3px 0 0; accent-color: var(--acc); flex-shrink: 0; }
+.askopt:has(input:checked) { border-color: var(--acc); background: var(--acc-soft); }
+.askopt:has(input:focus-visible) { outline: 2px solid var(--focus); outline-offset: 2px; }
+.askopt-b { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.askopt-l { font-size: var(--t-label); line-height: var(--lh-label);
+  font-weight: 500; color: var(--fg); }
+/* The recommendation is stated, not implied by position: a user who reads
+   the second option first should still be able to see which one the agent
+   would pick. */
+.askopt-r { font-family: var(--mono); font-size: var(--t-meta); font-weight: 400;
+  color: var(--acc-text); letter-spacing: .02em; }
+.askopt-d { font-size: var(--t-meta); line-height: var(--lh-meta); color: var(--mut); }
+
+.askfree input { width: 100%; height: 36px; padding: 0 11px;
+  border: 1px solid var(--line); border-radius: 8px;
+  background: var(--sunk); color: var(--fg);
+  font-family: inherit; font-size: var(--t-label); line-height: var(--lh-label); }
+.askfree input:focus-visible { outline: 2px solid var(--focus); outline-offset: -1px; }
+
 /* ---- model browser ------------------------------------------------ */
 /* A modal over the conversation, because choosing a model is part of the
    conversation. Opaque, not frosted: the catalogue behind glass is harder
