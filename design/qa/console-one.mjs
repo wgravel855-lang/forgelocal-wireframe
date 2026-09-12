@@ -119,7 +119,12 @@ function inlineModules(src, dir) {
   const strip = (code) => code
     .replace(/^import\s+\{[\s\S]*?\}\s+from\s+"[^"]+";?$/gm, "")
     .replace(/^export\s+(const|let|function|class)\s/gm, "$1 ")
-    .replace(/^export\s+\{[^}]*\};?$/gm, "");
+    .replace(/^export\s+\{[^}]*\};?$/gm, "")
+    // A re-export names bindings another module already declares, so once
+    // everything is flattened it is a no-op. Left in place it reached the
+    // parser as a bare "export" and the gate reported a syntax error with
+    // no file name in it.
+    .replace(/^export\s+\{[^}]*\}\s+from\s+"[^"]+";?$/gm, "");
 
   const walk = (code, from) => {
     for (const m of code.matchAll(/^import\s+\{([\s\S]*?)\}\s+from\s+"([^"]+)";?$/gm)) {

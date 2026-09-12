@@ -12,6 +12,7 @@
 
 import { escapeHtml as esc } from "./html.mjs";
 import { groupActivity, detailOf } from "./activity.mjs";
+import { renderMarkdown } from "./markdown.mjs";
 
 /**
  * @param {any} view   the reduced session state from core/events.mjs
@@ -58,11 +59,23 @@ function assistantTurn(row) {
 </article>`;
 }
 
-/** Plain text to paragraphs. Deliberately not Markdown: this is model output. */
+/**
+ * Model text to HTML.
+ *
+ * This was paragraphs only, on the reasoning that model output is not
+ * Markdown. Models write Markdown: a reply with a heading, a list and a fenced
+ * block arrived as literal "## " and "- " lines. The subset in markdown.mjs
+ * escapes first and transforms second, so the guarantee is the one this
+ * function always made, with structure on top of it.
+ */
 function paragraphs(text) {
-  const blocks = String(text ?? "").split(/\n{2,}/).filter((b) => b.trim());
-  if (!blocks.length) return "";
-  return blocks.map((b) => `<p>${esc(b).split("\n").join("<br>")}</p>`).join("");
+  return renderMarkdown(text, {
+    headingOffset: 1,       // "#" is an h2; a reply is shallower than a card
+    maxHeading: 4,
+    links: false,           // a reply does not mint clickable destinations
+    softBreaks: true,       // keep the line breaks the model wrote
+    cls: null,              // styled by element inside .prose
+  });
 }
 
 /** One activity group: the collapsed line, and the detail behind it. */

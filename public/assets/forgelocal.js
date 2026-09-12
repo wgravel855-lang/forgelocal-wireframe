@@ -2234,6 +2234,12 @@ import {
   function renderRecents() {
     const host = $("[data-recents]");
     if (!host) return;
+
+    // Examples belong to an empty chat and nowhere else. A route that has a
+    // composer but no transcript — the review screen — is not somewhere to
+    // suggest "Explain how this project is organized" beside a finished diff.
+    if (!$("[data-thread]")) { host.innerHTML = ""; host.hidden = true; return; }
+
     const raw = $("#fl-sessions");
     let chats = [];
     if (raw) { try { chats = JSON.parse(raw.textContent).chats || []; } catch { chats = []; } }
@@ -3189,7 +3195,44 @@ import {
   function wireDrawer() {
     const shell = $(".shell");
     const drawer = $(".drawer");
-    if (!shell || !drawer) return;
+
+    /* The header's work-pane control reflects a pane this build actually has.
+       On a route with no pane the button is removed rather than left there to
+       do nothing, because a control that does nothing is worse than no
+       control: it teaches people the feature is broken. */
+    const paneToggle = $("[data-pane-toggle]");
+    if (!drawer) {
+      if (paneToggle) paneToggle.remove();
+      return;
+    }
+    if (!shell) return;
+
+    if (paneToggle) {
+      const syncToggle = () => {
+        const open = !drawer.hidden;
+        paneToggle.setAttribute("aria-expanded", String(open));
+        const label = open ? "Hide work pane" : "Show work pane";
+        paneToggle.setAttribute("aria-label", label);
+        paneToggle.title = label;
+      };
+      paneToggle.addEventListener("click", () => {
+        const open = drawer.hidden;
+        drawer.hidden = !open;
+        shell.classList.toggle("no-drawer", !open);
+        syncToggle();
+        if (open) {
+          const tab = $('[role="tab"][aria-selected="true"]', drawer);
+          if (tab) tab.focus();
+        } else {
+          paneToggle.focus();
+        }
+      });
+      syncToggle();
+      // Anything else that opens or closes the pane keeps the control honest.
+      new MutationObserver(syncToggle).observe(drawer, {
+        attributes: true, attributeFilter: ["hidden"],
+      });
+    }
 
     const setW = (px) => {
       const min = 380, max = Math.min(720, innerWidth - 420);

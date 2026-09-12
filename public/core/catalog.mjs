@@ -205,7 +205,11 @@ function specification(m) {
  * @param {DesktopModelState} desktop
  */
 export function modelDetail(m, desktop) {
-  const caps = (m.capabilities || []).filter((c) => c !== "chat");
+  // Only the two that decide whether this model can drive ForgeLocal. The
+  // others are specification and live in the table below, rather than as a
+  // row of pills whose length varies per model.
+  const SHOWN = ["tool_use", "agent_ready"];
+  const caps = (m.capabilities || []).filter((c) => SHOWN.includes(c));
   return `<div class="mdet" data-cat-detail data-model-id="${esc(m.id)}">
     <a class="mdet-back" href="/app/models/">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>

@@ -28,6 +28,7 @@
   --t-copy:15px;  --lh-copy:22px;
   --t-body:16px;  --lh-body:24px;
   --t-title:20px; --lh-title:28px;
+  --mono: "Geist Mono", "Cascadia Mono", ui-monospace, Consolas, monospace;
   --t-hero:24px;  --lh-hero:32px;
 
   --bg:#F7F5F0; --panel:#F1EEE7; --raised:#FFFFFF; --sunk:#EAE7DF;
@@ -111,7 +112,7 @@ a.link,
 ::selection { background: var(--acc); color: #fff; }
 
 /* ---- type -------------------------------------------------------- */
-.m { font-family: "Geist Mono", "Cascadia Mono", ui-monospace, Consolas, monospace;
+.m { font-family: var(--mono);
   font-size: var(--t-label); line-height: 21px; }
 /* .lab is the optional-metadata floor at 12px. Functional labels use
    .lab-fn at 13px. Nothing customer-facing goes below 12px. */
@@ -128,7 +129,34 @@ a.link,
 .faint { color: var(--faint); }
 .prose { font-size: 15px; line-height: 22px; }
 .prose p { margin: 0 0 14px; }
-.prose p:last-child { margin-bottom: 0; }
+.prose > :first-child { margin-top: 0; }
+.prose > :last-child { margin-bottom: 0; }
+/* Replies start at h2; the page keeps its own h1. These sit one step above
+   body text rather than shouting, because a heading inside a message is a
+   signpost, not a title. */
+.prose h2 { font-size: var(--t-title); line-height: var(--lh-title);
+  font-weight: 600; color: var(--fg); margin: 22px 0 10px; }
+.prose h3 { font-size: var(--t-body); line-height: var(--lh-body);
+  font-weight: 600; color: var(--fg); margin: 18px 0 8px; }
+.prose h4 { font-size: var(--t-copy); line-height: var(--lh-copy);
+  font-weight: 600; color: var(--fg); margin: 18px 0 6px; }
+.prose ul, .prose ol { margin: 0 0 14px; padding-left: 22px; }
+.prose li { margin: 0 0 6px; }
+.prose li:last-child { margin-bottom: 0; }
+.prose strong { font-weight: 600; color: var(--fg); }
+.prose em { font-style: italic; }
+.prose code { font-family: var(--mono); font-size: 13px;
+  padding: 1px 5px; border-radius: 4px;
+  background: var(--sunk); border: 1px solid var(--line-soft); }
+/* A code block scrolls inside its own box. Wrapping source at a soft
+   boundary makes it unreadable, and letting it set the page width makes
+   everything else unreadable. */
+.prose pre { margin: 0 0 14px; padding: 12px 14px; border-radius: 8px;
+  background: var(--panel); border: 1px solid var(--line-soft);
+  overflow-x: auto; max-height: 420px; overflow-y: auto; }
+.prose pre code { font-family: var(--mono); font-size: 13px; line-height: 20px;
+  padding: 0; border: 0; background: none; white-space: pre; tab-size: 2;
+  color: var(--fg); }
 
 /* ---- surfaces ---------------------------------------------------- */
 .app, .site { background: var(--bg); color: var(--fg); }
@@ -551,7 +579,7 @@ body.has-dlg { overflow: hidden; }
 .perm-a { margin-top: 12px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 /* the command is a code row, so it reads as the thing being approved */
 .perm-cmd { margin: 8px 0 0; padding: 9px 12px; border-radius: 7px;
-  background: var(--sunk); font-family: "Geist Mono", "Cascadia Mono", ui-monospace, Consolas, monospace;
+  background: var(--sunk); font-family: var(--mono);
   font-size: 13px; line-height: 18px; color: var(--fg); overflow-x: auto; }
 
 .recover-x { font-size: 14px; color: var(--acc-text); padding: 0 8px; }
@@ -1108,20 +1136,22 @@ body.is-blurred .cshell::after { animation-play-state: paused; }
 .cbar-ctx { font-size: var(--t-label); line-height: var(--lh-label); color: var(--faint); padding: 0 8px; }
 .cbar > .btn { min-width: 0; }
 .cbar [data-model-label] { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-/* Narrow is handled by wrapping the row, not by shrinking the controls.
-   `nowrap` here belonged to the old compact composer, which had two
-   controls; with six it pushed Send outside the shell and overlapped the
-   labels. Every control keeps its size and its place in the order, and the
-   row becomes two lines when it has to. */
-@media (max-width: 560px) {
-  .cbar { flex-wrap: wrap; row-gap: 8px; }
-  .cbar-l, .cbar-r { flex-wrap: wrap; row-gap: 8px; }
-  .cbar [data-model-label] { max-width: 12ch; }
-}
-@media (max-width: 460px) {
-  /* The spacer stops earning its place once the row wraps. */
+/* Narrow is handled by scrolling the row, not by shrinking the controls
+   or by growing the composer. See the rule below for why this is not
+   `wrap`. */
+@media (max-width: 620px) {
+  .cbar { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none;
+    -ms-overflow-style: none;
+    mask-image: linear-gradient(to right, #000 calc(100% - 20px), transparent);
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 20px), transparent); }
+  .cbar::-webkit-scrollbar { display: none; }
+  .cbar-l, .cbar-r { flex-wrap: nowrap; flex-shrink: 0; }
   .cbar > .grow { display: none; }
-  .cbar [data-model-label] { max-width: 10ch; }
+  /* The row scrolls, so the label no longer has to be cut to a width that
+     made every model name look the same. */
+  .cbar [data-model-label] { max-width: 22ch; }
+  /* Scrolled content needs a little room past the fade. */
+  .cbar > :last-child { padding-right: 12px; }
 }
 
 /* ---- activity group ---------------------------------------------- */
@@ -1407,7 +1437,8 @@ h1.ws-h1 { margin: 0; font-size: var(--t-body); line-height: var(--lh-body); fon
 .loader-rows { flex: 1; min-height: 0; overflow-y: auto; padding: 0 8px 10px; }
 /* The dialog list is narrower than Explore, so its right column gives the
    name back the space rather than truncating it to three characters. */
-.loader-rows .mrow2 { grid-template-columns: 32px minmax(0, 1fr) auto; padding: 10px; }
+.loader-rows .mrow2 { grid-template-columns: 32px minmax(0, auto) minmax(0, 1fr) auto;
+  padding: 10px; }
 .loader-rows .mrow2-mark { width: 30px; height: 30px; }
 .loader-rows .mrow2-right { min-width: 0; }
 
@@ -1638,7 +1669,7 @@ h1.ws-h1 { margin: 0; font-size: var(--t-body); line-height: var(--lh-body); fon
 .mrow[disabled] { cursor: not-allowed; }
 .mrow[disabled] .mrow-t { color: var(--dis-fg); }
 .kbd { margin-left: auto; font-size: 13px; color: var(--mut);
-  font-family: "Geist Mono", "Cascadia Mono", ui-monospace, Consolas, monospace; }
+  font-family: var(--mono); }
 .pd-note { margin: 10px 0 0; font-size: var(--t-label); line-height: var(--lh-label); color: var(--faint); }
 
 /* ---- model center ---------------------------------------------------- */
@@ -1702,39 +1733,46 @@ h1.ws-h1 { margin: 0; font-size: var(--t-body); line-height: var(--lh-body); fon
 /* The list is the index and the detail is the decision, so the detail gets
    the larger share. Both are work surfaces on the canvas: no card around
    either, and one structural line between them. */
-.mc-explore .cat { display: grid; grid-template-columns: 400px minmax(0, 1fr);
+.mc-explore .cat { display: grid;
+  grid-template-columns: minmax(420px, 42%) minmax(0, 1fr);
   gap: 0 24px; align-items: start; min-height: 0; }
 .cat-list { display: flex; flex-direction: column; min-width: 0;
-  border-right: 1px solid var(--line-soft); padding-right: 24px; }
+  border-right: 1px solid var(--line); padding-right: 24px; }
+.cat-detail-wrap { padding-left: 24px; }
 .cat-rows { display: flex; flex-direction: column; }
 .cat-detail-wrap { min-width: 0; }
 
 /* One row primitive, shared by Explore and the loader. */
-.mrow2 { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto;
-  grid-template-rows: auto auto auto; gap: 1px 12px;
+.mrow2 { display: grid;
+  grid-template-columns: 36px minmax(0, auto) minmax(0, 1fr) auto;
+  grid-template-rows: auto auto; gap: 2px 12px;
   padding: 12px; border-radius: 8px; text-decoration: none;
   transition: background 140ms ease-out; }
 .mrow2:hover { background: var(--sunk); text-decoration: none; }
 .mrow2.is-on { background: var(--sidebar-selected); }
 .mrow2:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
-.mrow2-mark { grid-column: 1; grid-row: 1 / 3; width: 34px; height: 34px;
+.mrow2-mark { grid-column: 1; grid-row: 1 / -1; width: 34px; height: 34px;
   display: inline-flex; align-items: center; justify-content: center;
   border-radius: 8px; background: var(--sunk); color: var(--mut);
   font-size: 13px; font-weight: 600; letter-spacing: .02em; }
 .mrow2.is-on .mrow2-mark { background: var(--raised); }
-.mrow2-n { grid-column: 2; grid-row: 1; font-size: var(--t-body); line-height: 22px;
-  font-weight: 600; color: var(--fg); overflow: hidden;
-  text-overflow: ellipsis; white-space: nowrap; }
-.mrow2-pub { grid-column: 2; grid-row: 2; font-size: var(--t-label);
-  line-height: var(--lh-label); color: var(--mut); }
-.mrow2-use { grid-column: 2 / -1; grid-row: 3; font-size: var(--t-label); line-height: 21px;
-  color: var(--mut); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  margin-top: 3px; }
+/* Name and publisher on one line: the publisher is an attribute of the
+   name, not a second fact deserving its own row. */
+.mrow2-n { grid-column: 2; grid-row: 1; font-size: 15px; line-height: 22px;
+  font-weight: 600; color: var(--fg); min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* The publisher is an attribute of the name, so it sits beside it and is
+   the first thing to give up room when the column narrows. */
+.mrow2-pub { grid-column: 3; grid-row: 1; align-self: baseline; min-width: 0;
+  font-size: 13px; line-height: 22px; color: var(--mut);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mrow2-use { grid-column: 2 / 4; grid-row: 2; font-size: 15px; line-height: 22px;
+  color: var(--mut); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* a fixed right track, so labels never shift between rows */
-.mrow2-right { grid-column: 3; grid-row: 1 / 3; display: flex;
+.mrow2-right { grid-column: 4; grid-row: 1 / -1; display: flex;
   flex-direction: column; align-items: flex-end; justify-content: center; gap: 2px;
-  text-align: right; min-width: 128px; }
-.mrow2-size { font-size: 14px; line-height: 20px; color: var(--fg);
+  text-align: right; min-width: 104px; }
+.mrow2-size { font-size: 15px; line-height: 22px; color: var(--fg);
   font-variant-numeric: tabular-nums; }
 .mrow2-fit { font-size: var(--t-label); line-height: var(--lh-label); color: var(--mut); }
 .mrow2-fit.is-over { color: var(--bad); }
@@ -1824,7 +1862,8 @@ h1.ws-h1 { margin: 0; font-size: var(--t-body); line-height: var(--lh-body); fon
 .dlrow.is-done .dl-main { gap: 3px; }
 
 @media (max-width: 1099px) {
-  .mc-explore .cat { grid-template-columns: minmax(0, 38%) minmax(0, 1fr); gap: 0 18px; }
+  .mc-explore .cat { grid-template-columns: minmax(0, 42%) minmax(0, 1fr); gap: 0 18px; }
+  .mc-explore .mrow2-pub { display: none; }
   .cat-list { padding-right: 18px; }
   .mrow2-use { display: none; }
 }
@@ -2112,7 +2151,8 @@ button.evrow:focus-visible { outline: 2px solid var(--focus); outline-offset: -2
 /* The transcript of a real run. It borrows the classes the stored
    transcript already uses; only the parts that have no equivalent yet are
    defined here. */
-.lv-row { list-style: none; }
+.lv-row { display: block; list-style: none;
+  min-height: 0; padding: 0; }
 .lv-row > summary { display: flex; align-items: center; gap: 10px;
   min-height: 36px; padding: 6px 0; cursor: pointer; list-style: none;
   font-size: var(--t-label); line-height: var(--lh-label); color: var(--mut); }
@@ -2135,7 +2175,7 @@ button.evrow:focus-visible { outline: 2px solid var(--focus); outline-offset: -2
 .lv-out { margin: 0; padding: 10px 12px; border-radius: 8px; background: var(--panel);
   border: 1px solid var(--line-soft); font-size: var(--t-label);
   line-height: var(--lh-label); max-height: 320px; overflow: auto;
-  white-space: pre-wrap; word-break: break-word; }
+  white-space: pre; tab-size: 2; }
 .lv-note { margin: 0; font-size: var(--t-label); line-height: var(--lh-label);
   color: var(--faint); }
 
