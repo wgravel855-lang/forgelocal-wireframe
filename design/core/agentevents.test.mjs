@@ -50,6 +50,11 @@ test("the protocol defines every required event type", () => {
     "question_requested", "question_answered",
     "browser_session_started", "browser_navigated", "browser_snapshot",
     "browser_action", "browser_finding", "browser_session_closed",
+
+    // The work panel's own two. A live view and a viewport the person can
+    // change are state changes to a page, not tool calls, and the panel has
+    // to learn about them the same way it learns about everything else.
+    "browser_preview", "browser_viewport",
   ];
   for (const t of required) assert.ok(/** @type {string[]} */ (EVENT_TYPES).includes(t), `missing ${t}`);
   assert.equal(EVENT_TYPES.length, required.length, "an undocumented type was added");

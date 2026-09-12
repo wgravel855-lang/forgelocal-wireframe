@@ -54,6 +54,19 @@ const MAX_FINDINGS = 100;
 /** Page text returned to the model in one read. */
 export const MAX_TEXT = 20 * 1024;
 
+/**
+ * How often the panel's live view may be refreshed.
+ *
+ * A preview is a JPEG of the viewport, which at this quality is tens of
+ * kilobytes. A run that scrolls forty times in a second would otherwise push
+ * forty images down the pipe to draw one. This is the interval, not a debounce:
+ * the first change after a quiet moment is drawn immediately.
+ */
+export const PREVIEW_EVERY_MS = 400;
+
+/** The preview's long edge. Small on purpose; it is a view, not evidence. */
+export const PREVIEW_WIDTH = 640;
+
 /** @returns {string|null} */
 export function findBrowserBinary(extra = process.env.FORGELOCAL_BROWSER) {
   if (extra && existsSync(extra)) return extra;
@@ -83,9 +96,10 @@ export class StaleRef extends Error {
  * @param {string} [opts.downloadDir]  quarantine for anything the page saves
  * @param {any} [opts.playwright]      injectable, so tests need no browser
  * @param {boolean} [opts.headless]
+ * @param {boolean} [opts.previews]    stream a small view of the page to the panel
  */
 export async function createBrowserSession({
-  emit, downloadDir, playwright = null, headless = true,
+  emit, downloadDir, playwright = null, headless = true, previews = true,
 }) {
   const pw = playwright ?? (await import("playwright-core")).chromium;
   const exe = playwright ? null : findBrowserBinary();
@@ -117,11 +131,15 @@ export async function createBrowserSession({
   /* The isolation boundary. No storageState, no persistent profile: this
      context begins with an empty cookie jar and takes nothing from the user's
      own browser, and everything it accumulates dies with close(). */
+  /* A deliberately ordinary, non-identifying viewport. Matching the user's
+     real screen would be fingerprinting them to every site the agent opens.
+     Mutable because the panel offers a viewport selector: checking a layout at
+     phone width is a thing people do, and changing it here means the person
+     and the agent are looking at the same page rather than two. */
+  let viewport = { width: 1280, height: 800 };
   const context = await browser.newContext({
     acceptDownloads: true,
-    // A deliberately ordinary, non-identifying viewport. Matching the user's
-    // real screen would be fingerprinting them to every site the agent opens.
-    viewport: { width: 1280, height: 800 },
+    viewport,
   });
   context.setDefaultTimeout(ACTION_TIMEOUT);
   context.setDefaultNavigationTimeout(NAV_TIMEOUT);
@@ -211,6 +229,42 @@ export async function createBrowserSession({
     return current().locator(`[data-fl-ref="${r}"]`);
   };
 
+  /**
+   * Send the panel a picture of what the page looks like now.
+   *
+   * This is what makes the work surface a work surface rather than a log: the
+   * person can see the page the agent is on. It is deliberately a *separate*
+   * event from the browser_screenshot tool, and deliberately small — the model
+   * gets a full-quality image when it asks for one; this is for a human
+   * glancing at a panel, and it must not cost enough to be worth switching off.
+   *
+   * Failure is silent on purpose. A preview is a convenience; a run must not
+   * fail because the page was mid-navigation when the panel wanted a picture.
+   */
+  let lastPreview = 0;
+  let previewing = false;
+  const preview = async (force = false) => {
+    if (closed || !previews || previewing) return;
+    const at = Date.now();
+    if (!force && at - lastPreview < PREVIEW_EVERY_MS) return;
+    previewing = true;
+    lastPreview = at;
+    try {
+      const p = current();
+      const buf = await p.screenshot({ type: "jpeg", quality: 45, scale: "css" });
+      emit("browser_preview", {
+        url: p.url(),
+        title: await p.title().catch(() => ""),
+        mime: "image/jpeg",
+        bytes: buf.length,
+        width: viewport.width,
+        height: viewport.height,
+        image: buf.toString("base64"),
+      });
+    } catch { /* a preview is never worth failing a run for */ }
+    finally { previewing = false; }
+  };
+
   return {
     id,
     get quarantineDir() { return quarantine; },
@@ -246,6 +300,7 @@ export async function createBrowserSession({
       emit("browser_navigated", {
         url: p.url(), title: await p.title(), status: res ? res.status() : null,
       });
+      await preview(true);
       return { url: p.url(), title: await p.title(), status: res ? res.status() : null };
     },
 
@@ -280,6 +335,7 @@ export async function createBrowserSession({
       const name = await describe(loc);
       await loc.click({ timeout: ACTION_TIMEOUT });
       emit("browser_action", { action: "click", target: name, url: current().url(), ok: true });
+      await preview();
       return { ok: true, clicked: name };
     },
 
@@ -294,6 +350,7 @@ export async function createBrowserSession({
         // the field is not marked as one, and an event is written to disk.
         detail: `${String(text).length} characters`,
       });
+      await preview();
       return { ok: true, typed: name };
     },
 
@@ -302,12 +359,14 @@ export async function createBrowserSession({
       const name = await describe(loc);
       await loc.selectOption(values, { timeout: ACTION_TIMEOUT });
       emit("browser_action", { action: "select", target: name, url: current().url(), ok: true });
+      await preview();
       return { ok: true, selected: name };
     },
 
     async press(key) {
       await current().keyboard.press(String(key));
       emit("browser_action", { action: "keypress", target: String(key), url: current().url(), ok: true });
+      await preview();
       return { ok: true, pressed: key };
     },
 
@@ -315,6 +374,7 @@ export async function createBrowserSession({
       const dy = direction === "up" ? -Math.abs(amount) : Math.abs(amount);
       await current().mouse.wheel(0, dy);
       emit("browser_action", { action: "scroll", target: direction, url: current().url(), ok: true });
+      await preview();
       return { ok: true };
     },
 
@@ -376,6 +436,64 @@ export async function createBrowserSession({
       const buf = await current().screenshot({ fullPage, type: "jpeg", quality: 60 });
       return { bytes: buf.length, base64: buf.toString("base64"), mime: "image/jpeg" };
     },
+
+    /**
+     * What the person pressed in the panel.
+     *
+     * Separate from the tools on purpose, and deliberately a closed set. The
+     * model's browsing goes through the permission policy; this does not,
+     * because it is the person acting directly and there is nobody to ask. The
+     * price of that is that it must not be able to do anything a person could
+     * not do with four buttons: there is no navigate-to-URL here, so this
+     * cannot be turned into a general-purpose driver by a compromised
+     * renderer. Back, forward and reload can only move within history the
+     * person already approved reaching.
+     *
+     * @param {"back"|"forward"|"reload"} what
+     */
+    async goBackForwardOrReload(what) {
+      const p = current();
+      const was = p.url();
+      const res = what === "back" ? await p.goBack({ waitUntil: "domcontentloaded" })
+        : what === "forward" ? await p.goForward({ waitUntil: "domcontentloaded" })
+        : await p.reload({ waitUntil: "domcontentloaded" });
+
+      /* Two signals, because neither alone is right. goBack resolves to null
+         when there is nothing behind it — but ALSO when the page it went back
+         to has no network response, which is every data: URL and every
+         same-document navigation. Checking the URL alone misses a back to the
+         same address. Either one moving means it moved; a reload always did. */
+      const moved = what === "reload" || res !== null || p.url() !== was;
+      emit("browser_navigated", {
+        url: p.url(), title: await p.title().catch(() => ""),
+        status: res ? res.status() : null, by: "user", action: what, moved,
+      });
+      await preview(true);
+      return { ok: true, moved, url: p.url() };
+    },
+
+    /**
+     * Resize the page the agent is looking at.
+     *
+     * Applied to every open tab, not only the current one, so switching tabs
+     * does not silently switch back to the old size.
+     * @param {number} width @param {number} height
+     */
+    async setViewport(width, height) {
+      viewport = {
+        width: Math.max(320, Math.min(2560, Math.round(width))),
+        height: Math.max(320, Math.min(2000, Math.round(height))),
+      };
+      for (const t of context.pages()) await t.setViewportSize(viewport).catch(() => {});
+      emit("browser_viewport", { ...viewport });
+      await preview(true);
+      return { ok: true, ...viewport };
+    },
+
+    get viewport() { return { ...viewport }; },
+
+    /** Ask for a fresh view now, ignoring the throttle. */
+    refreshPreview() { return preview(true); },
 
     consoleMessages() { return findings.filter((f) => f.kind === "console"); },
     networkFindings() { return findings.filter((f) => f.kind === "network"); },

@@ -10,7 +10,7 @@
  * and a stored one look like the same product. Nothing here is a new design.
  */
 
-import { escapeHtml as esc } from "./html.mjs";
+import { escapeHtml as esc, clipOutput } from "./html.mjs";
 import { groupActivity, detailOf } from "./activity.mjs";
 import { renderMarkdown } from "./markdown.mjs";
 
@@ -171,7 +171,7 @@ function callDetail(call) {
         `<dt>${esc(k)}</dt><dd class="m">${esc(v)}</dd>`).join("")}</dl>`
     : "";
   const out = d.output
-    ? `<pre class="lv-out m">${esc(clip(d.output, 4000))}</pre>`
+    ? `<pre class="lv-out m">${esc(clipOutput(d.output, 4000))}</pre>`
     : "";
   const cut = d.truncated
     ? `<p class="lv-note">Output was cut off by the runtime's limit.</p>`
@@ -197,13 +197,7 @@ function rawDetails(call) {
     }, null, 2);
   } catch { return ""; }
   return `<details class="lv-raw"><summary>Raw details</summary>
-<pre class="lv-out m">${esc(clip(json, 4000))}</pre></details>`;
-}
-
-/** Long output is clipped for the DOM; the runtime already bounded it once. */
-function clip(s, n) {
-  const t = String(s);
-  return t.length > n ? `${t.slice(0, n)}\n… ${t.length - n} more characters` : t;
+<pre class="lv-out m">${esc(clipOutput(json, 4000))}</pre></details>`;
 }
 
 /**

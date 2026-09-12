@@ -25,6 +25,7 @@ export const Request = Object.freeze({
   QUESTION_ANSWER: "question.answer",
   PROVIDER_CONNECT: "provider.connect",
   PROVIDER_DISCONNECT: "provider.disconnect",
+  BROWSER_CONTROL: "browser.control",
 });
 
 export const Notify = Object.freeze({
@@ -36,6 +37,7 @@ export const Notify = Object.freeze({
   QUESTION_REQUESTED: "question.requested",
   TURN_COMPLETED: "turn.completed",
   TURN_FAILED: "turn.failed",
+  BROWSER_CONTROLLED: "browser.controlled",
 });
 
 /** Is a desktop host present at all?
@@ -236,6 +238,20 @@ export function createHostClient({
       return request(Request.PERMISSION_RESOLVE, { requestId, decision });
     },
     answerQuestion(text) { return request(Request.QUESTION_ANSWER, { text }); },
+
+    /**
+     * Press one of the browser panel's controls.
+     *
+     * Resolves with what the browser did, not with what was asked for: the
+     * reply carries `ok` and, for back and forward, whether it actually
+     * `moved`. A Back at the start of history is a no-op, and a panel that
+     * drew it as a navigation would be lying about a page nobody left.
+     * @param {"back"|"forward"|"reload"|"close"|"viewport"|"refresh"} action
+     * @param {{width?: number, height?: number}} [opts]
+     */
+    browserControl(action, opts = {}) {
+      return request(Request.BROWSER_CONTROL, { action, ...opts }, 20000);
+    },
 
     async dispose() {
       try { await this.disposeSession(); } catch { /* the runtime may be gone */ }

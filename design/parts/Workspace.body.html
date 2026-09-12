@@ -9,7 +9,14 @@
 
       <!-- One thread, one composer, one geometry. Every app route and every
            saved chat renders through this shell; nothing about a conversation
-           is written twice. -->
+           is written twice.
+
+           The work area is a row so a side panel can sit beside the whole
+           conversation column. The composer is inside the thread column and is
+           not touched by this: it keeps its two rows, its project selector and
+           every control it had, and simply has a narrower column while a panel
+           is open. -->
+      <div class="workarea">
       <div class="thread-scroll scroll" data-thread-scroll>
         <div class="thread col" data-thread data-thread-id="{{thread}}"></div>
         <div class="dock">
@@ -22,6 +29,9 @@
           <!--#include model-browser.html -->
           </div>
         </div>
+      </div>
+
+      <!--#include browser-panel.html -->
       </div>
 
       <p class="vh" role="status" aria-live="polite" data-thread-status></p>

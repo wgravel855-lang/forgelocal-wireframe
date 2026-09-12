@@ -101,6 +101,7 @@ async function handle(frame) {
     case Request.TURN_CANCEL: return turnCancel(id, sessionId);
     case Request.PERMISSION_RESOLVE: return permissionResolve(id, sessionId, payload);
     case Request.QUESTION_ANSWER: return questionAnswer(id, sessionId, payload);
+    case Request.BROWSER_CONTROL: return browserControl(id, sessionId, payload);
     default: return fail(id, ErrorCode.UNKNOWN_TYPE, `Unhandled type ${type}`);
   }
 }
@@ -180,10 +181,17 @@ async function sessionCreate(id, payload) {
   }, { id, sessionId }));
 }
 
-function sessionDispose(id, sessionId) {
+async function sessionDispose(id, sessionId) {
   const s = sessions.get(sessionId);
-  if (s) { try { s.agent.stop(); } catch { /* already idle */ } }
+  // Remove it first, so a dispose that is slow to release a browser cannot be
+  // raced by a turn on a session that is already going away.
   sessions.delete(sessionId);
+  if (s) {
+    /* dispose(), not stop(). stop() only aborts the turn; it leaves the
+       isolated browser running, which means its cookies and storage outlive
+       the session that created them — exactly what the isolation is for. */
+    try { await s.agent.dispose(); } catch { /* already gone */ }
+  }
   send(notify(Notify.TURN_COMPLETED, { disposed: true }, { id, sessionId }));
 }
 
@@ -260,6 +268,46 @@ async function permissionResolve(id, sessionId, payload) {
  * a turn in which it asked a question and got silence, and it will usually
  * answer the question itself.
  */
+
+/** The closed set of controls the browser panel may press. */
+const BROWSER_ACTIONS = new Set(["back", "forward", "reload", "close", "viewport", "refresh"]);
+
+/**
+ * Act on a control the person pressed in the browser panel.
+ *
+ * The list above is the whole surface, checked here rather than only in the
+ * orchestrator: the renderer is not a trusted source of action names, and a
+ * request type that forwarded whatever string it was given would be one
+ * refactor away from being a general driver.
+ *
+ * Success needs no reply of its own. The session emits browser_navigated,
+ * browser_viewport, browser_preview or browser_session_closed, and those
+ * already reach the panel as agent events — which means what the panel draws
+ * is what the browser actually did, not what the button claimed it would.
+ */
+async function browserControl(id, sessionId, payload) {
+  const s = sessions.get(sessionId);
+  if (!s) return fail(id, ErrorCode.NO_SUCH_SESSION, "That session is gone.", sessionId);
+
+  const action = String(payload.action ?? "");
+  if (!BROWSER_ACTIONS.has(action)) {
+    return send(notify(Notify.BROWSER_CONTROLLED, {
+      ok: false, action, error: `${action || "That"} is not a browser control.`,
+    }, { id, sessionId }));
+  }
+
+  try {
+    const r = await s.agent.browserControl(action, {
+      width: payload.width, height: payload.height,
+    });
+    send(notify(Notify.BROWSER_CONTROLLED, { action, ...r }, { id, sessionId }));
+  } catch (/** @type {any} */ e) {
+    send(notify(Notify.BROWSER_CONTROLLED, {
+      ok: false, action, error: e && e.message ? e.message : "The browser did not respond.",
+    }, { id, sessionId }));
+  }
+}
+
 async function questionAnswer(id, sessionId, payload) {
   const s = sessions.get(sessionId);
   if (!s) return fail(id, ErrorCode.NO_SUCH_SESSION, "That session is gone.", sessionId);
@@ -303,12 +351,32 @@ process.stdin.setEncoding("utf8");
 process.stdin.on("data", (chunk) => decoder.push(String(chunk)));
 process.stdin.on("end", () => shutdown(0));
 
-/** Losing the host means losing the reason to exist; every child goes too. */
-function shutdown(code) {
-  for (const s of sessions.values()) {
-    try { s.agent.stop(); } catch { /* already idle */ }
-  }
+/** How long a shutdown will wait for browsers to close before exiting anyway. */
+const SHUTDOWN_GRACE_MS = 2000;
+let shuttingDown = false;
+
+/**
+ * Losing the host means losing the reason to exist; every child goes too.
+ *
+ * Asynchronous now, because a session can be holding a browser and the exit
+ * path is the last chance to close it properly — a hard process.exit() leaves
+ * the profile directory behind and relies on Playwright's own exit handler to
+ * kill the browser, which is not a promise this code should be making on its
+ * behalf. Bounded, because a browser that will not close must not be able to
+ * keep the sidecar alive after the host has gone.
+ *
+ * @param {number} code
+ */
+async function shutdown(code) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  const all = [...sessions.values()];
   sessions.clear();
+  const grace = new Promise((r) => { setTimeout(r, SHUTDOWN_GRACE_MS).unref(); });
+  await Promise.race([
+    Promise.allSettled(all.map((s) => s.agent.dispose())),
+    grace,
+  ]);
   process.exit(code);
 }
 process.on("SIGTERM", () => shutdown(0));

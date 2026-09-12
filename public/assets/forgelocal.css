@@ -1219,6 +1219,115 @@ body.is-blurred .cshell::after { animation-play-state: paused; }
   .cbar [data-model-label] { max-width: 22ch; }
 }
 
+/* ---- the browser work surface --------------------------------------- */
+/* A second column beside the conversation, not a floating window and not a
+   modal: the agent is working in a browser while the person keeps talking,
+   so both have to be visible at once. The composer is untouched — it keeps
+   its two rows, its folder selector and every control it had; it simply
+   has a narrower column to sit in while the panel is open. */
+.workarea { flex: 1; min-height: 0; display: flex; }
+.workarea > .thread-scroll { flex: 1; min-width: 0; }
+
+.bpanel { width: 420px; flex-shrink: 0; display: flex; flex-direction: column;
+  min-height: 0; background: var(--panel); border-left: 1px solid var(--line); }
+@media (max-width: 1180px) {
+  /* Below this the conversation would be squeezed into an unusable column,
+     and the conversation is the product. The panel is dismissed rather
+     than shrunk; its button in the topbar brings it back. */
+  .bpanel { display: none; }
+}
+
+.bp-hd { flex-shrink: 0; padding: 10px 12px; display: flex; flex-direction: column;
+  gap: 8px; border-bottom: 1px solid var(--line-soft); }
+.bp-title { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.bp-title h2 { margin: 0; font-size: var(--t-label); line-height: var(--lh-label);
+  font-weight: 600; color: var(--fg); white-space: nowrap; }
+/* States the one thing about this browser that matters and is invisible. */
+.bp-iso { display: inline-flex; align-items: center; gap: 5px; height: 20px;
+  padding: 0 7px; border-radius: 999px; border: 1px solid var(--ok-line);
+  background: var(--ok-soft); color: var(--ok);
+  font-size: var(--t-meta); line-height: var(--lh-meta); white-space: nowrap; }
+
+.bp-nav { display: flex; align-items: center; gap: 4px; }
+.bp-nav .ico { width: 30px; min-width: 30px; height: 30px; border-radius: 7px; }
+.bp-loc { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px;
+  padding: 0 6px; }
+.bp-loc b { font-size: var(--t-label); line-height: var(--lh-label); font-weight: 500;
+  color: var(--fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bp-loc span { font-family: var(--mono); font-size: var(--t-meta);
+  line-height: var(--lh-meta); color: var(--faint);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: ltr; }
+
+.bp-body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+  display: flex; flex-direction: column; gap: 12px; padding: 12px; }
+
+/* The live view. Checkerboard behind it so a page with a transparent or
+   white background still reads as an image rather than as a gap. */
+.bp-view { position: relative; border: 1px solid var(--line); border-radius: 8px;
+  overflow: hidden; background: var(--sunk); }
+.bp-view img { display: block; width: 100%; height: auto; }
+.bp-view-none { display: flex; align-items: center; justify-content: center;
+  min-height: 150px; padding: 20px; text-align: center;
+  font-size: var(--t-copy); line-height: var(--lh-copy); color: var(--mut); }
+.bp-stamp { position: absolute; right: 6px; bottom: 6px; padding: 1px 7px;
+  border-radius: 5px; background: rgba(0,0,0,.58); color: #fff;
+  font-family: var(--mono); font-size: var(--t-meta); line-height: var(--lh-meta); }
+
+.bp-vp { display: flex; align-items: center; gap: 6px; }
+.bp-vp .lab { flex-shrink: 0; }
+.bp-vp select { flex: 1; min-width: 0; height: 30px; padding: 0 8px;
+  border: 1px solid var(--line-strong); border-radius: 7px;
+  background: var(--raised); color: var(--fg);
+  font: inherit; font-size: var(--t-label); line-height: var(--lh-label); }
+
+/* The status line. It says what the browser is doing, sourced from the
+   action events rather than from anything the model wrote. */
+.bp-status { display: flex; align-items: center; gap: 8px; min-height: 30px;
+  padding: 5px 9px; border: 1px solid var(--line-soft); border-radius: 7px;
+  background: var(--raised); font-size: var(--t-label); line-height: var(--lh-label);
+  color: var(--mut); }
+.bp-status b { font-weight: 500; color: var(--fg); }
+.bp-status.is-bad { border-color: var(--bad-line); color: var(--bad); }
+
+.bp-sec { display: flex; flex-direction: column; gap: 6px; }
+.bp-sec > h3 { margin: 0; display: flex; align-items: center; gap: 7px;
+  font-family: var(--mono); font-size: var(--t-meta); line-height: var(--lh-meta);
+  letter-spacing: .06em; text-transform: uppercase; color: var(--faint); }
+.bp-n { display: inline-flex; align-items: center; justify-content: center;
+  min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px;
+  background: var(--sunk); color: var(--mut);
+  font-family: var(--mono); font-size: var(--t-meta); line-height: var(--lh-meta);
+  letter-spacing: 0; }
+.bp-n.is-bad { background: var(--bad-soft); color: var(--bad); }
+
+.bp-list { display: flex; flex-direction: column; gap: 4px; margin: 0; padding: 0;
+  list-style: none; }
+.bp-list li { display: flex; gap: 7px; padding: 6px 8px; border-radius: 6px;
+  background: var(--raised); border: 1px solid var(--line-soft);
+  font-family: var(--mono); font-size: var(--t-meta); line-height: var(--lh-meta);
+  color: var(--mut); overflow-wrap: anywhere; }
+.bp-list li.is-bad { border-color: var(--bad-line); color: var(--bad); }
+.bp-list li.is-warn { border-color: var(--warn-line); color: var(--warn); }
+.bp-empty { margin: 0; font-size: var(--t-label); line-height: var(--lh-label);
+  color: var(--faint); }
+
+/* Downloads. Their whole story is where they are NOT, so the note says so
+   rather than offering a button that would move one into the project. */
+.bp-dl { border-color: var(--warn-line) !important; color: var(--warn) !important; }
+
+.bp-ft { flex-shrink: 0; display: flex; align-items: center; gap: 8px;
+  padding: 9px 12px; border-top: 1px solid var(--line-soft); }
+.bp-ft .btn { flex: 1; }
+
+/* The unavailable state. Not an error and not an empty list: the panel
+   says which of the two reasons applies, because "no runtime" and "no
+   browser yet" need different things from the person. */
+.bp-off { flex: 1; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 10px; padding: 28px 20px; text-align: center; }
+.bp-off p { margin: 0; font-size: var(--t-copy); line-height: var(--lh-copy);
+  color: var(--mut); max-width: 30ch; }
+.bp-off svg { color: var(--faint); }
+
 /* ---- the question card -------------------------------------------- */
 /* A clarification is not an approval, so this deliberately does not look
    like the permission card: no amber, no risk pill, and its action reads

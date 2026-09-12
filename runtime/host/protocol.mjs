@@ -28,6 +28,10 @@ export const Request = Object.freeze({
   QUESTION_ANSWER: "question.answer",
   PROVIDER_CONNECT: "provider.connect",
   PROVIDER_DISCONNECT: "provider.disconnect",
+  /* What the person pressed in the browser panel. One request rather than
+     five, so the set of things the panel can do is stated in one place and
+     validated once. Notably absent: navigating to a URL. */
+  BROWSER_CONTROL: "browser.control",
 });
 
 /** Runtime -> frontend. */
@@ -40,6 +44,10 @@ export const Notify = Object.freeze({
   QUESTION_REQUESTED: "question.requested",
   TURN_COMPLETED: "turn.completed",
   TURN_FAILED: "turn.failed",
+  /* The result of a panel control. Separate from turn.failed because a
+     browser button that could not act is not a failed turn, and rendering
+     it as one would put a red banner over a working conversation. */
+  BROWSER_CONTROLLED: "browser.controlled",
 });
 
 export const REQUEST_TYPES = Object.freeze(Object.values(Request));
@@ -49,7 +57,7 @@ const REQUESTS = new Set(REQUEST_TYPES);
 /** Which requests are meaningless without a session. */
 const NEEDS_SESSION = new Set([
   Request.SESSION_DISPOSE, Request.TURN_START, Request.TURN_CANCEL,
-  Request.PERMISSION_RESOLVE, Request.QUESTION_ANSWER,
+  Request.PERMISSION_RESOLVE, Request.QUESTION_ANSWER, Request.BROWSER_CONTROL,
 ]);
 
 export const ErrorCode = Object.freeze({

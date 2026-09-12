@@ -48,6 +48,14 @@
 
   {{artifacts}}
 
+  <!-- The browser panel's toggle. Hidden until a session actually has a
+       browser: a control for a thing that does not exist teaches people the
+       feature is broken. -->
+  <button class="iconbtn" type="button" data-browser-toggle aria-expanded="false"
+    aria-label="Show the browser" title="Browser" hidden>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="15" rx="2.5"/><path d="M3 9h18"/><circle cx="6" cy="6.75" r=".9" fill="currentColor" stroke="none"/></svg>
+  </button>
+
   <!-- The work pane toggle. It reflects a pane this build actually has. -->
   <button class="iconbtn" type="button" data-pane-toggle aria-expanded="false"
     aria-label="Show work pane" title="Work pane">

@@ -452,6 +452,14 @@
 
   <a class="btn btns btnq" href="/app/review/" style="gap:7px" data-artifacts hidden><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 6.5A2 2 0 0 1 5.5 4.5h3.4l1.6 2h8A2 2 0 0 1 20.5 8.5v9a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/></svg>Artifacts<span class="pill" style="padding:0 6px" data-artifacts-n>0</span></a>
 
+  <!-- The browser panel's toggle. Hidden until a session actually has a
+       browser: a control for a thing that does not exist teaches people the
+       feature is broken. -->
+  <button class="iconbtn" type="button" data-browser-toggle aria-expanded="false"
+    aria-label="Show the browser" title="Browser" hidden>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="15" rx="2.5"/><path d="M3 9h18"/><circle cx="6" cy="6.75" r=".9" fill="currentColor" stroke="none"/></svg>
+  </button>
+
   <!-- The work pane toggle. It reflects a pane this build actually has. -->
   <button class="iconbtn" type="button" data-pane-toggle aria-expanded="false"
     aria-label="Show work pane" title="Work pane">
@@ -477,7 +485,14 @@
 
       <!-- One thread, one composer, one geometry. Every app route and every
            saved chat renders through this shell; nothing about a conversation
-           is written twice. -->
+           is written twice.
+
+           The work area is a row so a side panel can sit beside the whole
+           conversation column. The composer is inside the thread column and is
+           not touched by this: it keeps its two rows, its project selector and
+           every control it had, and simply has a narrower column while a panel
+           is open. -->
+      <div class="workarea">
       <div class="thread-scroll scroll" data-thread-scroll>
         <div class="thread col" data-thread data-thread-id="route:running">
 <article class="turn turn-user">
@@ -888,6 +903,56 @@
 </div>
           </div>
         </div>
+      </div>
+
+      <!-- The browser work surface.
+
+     Everything inside is rendered from session state by browserpanel.mjs; this
+     is the frame and the controls. The panel starts hidden and the topbar
+     button reveals it, so a session that never browses never sees it.
+
+     Note what is NOT here: an address bar. The panel can go back, forward,
+     reload and close, and it can resize the page. It cannot navigate to an
+     arbitrary URL, because that would be a second, unpoliced way to reach an
+     origin nobody approved. -->
+<aside class="bpanel" data-browser-panel hidden aria-label="Browser">
+  <div class="bp-hd">
+    <div class="bp-title">
+      <h2>Browser</h2>
+      <span class="bp-iso" data-bp-iso hidden>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 11V8a6 6 0 0 1 12 0v3"/><rect x="4.5" y="11" width="15" height="9" rx="2"/></svg>
+        Isolated
+      </span>
+      <span style="flex:1"></span>
+      <button class="btn btns btnq ico" type="button" data-bp-hide title="Hide the browser panel" aria-label="Hide the browser panel">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+
+    <div class="bp-nav">
+      <button class="btn btns btnq ico" type="button" data-bp="back" title="Back" aria-label="Back">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 6 8.5 12l6 6"/></svg>
+      </button>
+      <button class="btn btns btnq ico" type="button" data-bp="forward" title="Forward" aria-label="Forward">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.5 6l6 6-6 6"/></svg>
+      </button>
+      <button class="btn btns btnq ico" type="button" data-bp="reload" title="Reload" aria-label="Reload">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19.5 12a7.5 7.5 0 1 1-2.4-5.5"/><path d="M19.5 4.5V9h-4.5"/></svg>
+      </button>
+      <span class="bp-loc">
+        <b data-bp-title>No page</b>
+        <span data-bp-url></span>
+      </span>
+    </div>
+  </div>
+
+  <div class="bp-body" data-bp-body></div>
+
+  <div class="bp-ft" data-bp-ft hidden>
+    <button class="btn btns" type="button" data-bp="close">Close browser</button>
+    <button class="btn btns btnd" type="button" data-bp-stop hidden>Stop</button>
+  </div>
+</aside>
       </div>
 
       <p class="vh" role="status" aria-live="polite" data-thread-status></p>

@@ -33,6 +33,7 @@ import { hasTauri, tauriTransport, createHostClient, NO_HOST } from "../core/hos
 import { runningLabel } from "../core/activity.mjs";
 import { liveTranscript, planBlock, permissionCard, questionCard } from "../core/liveview.mjs";
 import { initialState as initialRunView, reduceAgentEvent as reduceAgent } from "../core/agentevents.mjs";
+import { browserPanelBody, browserPanelHeader, VIEWPORTS } from "../core/browserpanel.mjs";
 import { catalogViewState, localViewState, showsRows, showsDetail, stateBlockHtml } from "../core/viewstate.mjs";
 import {
   detectEnvironment, initialRuntime, reduceRuntime, isConnected,
@@ -3993,6 +3994,153 @@ import {
 
     wireLiveDecisions();
     paintLiveComposer();
+    paintBrowserPanel();
+  }
+
+  /* ------------------------------------------------- the browser panel */
+
+  /** Whether the person has hidden the panel this session. */
+  let browserPanelDismissed = false;
+
+  /**
+   * Draw the browser work surface from session state.
+   *
+   * Called from paintLive, so it is redrawn by the same events that redraw the
+   * transcript and can never drift from it. Everything it shows is a fact the
+   * runtime reported; there is no fixture path and no last-known-good.
+   */
+  function paintBrowserPanel() {
+    const panel = $("[data-browser-panel]");
+    if (!panel) return;
+    const toggle = $("[data-browser-toggle]");
+
+    const b = LIVE.view.browser;
+    const connected = !!(LIVE.client && LIVE.client.runtime.connected);
+    /* Shown when a browser exists, or when one existed and was closed — the
+       close is worth seeing. Never shown for a session that has not browsed:
+       an empty browser panel beside every conversation is clutter that trains
+       people to ignore the thing it will eventually need to tell them. */
+    const relevant = !!b;
+    if (toggle) toggle.hidden = !relevant;
+
+    const open = relevant && !browserPanelDismissed;
+    panel.hidden = !open;
+    if (toggle) {
+      toggle.setAttribute("aria-expanded", String(open));
+      const label = open ? "Hide the browser" : "Show the browser";
+      toggle.setAttribute("aria-label", label);
+      toggle.title = label;
+    }
+    if (!open) return;
+
+    const head = browserPanelHeader(b, connected);
+    const t = $("[data-bp-title]", panel);
+    const u = $("[data-bp-url]", panel);
+    const iso = $("[data-bp-iso]", panel);
+    if (t) t.textContent = head.title;
+    if (u) u.textContent = head.url;
+    if (iso) iso.hidden = !head.isolated;
+
+    // The navigation controls only mean anything while a page is open.
+    $$("[data-bp]", panel).forEach((btn) => {
+      const live = head.open && connected;
+      btn.disabled = !live;
+      btn.setAttribute("aria-disabled", String(!live));
+    });
+
+    const ft = $("[data-bp-ft]", panel);
+    if (ft) ft.hidden = !(head.open && connected);
+    const stop = $("[data-bp-stop]", panel);
+    if (stop) stop.hidden = !LIVE.running;
+
+    const body = $("[data-bp-body]", panel);
+    if (body) body.innerHTML = browserPanelBody({ browser: b, connected, busy: LIVE.running });
+  }
+
+  /**
+   * Wire the panel's controls once.
+   *
+   * Delegated from the panel rather than bound per render, because the body is
+   * replaced on every event and per-render listeners would accumulate one set
+   * per preview.
+   */
+  function wireBrowserPanel() {
+    const panel = $("[data-browser-panel]");
+    if (!panel) return;
+
+    const toggle = $("[data-browser-toggle]");
+    if (toggle) {
+      toggle.addEventListener("click", () => {
+        browserPanelDismissed = !browserPanelDismissed;
+        paintBrowserPanel();
+        if (!browserPanelDismissed) {
+          const first = $("[data-bp]", panel);
+          if (first && !first.disabled) first.focus();
+        } else {
+          toggle.focus();
+        }
+      });
+    }
+
+    const hide = $("[data-bp-hide]", panel);
+    if (hide) {
+      hide.addEventListener("click", () => {
+        browserPanelDismissed = true;
+        paintBrowserPanel();
+        if (toggle) toggle.focus();
+      });
+    }
+
+    panel.addEventListener("click", async (e) => {
+      const btn = e.target instanceof Element ? e.target.closest("[data-bp]") : null;
+      if (!btn || btn.disabled) return;
+      const action = btn.getAttribute("data-bp");
+      if (!LIVE.client) return;
+      await runBrowserControl(action);
+    });
+
+    const stop = $("[data-bp-stop]", panel);
+    if (stop) {
+      // The same stop the composer offers, in the surface the person is
+      // looking at. It cancels the turn, which is what stops the browsing.
+      stop.addEventListener("click", () => {
+        if (LIVE.client) LIVE.client.cancelTurn().catch(() => {});
+      });
+    }
+
+    panel.addEventListener("change", async (e) => {
+      const sel = e.target instanceof Element ? e.target.closest("[data-bp-viewport]") : null;
+      if (!sel || !LIVE.client) return;
+      const v = VIEWPORTS.find((x) => x.id === sel.value);
+      if (!v) return;
+      await runBrowserControl("viewport", { width: v.width, height: v.height });
+    });
+  }
+
+  /**
+   * Send one panel control and report what came back.
+   *
+   * The panel does not redraw itself on success: the browser emits its own
+   * events and those redraw it, so what appears is what the browser did rather
+   * than what the button intended. Only a refusal is surfaced here, because a
+   * refusal produces no event.
+   * @param {string} action @param {any} [opts]
+   */
+  async function runBrowserControl(action, opts = {}) {
+    try {
+      const frame = await LIVE.client.browserControl(action, opts);
+      const r = frame && frame.payload;
+      if (r && r.ok === false) {
+        announce(r.error || "The browser did not do that.");
+        return;
+      }
+      if (r && r.moved === false) {
+        announce(action === "back" ? "Nothing earlier in this session's history."
+          : "Nothing further forward in this session's history.");
+      }
+    } catch (err) {
+      announce(err && err.message ? err.message : "The browser did not respond.");
+    }
   }
 
   /* The composer reflects the runtime, and only the runtime. */
@@ -4185,7 +4333,9 @@ import {
     wireLiveModelPicker();
     wireLiveComposer(form);
     wireAskCard();
+    wireBrowserPanel();
     paintLiveComposer();
+    paintBrowserPanel();
   }
 
   /* The project comes from the OS dialog, through the host. */

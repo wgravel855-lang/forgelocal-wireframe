@@ -54,6 +54,11 @@ export const EventType = Object.freeze({
   BROWSER_SNAPSHOT: "browser_snapshot",
   BROWSER_ACTION: "browser_action",
   BROWSER_FINDING: "browser_finding",
+  /* A small picture of the page, for the panel. Its own event rather than a
+     field on browser_navigated because it arrives on a different schedule:
+     throttled, best-effort, and dropped rather than delayed. */
+  BROWSER_PREVIEW: "browser_preview",
+  BROWSER_VIEWPORT: "browser_viewport",
   BROWSER_SESSION_CLOSED: "browser_session_closed",
   RUNTIME_ERROR: "runtime_error",
 });
@@ -194,7 +199,8 @@ export function invalidReason(e) {
   return null;
 }
 
-/** The reduced view. Nothing in it is writable by the renderer. */
+/** The reduced view. Nothing in it is writable by the renderer.
+ *  @param {string|null} [sessionId] */
 export function initialState(sessionId = null) {
   return {
     sessionId,
@@ -396,7 +402,9 @@ export function reduceAgentEvent(prev, ev) {
         sessionId: p.browser_session_id ?? null,
         isolated: p.isolated !== false,
         url: null, title: null, snapshotId: null,
-        console: [], network: [], closed: false,
+        console: [], network: [], downloads: [], closed: false,
+        preview: null, viewport: { width: 1280, height: 800 },
+        lastAction: null,
       };
       break;
 
@@ -424,6 +432,19 @@ export function reduceAgentEvent(prev, ev) {
         url: p.url ?? null, ok: p.ok !== false, detail: p.detail ?? null,
         at: ev.timestamp, turnId: ev.turn_id,
       }, p.action_id);
+      /* Also kept as the panel's status line. The transcript row is the
+         record; this is "what is happening right now", and deriving it by
+         scanning backwards through rows for the last browser one is how a
+         panel ends up a few actions behind the page it is showing. */
+      if (s.browser) {
+        s.browser = {
+          ...s.browser,
+          lastAction: {
+            action: p.action ?? "action", target: p.target ?? null,
+            ok: p.ok !== false, at: ev.timestamp,
+          },
+        };
+      }
       break;
 
     /* Console errors and failed requests are evidence, so they are kept on
@@ -431,7 +452,9 @@ export function reduceAgentEvent(prev, ev) {
        page in a redirect loop can emit thousands. */
     case EventType.BROWSER_FINDING:
       if (s.browser) {
-        const bucket = p.kind === "network" ? "network" : "console";
+        const bucket = p.kind === "network" ? "network"
+          : p.kind === "download" ? "downloads"
+          : "console";
         const next = [...s.browser[bucket], {
           level: p.level ?? "error",
           text: p.text ?? "",
@@ -443,8 +466,34 @@ export function reduceAgentEvent(prev, ev) {
       }
       break;
 
+    /* The image is held on the state, replacing the last one rather than
+       accumulating: a panel shows the page now, and forty stale JPEGs in a
+       reducer is a memory leak with a picture of a webpage in it. */
+    case EventType.BROWSER_PREVIEW:
+      if (s.browser) {
+        s.browser = {
+          ...s.browser,
+          url: p.url ?? s.browser.url,
+          title: p.title ?? s.browser.title,
+          preview: p.image
+            ? { image: p.image, mime: p.mime ?? "image/jpeg", bytes: p.bytes ?? 0,
+                width: p.width ?? null, height: p.height ?? null, at: ev.timestamp }
+            : s.browser.preview,
+        };
+      }
+      break;
+
+    case EventType.BROWSER_VIEWPORT:
+      if (s.browser && p.width && p.height) {
+        s.browser = { ...s.browser, viewport: { width: p.width, height: p.height } };
+      }
+      break;
+
     case EventType.BROWSER_SESSION_CLOSED:
-      if (s.browser) s.browser = { ...s.browser, closed: true };
+      /* The preview goes with it. A closed session showing the last page it
+         was on reads as still open, which is the one thing this panel must
+         never imply. */
+      if (s.browser) s.browser = { ...s.browser, closed: true, preview: null };
       break;
 
     case EventType.PLAN_UPDATED:

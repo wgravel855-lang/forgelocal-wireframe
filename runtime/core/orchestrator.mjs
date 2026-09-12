@@ -858,6 +858,40 @@ export function createOrchestrator({
     },
 
     /**
+     * A control the person pressed in the browser panel.
+     *
+     * Not routed through the permission policy, and that is the right call:
+     * the policy exists to decide what the *model* may do on the user's
+     * behalf, and there is nobody to ask when the user is the one acting. What
+     * keeps it safe is the shape of the surface rather than a check — this
+     * cannot navigate to an arbitrary URL, so it cannot be used to reach an
+     * origin the person never approved.
+     *
+     * @param {"back"|"forward"|"reload"|"close"|"viewport"|"refresh"} action
+     * @param {{width?: number, height?: number}} [opts]
+     */
+    async browserControl(action, opts = {}) {
+      const s = ctx.browser;
+      if (!s || s.closed) {
+        return { ok: false, error: "No browser session is open." };
+      }
+      switch (action) {
+        case "back": case "forward": case "reload":
+          return s.goBackForwardOrReload(action);
+        case "viewport":
+          return s.setViewport(Number(opts.width) || 1280, Number(opts.height) || 800);
+        case "refresh":
+          await s.refreshPreview();
+          return { ok: true };
+        case "close":
+          await closeBrowser();
+          return { ok: true };
+        default:
+          return { ok: false, error: `${action} is not a browser control.` };
+      }
+    },
+
+    /**
      * Release everything this session holds.
      *
      * Today that is the browser, whose cookies and storage must not outlive

@@ -15,7 +15,7 @@
 
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -300,5 +300,160 @@ describe("an isolated browser session", { skip: noBrowser ? "no Chromium-family 
     } finally {
       await s.close();
     }
+  });
+
+  /* ---------------------------------------- the panel's own surface ---- */
+
+  test("a preview of the page reaches the panel, and carries no page markup", async () => {
+    /* The work panel's live view. It has to be a real picture of the real
+       page — an event with an image in it and nothing derived from what the
+       page says about itself. */
+    const seen = [];
+    const s = await createBrowserSession({
+      emit: (type, payload) => seen.push({ type, payload }),
+      downloadDir: mkdtempSync(join(tmpdir(), "fl-bpv-")),
+    });
+    try {
+      await s.navigate(page("<h1 style='font-size:60px'>Hello</h1>"));
+      const shot = seen.filter((e) => e.type === "browser_preview");
+      assert.ok(shot.length, "navigating produced no preview for the panel");
+
+      const last = shot[shot.length - 1].payload;
+      assert.equal(last.mime, "image/jpeg");
+      assert.ok(last.bytes > 200, `a ${last.bytes}-byte preview is not a picture`);
+      assert.match(last.image, /^[A-Za-z0-9+/=]+$/, "the preview is not base64");
+      assert.equal(last.width, 1280);
+    } finally {
+      await s.close();
+    }
+  });
+
+  test("previews are throttled, so a burst of actions does not become a burst of images", async () => {
+    const seen = [];
+    const s = await createBrowserSession({
+      emit: (type, payload) => seen.push({ type, payload }),
+      downloadDir: mkdtempSync(join(tmpdir(), "fl-bpt-")),
+    });
+    try {
+      await s.navigate(page("<div style='height:4000px'>tall</div>"));
+      const after = seen.filter((e) => e.type === "browser_preview").length;
+      for (let i = 0; i < 6; i++) await s.scroll("down", 200);
+      const total = seen.filter((e) => e.type === "browser_preview").length;
+      assert.ok(total - after < 6,
+        `six scrolls produced ${total - after} previews; the throttle is not working`);
+    } finally {
+      await s.close();
+    }
+  });
+
+  test("back and forward report whether they actually moved", async () => {
+    /* A no-op reported as a navigation is how a panel ends up showing a page
+       nobody left, so the session says which it was.
+
+       Note what the last assertion is really pinning. A session starts at
+       about:blank, so going back from the FIRST page does move — to the blank
+       page. The report has to match the browser rather than the intuition
+       that the first page the agent opened is the beginning of history. */
+    const s = await createBrowserSession({
+      emit: () => {}, downloadDir: mkdtempSync(join(tmpdir(), "fl-bback-")),
+    });
+    try {
+      await s.navigate(page("<h1>one</h1>"));
+      await s.navigate(page("<h1>two</h1>"));
+
+      const back = await s.goBackForwardOrReload("back");
+      assert.equal(back.moved, true, "back did not move with a page behind it");
+      assert.match((await s.readText()).text, /one/, "back moved but not to the earlier page");
+
+      const fwd = await s.goBackForwardOrReload("forward");
+      assert.equal(fwd.moved, true, "forward did not move with a page ahead of it");
+      assert.match((await s.readText()).text, /two/);
+
+      // Wind back past the blank page the session started on, then once more.
+      await s.goBackForwardOrReload("back");
+      await s.goBackForwardOrReload("back");
+      const nowhere = await s.goBackForwardOrReload("back");
+      assert.equal(nowhere.moved, false, "back claimed to move with nothing behind it");
+    } finally {
+      await s.close();
+    }
+  });
+
+  test("the viewport selector actually resizes the page the agent is on", async () => {
+    const seen = [];
+    const s = await createBrowserSession({
+      emit: (type, payload) => seen.push({ type, payload }),
+      downloadDir: mkdtempSync(join(tmpdir(), "fl-bvp-")),
+    });
+    try {
+      await s.navigate(page("<h1>sized</h1>"));
+      await s.setViewport(390, 844);
+      assert.deepEqual(s.viewport, { width: 390, height: 844 });
+
+      const said = seen.filter((e) => e.type === "browser_viewport").pop();
+      assert.ok(said, "resizing emitted nothing, so the panel could not follow");
+      assert.equal(said.payload.width, 390);
+
+      // And the page really is that wide, not just the record of it.
+      const snap = await s.snapshot();
+      assert.ok(snap.url, "the page did not survive the resize");
+    } finally {
+      await s.close();
+    }
+  });
+
+  test("an absurd viewport is clamped rather than passed to the browser", async () => {
+    const s = await createBrowserSession({
+      emit: () => {}, downloadDir: mkdtempSync(join(tmpdir(), "fl-bclamp-")),
+    });
+    try {
+      await s.navigate(page("<h1>x</h1>"));
+      const r = await s.setViewport(1, 999999);
+      assert.ok(r.width >= 320, `width clamped to ${r.width}`);
+      assert.ok(r.height <= 2000, `height clamped to ${r.height}`);
+    } finally {
+      await s.close();
+    }
+  });
+
+  test("an upload hands the page a file and reports it without the path", async () => {
+    /* The one action that moves the user's data outward. The event has to
+       record that it happened, and must not put an absolute path — which
+       contains a home directory — into something written to disk. */
+    const seen = [];
+    const dir = mkdtempSync(join(tmpdir(), "fl-bup-"));
+    const file = join(dir, "notes.txt");
+    writeFileSync(file, "the contents\n");
+    const s = await createBrowserSession({ emit: (type, payload) => seen.push({ type, payload }), downloadDir: dir });
+    try {
+      await s.navigate(page("<input type='file' aria-label='Attach'>"));
+      const snap = await s.snapshot();
+      const input = snap.nodes.find((n) => n.ref);
+      assert.ok(input, "the file input was not in the snapshot");
+
+      await s.uploadTo(input.ref, [file]);
+      const act = seen.filter((e) => e.type === "browser_action").pop();
+      assert.equal(act.payload.action, "upload");
+      assert.match(act.payload.detail, /notes\.txt/);
+      assert.ok(!act.payload.detail.includes(dir),
+        "the upload event recorded an absolute path, which names the user's home directory");
+    } finally {
+      await s.close();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test("closing a session stops its previews", async () => {
+    const seen = [];
+    const s = await createBrowserSession({
+      emit: (type, payload) => seen.push({ type, payload }),
+      downloadDir: mkdtempSync(join(tmpdir(), "fl-bclose-")),
+    });
+    await s.navigate(page("<h1>bye</h1>"));
+    await s.close();
+    const before = seen.filter((e) => e.type === "browser_preview").length;
+    await s.refreshPreview();
+    const after = seen.filter((e) => e.type === "browser_preview").length;
+    assert.equal(after, before, "a closed session emitted a picture of a page that no longer exists");
   });
 });
