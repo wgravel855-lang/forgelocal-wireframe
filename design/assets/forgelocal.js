@@ -4004,6 +4004,25 @@ import {
     $$("[data-pd-name]").forEach((el) => { el.textContent = "No project"; });
     $$("[data-pd-path]").forEach((el) => { el.textContent = "Not open"; });
 
+    /* The project panel claimed "Git repo, on main" and "Vite + React
+       detected" in a window with no project open. Nothing inspects a
+       repository or detects a stack: those two lines were written into the
+       markup and have no source behind them. They go, rather than print a
+       guess about the person's own code. The same rule the runtime pill
+       already follows: no markup for a fact the handshake does not supply. */
+    $$("[data-pd-branch], [data-pd-stack]").forEach((el) => {
+      const row = el.closest("dd");
+      const term = row && row.previousElementSibling;
+      if (term && term.tagName === "DT") term.remove();
+      if (row) row.remove();
+    });
+
+    // The panel and the composer named the permission mode from two different
+    // stores, so they disagreed: "Balanced" beside "Allow edits".
+    $$("[data-preset-label]").forEach((el) => {
+      el.textContent = modeLabel(normalizeMode(store.get("mode", "manual")));
+    });
+
     paintLive();
 
     // Reach the model server. Failure is reported and the app stays usable.
