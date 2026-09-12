@@ -33,6 +33,27 @@ import {
 
 /** Limits. Every one of them exists because the alternative is an agent that
  *  spends the user's evening in a loop. */
+/**
+ * How many tool-calling turns each effort setting is allowed.
+ *
+ * The composer has had a Quick / Standard / Thorough control since the first
+ * pass and it only ever set its own label. This is what makes it mean
+ * something: the budget is how much reading and re-checking the loop can
+ * afford before it has to answer, which is exactly what the menu's own
+ * descriptions promise.
+ */
+export const EFFORT_TURNS = Object.freeze({
+  quick: 10,
+  standard: 24,
+  thorough: 40,
+});
+
+/** @param {unknown} v @returns {keyof typeof EFFORT_TURNS} */
+export function normalizeEffort(v) {
+  const k = String(v ?? "").toLowerCase();
+  return k === "quick" || k === "thorough" ? k : "standard";
+}
+
 export const LIMITS = Object.freeze({
   MAX_TURNS: 24,
   MAX_MALFORMED_REPAIRS: 2,
@@ -66,8 +87,11 @@ export const StopReason = Object.freeze({
  */
 export function createOrchestrator({
   root, provider, mode = "manual", sessionId = randomUUID(),
-  onEvent, paths = {}, limits = LIMITS, now = () => Date.now(),
+  onEvent, paths = {}, limits: limitsIn = LIMITS, now = () => Date.now(),
 }) {
+  let limits = limitsIn;
+  // Reassigned by setEffort, which is why neither of these is a const.
+  let effortName = "standard";
   const emitter = createEmitter(sessionId);
   const emit = (type, payload, meta) => {
     const ev = emitter.emit(type, payload, meta);
@@ -521,6 +545,20 @@ export function createOrchestrator({
       emit(EventType.SESSION_STATE_CHANGED, { state: SessionState.IDLE, mode: currentMode });
       return currentMode;
     },
+
+    /**
+     * Set the turn budget for subsequent turns. Only the budget moves: the
+     * wall clock, the repair allowance and the repetition guard are safety
+     * limits and are not something a menu gets to relax.
+     * @param {unknown} next
+     */
+    setEffort(next) {
+      effortName = normalizeEffort(next);
+      limits = { ...limits, MAX_TURNS: EFFORT_TURNS[effortName] };
+      return effortName;
+    },
+
+    get effort() { return effortName; },
 
     send,
 

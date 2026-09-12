@@ -211,6 +211,10 @@ async function turnStart(id, sessionId, payload) {
   if (payload.mode) {
     s.mode = s.agent.setMode(payload.mode);
   }
+  // The composer's Quick / Standard / Thorough control, as a turn budget.
+  if (payload.effort) {
+    s.effort = s.agent.setEffort(payload.effort);
+  }
   s.running = true;
   try {
     settle(id, s, await s.agent.send(text));

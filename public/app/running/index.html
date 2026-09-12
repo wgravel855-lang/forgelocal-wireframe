@@ -454,16 +454,11 @@
   <!-- Attached files, above the input they belong to. -->
   <div class="catt" data-attachments hidden aria-label="Attached files"></div>
 
-  <!-- Send sits on the message row, beside the field it sends, which is where
-       it was before the composer became one geometry. It stays pinned to the
-       first line so a growing draft never moves it. -->
+  <!-- The message row is the field and nothing else. Send sits at the end of
+       the control row, where the reference composer puts it. -->
   <div class="cinput">
     <label class="vh" for="composer-input">Describe a task or ask a question</label>
     <textarea id="composer-input" class="ta" rows="1" placeholder="Describe a task or ask a question"></textarea>
-    <button class="btn ico sendbtn" type="submit" data-send aria-label="Send">
-  <svg class="i-send" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5.5M5.5 12 12 5.5 18.5 12"/></svg>
-  <span class="i-stop" aria-hidden="true"></span>
-</button>
   </div>
 
   <div class="cbar">
@@ -477,8 +472,14 @@
       </button>
       <input class="vh" type="file" multiple data-attach-input tabindex="-1" aria-hidden="true">
 
+      <!-- The shield states what this control governs. It is neutral for every
+           mode the runtime will actually grant: red belongs to a genuinely
+           unrestricted state, and colouring "Allow edits" red would spend the
+           warning before there is anything to warn about. -->
       <div style="position:relative">
-        <button class="btn btnq btns" type="button" data-popover="mode-pop" aria-expanded="false" aria-haspopup="menu">
+        <button class="btn btnq btns modebtn" type="button" data-popover="mode-pop"
+          data-mode-risk="normal" aria-expanded="false" aria-haspopup="menu">
+          <svg class="modebtn-i" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.2 19.5 6v6.2c0 4.2-3 7.1-7.5 8.6-4.5-1.5-7.5-4.4-7.5-8.6V6z"/></svg>
           <span data-mode-label>Allow edits</span>
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9.5 6 6 6-6"/></svg>
         </button>
@@ -518,12 +519,18 @@
         aria-label="Choose project folder">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5A2 2 0 0 1 5 5.5h3.6l1.8 2H19a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
         <span data-project-name>Choose project</span>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9.5 6 6 6-6"/></svg>
       </button>
       <input class="vh" type="file" webkitdirectory directory data-project-input tabindex="-1" aria-hidden="true">
 
+      <!-- The dot is the provider's real state, not decoration: unloaded until
+           a model is chosen, loading while the handshake runs, loaded once one
+           is named, and red when the last attempt returned an error. -->
       <div style="position:relative">
-        <button class="btn btnq btns" type="button" data-popover="model-pop" aria-expanded="false"
+        <button class="btn btnq btns modelbtn" type="button" data-popover="model-pop"
+          data-model-state="unloaded" aria-expanded="false"
           aria-haspopup="menu" aria-keyshortcuts="Control+L">
+          <span class="modeldot" data-model-dot aria-hidden="true"></span>
           <span data-model-label>No model loaded</span>
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9.5 6 6 6-6"/></svg>
         </button>
@@ -548,13 +555,13 @@
         <div class="menu popover" id="effort-pop" role="menu" hidden
           style="bottom:calc(100% + 8px);right:0;left:auto;width:260px;padding:6px">
           <button role="menuitemradio" aria-checked="false" class="srow mrow" type="button" data-effort="Quick">
-            <span class="mrow-t">Quick</span><span class="mrow-d">Fewer steps, faster answers.</span>
+            <span class="mrow-t">Quick</span><span class="mrow-d">Up to 10 tool steps. Answers sooner, reads less.</span>
           </button>
           <button role="menuitemradio" aria-checked="true" class="srow mrow on" type="button" data-effort="Standard">
-            <span class="mrow-t">Standard</span><span class="mrow-d">The default balance.</span>
+            <span class="mrow-t">Standard</span><span class="mrow-d">Up to 24 tool steps. The default.</span>
           </button>
           <button role="menuitemradio" aria-checked="false" class="srow mrow" type="button" data-effort="Thorough">
-            <span class="mrow-t">Thorough</span><span class="mrow-d">Reads more before acting.</span>
+            <span class="mrow-t">Thorough</span><span class="mrow-d">Up to 40 tool steps. Reads and re-checks more.</span>
           </button>
         </div>
       </div>
@@ -572,6 +579,12 @@
           hidden data-ctx-pop
           style="bottom:calc(100% + 8px);top:auto;right:0;left:auto;width:320px"></div>
       </div>
+
+      <!-- Last control in the row, and the only filled one. -->
+      <button class="btn ico sendbtn" type="submit" data-send aria-label="Send">
+  <svg class="i-send" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5.5M5.5 12 12 5.5 18.5 12"/></svg>
+  <span class="i-stop" aria-hidden="true"></span>
+</button>
     </div>
   </div>
   </div>

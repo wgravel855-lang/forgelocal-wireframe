@@ -29,8 +29,21 @@ const KIND = {
   ask_user: "question",
 };
 
-/** Rows in these states stand alone, always. */
-const STANDALONE = new Set(["failed", "denied", "awaiting_permission", "cancelled", "running", "requested"]);
+/**
+ * Rows in these states stand alone, always.
+ *
+ * Failures used to be on this list, under the rule that a collapsed group must
+ * never hide a problem. The rule still holds; what changed is how it is kept.
+ * Eleven commands where three failed became eleven rows, which buried the three
+ * as effectively as hiding them would have. A group may now contain failures
+ * because its label is required to name them: "Ran 11 commands (3 failed)".
+ * See labelFor, which appends that count for every kind, not just commands.
+ *
+ * What is left here is the states that are not a summary of the past but a
+ * demand on the present: something is running, or waiting for an answer. Those
+ * are never folded into a count.
+ */
+const STANDALONE = new Set(["awaiting_permission", "running", "requested"]);
 
 /**
  * @typedef {object} ActivityRow
@@ -55,13 +68,13 @@ export function groupActivity(rows) {
     const solo = STANDALONE.has(row.status);
     const last = out[out.length - 1];
 
-    // A command is always its own row: two different commands are two different
-    // things, and the output of each is worth keeping separate.
+    // A question is always its own row: it is addressed to the person and
+    // cannot be summarised into a count. Commands used to be excluded here too;
+    // they group now, and the label carries the exit codes that mattered.
     const canJoin = !solo
       && last
       && last.kind === kind
       && !STANDALONE.has(last.status)
-      && kind !== "command"
       && kind !== "question";
 
     if (canJoin) {
@@ -82,8 +95,20 @@ export function groupActivity(rows) {
   return out;
 }
 
-/** The one line a collapsed row shows. */
+/**
+ * The one line a collapsed row shows.
+ *
+ * Every group that contains a failure says so, in the label, before it is
+ * expanded. That is what makes grouping safe: the count is not a summary the
+ * reader has to trust, it is the thing they need to know.
+ */
 export function labelFor(kind, calls) {
+  const bad = calls.filter((c) => c.status === "failed" || c.status === "denied").length;
+  const suffix = bad ? ` (${bad} failed)` : "";
+  return `${baseLabel(kind, calls)}${suffix}`;
+}
+
+function baseLabel(kind, calls) {
   const n = calls.length;
   const first = calls[0] ?? {};
   const args = first.args ?? {};
@@ -110,15 +135,18 @@ export function labelFor(kind, calls) {
       return `Edited ${unique.length} files`;
     }
     case "command": {
+      // More than one is a count. Naming the first of five commands and
+      // silently dropping the rest would be worse than either.
+      if (n > 1) return `Ran ${n} commands`;
       const argv = args.argv ?? [];
       const line = argv.join(" ");
       // The exit code belongs in the label once it is known, because that is
       // the fact the reader wants and the model is not allowed to summarise.
       if (first.status === "completed" && first.result && typeof first.result.exit_code === "number") {
-        return `${trim(line, 48)} — exit ${first.result.exit_code}`;
+        return `Ran ${trim(line, 44)} — exit ${first.result.exit_code}`;
       }
       if (first.status === "running") return `Running ${trim(line, 48)}`;
-      return trim(line, 56) || "a command";
+      return `Ran ${trim(line, 52)}` || "a command";
     }
     case "plan":
       return "Updated the plan";

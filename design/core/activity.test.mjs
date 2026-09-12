@@ -48,14 +48,22 @@ test("an edit names the file it changed", () => {
   assert.equal(rows[0].label, "Edited src/example.ts");
 });
 
-test("commands never merge, even when identical", () => {
+test("a single command names itself and its exit code", () => {
   const rows = groupActivity([
     call("run_command", { argv: ["npm", "test"] }, "completed", { result: { exit_code: 0 } }),
-    call("run_command", { argv: ["npm", "test"] }, "completed", { result: { exit_code: 1 } }),
   ]);
-  assert.equal(rows.length, 2, "two runs are two facts");
-  assert.equal(rows[0].label, "npm test — exit 0");
-  assert.equal(rows[1].label, "npm test — exit 1");
+  assert.equal(rows[0].label, "Ran npm test — exit 0");
+});
+
+test("consecutive commands collapse into a count", () => {
+  // These used to be one row each, on the reasoning that two runs are two
+  // facts. Eleven runs are still eleven facts and they were eleven rows, which
+  // is a log. The count is the row; the runs survive for expansion.
+  const rows = groupActivity(Array.from({ length: 5 }, (_, i) =>
+    call("run_command", { argv: ["npx", "vitest", `case${i}`] }, "completed", { result: { exit_code: 0 } })));
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].label, "Ran 5 commands");
+  assert.equal(rows[0].calls.length, 5, "the individual runs survive for expansion");
 });
 
 test("a running command says so and shows the exit code once it has one", () => {
@@ -65,23 +73,51 @@ test("a running command says so and shows the exit code once it has one", () => 
   );
   assert.equal(
     labelFor("command", [call("run_command", { argv: ["npm", "test"] }, "completed", { result: { exit_code: 0 } })]),
-    "npm test — exit 0",
+    "Ran npm test — exit 0",
   );
 });
 
-test("a failure never disappears into a group", () => {
+/* The rule that failures must never be hidden has not changed; how it is kept
+   has. A failure used to split the group, which meant eleven commands with
+   three failures became eleven rows and the three were buried among them. The
+   group may now contain them, and the label is required to say so. These are
+   the tests that hold that requirement in place. */
+
+test("a group that contains a failure says so in its label", () => {
   const rows = groupActivity([
     call("read_file", { path: "a.js" }),
     call("read_file", { path: "missing.js" }, "failed", { error: "no such file" }),
     call("read_file", { path: "c.js" }),
   ]);
-  assert.equal(rows.length, 3, "the failure split the group rather than hiding inside it");
-  assert.equal(rows[1].status, "failed");
-  assert.equal(rows[1].grouped, false);
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].label, "Read 3 files (1 failed)");
+  assert.equal(rows[0].status, "failed", "the row is marked failed, not healthy");
+  assert.equal(rows[0].calls.length, 3);
 });
 
-test("a denied or waiting call also stands alone", () => {
-  for (const status of ["denied", "awaiting_permission", "cancelled"]) {
+test("a mixed run of commands counts its failures", () => {
+  const rows = groupActivity(Array.from({ length: 11 }, (_, i) =>
+    call("run_command", { argv: ["npx", "vitest", `case${i}`] },
+      i === 2 || i === 5 || i === 9 ? "failed" : "completed",
+      { result: { exit_code: 0 } })));
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].label, "Ran 11 commands (3 failed)");
+  assert.equal(rows[0].status, "failed");
+});
+
+test("a denial is counted as a failure rather than passed over", () => {
+  const rows = groupActivity([
+    call("apply_patch", { edits: [{ operation: "update", path: "a.js" }] }),
+    call("apply_patch", { edits: [{ operation: "update", path: "b.js" }] }, "denied"),
+  ]);
+  assert.equal(rows.length, 1);
+  assert.ok(rows[0].label.endsWith("(1 failed)"), rows[0].label);
+});
+
+test("a call that still needs attention always stands alone", () => {
+  // Running and awaiting are not summaries of the past; they are demands on
+  // the present, and a count cannot represent them.
+  for (const status of ["awaiting_permission", "running", "requested"]) {
     const rows = groupActivity([
       call("read_file", { path: "a.js" }),
       call("read_file", { path: "b.js" }, status),

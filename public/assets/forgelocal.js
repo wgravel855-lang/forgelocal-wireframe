@@ -2839,6 +2839,13 @@ import {
         x.classList.toggle("on", on);
       });
       $$("[data-mode-label]").forEach((l) => { l.textContent = modeLabel(id); });
+      /* The shield turns red for one mode and not the others. "auto" is the
+         only one that would act unattended; colouring "Allow edits" red would
+         spend the warning before there is anything to warn about, and then it
+         says nothing when there is. */
+      $$("[data-mode-risk]").forEach((b) => {
+        b.dataset.modeRisk = id === "auto" ? "open" : "normal";
+      });
       store.set("mode", id);
       return id;
     };
@@ -3820,7 +3827,22 @@ import {
     question: null,
     project: null,
     running: false,
+    // A provider.connect this renderer has sent and not yet had answered. The
+    // model dot reads it, because the provider itself only reports the result.
+    providerBusy: false,
   };
+
+  /** Run a provider.connect with the model dot showing it is in flight. */
+  async function connectProviderTracked(url, model) {
+    LIVE.providerBusy = true;
+    paintModelState(LIVE.client ? LIVE.client.provider : null);
+    try {
+      return await LIVE.client.connectProvider(url, model);
+    } finally {
+      LIVE.providerBusy = false;
+      paintModelState(LIVE.client ? LIVE.client.provider : null);
+    }
+  }
 
   function liveThread() { return $("[data-thread]"); }
 
@@ -4027,7 +4049,7 @@ import {
 
     // Reach the model server. Failure is reported and the app stays usable.
     try {
-      await LIVE.client.connectProvider(store.get("provider-url", "http://127.0.0.1:1234/v1"), null);
+      await connectProviderTracked(store.get("provider-url", "http://127.0.0.1:1234/v1"), null);
     } catch (e) {
       console.debug("[forgelocal] provider not reachable yet", e && e.message);
     }
@@ -4109,16 +4131,60 @@ import {
     $$("[data-live-model]", host).forEach((b) => b.addEventListener("click", async () => {
       closePop();
       try {
-        await LIVE.client.connectProvider(
+        await connectProviderTracked(
           store.get("provider-url", "http://127.0.0.1:1234/v1"), b.dataset.liveModel);
         $$("[data-model-label]").forEach((el) => { el.textContent = b.dataset.liveModel; });
         // A model change means a new session against the same project.
         if (LIVE.project) await openProject(LIVE.project.path);
       } catch (e) { showLiveError(e); }
     }));
+    paintModelState(p);
+  }
+
+  /**
+   * The composer's model control, from the provider's real state and nothing
+   * else. The dot has four values and every one of them is something the
+   * handshake reported: no model chosen, a connect in flight, one named and
+   * serving, or the last attempt returned an error.
+   * @param {any} p  the provider state from the host client
+   */
+  function paintModelState(p) {
+    /* "loading" is a request this renderer has outstanding, not a field the
+       provider sends: the sidecar reports only the terminal state, so a
+       `connecting` flag read off the payload would have been decoration. */
+    const state = LIVE.providerBusy ? "loading"
+      : !p ? "unloaded"
+      : p.error ? "error"
+      : p.connected && p.model ? "loaded"
+      : "unloaded";
+
+    $$("[data-model-state]").forEach((b) => { b.dataset.modelState = state; });
     $$("[data-model-label]").forEach((el) => {
-      el.textContent = p.model || "No model loaded";
+      el.textContent = p && p.model ? shortModelName(p.model) : "No model loaded";
     });
+    // The full provider id is one hover away; the composer shows the short one.
+    $$("[data-model-state]").forEach((b) => {
+      const full = p && p.model ? p.model : null;
+      b.title = full ? full : "Choose a model";
+      b.setAttribute("aria-label", full ? `Model: ${full}. Choose a different model` : "Choose a model");
+    });
+  }
+
+  /**
+   * A repository id is not a name. "huihui-qwen3-coder-30b-a3b-instruct-
+   * abliterated-i1" is 49 characters and would take the composer over on its
+   * own, so the control shows what identifies the model to a person and keeps
+   * the full id in the tooltip and the picker.
+   * @param {string} id
+   */
+  function shortModelName(id) {
+    const tail = String(id).split("/").pop() ?? "";
+    if (tail.length <= 28) return tail;
+    // Drop the packaging suffixes that repeat across every build of a model.
+    const trimmed = tail
+      .replace(/[-_](gguf|mlx|awq|gptq|i1|imat|gs\d+)$/i, "")
+      .replace(/[-_](q\d[_-]?k?[_-]?[msl]?|fp16|bf16|int[48])$/i, "");
+    return trimmed.length <= 28 ? trimmed : `${trimmed.slice(0, 27)}…`;
   }
 
   function wireLiveModelPicker() {
@@ -4154,7 +4220,8 @@ import {
 
       try {
         if (answering) await LIVE.client.answerQuestion(text);
-        else await LIVE.client.startTurn(text, store.get("mode", "manual"));
+        else await LIVE.client.startTurn(text, store.get("mode", "manual"),
+          String(store.get("data-effort", "Standard")).toLowerCase());
       } catch (err) {
         showLiveError(err);
       } finally {

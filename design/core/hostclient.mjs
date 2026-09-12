@@ -230,7 +230,7 @@ export function createHostClient({
       return request(Request.SESSION_DISPOSE, { sessionId: id }, 5000);
     },
 
-    startTurn(text, mode) { return request(Request.TURN_START, { text, mode }); },
+    startTurn(text, mode, effort) { return request(Request.TURN_START, { text, mode, effort }); },
     cancelTurn() { return request(Request.TURN_CANCEL, {}, 5000); },
     resolvePermission(requestId, decision) {
       return request(Request.PERMISSION_RESOLVE, { requestId, decision });

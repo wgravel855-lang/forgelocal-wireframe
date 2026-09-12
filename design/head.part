@@ -149,6 +149,28 @@
       font-weight: 600; color: var(--fg); margin: 18px 0 8px; }
     .prose h4 { font-size: var(--t-copy); line-height: var(--lh-copy);
       font-weight: 600; color: var(--fg); margin: 18px 0 6px; }
+    /* A quote is someone else's words inside the reply, so it is set in from
+       the margin and marked, not boxed. */
+    .prose blockquote { margin: 0 0 14px; padding: 2px 0 2px 14px;
+      border-left: 2px solid var(--line-strong); color: var(--mut); }
+    .prose blockquote p:last-child { margin-bottom: 0; }
+    /* A model can emit a table; it has to fit the transcript or scroll inside
+       its own box, never widen the page. */
+    .prose .tablewrap { overflow-x: auto; margin: 0 0 14px; }
+    .prose table { border-collapse: collapse; width: 100%;
+      font-size: var(--t-label); line-height: var(--lh-label); }
+    .prose th, .prose td { text-align: left; padding: 7px 11px;
+      border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+    .prose th { color: var(--faint); font-weight: 500;
+      border-bottom-color: var(--line); }
+    .prose tr:last-child td { border-bottom: 0; }
+    /* An anchor in a reply points somewhere safeUrl allowed. It reads as a
+       link and nothing else does. */
+    .prose a { color: var(--acc-text); text-underline-offset: 2px;
+      text-decoration-thickness: 1px; }
+    .prose a:hover { color: var(--acc-hi); }
+    .prose a:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px;
+      border-radius: 3px; }
     .prose ul, .prose ol { margin: 0 0 14px; padding-left: 22px; }
     .prose li { margin: 0 0 6px; }
     .prose li:last-child { margin-bottom: 0; }
@@ -433,9 +455,18 @@
        then activity, then controls. */
     .thread-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
       display: flex; flex-direction: column; }
-    .col { width: 100%; max-width: 748px; margin: 0 auto; padding: 0 28px; }
-    .thread { display: flex; flex-direction: column; gap: 40px;
+    .col { width: 100%; max-width: 836px; margin: 0 auto; padding: 0 28px; }
+    /* A flat 40px sat between every turn, so a line of commentary, the four
+       reads it introduced, and the sentence interpreting them were three
+       equally distant objects. They are one passage of work. The baseline is
+       the paragraph spacing of the prose itself; a change of speaker is what
+       earns real space, and that rule is below. */
+    .thread { display: flex; flex-direction: column; gap: 12px;
       padding-top: 28px; padding-bottom: 28px; }
+    /* A user message starts a new exchange, so it gets the air the old flat
+       gap was spending everywhere. The reply to it stays close to it. */
+    .thread > .turn-user { margin-top: 26px; }
+    .thread > .turn-user:first-child { margin-top: 0; }
     /* the last turn's action row lives in the gutter below it, so the thread
        needs room for one before the composer starts */
     .thread { flex: 0 0 auto; padding-bottom: 48px; }
@@ -448,7 +479,7 @@
     [data-composition="start"] .dock { position: static; margin-top: 0;
       padding-bottom: 0; background: none; }
     [data-composition="start"] .dock::before { display: none; }
-    [data-composition="start"] .col { max-width: 760px; }
+    [data-composition="start"] .col { max-width: 780px; }
     /* the cluster is nudged above true centre, where a reading eye expects it */
     [data-composition="start"] .thread-scroll > :first-child { margin-top: auto; }
     [data-composition="start"] .dock { margin-bottom: auto; }
@@ -912,28 +943,59 @@
        These carry .btn as well as .sendbtn so they beat the generic .btn
        disabled and hover rules further down the sheet, which are the same
        specificity and would otherwise win on order alone. */
-    .btn.sendbtn { background: none; border: 0; border-radius: 8px;
+    /* A filled circle, and the only filled control in the row: it is the one
+       thing in the composer that does something irreversible. 36px keeps the
+       interaction target at the floor without a surrounding box. */
+    .btn.sendbtn { background: var(--acc); border: 0; border-radius: 50%;
       width: 36px; min-width: 36px; height: 36px; min-height: 36px; padding: 0;
-      color: var(--acc);
+      margin-left: 4px; color: #fff; flex-shrink: 0;
       transition: background 140ms ease, color 140ms ease; }
-    .btn.sendbtn:hover:not(:disabled) { background: var(--sunk); color: var(--acc-hi); }
-    .btn.sendbtn:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
-    /* Muted when there is nothing to send, brighter when there is. Opacity is
-       not used, so the disabled icon stays legible rather than ghosted. */
+    .btn.sendbtn:hover:not(:disabled) { background: var(--acc-hi); color: #fff; }
+    .btn.sendbtn:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+    /* Quiet when there is nothing to send: still visible, still round, still
+       36px, but plainly not the live control. Opacity is not used, so the
+       disabled arrow stays legible rather than ghosted. */
     .btn.sendbtn:disabled, .btn.sendbtn[aria-disabled="true"],
     .btn.sendbtn:disabled:hover, .btn.sendbtn[aria-disabled="true"]:hover {
-      background: none; border-color: transparent; color: var(--faint);
+      background: var(--sunk); border-color: transparent; color: var(--faint);
       opacity: 1; cursor: default; }
     .btn.sendbtn:disabled svg, .btn.sendbtn[aria-disabled="true"] svg { opacity: 1; }
-    .btn.sendbtn .i-stop { width: 12px; height: 12px; border-radius: 2px; background: currentColor;
+    .btn.sendbtn .i-stop { width: 11px; height: 11px; border-radius: 2px; background: currentColor;
       display: none; }
-    /* Stop is the same box and the same 15px optical size as the arrow, so the
-       swap costs no layout. */
-    .btn.sendbtn[data-stop="true"] { background: none; border: 0; color: var(--fg); }
-    .btn.sendbtn[data-stop="true"]:hover { background: var(--sunk); color: var(--fg); }
+    /* Stop is the same circle at the same size, so the swap costs no layout.
+       It is neutral rather than accent: stopping is not the happy path. */
+    .btn.sendbtn[data-stop="true"] { background: var(--sunk); border: 0; color: var(--fg); }
+    .btn.sendbtn[data-stop="true"]:hover { background: var(--line); color: var(--fg); }
     .btn.sendbtn[data-stop="true"] .i-send { display: none; }
     .btn.sendbtn[data-stop="true"] .i-stop { display: block; }
 
+
+    /* ---- composer: permission, model, project ------------------------ */
+    .modebtn { gap: 6px; }
+    .modebtn-i { flex-shrink: 0; color: var(--mut); }
+    /* Red is reserved. Every mode the runtime will actually grant is neutral;
+       "auto" is the one that would run unattended, and nothing isolates the
+       process it needs, so it is both unselectable and the only red state. */
+    .modebtn[data-mode-risk="open"] { color: var(--bad); }
+    .modebtn[data-mode-risk="open"] .modebtn-i { color: var(--bad); }
+    .modebtn[data-mode-risk="open"]:hover { color: var(--bad); }
+
+    .modeldot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+      background: var(--line-strong); }
+    .modelbtn { gap: 7px; }
+    .modelbtn[data-model-state="loaded"] .modeldot { background: var(--ok); }
+    .modelbtn[data-model-state="error"] .modeldot { background: var(--bad); }
+    .modelbtn[data-model-state="loading"] .modeldot {
+      background: var(--warn); animation: dot-pulse 1.4s ease-in-out infinite; }
+    @keyframes dot-pulse { 50% { opacity: .35; } }
+    @media (prefers-reduced-motion: reduce) {
+      .modelbtn[data-model-state="loading"] .modeldot { animation: none; }
+    }
+    /* Long enough for a folder name, short enough that it never takes the room
+       the model control and Send need. */
+    .projbtn { max-width: 160px; }
+    .projbtn [data-project-name] { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .cbar .modelbtn [data-model-label] { max-width: 190px; }
 
     /* ---- segmented control ------------------------------------------- */
     /* One object instead of a row of loose pills. Children keep whatever
@@ -1072,10 +1134,7 @@
       transition: border-color 160ms ease-out; }
     .cinput { display: flex; align-items: flex-start; flex: 1; gap: 8px; }
     .cinput > .ta { flex: 1; min-width: 0; }
-    /* Top-aligned with the field rather than pulled up onto the first line's
-       optical centre, which read as sitting above the text. It stays anchored
-       to the top so a growing draft never drags it down the composer. */
-    .cinput > .sendbtn { align-self: flex-start; }
+    /* Send is in the control row now, so the message row is only the field. */
 
     /* The strip is moved in the DOM, not reordered here, so the tab order
        matches what is on screen. These rules only size it. */
@@ -1105,15 +1164,16 @@
        run is generating: an animated edge on an untouched composer is
        decoration, not state. */
     .cshell::before { inset: -1px; padding: 1px; opacity: 0; z-index: 2; }
-    /* one faint pass of depth on the edge only, never a glow on the page */
-    .cshell::after { inset: -1px; padding: 1px; opacity: 0; filter: blur(3px); z-index: 1; }
+    /* There were two layers: this one carried a 3px blur for depth, which is
+       exactly the soft cloud the edge is not supposed to be. One 1px highlight
+       is the whole effect. */
+    .cshell::after { display: none; }
 
     .cshell:focus-within { border-color: color-mix(in srgb, var(--line-strong) 55%, var(--flow-head)); }
     .cshell:focus-within::before { opacity: .5; animation: flow-edge 6s linear infinite; }
-    .cshell:focus-within::after { opacity: .18; animation: flow-edge 6s linear infinite; }
-    /* Running moves a little faster, because it is reporting activity. */
-    .composer[data-running] .cshell::before { opacity: .55; animation: flow-edge 3.2s linear infinite; }
-    .composer[data-running] .cshell::after { opacity: .2; animation: flow-edge 3.2s linear infinite; }
+    /* Running is brighter, not faster: a 3.2s cycle read as urgency the run
+       had not earned, and the brief asks for one 5-7s pass either way. */
+    .composer[data-running] .cshell::before { opacity: .62; animation: flow-edge 6s linear infinite; }
     /* A pending decision is amber at the decision surface, and an error is a
        border, not a light show: both stop the motion. */
     .composer[data-awaiting] .cshell::before,
@@ -2162,11 +2222,30 @@
     /* The transcript of a real run. It borrows the classes the stored
        transcript already uses; only the parts that have no equivalent yet are
        defined here. */
+    /* A run of completed work, as status lines. No border, no fill, no card:
+       the transcript used to grow a bordered slab per tool run, which made
+       "read four files" look like the most important object on the page. */
+    .lvact { display: flex; flex-direction: column; margin: 2px 0 12px; }
+    .lvact:last-child { margin-bottom: 0; }
+
     .lv-row { display: block; list-style: none;
       min-height: 0; padding: 0; }
-    .lv-row > summary { display: flex; align-items: center; gap: 10px;
-      min-height: 36px; padding: 6px 0; cursor: pointer; list-style: none;
+    /* 30px: tall enough to hit, short enough that eleven of them read as one
+       passage of work rather than eleven objects. */
+    .lv-row > summary { display: flex; align-items: center; gap: 9px;
+      min-height: 30px; padding: 3px 6px 3px 0; cursor: pointer; list-style: none;
+      border-radius: 6px;
       font-size: var(--t-label); line-height: var(--lh-label); color: var(--mut); }
+    .lv-row > summary:hover { background: var(--sunk); }
+    .lv-ico { width: 14px; display: inline-flex; align-items: center;
+      justify-content: center; flex-shrink: 0; color: var(--faint); }
+    .lv-meta { font-size: var(--t-meta); line-height: var(--lh-meta);
+      color: var(--faint); font-variant-numeric: tabular-nums; flex-shrink: 0; }
+    /* The chevron is the affordance, so it turns rather than staying put. */
+    .lv-chev { flex-shrink: 0; color: var(--faint); opacity: .7;
+      transition: transform 140ms ease-out; }
+    .lv-row[open] > summary .lv-chev { transform: rotate(90deg); }
+    @media (prefers-reduced-motion: reduce) { .lv-chev { transition: none; } }
     .lv-row > summary::-webkit-details-marker { display: none; }
     .lv-row > summary:hover { color: var(--fg); }
     .lv-row > summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px;
@@ -2174,11 +2253,41 @@
     .lv-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis;
       white-space: nowrap; }
     /* A failed or denied step is never quiet. */
-    .lv-row[data-status="failed"] > summary,
-    .lv-row[data-status="denied"] > summary { color: var(--bad); }
+    /* A failed step is marked, not shouted: the glyph carries the colour and
+       the label stays legible. A whole transcript tinted red for one bad exit
+       code tells the reader nothing about which line to look at. */
+    .lv-row[data-status="failed"] > summary .lv-ico,
+    .lv-row[data-status="denied"] > summary .lv-ico { color: var(--bad); }
+    .lv-row[data-status="failed"] > summary .lv-label,
+    .lv-row[data-status="denied"] > summary .lv-label { color: var(--fg); }
     .lv-row[data-status="cancelled"] > summary { color: var(--faint); }
-    .lv-row[data-status="awaiting_permission"] > summary { color: var(--warn); }
-    .lv-detail { padding: 4px 0 12px 24px; display: flex; flex-direction: column; gap: 10px; }
+    .lv-row[data-status="awaiting_permission"] > summary .lv-ico { color: var(--warn); }
+    .lv-row[data-status="awaiting_permission"] > summary .lv-label { color: var(--fg); }
+    .lv-row[data-status="running"] > summary .lv-label { color: var(--fg); }
+    /* Expanded technical detail is the one thing here that is an object, so
+       it is the one thing with a surface under it. */
+    .lv-detail { margin: 2px 0 8px 23px; padding: 11px 13px;
+      display: flex; flex-direction: column; gap: 10px;
+      border: 1px solid var(--line-soft); border-radius: 8px; background: var(--panel); }
+    /* Each call in an expanded group is its own block, so eleven commands read
+       as eleven things rather than one wall of pairs. */
+    .lv-call { display: flex; flex-direction: column; gap: 8px; }
+    .lv-call + .lv-call { border-top: 1px solid var(--line-soft); padding-top: 10px; }
+    /* The failures in a group are findable once it is open, not just counted
+       in the label. A left edge, not a fill: the point is to be scannable. */
+    .lv-call[data-status="failed"], .lv-call[data-status="denied"] {
+      border-left: 2px solid var(--bad-line); padding-left: 10px; margin-left: -12px; }
+
+    /* One disclosure deeper than the readable view, and visibly secondary. */
+    .lv-raw > summary { cursor: pointer; list-style: none; width: max-content;
+      font-size: var(--t-meta); line-height: var(--lh-meta); color: var(--faint);
+      padding: 2px 0; }
+    .lv-raw > summary::-webkit-details-marker { display: none; }
+    .lv-raw > summary:hover { color: var(--mut); }
+    .lv-raw > summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px;
+      border-radius: 4px; }
+    .lv-raw[open] > summary { margin-bottom: 6px; }
+
     .lv-kv { margin: 0; display: grid; grid-template-columns: 110px minmax(0, 1fr);
       gap: 4px 12px; font-size: var(--t-label); line-height: var(--lh-label); }
     .lv-kv dt { color: var(--faint); }

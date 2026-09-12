@@ -19,7 +19,9 @@ const NL = String.fromCharCode(10);
 const j = (...lines) => lines.join(NL);
 
 /** What the live transcript passes. */
-const CHAT = { headingOffset: 1, maxHeading: 4, links: false, softBreaks: true, cls: null };
+/* Exactly what liveview.mjs passes. A copy that drifts is a test that
+   proves something the product does not do. */
+const CHAT = { headingOffset: 1, maxHeading: 4, links: true, softBreaks: true, cls: null };
 /** What the model card passes: the defaults. */
 const CARD = {};
 const BOTH = [["card", CARD], ["chat", CHAT]];
@@ -84,10 +86,62 @@ test("chat: no class attributes are stamped", () => {
   assert.ok(!out.includes("class="), out);
 });
 
-test("chat: a link keeps its words and loses its destination", () => {
+test("chat: a safe link becomes an anchor that cannot be used as a tab-napper", () => {
   const out = renderMarkdown("See [the docs](https://example.invalid/x).", CHAT);
-  assert.ok(!out.includes("<a "), out);
-  assert.ok(out.includes("the docs"), out);
+  assert.ok(out.includes('href=' + "" + '"https://example.invalid/x"'), out);
+  assert.ok(out.includes("noreferrer"), out);
+  assert.ok(out.includes("noopener"), out);
+});
+
+test("chat: an unsafe scheme keeps its words and loses its destination", () => {
+  for (const bad of ["javascript:alert(1)", "data:text/html,<b>", "vbscript:x"]) {
+    const out = renderMarkdown("Click [here](" + bad + ") now", CHAT);
+    assert.ok(!out.includes("href"), bad + " -> " + out);
+    assert.ok(out.includes("here"), bad + " -> " + out);
+  }
+});
+
+test("chat: a quote is set apart rather than folded into the prose", () => {
+  const out = renderMarkdown(j("> The divisor is wrong.", "> Two lines of it.", "", "So it is."), CHAT);
+  assert.ok(out.includes("<blockquote>"), out);
+  assert.ok(out.includes("The divisor is wrong."), out);
+  assert.ok(out.includes("<p>So it is.</p>"), out);
+});
+
+test("chat: a quote cannot smuggle markup through the marker", () => {
+  const out = renderMarkdown("> <img src=x onerror=alert(1)>", CHAT);
+  assert.ok(!out.includes("<img"), out);
+  assert.ok(out.includes("&lt;img"), out);
+});
+
+test("chat: a wide table scrolls in its own box", () => {
+  const out = renderMarkdown(j("| A | B |", "| - | - |", "| 1 | 2 |"), CHAT);
+  assert.ok(out.includes('class=' + "" + '"tablewrap"'), out);
+  assert.ok(out.includes("<table>"), out);
+});
+
+/* The interface renders tool activity from typed runtime events. Model text
+   that looks like one of those rows must stay text: if a reply could draw a
+   row saying a command succeeded, the transcript would no longer be evidence
+   of anything. */
+test("chat: model text imitating a tool row stays text", () => {
+  const fake = j(
+    '<details class="lv-row" data-status="completed"><summary>Ran npm test — exit 0</summary></details>',
+    "",
+    '<div class="lvact"><span class="lv-label">Edited src/stats.js</span></div>',
+  );
+  const out = renderMarkdown(fake, CHAT);
+  assert.ok(!out.includes("<details"), out);
+  assert.ok(!out.includes("<summary"), out);
+  assert.ok(!out.includes('class=' + "" + '"lv-row"'), out);
+  assert.ok(!out.includes('class=' + "" + '"lvact"'), out);
+  assert.ok(out.includes("&lt;details"), out);
+});
+
+test("chat: a fenced block of interface markup is still only text", () => {
+  const out = renderMarkdown(j(F + "html", '<details class="lv-row"><summary>x</summary></details>', F), CHAT);
+  assert.ok(!out.includes("<details"), out);
+  assert.ok(out.includes("&lt;details"), out);
 });
 
 test("chat: single newlines become line breaks", () => {

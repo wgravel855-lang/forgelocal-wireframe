@@ -386,6 +386,36 @@ test("the turn limit stops a model that never finishes", async () => {
   cleanup(base);
 });
 
+test("the effort setting is a real turn budget, not a label", async () => {
+  // Quick allows 10 tool turns. Twelve turns of work must be cut off by it,
+  // and the same twelve must survive under Thorough, or the composer's
+  // Quick / Standard / Thorough control is decoration again.
+  const turns = Array.from({ length: 12 }, (_, i) => ({
+    calls: [{ name: "glob", args: { pattern: `src/*${i}.js` } }],
+  }));
+
+  const quick = fixture();
+  const hq = harness(quick, turns);
+  assert.equal(hq.agent.setEffort("quick"), "quick");
+  assert.equal((await hq.agent.send("Search")).stop, StopReason.TURN_LIMIT);
+  cleanup(quick);
+
+  const thorough = fixture();
+  const ht = harness(thorough, turns);
+  assert.equal(ht.agent.setEffort("thorough"), "thorough");
+  assert.notEqual((await ht.agent.send("Search")).stop, StopReason.TURN_LIMIT);
+  cleanup(thorough);
+});
+
+test("an unknown effort falls back to standard rather than removing the limit", () => {
+  const base = fixture();
+  const h = harness(base, []);
+  assert.equal(h.agent.setEffort("unlimited"), "standard");
+  assert.equal(h.agent.setEffort(null), "standard");
+  assert.equal(h.agent.effort, "standard");
+  cleanup(base);
+});
+
 test("plan mode refuses writes and commands but still reads", async () => {
   const base = fixture();
   const h = harness(base, [

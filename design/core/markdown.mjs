@@ -8,11 +8,18 @@
  * reason than name collision. A second renderer is a second escaper, and a
  * second escaper is a second place for an escaping bug to live.
  *
- * The security rule is the whole design: escape first, then transform. Every
- * character goes through escapeHtml before a single pattern is matched, so the
- * only markup in the result is markup this file wrote. Model output, model
- * cards and tool results are all untrusted text, and none of them reaches
- * innerHTML unescaped.
+ * The security rule is the whole design, and it is worth stating precisely,
+ * because an earlier version of this comment overstated it. Block structure is
+ * matched against raw text: a fence, a heading, a list marker, a table pipe, a
+ * quote marker. No raw text reaches the output. Every leaf goes through
+ * escapeHtml on the way out — inline() escapes each span before it transforms
+ * it, and fenced bodies and language tags are escaped explicitly — so the only
+ * markup in the result is markup this file wrote. Model output, model cards
+ * and tool results are all untrusted text, and none of them reaches innerHTML
+ * unescaped.
+ *
+ * The rule to follow when adding a branch: match on raw characters, emit
+ * through esc() or inline(), and never interpolate a captured group directly.
  *
  * Callers differ only in the options below: heading depth, whether links may
  * become anchors, whether a paragraph reflows, and which classes to stamp.
@@ -131,6 +138,23 @@ export function renderMarkdown(md, opts = {}) {
       continue;
     }
 
+    // A quote runs until the first line that is not quoted. Nested markers
+    // are stripped along with the rest: one level is all a reply needs, and
+    // The scanner runs on raw text, so this is a literal ">"; each line's
+    // content is escaped by inline() on the way out.
+    if (/^\s*>\s?/.test(line)) {
+      const quoted = [];
+      while (i < lines.length && /^\s*>\s?/.test(lines[i])) {
+        quoted.push(lines[i].replace(/^\s*(?:>\s?)+/, ""));
+        i++;
+      }
+      out.push(`<blockquote${c("quote")}>${quoted
+        .filter((q) => q.trim())
+        .map((q) => `<p>${inline(q)}</p>`)
+        .join("")}</blockquote>`);
+      continue;
+    }
+
     if (/^\s*[-*]\s+/.test(line)) {
       const items = [];
       while (i < lines.length && /^\s*[-*]\s+/.test(lines[i])) {
@@ -158,10 +182,10 @@ export function renderMarkdown(md, opts = {}) {
       i += 2;
       const body = [];
       while (i < lines.length && /^\s*\|/.test(lines[i])) body.push(cells(lines[i++]));
-      out.push(`<table${c("table")}><thead><tr>${
+      out.push(`<div class="tablewrap"><table${c("table")}><thead><tr>${
         head.map((c) => `<th>${inline(c)}</th>`).join("")}</tr></thead><tbody>${
         body.map((r) => `<tr>${r.map((c) => `<td>${inline(c)}</td>`).join("")}</tr>`).join("")
-      }</tbody></table>`);
+      }</tbody></table></div>`);
       continue;
     }
 
@@ -171,7 +195,7 @@ export function renderMarkdown(md, opts = {}) {
     // no separator beneath it matched none of the branches above and was also
     // excluded from this loop, so `i` never moved and rendering spun forever.
     const para = [lines[i++]];
-    while (i < lines.length && lines[i].trim() && !/^(#{1,4}\s|```|\s*[-*]\s|\s*\d+\.\s|\s*\|)/.test(lines[i])) {
+    while (i < lines.length && lines[i].trim() && !/^(#{1,4}\s|```|\s*[-*]\s|\s*\d+\.\s|\s*\||\s*>)/.test(lines[i])) {
       para.push(lines[i++]);
     }
     const joined = softBreaks
