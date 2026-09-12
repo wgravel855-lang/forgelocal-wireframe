@@ -415,12 +415,13 @@ export function pickerHtml(s, pc) {
   return `${section("Loaded", loaded)}
     ${section("Installed", idle)}
     ${loaded.length ? "" : `<p class="pd-note" style="padding:8px 9px">No model is loaded, so nothing can be sent yet.</p>`}
-    <!-- Browsing the catalog is the useful first action while nothing is
-         installed. "Model manager" named a page that, disconnected, has
-         nothing to manage. -->
+    <!-- Browsing opens the catalogue over the chat rather than navigating to
+         it: picking a model is part of the conversation, and leaving the page
+         to do it loses the draft and the scroll position. -->
     <div class="mpick-foot">
-      <a class="btn btns" href="/app/models/">Browse models</a>
-      <a class="btn btns btnq" href="/app/models/installed/" style="border-color:var(--line)">My models</a>
+      <button class="btn btns" type="button" data-model-browser-open
+        aria-haspopup="dialog" aria-expanded="false">Browse models<span class="mpick-k">Ctrl L</span></button>
+      <a class="btn btns btnq" href="/app/models/installed/" style="border-color:var(--line)">Manage downloads</a>
     </div>`;
 }
 

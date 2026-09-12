@@ -1216,6 +1216,44 @@ body.is-blurred .cshell::after { animation-play-state: paused; }
   .cbar > :last-child { padding-right: 12px; }
 }
 
+/* ---- model browser ------------------------------------------------ */
+/* A modal over the conversation, because choosing a model is part of the
+   conversation. Opaque, not frosted: the catalogue behind glass is harder
+   to read and the blur costs a compositor pass on every scroll. */
+.mb { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; }
+.mb[hidden] { display: none; }
+.mb-scrim { position: absolute; inset: 0; background: rgba(6, 7, 9, .58); }
+.mb-panel { position: relative;
+  width: min(1180px, calc(100vw - 64px));
+  height: min(780px, calc(100vh - 64px));
+  display: flex; flex-direction: column; min-height: 0;
+  background: var(--bg); border: 1px solid var(--line);
+  border-radius: 12px; overflow: hidden;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, .46), 0 2px 8px rgba(0, 0, 0, .3); }
+
+.mb-head { display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+  padding: 14px 16px; border-bottom: 1px solid var(--line); background: var(--panel); }
+.mb-title { margin: 0; font-size: var(--t-title); line-height: var(--lh-title);
+  font-weight: 600; flex-shrink: 0; }
+.mb-search { flex: 1; min-width: 0; max-width: 420px; }
+.mb-count { font-size: var(--t-meta); line-height: var(--lh-meta);
+  color: var(--faint); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.mb-head > :last-child { margin-left: auto; }
+
+/* The catalogue itself scrolls; the header stays. */
+.mb-body { flex: 1; min-height: 0; overflow: hidden; display: flex; }
+.mb-body > .cat { flex: 1; min-height: 0; }
+.mb-body .cat-list { overflow-y: auto; padding: 12px 16px 16px; }
+.mb-body .cat-detail-wrap { overflow-y: auto; padding: 16px 20px 20px 24px; }
+
+/* Below the width where two columns are legible, the modal becomes the
+   list, and a chosen model opens its detail over it — the same behaviour
+   the page already has, not a second pattern. */
+@media (max-width: 860px) {
+  .mb-panel { width: calc(100vw - 24px); height: calc(100vh - 24px); }
+  .mb-title { display: none; }
+}
+
 /* ---- activity group ---------------------------------------------- */
 .act { border: 1px solid var(--line); border-radius: 8px; background: var(--raised);
   overflow: hidden; }
@@ -1971,6 +2009,19 @@ h1.ws-h1 { margin: 0; font-size: var(--t-body); line-height: var(--lh-body); fon
 .badge-agent { display: inline-flex; align-items: center; height: 22px;
   padding: 0 8px; border-radius: 6px; background: var(--acc-soft);
   color: var(--acc-text); font-size: 13px; font-weight: 500; }
+/* The picker's rows carry the same state dot as the composer control, so
+   "which one is serving" reads the same in both places. */
+.mpick-row { display: flex; align-items: center; gap: 8px; }
+.mpick-row .modeldot { background: var(--line-strong); }
+.mpick-row .modeldot[data-state="loaded"] { background: var(--ok); }
+.mpick-row .t { flex: 1; min-width: 0; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap; text-align: left; }
+.mpick-on { font-size: var(--t-meta); line-height: var(--lh-meta);
+  color: var(--ok); flex-shrink: 0; }
+/* The shortcut is a hint on the control, not a second action. */
+.mpick-k { margin-left: 7px; padding: 0 5px; border-radius: 4px;
+  font-family: var(--mono); font-size: 13px; line-height: 18px;
+  color: var(--mut); background: var(--sunk); border: 1px solid var(--line-soft); }
 .mpick-foot { display: flex; gap: 6px; padding: 6px 3px 2px; margin-top: 4px;
   border-top: 1px solid var(--line-soft); }
 

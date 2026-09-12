@@ -260,12 +260,13 @@
           data-models-mount="picker">
     
     <p class="pd-note" style="padding:8px 9px">No model is loaded, so nothing can be sent yet.</p>
-    <!-- Browsing the catalog is the useful first action while nothing is
-         installed. "Model manager" named a page that, disconnected, has
-         nothing to manage. -->
+    <!-- Browsing opens the catalogue over the chat rather than navigating to
+         it: picking a model is part of the conversation, and leaving the page
+         to do it loses the draft and the scroll position. -->
     <div class="mpick-foot">
-      <a class="btn btns" href="/app/models/">Browse models</a>
-      <a class="btn btns btnq" href="/app/models/installed/" style="border-color:var(--line)">My models</a>
+      <button class="btn btns" type="button" data-model-browser-open
+        aria-haspopup="dialog" aria-expanded="false">Browse models<span class="mpick-k">Ctrl L</span></button>
+      <a class="btn btns btnq" href="/app/models/installed/" style="border-color:var(--line)">Manage downloads</a>
     </div></div>
       </div>
 
@@ -314,6 +315,223 @@
        the controller from the same payload the sidebar reads. -->
   <nav class="recents" data-recents hidden aria-label="Recent sessions"></nav>
 </form>
+          <!-- The model browser.
+
+     Choosing a model used to mean leaving the conversation for /app/models/
+     and finding your way back. This is the same catalogue, over the chat: the
+     rows, the detail pane, the download options and the compatibility
+     statement are all rendered by the same core modules the page uses, so
+     there is one implementation of each and no second store behind it.
+
+     It is inert markup until wireModelBrowser opens it. -->
+<div class="mb" data-model-browser hidden>
+  <div class="mb-scrim" data-mb-close aria-hidden="true"></div>
+
+  <div class="mb-panel" role="dialog" aria-modal="true" aria-labelledby="mb-title"
+    data-filter-root="browser">
+
+    <header class="mb-head">
+      <h2 class="mb-title" id="mb-title">Models</h2>
+      <label class="field mb-search">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="flex-shrink:0"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>
+        <span class="vh">Search models</span>
+        <input type="search" data-filter-search data-mb-search placeholder="Search models">
+      </label>
+
+      <!-- The count is the filter's own output, not a number typed here. -->
+      <span class="mb-count" data-filter-count></span>
+
+      <div style="position:relative">
+        <button class="btn btnq btns" type="button" data-popover="mb-sort-pop"
+          aria-expanded="false" aria-haspopup="menu">
+          <span data-sort-label>Recommended</span>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9.5 6 6 6-6"/></svg>
+        </button>
+        <div class="menu popover" id="mb-sort-pop" role="menu" hidden
+          style="top:calc(100% + 6px);right:0;left:auto;width:230px;padding:6px">
+          <button role="menuitemradio" aria-checked="true" class="srow on" type="button" data-sort="recommended"><span class="t">Recommended</span></button>
+          <button role="menuitemradio" aria-checked="false" class="srow" type="button" data-sort="smallest"><span class="t">Smallest download</span></button>
+          <button role="menuitemradio" aria-checked="false" class="srow" type="button" data-sort="context"><span class="t">Largest context</span></button>
+          <button role="menuitemradio" aria-checked="false" class="srow" type="button" data-sort="name"><span class="t">Name</span></button>
+        </div>
+      </div>
+
+      <div style="position:relative">
+        <button class="btn btnq btns" type="button" data-popover="mb-filter-pop"
+          aria-expanded="false" aria-haspopup="dialog">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
+          Filters<span class="mc-n" data-filter-count-badge hidden></span>
+        </button>
+        <div class="menu popover pdetails" id="mb-filter-pop" role="dialog" aria-label="Filter models" hidden
+          style="top:calc(100% + 6px);right:0;left:auto;width:260px">
+          <p class="pd-h">Capability</p>
+          <div class="mc-filters">
+            <button class="chipf" type="button" data-filter="tool_use" aria-pressed="false">Tool use</button>
+            <button class="chipf" type="button" data-filter="agent_ready" aria-pressed="false">Agent-ready</button>
+            <button class="chipf" type="button" data-filter="installed" aria-pressed="false">Installed</button>
+          </div>
+        </div>
+      </div>
+
+      <button class="iconbtn" type="button" data-mb-close aria-label="Close" title="Close">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </header>
+
+    <div class="mb-body"><div class="cat" data-catalog>
+    <div class="cat-list">
+      <div class="cat-rows" role="listbox" aria-label="Models" data-cat-rows>
+        <div data-filter-item
+          data-name="Qwen2.5 Coder 7B Alibaba Qwen"
+          data-tags="chat tool_use agent_ready fim"
+          ><a class="mrow2 is-on" href="?model=qwen25-coder-7b-q4km"
+    role="option" aria-selected="true" data-cat-row="qwen25-coder-7b-q4km" tabindex="0">
+    <span class="mrow2-mark" aria-hidden="true">AQ</span>
+    <span class="mrow2-n">Qwen2.5 Coder 7B</span>
+    <span class="mrow2-pub">Alibaba Qwen</span>
+    <span class="mrow2-use">Quick single-file edits, short scripts and focused fixes.</span>
+    <span class="mrow2-right">
+      <span class="mrow2-size num">4.7 GB</span>
+      
+      
+    </span>
+  </a></div>
+<div data-filter-item
+          data-name="Qwen2.5 Coder 14B Alibaba Qwen"
+          data-tags="chat tool_use agent_ready fim"
+          ><a class="mrow2" href="?model=qwen25-coder-14b-q4km"
+    role="option" aria-selected="false" data-cat-row="qwen25-coder-14b-q4km" tabindex="-1">
+    <span class="mrow2-mark" aria-hidden="true">AQ</span>
+    <span class="mrow2-n">Qwen2.5 Coder 14B</span>
+    <span class="mrow2-pub">Alibaba Qwen</span>
+    <span class="mrow2-use">Multi-file edits, running commands, tests and previews.</span>
+    <span class="mrow2-right">
+      <span class="mrow2-size num">9 GB</span>
+      
+      
+    </span>
+  </a></div>
+<div data-filter-item
+          data-name="DeepSeek-Coder-V2 Lite 16B DeepSeek"
+          data-tags="chat tool_use agent_ready fim"
+          ><a class="mrow2" href="?model=deepseek-coder-v2-lite-q4km"
+    role="option" aria-selected="false" data-cat-row="deepseek-coder-v2-lite-q4km" tabindex="-1">
+    <span class="mrow2-mark" aria-hidden="true">DE</span>
+    <span class="mrow2-n">DeepSeek-Coder-V2 Lite 16B</span>
+    <span class="mrow2-pub">DeepSeek</span>
+    <span class="mrow2-use">Reading an unfamiliar codebase and explaining it back.</span>
+    <span class="mrow2-right">
+      <span class="mrow2-size num">10.4 GB</span>
+      
+      
+    </span>
+  </a></div>
+<div data-filter-item
+          data-name="Qwen2.5 Coder 32B Alibaba Qwen"
+          data-tags="chat tool_use agent_ready fim"
+          ><a class="mrow2" href="?model=qwen25-coder-32b-q4km"
+    role="option" aria-selected="false" data-cat-row="qwen25-coder-32b-q4km" tabindex="-1">
+    <span class="mrow2-mark" aria-hidden="true">AQ</span>
+    <span class="mrow2-n">Qwen2.5 Coder 32B</span>
+    <span class="mrow2-pub">Alibaba Qwen</span>
+    <span class="mrow2-use">Longer plans and wider context on a machine with room for it.</span>
+    <span class="mrow2-right">
+      <span class="mrow2-size num">19.8 GB</span>
+      
+      
+    </span>
+  </a></div>
+<div data-filter-item
+          data-name="Llama 3.3 70B Meta"
+          data-tags="chat agent_ready fim"
+          ><a class="mrow2" href="?model=llama33-70b-q4km"
+    role="option" aria-selected="false" data-cat-row="llama33-70b-q4km" tabindex="-1">
+    <span class="mrow2-mark" aria-hidden="true">ME</span>
+    <span class="mrow2-n">Llama 3.3 70B</span>
+    <span class="mrow2-pub">Meta</span>
+    <span class="mrow2-use">Reasoning over long, tangled tasks.</span>
+    <span class="mrow2-right">
+      <span class="mrow2-size num">42.5 GB</span>
+      
+      
+    </span>
+  </a></div>
+<div data-filter-item
+          data-name="Gemma 2 9B Google"
+          data-tags="chat"
+          ><a class="mrow2" href="?model=gemma2-9b-q4km"
+    role="option" aria-selected="false" data-cat-row="gemma2-9b-q4km" tabindex="-1">
+    <span class="mrow2-mark" aria-hidden="true">GO</span>
+    <span class="mrow2-n">Gemma 2 9B</span>
+    <span class="mrow2-pub">Google</span>
+    <span class="mrow2-use">Writing and explanation.</span>
+    <span class="mrow2-right">
+      <span class="mrow2-size num">5.8 GB</span>
+      
+      
+    </span>
+  </a></div>
+      </div>
+      <!-- Filled by the controller when a search empties the list. A zero-result
+           list cannot also have a selected result, so the detail is removed
+           rather than left showing the last selection. -->
+      <div data-cat-state></div>
+    </div>
+    <div class="cat-detail-wrap" data-cat-detail-wrap><div class="mdet" data-cat-detail data-model-id="qwen25-coder-7b-q4km">
+    <a class="mdet-back" href="/app/models/">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+      Back to models</a>
+
+    <header class="mdet-h">
+      <span class="mdet-mark" aria-hidden="true">AQ</span>
+      <div class="mdet-id">
+        <h2 class="mdet-name">Qwen2.5 Coder 7B</h2>
+        <p class="mdet-sub">Alibaba Qwen &middot; Apache-2.0 &middot; <a class="link" href="https://huggingface.co/Qwen/Qwen2.5-Coder-7B-Instruct-GGUF" rel="noreferrer noopener" target="_blank" aria-label="Source model card for Qwen2.5 Coder 7B, opens the publisher page in a new tab">Source model card <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 5h5v5"/><path d="M19 5 11 13"/><path d="M18 14v4.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/></svg></a></p>
+      </div>
+      <div class="mdet-act"><button class="btn btns" type="button" disabled aria-disabled="true"
+      title="Downloading and loading need the desktop app, which is not released yet.">Desktop app required</button></div>
+    </header>
+
+    <p class="mdet-desc">Quick single-file edits, short scripts and focused fixes.</p>
+
+    <ul class="mdet-caps">
+      <li>Tool use</li><li class="is-verified">Agent-ready</li>
+    </ul>
+    <!-- The definition is available on demand rather than spending a paragraph
+         on every model in the catalog. -->
+    <details class="mdet-help">
+      <summary>What Agent-ready means</summary>
+      <p>This model produced valid structured tool calls in ForgeLocal's conformance check.</p>
+    </details>
+
+    <!-- The one bordered surface in the pane: the artifact being decided on.
+         One artifact means one compact row; several would mean a real selector. -->
+    <section class="mdet-variant">
+      <h3 class="mdet-h3">Download</h3>
+      <div class="mvar">
+        <span class="mvar-q">GGUF &middot; Q4_K_M</span>
+        <span class="mvar-m">7.6B &middot; 32k context</span>
+        <span class="mvar-s num">4.68 GB</span>
+      </div>
+    </section>
+
+    <section class="mdet-sec">
+      <h3 class="mdet-h3">Compatibility</h3>
+      <p class="mdet-note">Connect the desktop app to estimate memory use and performance on this device.</p>
+    </section>
+
+    <section class="mdet-sec">
+    <h3 class="mdet-h3">Specification</h3>
+    <dl class="mdet-kv">
+      <dt>Parameters</dt><dd>7.6B</dd>
+      <dt>Format</dt><dd>GGUF · Q4_K_M</dd>
+      <dt>Max context</dt><dd>32k</dd>
+    </dl>
+  </section>
+  </div></div>
+  </div></div>
+  </div>
+</div>
         </div>
       </div>
 

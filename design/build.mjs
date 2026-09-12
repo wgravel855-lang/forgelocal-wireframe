@@ -57,6 +57,8 @@ const BIND = {
   "<!--SCAN_SUB-->": () => scanVerdict().sub,
   "<!--EXPLORE_LIST-->": () => exploreList(models),
   "<!--CATALOG-->": () => catalogHtml(V.allCatalog(SEED), null, DESKTOP),
+  // The same call, so the modal and the page cannot render different catalogues.
+  "<!--MODEL_BROWSER-->": () => catalogHtml(V.allCatalog(SEED), null, DESKTOP),
   "<!--MINE_LIST-->": () => V.installedSections(SEED, THIS_PC, DESKTOP),
   "<!--MINE_FOOT-->": () => V.installedFooter(SEED, DESKTOP),
   "<!--DOWNLOADS-->": () => V.downloadsHtml(SEED, DESKTOP),

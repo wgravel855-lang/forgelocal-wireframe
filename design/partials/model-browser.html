@@ -1,0 +1,66 @@
+<!-- The model browser.
+
+     Choosing a model used to mean leaving the conversation for /app/models/
+     and finding your way back. This is the same catalogue, over the chat: the
+     rows, the detail pane, the download options and the compatibility
+     statement are all rendered by the same core modules the page uses, so
+     there is one implementation of each and no second store behind it.
+
+     It is inert markup until wireModelBrowser opens it. -->
+<div class="mb" data-model-browser hidden>
+  <div class="mb-scrim" data-mb-close aria-hidden="true"></div>
+
+  <div class="mb-panel" role="dialog" aria-modal="true" aria-labelledby="mb-title"
+    data-filter-root="browser">
+
+    <header class="mb-head">
+      <h2 class="mb-title" id="mb-title">Models</h2>
+      <label class="field mb-search">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="flex-shrink:0"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>
+        <span class="vh">Search models</span>
+        <input type="search" data-filter-search data-mb-search placeholder="Search models">
+      </label>
+
+      <!-- The count is the filter's own output, not a number typed here. -->
+      <span class="mb-count" data-filter-count></span>
+
+      <div style="position:relative">
+        <button class="btn btnq btns" type="button" data-popover="mb-sort-pop"
+          aria-expanded="false" aria-haspopup="menu">
+          <span data-sort-label>Recommended</span>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9.5 6 6 6-6"/></svg>
+        </button>
+        <div class="menu popover" id="mb-sort-pop" role="menu" hidden
+          style="top:calc(100% + 6px);right:0;left:auto;width:230px;padding:6px">
+          <button role="menuitemradio" aria-checked="true" class="srow on" type="button" data-sort="recommended"><span class="t">Recommended</span></button>
+          <button role="menuitemradio" aria-checked="false" class="srow" type="button" data-sort="smallest"><span class="t">Smallest download</span></button>
+          <button role="menuitemradio" aria-checked="false" class="srow" type="button" data-sort="context"><span class="t">Largest context</span></button>
+          <button role="menuitemradio" aria-checked="false" class="srow" type="button" data-sort="name"><span class="t">Name</span></button>
+        </div>
+      </div>
+
+      <div style="position:relative">
+        <button class="btn btnq btns" type="button" data-popover="mb-filter-pop"
+          aria-expanded="false" aria-haspopup="dialog">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
+          Filters<span class="mc-n" data-filter-count-badge hidden></span>
+        </button>
+        <div class="menu popover pdetails" id="mb-filter-pop" role="dialog" aria-label="Filter models" hidden
+          style="top:calc(100% + 6px);right:0;left:auto;width:260px">
+          <p class="pd-h">Capability</p>
+          <div class="mc-filters">
+            <button class="chipf" type="button" data-filter="tool_use" aria-pressed="false">Tool use</button>
+            <button class="chipf" type="button" data-filter="agent_ready" aria-pressed="false">Agent-ready</button>
+            <button class="chipf" type="button" data-filter="installed" aria-pressed="false">Installed</button>
+          </div>
+        </div>
+      </div>
+
+      <button class="iconbtn" type="button" data-mb-close aria-label="Close" title="Close">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </header>
+
+    <div class="mb-body"><!--MODEL_BROWSER--></div>
+  </div>
+</div>
