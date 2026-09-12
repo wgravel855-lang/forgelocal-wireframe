@@ -168,19 +168,39 @@ pub fn devlog(line: &str) {
     let _ = line;
 }
 
+/// Tauri's own WebView2 arguments. Setting `additionalBrowserArgs` replaces
+/// this default rather than adding to it, so anything appended has to carry it.
+#[cfg(debug_assertions)]
+const TAURI_DEFAULT_BROWSER_ARGS: &str =
+    "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection";
+
+/// Turn on WebView2's remote debugging and its accessibility tree, in debug
+/// builds, when `FORGELOCAL_DEVTOOLS_PORT` is set.
+///
+/// This used to set `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS` and claim in the
+/// log that the port was on. WebView2 ignores that variable whenever the host
+/// passes `additional_browser_args`, which Tauri always does, so the port was
+/// never open and the log said it was. The window is declared in
+/// tauri.conf.json, so the arguments have to go through the config.
+#[cfg(debug_assertions)]
+fn enable_devtools(ctx: &mut tauri::Context) {
+    let Ok(port) = std::env::var("FORGELOCAL_DEVTOOLS_PORT") else { return };
+    let Some(window) = ctx.config_mut().app.windows.get_mut(0) else {
+        devlog("[host] devtools requested but no window is configured");
+        return;
+    };
+    // --force-renderer-accessibility so the DOM is reachable from UI
+    // Automation as well; without it the webview exposes only panes.
+    window.additional_browser_args = Some(format!(
+        "{TAURI_DEFAULT_BROWSER_ARGS} --remote-debugging-port={port} --force-renderer-accessibility"
+    ));
+    devlog(&format!("[host] devtools port {port}"));
+}
+
 fn main() {
-    // WebView2 reads this when it creates its environment, which happens inside
-    // Builder::run. Setting it here rather than in the parent shell guarantees
-    // it is in place first; without a port set, nothing changes.
+    let mut ctx = tauri::generate_context!();
     #[cfg(debug_assertions)]
-    if let Ok(port) = std::env::var("FORGELOCAL_DEVTOOLS_PORT") {
-        let existing = std::env::var("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS").unwrap_or_default();
-        std::env::set_var(
-            "WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS",
-            format!("{existing} --remote-debugging-port={port}").trim(),
-        );
-        devlog(&format!("[host] devtools port {port}"));
-    }
+    enable_devtools(&mut ctx);
 
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
@@ -237,6 +257,6 @@ fn main() {
             runtime_send,
             choose_project
         ])
-        .run(tauri::generate_context!())
+        .run(ctx)
         .expect("ForgeLocal failed to start");
 }

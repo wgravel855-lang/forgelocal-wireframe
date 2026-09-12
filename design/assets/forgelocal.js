@@ -2614,26 +2614,38 @@ import {
 
       const working = () => /submitting|thinking|tool-running|streaming/.test(CONVO.state);
 
-      form.addEventListener("submit", (e) => {
-        e.preventDefault();
-        if (composing) return;
-        const text = ta.value.trim();
-        if (!text) return;
-        if (working()) {
-          queueMessage(text);
-          ta.value = "";
-          ta.style.height = "";
-          ta.dispatchEvent(new Event("input", { bubbles: true }));
-          return;
-        }
-        submit(text);
-      });
+      /* In the desktop window there is a real runtime behind this composer,
+         and wireLiveComposer owns send. Both were listening: this handler ran
+         first because it is wired first, called preventDefault, cleared the
+         textarea and rendered its own fixture turn, and the live handler then
+         found an empty box and returned. A typed message never reached the
+         model, and the prototype's "no model behind it" reply appeared in a
+         window that had one. Fixture data must never stand in for runtime
+         data, so on a host this half of the composer does not listen at all.
+         Scrolling, the jump control and rendering above stay: they are the
+         same in both, and the live path paints through them. */
+      if (!hasTauri()) {
+        form.addEventListener("submit", (e) => {
+          e.preventDefault();
+          if (composing) return;
+          const text = ta.value.trim();
+          if (!text) return;
+          if (working()) {
+            queueMessage(text);
+            ta.value = "";
+            ta.style.height = "";
+            ta.dispatchEvent(new Event("input", { bubbles: true }));
+            return;
+          }
+          submit(text);
+        });
 
-      send.addEventListener("click", (e) => {
-        if (send.dataset.stop !== "true") return;
-        e.preventDefault();
-        stop();
-      });
+        send.addEventListener("click", (e) => {
+          if (send.dataset.stop !== "true") return;
+          e.preventDefault();
+          stop();
+        });
+      }
 
       const submit = (text) => {
         setState("submitting");
