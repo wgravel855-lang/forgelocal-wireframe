@@ -57,6 +57,30 @@ export const TOOL_EFFECTS = Object.freeze({
   // turn. They are classified READ so every mode, Plan included, can use them.
   update_plan: Effect.READ,
   ask_user: Effect.READ,
+
+  /* Web and browser tools carry a second, finer classification of their own
+     (see browser/policy.mjs). These entries are the coarse one this policy
+     reads, and they are deliberately conservative: anything that reaches the
+     network is EXECUTE, so no mode grants it silently and Plan mode refuses
+     it outright. Reading a page the agent already has open is READ. */
+  web_fetch: Effect.EXECUTE,
+  web_search: Effect.EXECUTE,
+  browser_open: Effect.EXECUTE,
+  browser_navigate: Effect.EXECUTE,
+  browser_click: Effect.EXECUTE,
+  browser_type: Effect.EXECUTE,
+  browser_select: Effect.EXECUTE,
+  browser_keypress: Effect.EXECUTE,
+  browser_scroll: Effect.EXECUTE,
+  browser_file_upload: Effect.EXECUTE,
+  browser_snapshot: Effect.READ,
+  browser_read_text: Effect.READ,
+  browser_console: Effect.READ,
+  browser_network: Effect.READ,
+  browser_tabs: Effect.READ,
+  browser_screenshot: Effect.READ,
+  browser_wait: Effect.READ,
+  browser_close: Effect.READ,
 });
 
 export const Decision = Object.freeze({

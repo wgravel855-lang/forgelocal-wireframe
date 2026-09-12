@@ -10,7 +10,10 @@ import { redact, childEnv } from "../secrets.mjs";
 import { readFile, listDirectory, glob, grep, globToRegExp, LIMITS } from "./read.mjs";
 import { applyPatch, restoreSnapshot, hashOf, PatchConflict } from "./patch.mjs";
 import { runCommand } from "./command.mjs";
-import { TOOLS, TOOL_NAMES, validateCall, toolSpecs } from "./index.mjs";
+import {
+  TOOLS, TOOL_NAMES, validateCall, toolSpecs,
+  namesInGroups, DEFAULT_GROUPS, ToolGroup,
+} from "./index.mjs";
 
 function fixture() {
   const base = mkdtempSync(join(tmpdir(), "fl-tools-"));
@@ -54,12 +57,44 @@ test("validation reports every problem at once", () => {
 
 test("tool specs carry the schemas a model server receives", () => {
   const specs = toolSpecs();
-  assert.equal(specs.length, TOOL_NAMES.length);
   for (const s of specs) {
     assert.equal(s.type, "function");
     assert.equal(s.function.parameters.additionalProperties, false);
     assert.ok(s.function.description.length > 20, `${s.function.name} needs a usable description`);
   }
+});
+
+/* A local model given twenty-six schemas answers worse than the same model
+   given eight, so the default catalogue is the four base groups and web and
+   browser are opt-in. This is the test that stops a new tool group being
+   quietly added to everyone's context. */
+test("the default catalogue is the base groups only", () => {
+  const names = namesInGroups();
+  assert.deepEqual(names, [
+    "read_file", "list_directory", "glob", "grep",
+    "apply_patch", "run_command", "update_plan", "ask_user",
+  ]);
+  assert.equal(toolSpecs().length, 8);
+  assert.ok(TOOL_NAMES.length > 8, "the registry should hold more than the default");
+});
+
+test("enabling a group adds exactly that group", () => {
+  const withBrowser = namesInGroups([...DEFAULT_GROUPS, ToolGroup.BROWSER]);
+  assert.ok(withBrowser.includes("browser_snapshot"));
+  assert.ok(!withBrowser.includes("web_fetch"), "enabling browser pulled in web");
+  assert.ok(withBrowser.includes("read_file"), "the base groups were dropped");
+});
+
+/* A call to a real tool that is simply not enabled needs its own message. A
+   model told "browser_click is not a tool" keeps trying it; one told it is
+   not enabled for this session stops. */
+test("a tool outside the enabled groups is refused by name, not as unknown", () => {
+  const r = validateCall("browser_click", { ref: "s1-e1" });
+  assert.equal(r.ok, false);
+  assert.match(r.errors[0], /not enabled for this session/);
+
+  const enabled = validateCall("browser_click", { ref: "s1-e1" }, [...DEFAULT_GROUPS, ToolGroup.BROWSER]);
+  assert.equal(enabled.ok, true);
 });
 
 // ---------------------------------------------------------------- read
