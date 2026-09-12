@@ -3974,6 +3974,36 @@ import {
     // The fixture transcript has no place in a live window.
     const host = liveThread();
     if (host) { host.innerHTML = ""; host.dataset.live = "true"; }
+
+    /* Neither does the rest of the fixture. The sidebar shipped a project name
+       and five session titles baked in at build time, and they stayed on
+       screen beside a real session: the header named the folder that was
+       actually open while the sidebar went on naming a different one, and
+       "Add a filter bar to the list" sat in a list of sessions that never
+       happened. The runtime does not persist sessions yet, so the honest
+       state is one live session and no history, and that is what this says. */
+    const list = $(".chat-list");
+    if (list) {
+      list.innerHTML = `<p class="side-empty">This session only. ForgeLocal does not keep
+        a session history yet.</p>`;
+    }
+    $$("[data-project-label]").forEach((el) => { el.textContent = "No project"; });
+    $$("[data-project-count]").forEach((el) => { el.hidden = true; });
+
+    /* A remembered project name is not an open project. The name survives in
+       local storage, so the composer named a folder while the runtime had no
+       session for it and Send stayed disabled with no reason given. The
+       control goes back to its empty state until openProject succeeds. */
+    $$("[data-project-choose]").forEach((btn) => {
+      const label = $("[data-project-name]", btn);
+      if (label) label.textContent = "Choose project";
+      btn.dataset.empty = "true";
+      btn.title = "Choose a project folder";
+      btn.setAttribute("aria-label", "Choose project folder");
+    });
+    $$("[data-pd-name]").forEach((el) => { el.textContent = "No project"; });
+    $$("[data-pd-path]").forEach((el) => { el.textContent = "Not open"; });
+
     paintLive();
 
     // Reach the model server. Failure is reported and the app stays usable.
@@ -4002,8 +4032,15 @@ import {
         await openProject(picked);
       });
     });
+    /* Reopen the last project, but only when there is a model to run it with.
+       A session cannot be created without one, so doing this unconditionally
+       put "Connect to a model before starting a session" on screen every time
+       the window loaded, before the person had done anything at all. With no
+       model the control stays in its empty state and the choice is theirs. */
     const saved = store.get("project", null);
-    if (saved && saved.path) openProject(saved.path).catch(() => {});
+    if (saved && saved.path && LIVE.client.provider.connected && LIVE.client.provider.model) {
+      openProject(saved.path).catch(() => {});
+    }
   }
 
   async function openProject(path) {
@@ -4019,6 +4056,10 @@ import {
       });
       $$("[data-pd-name]").forEach((el) => { el.textContent = LIVE.project.name; });
       $$("[data-pd-path]").forEach((el) => { el.textContent = LIVE.project.path; el.title = ""; });
+      // The sidebar names the project too, under its own attribute. It was
+      // missed here, so the header said the folder that was open and the
+      // sidebar went on naming the fixture one, in the same window.
+      $$("[data-project-label]").forEach((el) => { el.textContent = LIVE.project.name; });
       LIVE.view = initialRunView();
       paintLive();
     } catch (e) {

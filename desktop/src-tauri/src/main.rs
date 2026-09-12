@@ -92,13 +92,24 @@ fn host_info(state: State<'_, HostState>) -> HostInfo {
     }
 }
 
-/// Start the runtime. Safe to call again after a crash: that is the restart
-/// path, and it is the same code path as the first start.
+/// Start the runtime, or report the one already running.
+///
+/// This used to be an error when the runtime was alive, which broke every
+/// in-app navigation. The sidecar belongs to the application and outlives any
+/// one page, so the second page to load always found it running, connect()
+/// threw, wireDesktop returned early, and the window fell back to the
+/// prototype for the rest of its life: fixture sessions, a composer with no
+/// model behind it, and one toast to say so. Starting is idempotent now.
+///
+/// Known gap: the previous page's session is still open in the runtime and
+/// nothing disposes it, so a navigation leaks one session until the app exits.
 #[tauri::command]
 fn runtime_start(app: AppHandle, state: State<'_, HostState>) -> Result<u32, String> {
     devlog("[host] runtime_start invoked by the renderer");
     if state.sidecar.is_alive() {
-        return Err("The runtime is already running.".into());
+        let pid = state.sidecar.pid();
+        devlog(&format!("[host] runtime already running (pid {pid})"));
+        return Ok(pid);
     }
     if !state.script.exists() {
         return Err(format!(

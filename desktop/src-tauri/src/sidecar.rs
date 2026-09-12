@@ -13,7 +13,7 @@
 
 use std::io::{BufRead, BufReader, Write};
 use std::process::{Child, ChildStdin, Command, Stdio};
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::{Arc, Mutex};
 
 use serde_json::Value;
@@ -42,6 +42,9 @@ pub struct Sidecar {
     child: Mutex<Option<Child>>,
     stdin: Mutex<Option<ChildStdin>>,
     alive: AtomicBool,
+    /// The running child's pid, so an already-started runtime can be reported
+    /// rather than restarted.
+    pid: AtomicU32,
 }
 
 impl Sidecar {
@@ -50,11 +53,17 @@ impl Sidecar {
             child: Mutex::new(None),
             stdin: Mutex::new(None),
             alive: AtomicBool::new(false),
+            pid: AtomicU32::new(0),
         }
     }
 
     pub fn is_alive(&self) -> bool {
         self.alive.load(Ordering::SeqCst)
+    }
+
+    /// The running child's pid, or 0 when nothing is running.
+    pub fn pid(&self) -> u32 {
+        self.pid.load(Ordering::SeqCst)
     }
 
     /// Start the runtime and pump its output onto the event bus.
@@ -160,6 +169,7 @@ impl Sidecar {
             });
         }
 
+        self.pid.store(pid, Ordering::SeqCst);
         Ok(pid)
     }
 

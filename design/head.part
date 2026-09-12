@@ -773,6 +773,8 @@
     .side-sec { flex-shrink: 0; position: relative; display: flex; align-items: center;
       gap: 2px; height: 34px; padding: 0 10px 0 18px; }
 
+    .side-empty { margin: 4px 12px; font-size: var(--t-meta);
+      line-height: var(--lh-meta); color: var(--mut); }
     .chat-list { flex: 1; min-height: 0; overflow-y: auto; padding: 0 8px 8px; }
 
     /* One account row. */
