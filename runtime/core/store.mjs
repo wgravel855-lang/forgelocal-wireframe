@@ -35,9 +35,43 @@ import { randomUUID } from "node:crypto";
 /** Anything longer than this becomes a file and a reference. */
 export const INLINE_LIMIT = 8 * 1024;
 
+/**
+ * Where sessions live when nobody says otherwise.
+ *
+ * Per-user application data, not the project: a session is a record of a
+ * conversation, and writing it into the folder the agent is editing would put
+ * it in the user's repository, in their diffs, and eventually in their commits.
+ *
+ * FORGELOCAL_STATE_DIR overrides it, which is how the tests get a temporary
+ * directory without the sidecar needing a parameter it would only ever be
+ * given by a test.
+ *
+ * @param {NodeJS.ProcessEnv} [env] @param {string} [platform]
+ */
+export function defaultStoreDir(env = process.env, platform = process.platform) {
+  if (env.FORGELOCAL_STATE_DIR) return env.FORGELOCAL_STATE_DIR;
+  const home = env.USERPROFILE || env.HOME || ".";
+  if (platform === "win32") {
+    return join(env.LOCALAPPDATA || join(home, "AppData", "Local"), "ForgeLocal", "sessions");
+  }
+  if (platform === "darwin") {
+    return join(home, "Library", "Application Support", "ForgeLocal", "sessions");
+  }
+  return join(env.XDG_DATA_HOME || join(home, ".local", "share"), "forgelocal", "sessions");
+}
+
 /** What a session was doing when it stopped being written to. */
 export const SessionStatus = Object.freeze({
   RUNNING: "running",
+  /**
+   * Open, with nothing in flight.
+   *
+   * The state between turns, and a distinct one: a session sitting idle
+   * when the host dies has lost nothing, and a session mid-turn has. Without
+   * it every session that had ever run came back labelled interrupted, which
+   * makes the label mean nothing.
+   */
+  IDLE: "idle",
   AWAITING_USER: "awaiting_user",
   AWAITING_PERMISSION: "awaiting_permission",
   COMPLETED: "completed",
@@ -319,6 +353,10 @@ export function openStore(dir) {
 /** Which session status an event implies, or null when it implies nothing. */
 function statusFor(type) {
   switch (type) {
+    case "turn_started": return SessionStatus.RUNNING;
+    /* A finished turn leaves the session open and idle, not completed:
+       completed is what a session that has been closed is. */
+    case "turn_completed": return SessionStatus.IDLE;
     case "question_requested": return SessionStatus.AWAITING_USER;
     case "permission_required": return SessionStatus.AWAITING_PERMISSION;
     case "question_answered":

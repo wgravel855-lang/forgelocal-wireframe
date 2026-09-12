@@ -32,6 +32,10 @@ export const Request = Object.freeze({
      five, so the set of things the panel can do is stated in one place and
      validated once. Notably absent: navigating to a URL. */
   BROWSER_CONTROL: "browser.control",
+  /* What is on disk, and reopening one of it. Neither takes a live session:
+     the whole point is to reach a session this process did not create. */
+  SESSION_LIST: "session.list",
+  SESSION_RESUME: "session.resume",
 });
 
 /** Runtime -> frontend. */
@@ -48,6 +52,10 @@ export const Notify = Object.freeze({
      browser button that could not act is not a failed turn, and rendering
      it as one would put a red banner over a working conversation. */
   BROWSER_CONTROLLED: "browser.controlled",
+  SESSION_LIST: "session.list",
+  /* Sent after a reopened session's events have all been replayed, so the
+     interface knows the transcript is complete rather than still arriving. */
+  SESSION_REPLAYED: "session.replayed",
 });
 
 export const REQUEST_TYPES = Object.freeze(Object.values(Request));

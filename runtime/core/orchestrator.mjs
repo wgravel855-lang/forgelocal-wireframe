@@ -97,12 +97,15 @@ export const StopReason = Object.freeze({
  * @param {any[]} [opts.skills]
  * @param {readonly string[]} [opts.groups]
  * @param {((o: any) => Promise<any>)|null} [opts.browserFactory]
+ * @param {{summary?: string|null, objective?: string}|null} [opts.restored]
+ *   What a previous run of this session left behind, when it is being
+ *   reopened after a restart.
  */
 export function createOrchestrator({
   root, provider, mode = "manual", sessionId = randomUUID(),
   onEvent, paths = {}, limits: limitsIn = LIMITS, now = () => Date.now(),
   style = OutputStyle.ADAPTIVE, capabilities = null, skills = [],
-  groups = DEFAULT_GROUPS, browserFactory = null,
+  groups = DEFAULT_GROUPS, browserFactory = null, restored = null,
 }) {
   let limits = limitsIn;
   // Reassigned by setEffort, which is why neither of these is a const.
@@ -280,13 +283,22 @@ export function createOrchestrator({
   }
   let currentMode = normalizeMode(mode);
   let currentStyle = normalizeStyle(style);
-  /** The compacted summary of everything trimmed out of `messages`, or null.
-   *  @type {string|null} */
-  let compacted = null;
+  /**
+   * The compacted summary of everything trimmed out of `messages`, or null.
+   *
+   * A reopened session starts with one. Its working context is empty — the
+   * provider messages were never persisted and rebuilding them from events
+   * would be a reconstruction, not a restoration — but what the session was
+   * FOR is exactly what compaction already knows how to carry across a gap.
+   * So a restart uses the same mechanism a long conversation does, and the
+   * model is told plainly that this is a summary of earlier work.
+   *  @type {string|null}
+   */
+  let compacted = restored && restored.summary ? restored.summary : null;
   /** Fraction the last compaction freed. Two poor results in a row is thrashing. */
   let lastFreed = 1;
   /** The first thing the user asked for, which is the objective a summary keeps. */
-  let firstRequest = "";
+  let firstRequest = (restored && restored.objective) || "";
   /** Every event this session emitted, which is what compaction summarises from.
    *  @type {any[]} */
   const history = [];

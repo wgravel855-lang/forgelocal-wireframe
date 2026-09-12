@@ -23,6 +23,8 @@ import { createOpenAIProvider } from "../core/providers/openai.mjs";
 import { ProviderFailure } from "../core/providers/types.mjs";
 import { normalizeMode, MODE_COPY } from "../core/permissions.mjs";
 import { classifyCommand, Danger } from "../core/danger.mjs";
+import { openStore, defaultStoreDir, SessionStatus } from "../core/store.mjs";
+import { summarise, renderSummary } from "../core/compact.mjs";
 import {
   PROTOCOL_VERSION, Request, Notify, ErrorCode,
   invalidRequest, notify, encode, createDecoder,
@@ -43,6 +45,35 @@ const send = (frame) => { out.write(encode(frame)); };
 const sessions = new Map();
 /** @type {{provider: any, info: any}|null} */
 let provider = null;
+
+/**
+ * Durable session state.
+ *
+ * Opened once, at boot, before anything can create a session. If it cannot
+ * be opened the sidecar keeps working without it and says so on stderr: a
+ * read-only disk should cost the user their history, not their agent.
+ * `store` is null in that case and every call site checks.
+ *
+ * @type {any}
+ */
+let store = null;
+try {
+  store = openStore(defaultStoreDir());
+  /* Anything still marked running was running when the host died. Doing this
+     at boot, before any session exists, is what makes the distinction
+     truthful: nothing live can be mislabelled because nothing is live yet. */
+  const stale = store.markInterrupted();
+  if (stale.interrupted) log(`sessions interrupted by a previous exit: ${stale.interrupted}`);
+} catch (/** @type {any} */ e) {
+  log(`session history is unavailable: ${e && e.message ? e.message : e}`);
+}
+
+/** Record an event, never at the cost of delivering it. */
+function persist(sessionId, event) {
+  if (!store) return;
+  try { store.appendEvent(sessionId, event); }
+  catch (/** @type {any} */ e) { log(`could not store an event: ${e && e.message}`); }
+}
 
 // ------------------------------------------------------------------ helpers
 
@@ -102,6 +133,8 @@ async function handle(frame) {
     case Request.PERMISSION_RESOLVE: return permissionResolve(id, sessionId, payload);
     case Request.QUESTION_ANSWER: return questionAnswer(id, sessionId, payload);
     case Request.BROWSER_CONTROL: return browserControl(id, sessionId, payload);
+    case Request.SESSION_LIST: return sessionList(id, payload);
+    case Request.SESSION_RESUME: return sessionResume(id, payload);
     default: return fail(id, ErrorCode.UNKNOWN_TYPE, `Unhandled type ${type}`);
   }
 }
@@ -152,33 +185,161 @@ async function sessionCreate(id, payload) {
   }
 
   const sessionId = randomUUID();
-  const state = {
-    id: sessionId, root, mode: normalizeMode(payload.mode),
-    /** @type {any} */
-    agent: null,
-    running: false,
-  };
+  const state = build(provider.provider, sessionId, root, normalizeMode(payload.mode), null);
+  state.agent.start();
+
+  if (store) {
+    try {
+      store.createSession({
+        id: sessionId, root, mode: state.mode,
+        model: provider.info.model, title: null,
+      });
+    } catch (/** @type {any} */ e) {
+      log(`could not record the session: ${e && e.message}`);
+    }
+  }
+
+  send(notify(Notify.SESSION_CREATED, {
+    sessionId, root, mode: state.mode, model: provider.info.model, resumed: false,
+  }, { id, sessionId }));
+}
+
+/**
+ * Build a session and its orchestrator.
+ *
+ * Shared by session.create and session.resume so a reopened session is built
+ * by exactly the same code as a new one. The only difference between them is
+ * `restored`, which carries what the earlier run was for.
+ *
+ * The provider is passed rather than read from the module global, so a
+ * session is bound to the provider its caller checked. Reading the global
+ * here would leave a window in which a provider.disconnect between the check
+ * and the build hands the orchestrator a null it will only discover mid-turn.
+ *
+ * @param {any} model  the connected provider
+ * @param {string} sessionId @param {string} root @param {string} mode
+ * @param {{summary: string|null, objective: string}|null} restored
+ */
+function build(model, sessionId, root, mode, restored) {
+  /** @type {any} */
+  const state = { id: sessionId, root, mode, agent: null, running: false };
 
   state.agent = createOrchestrator({
-    root, provider: provider.provider, mode: state.mode, sessionId,
-    paths: { snapshotDir: join(root, ".forgelocal", "snapshots") },
+    root, provider: model, mode, sessionId, restored,
+    paths: {
+      snapshotDir: join(root, ".forgelocal", "snapshots"),
+      downloadDir: join(defaultStoreDir(), "downloads", sessionId),
+    },
     onEvent: (event) => {
+      /* Stored before it is sent. If the process dies between the two, the
+         record is ahead of the interface rather than behind it, and the
+         interface is the thing that can be rebuilt. */
+      persist(sessionId, event);
       send(notify(Notify.AGENT_EVENT, event, { sessionId }));
-      // The two events the interface has to act on rather than just draw.
       if (event.type === "permission_required") {
         send(notify(Notify.PERMISSION_REQUESTED, permissionCard(event.payload), { sessionId }));
       }
-      if (event.type === "tool_completed" && event.payload?.result?.awaiting) {
-        // handled through the orchestrator's own stop reason below
-      }
     },
   });
-  state.agent.start();
+
   sessions.set(sessionId, state);
+  return state;
+}
+
+/**
+ * List what is on disk, newest first.
+ *
+ * Enough for a session list and no more: no events, no payloads. A sidebar
+ * showing forty sessions must not read forty transcripts to draw itself.
+ */
+function sessionList(id, payload) {
+  if (!store) {
+    return send(notify(Notify.SESSION_LIST, {
+      sessions: [], available: false,
+      reason: "Session history could not be opened on this machine.",
+    }, { id }));
+  }
+  const limit = Math.min(200, Math.max(1, Number(payload.limit) || 50));
+  const rows = store.listSessions(limit).map((r) => ({
+    sessionId: r.id, root: r.root, title: r.title, mode: r.mode,
+    style: r.style, model: r.model, status: r.status,
+    createdAt: r.created_at, updatedAt: r.updated_at,
+    /* Said plainly, because it is the one thing a person needs to know before
+       reopening: this session did not finish, and nobody stopped it. */
+    interrupted: r.status === SessionStatus.INTERRUPTED,
+  }));
+  send(notify(Notify.SESSION_LIST, { sessions: rows, available: true }, { id }));
+}
+
+/**
+ * Reopen a session that is on disk.
+ *
+ * Two things come back and they are different in kind. The transcript is
+ * RESTORED: the stored events are replayed to the interface, which folds them
+ * with the same reducer it used live, so what the person sees is what
+ * happened. The model's context is SUMMARISED: the provider messages were
+ * never persisted, and rebuilding them from events would be a plausible
+ * reconstruction rather than the thing itself. Summarising is honest about
+ * that — the model is told it is reading a summary of earlier work — and it
+ * reuses the machinery compaction already needs.
+ *
+ * Nothing here executes. Replay folds events into state; it never calls a
+ * tool, so reopening a session cannot repeat what the session did.
+ */
+function sessionResume(id, payload) {
+  if (!provider || !provider.provider) {
+    return fail(id, ErrorCode.PROVIDER,
+      "Connect to a model before reopening a session.");
+  }
+  if (!store) {
+    return fail(id, ErrorCode.INTERNAL,
+      "Session history could not be opened on this machine, so nothing can be reopened.");
+  }
+  const wanted = String(payload.sessionId ?? "");
+  const row = store.getSession(wanted);
+  if (!row) return fail(id, ErrorCode.NO_SUCH_SESSION, "That session is not on disk.");
+  if (sessions.has(wanted)) {
+    return fail(id, ErrorCode.BUSY, "That session is already open.");
+  }
+
+  let root;
+  try {
+    root = canonicalRoot(String(row.root));
+  } catch (/** @type {any} */ e) {
+    return fail(id, ErrorCode.BAD_ARGUMENT,
+      `That session's project folder is no longer there: ${row.root}`);
+  }
+
+  const events = store.readEvents(wanted, { inflate: false });
+
+  /* The objective is the first thing the person asked for, which is what a
+     summary has to keep or the agent finishes a different task. */
+  const firstUser = events.find((e) => e.type === "user_message_created");
+  const objective = firstUser ? String(firstUser.payload?.text ?? "") : "";
+  const summary = events.length
+    ? renderSummary(summarise(events, { objective }))
+    : null;
+
+  const state = build(provider.provider, wanted, root, normalizeMode(row.mode), { summary, objective });
+  store.setStatus(wanted, SessionStatus.RUNNING);
 
   send(notify(Notify.SESSION_CREATED, {
-    sessionId, root, mode: state.mode, model: provider.info.model,
-  }, { id, sessionId }));
+    sessionId: wanted, root, mode: state.mode, model: provider.info.model,
+    resumed: true, wasInterrupted: row.status === SessionStatus.INTERRUPTED,
+    events: events.length,
+  }, { id, sessionId: wanted }));
+
+  /* The transcript, as it happened. Sent after session.created so the
+     interface has somewhere to put it, and marked replayed so it cannot be
+     mistaken for a run that is happening now. */
+  for (const ev of events) {
+    send(notify(Notify.AGENT_EVENT, { ...ev, replayed: true }, { sessionId: wanted }));
+  }
+  send(notify(Notify.SESSION_REPLAYED, {
+    sessionId: wanted, events: events.length,
+    status: row.status,
+    summarised: !!summary,
+  }, { id, sessionId: wanted }));
 }
 
 async function sessionDispose(id, sessionId) {
@@ -191,6 +352,12 @@ async function sessionDispose(id, sessionId) {
        isolated browser running, which means its cookies and storage outlive
        the session that created them — exactly what the isolation is for. */
     try { await s.agent.dispose(); } catch { /* already gone */ }
+  }
+  /* Closed, not deleted. The transcript is the point of storing it, and a
+     person closing a tab has not asked to lose the record of what happened. */
+  if (store && s) {
+    try { store.closeSession(sessionId, SessionStatus.COMPLETED); }
+    catch (/** @type {any} */ e) { log(`could not close the session row: ${e && e.message}`); }
   }
   send(notify(Notify.TURN_COMPLETED, { disposed: true }, { id, sessionId }));
 }

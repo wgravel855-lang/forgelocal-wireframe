@@ -26,6 +26,8 @@ export const Request = Object.freeze({
   PROVIDER_CONNECT: "provider.connect",
   PROVIDER_DISCONNECT: "provider.disconnect",
   BROWSER_CONTROL: "browser.control",
+  SESSION_LIST: "session.list",
+  SESSION_RESUME: "session.resume",
 });
 
 export const Notify = Object.freeze({
@@ -38,6 +40,8 @@ export const Notify = Object.freeze({
   TURN_COMPLETED: "turn.completed",
   TURN_FAILED: "turn.failed",
   BROWSER_CONTROLLED: "browser.controlled",
+  SESSION_LIST: "session.list",
+  SESSION_REPLAYED: "session.replayed",
 });
 
 /** Is a desktop host present at all?
@@ -251,6 +255,26 @@ export function createHostClient({
      */
     browserControl(action, opts = {}) {
       return request(Request.BROWSER_CONTROL, { action, ...opts }, 20000);
+    },
+
+    /** What is on disk. Rows only: no events, no payloads. */
+    listSessions(limit = 50) {
+      return request(Request.SESSION_LIST, { limit }, 10000);
+    },
+
+    /**
+     * Reopen a stored session.
+     *
+     * Its events arrive afterwards as ordinary agent events carrying
+     * `replayed: true`, so the transcript is rebuilt by the same reducer
+     * that built it live and cannot disagree with what happened. The promise
+     * resolves on session.created; session.replayed marks the end of the
+     * replay.
+     * @param {string} id
+     */
+    resumeSession(id) {
+      sessionId = id;
+      return request(Request.SESSION_RESUME, { sessionId: id }, 30000);
     },
 
     async dispose() {

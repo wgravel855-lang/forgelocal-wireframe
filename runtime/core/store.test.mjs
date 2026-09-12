@@ -12,8 +12,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { mkdtempSync, rmSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { openStore, SessionStatus, INLINE_LIMIT } from "./store.mjs";
+import { join, sep } from "node:path";
+import { openStore, SessionStatus, INLINE_LIMIT, defaultStoreDir } from "./store.mjs";
 import { initialState, reduceAgentEvent, EventType } from "./events.mjs";
 
 const dir = () => mkdtempSync(join(tmpdir(), "fl-store-"));
@@ -255,4 +255,56 @@ test("deleting a session takes its events and blobs with it", () => {
   assert.equal(existsSync(blob), false, "the blob file was orphaned");
   store.close();
   clean(d);
+});
+
+test("an idle session is not a running one, and a restart must not say it was", () => {
+  /* The distinction "interrupted" depends on. Without an idle state, every
+     session that had ever finished a turn was still marked running, so the
+     next restart relabelled all of them as interrupted and the label meant
+     nothing. */
+  const d = dir();
+  let store = openStore(d);
+  store.createSession({ id: "between", root: "C:/p", mode: "allow_edits" });
+  store.createSession({ id: "midturn", root: "C:/p", mode: "allow_edits" });
+
+  // One finished its turn; the other is still in one.
+  store.appendEvent("between", ev(EventType.TURN_STARTED, { turn_id: "t1" }));
+  store.appendEvent("between", ev(EventType.TURN_COMPLETED, { stop_reason: "final" }));
+  store.appendEvent("midturn", ev(EventType.TURN_STARTED, { turn_id: "t1" }));
+
+  assert.equal(row(store, "between").status, SessionStatus.IDLE);
+  assert.equal(row(store, "midturn").status, SessionStatus.RUNNING);
+  store.close();
+
+  store = openStore(d);
+  const result = store.markInterrupted();
+  assert.equal(row(store, "between").status, SessionStatus.IDLE,
+    "a session sitting between turns was reported as interrupted");
+  assert.equal(row(store, "midturn").status, SessionStatus.INTERRUPTED);
+  assert.equal(result.interrupted, 1);
+  store.close();
+  clean(d);
+});
+
+test("the default store directory is per-user application data, never the project", () => {
+  /* A session is a record of a conversation. Writing it into the folder the
+     agent is editing would put it in the user's repository, in their diffs,
+     and eventually in a commit. */
+  const slash = (p) => p.split(sep).join("/");
+
+  assert.match(
+    slash(defaultStoreDir({ LOCALAPPDATA: "C:/Users/x/AppData/Local" }, "win32")),
+    /AppData\/Local\/ForgeLocal\/sessions$/,
+  );
+  assert.match(
+    slash(defaultStoreDir({ HOME: "/Users/x" }, "darwin")),
+    /Library\/Application Support\/ForgeLocal\/sessions$/,
+  );
+  assert.match(
+    slash(defaultStoreDir({ HOME: "/home/x" }, "linux")),
+    /\.local\/share\/forgelocal\/sessions$/,
+  );
+
+  // And the override the tests depend on, so they never touch the real one.
+  assert.equal(defaultStoreDir({ FORGELOCAL_STATE_DIR: "/tmp/t" }, "linux"), "/tmp/t");
 });
