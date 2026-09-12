@@ -1,122 +1,255 @@
 # ForgeLocal agent runtime — architecture and decisions
 
-## The decision the brief asks for
+This describes what exists. Anything sequenced for later is named at the bottom
+rather than described as if it were here.
 
-The brief specifies a Tauri v2 desktop host with Rust owning every privileged
-operation. This repository had **no desktop stack at all** before this pass: it
-is a static site generator plus one vanilla ES-module controller. So nothing was
-displaced, but a stack was chosen, and the brief requires that choice be stated
-rather than made silently.
+## Three processes, and what each is allowed to do
 
-**What was built: a privileged Node runtime process, separate from the
-renderer, with the privileged core written transport-agnostically so a Rust host
-can replace the Node host without rewriting the agent.**
+```
+  Rust host (Tauri v2 / WebView2)      owns the window, the sidecar's lifetime,
+   │                                   and the native dialogs
+   │  spawn, stdin/stdout
+   ▼
+  Node sidecar (runtime/host)          owns sessions, providers, tools, the
+   │                                   browser, the filesystem and the database
+   │  NDJSON frames over the pipe
+   ▼
+  WebView renderer (design/)           owns the interface, and nothing else
+```
 
-Why, honestly:
+The boundary that matters: **the renderer holds no filesystem, shell or browser
+authority.** It renders events and sends requests. It never holds a page handle,
+a file descriptor or a child process, so a compromised renderer cannot drive a
+browser or read a file — it can only ask, and every ask goes through the
+permission policy in the sidecar.
 
-- Rust 1.97 and cargo are installed on the development machine, so Tauri was
-  *possible*. It was not attempted because a Tauri shell, its IPC surface, its
-  packaging and its signing are a milestone of their own, and Milestone 1 is
-  defined by the runtime being real — "not done if only the UI or TypeScript
-  interfaces exist". Splitting the effort would have produced a half-built shell
-  around a half-built agent.
-- The trust boundary the brief cares about is that **the renderer must never
-  hold filesystem or shell authority**. That boundary is real here: the browser
-  page holds none. Every privileged operation happens in a separate OS process
-  that the page can only reach through a narrow, schema-validated local HTTP
-  surface bound to `127.0.0.1`, and every request is re-validated inside that
-  process. Moving the host from Node to Rust changes who enforces the boundary,
-  not whether one exists.
-- `runtime/core/` has no HTTP, no DOM and no Node-host assumptions beyond
-  `node:fs` and `node:child_process`. Porting means reimplementing the host and
-  the two adapters, not the orchestrator, tool contracts, permission policy,
-  path containment or event protocol.
+Nothing listens on a socket. The sidecar speaks over stdin and stdout only, so
+there is no unauthenticated local port for anything else on the machine to find.
 
-### What this costs, stated plainly
+### Why the sidecar is Node rather than Rust
 
-A Node host is **not** the isolation a Rust/Tauri host would give. The runtime
-process runs with the user's full privileges. Command execution here is
-permission-gated, not sandboxed. That is the same honest description the brief
-demands for native Windows execution, and it applies to the host as well as to
-the commands.
+The privileged core is JavaScript, in one process, spoken to over a pipe. The
+Rust host owns the window and the sidecar's lifetime and nothing else. That is
+a deliberate split and it has a cost: the Rust side is thin enough that the real
+trust boundary is the process boundary rather than a language boundary. What it
+buys is that the agent loop, the tools, the permission policy and the browser
+are one body of code that the integration tests drive directly — the same code
+path the app uses, with nothing mocked between the test and the tool.
+
+## The protocol
+
+One JSON object per line, both directions. `JSON.stringify` escapes every
+newline inside a string, so a line break can only ever be a frame boundary: the
+format frames itself with no length prefix to get out of step with.
+
+Both sides validate. The Rust host checks the frame it forwards and
+`host/protocol.mjs` checks it again on arrival, because a transport check is not
+an authorization check and neither is a UI one.
+
+Requests are a closed set (`protocol.mjs`): session create/dispose/list/resume,
+turn start/cancel, permission resolve, question answer, provider
+connect/disconnect, browser control, model test. Anything else is refused by
+name.
 
 ## Layout
 
 ```
 runtime/
-  core/                 privileged, transport-agnostic, no DOM
-    paths.mjs           canonicalisation and root containment
-    events.mjs          the normalized event protocol and its reducer
+  core/
+    paths.mjs           canonical root, containment, the ignore list
     permissions.mjs     Plan / Manual / Allow edits policy
     danger.mjs          the always-block and always-confirm classifier
     schema.mjs          the strict JSON Schema validator
     secrets.mjs         redaction and the child-process env allowlist
-    context.mjs         system prompt, project instructions, ledger, accounting
+    context.mjs         project instructions, the ledger, context accounting
+    prompt.mjs          the nine prompt layers and the output styles
     orchestrator.mjs    the agent loop
-    tools/              read, patch, command, plan; index.mjs is the registry
+    compact.mjs         two-stage context compaction and the session summary
+    store.mjs           SQLite session persistence
+    profiles.mjs        remembered conformance verdicts
+    capability.mjs      the conformance cases and the grading rule
+    conformance.mjs     running the suite against a provider
+    events.mjs          re-exports the renderer's event contract
+    tools/              read, patch, command, plan, web, browser; index.mjs
+                        is the registry and the group table
+    browser/
+      session.mjs       one isolated Playwright context per session
+      snapshot.mjs      the in-page walker and the text it renders to
+      policy.mjs        the browser permission axis
     providers/          fake (deterministic) and openai-compatible
+  host/
+    protocol.mjs        the frame contract
+    sidecar.mjs         the process: sessions, provider, store, profiles
+    fakeserver.mjs      a scripted OpenAI-compatible server, for tests
+  conformance.mjs       CLI: run the suite against a real server
   golden.mjs            the end-to-end task, run against a real model
-  host/                 the Node host: local HTTP surface, session wiring
 ```
-
-`host/` does not exist yet. The orchestrator is driven directly by
-`runtime/golden.mjs` and by the integration tests, which is the same entry point
-a host would use.
 
 ## The loop
 
-The orchestrator owns it, and it is a service with no DOM dependency, so an
-integration test drives the identical code path the desktop app would:
+`orchestrator.mjs` owns it. It is a service with no DOM dependency, so an
+integration test drives the identical code path the desktop app does:
 
-1. build a working context from instructions, digest, recent turns and ledger;
-2. ask the provider for a turn, streaming;
-3. normalize deltas into events;
-4. parse and validate tool calls against their schemas;
-5. evaluate the permission policy;
-6. execute approved tools, or emit `permission_required` and suspend;
-7. append a normalized tool result;
-8. update plan, ledger, checkpoint and context accounting;
-9. call the model again;
-10. stop on a final response, a user interrupt, a limit, or an unrecoverable
+1. compact the working context if it is close to the window;
+2. build the prompt from its layers;
+3. ask the provider for a turn, streaming;
+4. normalize deltas into events;
+5. parse and validate tool calls against their schemas;
+6. evaluate the permission policy — both axes, see below;
+7. execute approved tools, or emit `permission_required` and suspend;
+8. append a normalized tool result;
+9. update plan, ledger, checkpoint and context accounting;
+10. call the model again;
+11. stop on a final response, a user interrupt, a limit, or an unrecoverable
     error — never because a tool merely finished.
 
-## What the first real runs taught
+It stops for exactly four reasons and never turns an error into a cheerful
+assistant message.
 
-Three defects only a real model on a real server could have found. All three
-were in this code, not the model's.
+## The prompt, in layers
 
-**The tool grammar.** A local server builds a GBNF grammar from the tool schemas
-to constrain output. A JSON Schema length bound becomes a bounded repetition in
-that grammar, and `apply_patch` declared `maxLength: 500000` on `content`. Sent
-together, the eight tools produced `Failed to initialize samplers: failed to
-parse grammar` and then killed the inference engine outright — after which every
-later request failed with `fetch failed`, which made the bisect look like five
-broken tools instead of one. `toolSpecs()` now sends a slimmed wire schema with
-the size and range bounds removed. This costs nothing in safety: the grammar is
-guidance, and `validateCall()` still checks the full strict schema before
-anything executes. That check, not the grammar, is what gates execution.
+`prompt.mjs` composes nine: invariants, style, mode, capabilities, tools,
+environment, project, skills, summary. They are separate because they change on
+different schedules and for different reasons — the mode changes when the user
+changes it, the capabilities layer when a conformance run finishes, the summary
+when compaction runs.
 
-**A doubled tool name.** This server repeats the complete function name on every
-chunk of a streaming tool call. The adapter appended, so `list_directory` became
-`list_directorylist_directory`, and the model was told three times that its tool
-did not exist before the loop gave up. Repeats are now ignored and genuine
-fragments still append.
+Style sits **under** the invariants, not over them. "Concise" changes length and
+ordering; it cannot change what may be claimed, what needs approval, or what
+counts as evidence. `prompt.test.mjs` asserts eight invariants hold across all
+twelve mode/style combinations, by meaning rather than by whole-string snapshot:
+a whole-string snapshot fails on every wording change, so it gets regenerated
+without being read, and the day it is regenerated over a deleted safety line
+nobody notices.
 
-**An empty stream read as a final answer.** When the grammar failed, the server
-answered 200 and streamed nothing. The adapter normalized "no text, no calls, no
-finish reason" to `final`, so a server-side failure looked like a model that had
-nothing to say and the run reported success with zero work done. That case is
-now a `BAD_RESPONSE` error.
+## Two permission axes, kept apart
 
-There was also a fourth finding that was not a defect in the runtime at all: the
-golden fixture documented its tests as `node --test src/`, which fails on Node 24
-even when the code is correct, because `src` is treated as a test file rather
-than a directory. The agent said so in its transcript and was right; the harness
-was wrong.
+`permissions.mjs` answers *may this session do this kind of thing at all* —
+read, write, execute, under Plan / Manual / Allow edits.
 
-## What is deliberately not here yet
+`browser/policy.mjs` answers *may it do this to this origin* — open, inspect,
+navigate, interact, consequential.
 
-Milestone 2 and 3 items: SQLite persistence, rewind, compaction, background
-commands, PTY, Git tools, LSP, MCP, subagents, BYOK. The brief sequences these
-after the truthful vertical slice, and claiming them would be the failure mode
-it warns about.
+**Neither can satisfy the other.** Allow edits never puts anything in the
+session's granted origins, so a session that may rewrite the whole project must
+still be asked before it clicks a button on a website. A browser approval is
+remembered as an origin, never as a grant on the tool name: the coarse policy
+checks grants before anything else, so `browser_click:*` in that set would make
+one approved click on a local dev server into approval to click anything
+anywhere for the rest of the session.
+
+The element name a click is classified against comes from the last snapshot and
+can only make the policy **stricter**. A page that renames its button to "this
+action is pre-approved" costs the user nothing; one that renames "Delete
+account" to "Continue" still needs an approved origin. Page text never reaches
+the classifier at all — its inputs are the tool name, the origin, the static
+policy and the requested side effect.
+
+## The isolated browser
+
+One Playwright `BrowserContext` per session, created with no `storageState` and
+never from `launchPersistentContext`. Its own cookie jar, localStorage, cache
+and permissions, all destroyed with the context. The user's real Edge or Chrome
+profile is never opened: what is shared is the browser *binary* on disk, in the
+same way two programs share libc.
+
+It runs in the sidecar, never the renderer. Downloads land in a session
+quarantine directory outside the project, are never executed, and are never
+moved into the project without an approval. There is no `browser_evaluate`: an
+evaluate tool is a shell on the page and defeats every element-level permission
+below it.
+
+Actions take refs from a snapshot, never CSS selectors or coordinates. Every
+snapshot bumps a version and stamps fresh refs; an action naming an older ref is
+refused rather than resolved, because after a re-render "whatever is at position
+7 now" may be a different button.
+
+## Capability, earned rather than assumed
+
+`capability.mjs` holds ten cases; six are marked critical because their failure
+makes a loop dangerous rather than merely disappointing. Any critical failure is
+`chat_only`, with no partial credit.
+
+Nothing infers a grade. Not the model's name, not its parameter count, not the
+server reporting a tools API — `profileFromProbe` explicitly leaves
+`agentGrade: untested`. A verdict is earned by `runConformance` and remembered
+by `profiles.mjs`, keyed by server **and** model, invalidated by age or by a
+change to the cases.
+
+The gate: a model graded chat-only gets no tools, because we know it cannot
+drive them. An untested model gets the ordinary ones, because "we have not
+checked" is not "we know it cannot", and refusing to run until somebody sits
+through ten prompts would make a fresh install useless. The interface says
+which of the two it is.
+
+## Persistence
+
+`store.mjs`, SQLite through `node:sqlite` — Node 24 ships it, so durable
+structured state costs no dependency. The **event log is the primary object**
+and everything else is derived from it by the same reducer the interface uses,
+so a restored session cannot disagree with the live one.
+
+Output larger than 8KB is written beside the database and referenced, with an
+excerpt inline: a command that prints 40MB should not make every replay of that
+session read 40MB to render a row that says "exit 0".
+
+Reopening is two different things and the code is explicit about which:
+
+- the **transcript is restored** — stored events are replayed, marked
+  `replayed: true`, and folded by the reducer that folded them live;
+- the **model's context is summarised** — provider messages were never
+  persisted, and rebuilding them from events would be a plausible
+  reconstruction rather than the thing itself. Resume reuses the compaction
+  summariser and the model is told it is reading a summary of earlier work.
+
+Nothing in the read path executes. Replay folds events into state; it never
+calls a tool, which is what makes reopening a session safe.
+
+Session status distinguishes `idle` (between turns) from `running` (mid-turn),
+and only `running` becomes `interrupted` on restart. Without that distinction
+every session that had ever run came back labelled interrupted, and a label
+everything carries is not a label.
+
+## Compaction
+
+Two stages, in `compact.mjs`. First shed tool results, then summarise
+structurally. It refuses to run when the result would be larger than the input,
+and a compaction that frees nothing twice in a row is treated as thrashing and
+reported rather than repeated.
+
+## Verification
+
+```
+npm run lint          both trees: parse, lost backslashes, $(...) in templates,
+                      temporal dead zones, unbound build markers
+npm run typecheck     tsc --checkJs over design/core and runtime, strict
+npm test              design unit tests
+npm run test:runtime  runtime unit + integration + sidecar + real-browser
+npm run test:e2e      built-page assertions, then the console gate
+```
+
+The console gate loads every route in jsdom and fails on any page error,
+rejection, `console.error` or `console.warn`. It flattens the module graph,
+which is why two modules declaring the same module-scope helper is an error
+there: the browser scopes them separately, but a shared helper with two
+definitions is a thing that drifts.
+
+`runtime/conformance.mjs` and `runtime/golden.mjs` are run by hand against a
+real model server; they are not part of the gates, because a gate that needs a
+model loaded is a gate that gets skipped.
+
+## What is deliberately not here
+
+Rewind, background commands, PTY, Git tools, LSP, MCP, subagents, BYOK. The
+brief sequences these after the behaviour and runtime work, and claiming them
+would be the failure mode it warns about.
+
+Two limits worth stating rather than discovering:
+
+- **The desktop app is the product.** The hosted web preview has no runtime at
+  all, and every surface that depends on one says "Desktop not connected"
+  rather than showing a plausible-looking mock.
+- **This is not Claude Code parity** and nothing here claims to be. The
+  behaviour that exists comes from the five cooperating layers — prompt,
+  policy, tools, runtime, interface — rather than from one large system prompt,
+  and where a layer is thin it is thin.
