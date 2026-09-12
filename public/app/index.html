@@ -581,12 +581,15 @@
           style="bottom:calc(100% + 8px);top:auto;right:0;left:auto;width:320px"></div>
       </div>
 
-      <!-- Last control in the row, and the only filled one. -->
-      <button class="btn ico sendbtn" type="submit" data-send aria-label="Send">
+    </div>
+
+    <!-- Last control in the row, the only filled one, and deliberately outside
+         .cbar-r: that group scrolls on a narrow window, and the primary action
+         must never be the thing you have to swipe to reach. -->
+    <button class="btn ico sendbtn" type="submit" data-send aria-label="Send">
   <svg class="i-send" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5.5M5.5 12 12 5.5 18.5 12"/></svg>
   <span class="i-stop" aria-hidden="true"></span>
 </button>
-    </div>
   </div>
   </div>
 

@@ -18,6 +18,7 @@ import assert from "node:assert/strict";
 const root = join(fileURLToPath(new URL(".", import.meta.url)), "..", "..");
 const pub = join(root, "public");
 const page = (route) => readFileSync(join(pub, route, "index.html"), "utf8");
+const sheet = () => readFileSync(join(pub, "assets/forgelocal.css"), "utf8");
 const APP = ["app", "app/running", "app/permission", "app/stopped", "app/review",
   "app/models", "app/models/installed", "app/models/downloads", "app/settings"];
 
@@ -243,6 +244,37 @@ test("every composer control selector matches exactly one element per route", ()
       assert.equal(n, 1, `${attr} appears ${n} times on /${route}/, expected exactly one`);
     }
   }
+});
+
+/* Send lives in the control row, and below 620px .cbar-r scrolls. If Send is
+   inside that group it becomes something you have to swipe to reach, which is
+   how it shipped for one build. It is a sibling of the group, not a child. */
+test("the send button is outside the group that scrolls on a narrow window", () => {
+  for (const route of ["app", "app/running", "app/permission", "app/stopped", "app/review"]) {
+    const html = page(route);
+    const from = html.indexOf('class="cbar-r"');
+    const to = html.indexOf("data-send");
+    assert.ok(from > 0 && to > from, `/${route}/: cbar-r and data-send not both present in order`);
+    // More closing tags than opening ones between them means the group
+    // ended before the button did, which is the whole assertion.
+    const between = html.slice(from, to);
+    const opened = (between.match(/<div\b/g) || []).length;
+    const closed = (between.match(/<\/div>/g) || []).length;
+    assert.ok(closed > opened,
+      `/${route}/: send is still inside .cbar-r, which scrolls below 620px`);
+  }
+});
+
+/* A blanket touch rule gave every .cbar button min-height 44px and height
+   auto, which turned a 36px-wide circle into an ellipse on a phone. The
+   circle is a fixed size and takes its larger target from an overlay. */
+test("the send button is a circle at every width", () => {
+  const css = sheet();
+  const rule = css.match(/\.btn\.sendbtn \{[^}]*\}/);
+  assert.ok(rule, "no .btn.sendbtn rule in the sheet");
+  assert.match(rule[0], /border-radius:\s*50%/, rule[0]);
+  assert.match(css, /\.cbar \.btn\.sendbtn \{[^}]*height:\s*36px/,
+    "the touch block does not pin the send button height back to 36px");
 });
 
 /* The composer is one object at one size. The session composition used to

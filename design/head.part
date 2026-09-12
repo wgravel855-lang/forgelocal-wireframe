@@ -1211,18 +1211,21 @@
        or by growing the composer. See the rule below for why this is not
        `wrap`. */
     @media (max-width: 620px) {
-      .cbar { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none;
-        -ms-overflow-style: none;
-        mask-image: linear-gradient(to right, #000 calc(100% - 20px), transparent);
-        -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 20px), transparent); }
-      .cbar::-webkit-scrollbar { display: none; }
-      .cbar-l, .cbar-r { flex-wrap: nowrap; flex-shrink: 0; }
+      .cbar { flex-wrap: nowrap; overflow: visible; }
+      .cbar-l { flex-wrap: nowrap; flex-shrink: 0; }
+      /* This group scrolls; the row does not. Attach, permission mode and Send
+         stay put, and project / model / effort slide under them. */
+      .cbar-r { flex-wrap: nowrap; flex: 1 1 auto; min-width: 0;
+        overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none;
+        mask-image: linear-gradient(to right, #000 calc(100% - 18px), transparent);
+        -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 18px), transparent); }
+      .cbar-r::-webkit-scrollbar { display: none; }
+      .cbar-r > * { flex-shrink: 0; }
       .cbar > .grow { display: none; }
-      /* The row scrolls, so the label no longer has to be cut to a width that
-         made every model name look the same. */
+      .cbar > .btn.sendbtn { flex-shrink: 0; }
+      /* The group scrolls, so the label no longer has to be cut to a width
+         that made every model name look the same. */
       .cbar [data-model-label] { max-width: 22ch; }
-      /* Scrolled content needs a little room past the fade. */
-      .cbar > :last-child { padding-right: 12px; }
     }
 
     /* ---- model browser ------------------------------------------------ */
@@ -2924,6 +2927,13 @@
       .topbar .btn, .topbar .ico, .topbar .hit,
       .chip, .btn.btnp { min-height: 44px; height: auto; }
       .cstrip { gap: 2px; }
+      /* Send is the exception: a circle is a circle. It keeps 36px of paint
+         and takes its 44px target from an overlay instead of stretching. */
+      .cbar .btn.sendbtn { width: 36px; min-width: 36px;
+        height: 36px; min-height: 36px; position: relative; }
+      .cbar .btn.sendbtn::after { content: ""; position: absolute;
+        left: 50%; top: 50%; width: 44px; height: 44px;
+        transform: translate(-50%, -50%); }
     }
 
     /* ---- touch layout ------------------------------------------------------

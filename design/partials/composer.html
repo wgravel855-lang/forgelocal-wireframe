@@ -117,9 +117,12 @@
           style="bottom:calc(100% + 8px);top:auto;right:0;left:auto;width:320px"></div>
       </div>
 
-      <!-- Last control in the row, and the only filled one. -->
-      {{send}}
     </div>
+
+    <!-- Last control in the row, the only filled one, and deliberately outside
+         .cbar-r: that group scrolls on a narrow window, and the primary action
+         must never be the thing you have to swipe to reach. -->
+    {{send}}
   </div>
   </div>
 
