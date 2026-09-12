@@ -120,7 +120,7 @@ async function providerConnect(id, payload) {
       connected: true, baseUrl, models: probe.models, model,
       capabilities: probe.capabilities,
     }, { id }));
-  } catch (e) {
+  } catch (/** @type {any} */ e) {
     const kind = e instanceof ProviderFailure ? e.kind : "unknown";
     provider = null;
     send(notify(Notify.PROVIDER_STATE, {
@@ -145,7 +145,7 @@ async function sessionCreate(id, payload) {
   let root;
   try {
     root = canonicalRoot(String(payload.root ?? ""));
-  } catch (e) {
+  } catch (/** @type {any} */ e) {
     return fail(id, ErrorCode.BAD_ARGUMENT,
       e instanceof PathEscape ? e.message : "That project folder could not be opened.");
   }
@@ -153,7 +153,9 @@ async function sessionCreate(id, payload) {
   const sessionId = randomUUID();
   const state = {
     id: sessionId, root, mode: normalizeMode(payload.mode),
-    agent: null, running: false,
+    /** @type {any} */
+    agent: null,
+    running: false,
   };
 
   state.agent = createOrchestrator({
@@ -217,7 +219,7 @@ async function turnStart(id, sessionId, payload) {
   s.running = true;
   try {
     settle(id, s, await s.agent.send(text));
-  } catch (e) {
+  } catch (/** @type {any} */ e) {
     s.running = false;
     // A throw out of the loop is a runtime failure and is reported as one.
     // It never becomes an assistant message.
@@ -243,7 +245,7 @@ async function permissionResolve(id, sessionId, payload) {
   s.running = true;
   try {
     settle(id, s, await s.agent.resolvePermission(String(payload.requestId ?? ""), decision));
-  } catch (e) {
+  } catch (/** @type {any} */ e) {
     s.running = false;
     fail(id, ErrorCode.BAD_ARGUMENT, e && e.message ? e.message : "That decision could not be applied.", sessionId);
   }
@@ -276,7 +278,7 @@ async function questionAnswer(id, sessionId, payload) {
   s.running = true;
   try {
     settle(id, s, await s.agent.answer({ answers, text }));
-  } catch (e) {
+  } catch (/** @type {any} */ e) {
     s.running = false;
     fail(id, ErrorCode.INTERNAL, e && e.message ? e.message : "The answer could not be applied.", sessionId);
   }

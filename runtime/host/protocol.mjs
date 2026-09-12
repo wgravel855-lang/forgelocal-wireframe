@@ -139,7 +139,7 @@ export function createDecoder(onFrame, onBadLine) {
         buffer = buffer.slice(cut + 1);
         if (!line) continue;
         try { onFrame(JSON.parse(line)); }
-        catch (e) { onBadLine(line, /** @type {Error} */ (e)); }
+        catch (/** @type {any} */ e) { onBadLine(line, /** @type {Error} */ (e)); }
       }
     },
     /** bytes waiting for their newline, for a "stream ended mid-frame" check */

@@ -264,6 +264,7 @@ const soft = (why) => ({ ok: true, soft: why });
  * is no partial credit for a model that usually does not fabricate.
  *
  * @param {Array<{id: string, ok: boolean, critical: boolean}>} results
+ * @returns {{grade: string, score: number, failed: string[], reason: string}}
  */
 export function grade(results) {
   const failed = results.filter((r) => !r.ok);

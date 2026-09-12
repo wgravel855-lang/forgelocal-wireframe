@@ -177,7 +177,7 @@ test("probe names the model that is missing instead of failing mid-turn", async 
     model: "not-loaded",
     fetch: async () => ({ ok: true, status: 200, json: async () => ({ data: [{ id: "other" }] }) }),
   });
-  await assert.rejects(() => p.probe(), (e) => {
+  await assert.rejects(() => p.probe(), (/** @type {any} */ e) => {
     assert.equal(e.kind, ProviderError.MODEL_MISSING);
     assert.match(e.message, /not loaded/);
     assert.deepEqual(e.detail.available, ["other"]);
@@ -190,7 +190,7 @@ test("an unreachable server says so plainly", async () => {
     model: "m",
     fetch: async () => { throw new Error("ECONNREFUSED"); },
   });
-  await assert.rejects(() => p.probe(), (e) => {
+  await assert.rejects(() => p.probe(), (/** @type {any} */ e) => {
     assert.equal(e.kind, ProviderError.UNREACHABLE);
     assert.match(e.message, /No inference server is listening/);
     return true;

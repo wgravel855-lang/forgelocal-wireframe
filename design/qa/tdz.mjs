@@ -14,10 +14,65 @@
  */
 
 /**
+ * Blank out what is inside string and template literals.
+ *
+ * A call cannot happen inside a string, but `INSERT INTO blobs (id, ...)` in a
+ * SQL template reads exactly like `blobs(` to a regex, and the store module
+ * declares a `const blobs` further down. Quote characters are kept so the
+ * result has the same length and line structure, which is what the line
+ * numbers in the messages depend on.
+ *
+ * Template interpolations are NOT blanked: `${helper()}` really does run when
+ * the template is evaluated, which is the whole point of this rule.
+ *
+ * @param {string} text
+ */
+function blankLiterals(text) {
+  let out = "";
+  let i = 0;
+  /** @type {string|null} */
+  let quote = null;
+  /** Depth of ${ } we are inside, so a nested template closes correctly. */
+  const interp = [];
+
+  while (i < text.length) {
+    const c = text[i];
+    const next = text[i + 1];
+
+    if (quote === null) {
+      if (c === "'" || c === '"' || c === "`") { quote = c; out += c; i += 1; continue; }
+      out += c; i += 1; continue;
+    }
+
+    if (c === "\\") { out += "  "; i += 2; continue; }          // an escape, blanked in pairs
+    if (c === quote) { quote = null; out += c; i += 1; continue; }
+    if (quote === "`" && c === "$" && next === "{") {
+      // Step back out into code until the matching brace.
+      const start = i;
+      let depth = 0;
+      let j = i + 1;
+      for (; j < text.length; j++) {
+        if (text[j] === "{") depth += 1;
+        else if (text[j] === "}") { depth -= 1; if (depth === 0) break; }
+      }
+      out += text.slice(start, j + 1);
+      i = j + 1;
+      interp.length = 0;
+      continue;
+    }
+    // Inside a literal: keep newlines so line numbers survive, blank the rest.
+    out += c === "\n" ? "\n" : " ";
+    i += 1;
+  }
+  return out;
+}
+
+/**
  * @param {string} src
  * @returns {string[]} one message per problem
  */
 export function findTemporalDeadZones(src) {
+  src = blankLiterals(src);
   const lines = src.split("\n");
 
   /** Declarations at the IIFE's own indent level. @type {Record<string, number>} */

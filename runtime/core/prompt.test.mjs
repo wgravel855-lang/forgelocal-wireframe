@@ -42,6 +42,7 @@ function everyCombination() {
  * Each entry is one claim the prompt must keep making. The matcher is
  * deliberately loose about wording and strict about substance.
  */
+/** @type {Array<[string, RegExp]>} */
 const INVARIANTS = [
   ["never claims an unobserved result",
     /never claim you (read|ran|changed)|unless a tool result/i],

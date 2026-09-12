@@ -24,9 +24,13 @@
 import { randomUUID } from "node:crypto";
 import { EventType, SessionState, Phase, createEmitter } from "./events.mjs";
 import {
-  TOOLS, validateCall, toolSpecs, toolSummaries, DEFAULT_GROUPS,
+  TOOLS, validateCall, toolSpecs, toolSummaries, DEFAULT_GROUPS, ToolGroup,
 } from "./tools/index.mjs";
 import { decide, grantForSession, Decision, normalizeMode } from "./permissions.mjs";
+import {
+  classifyBrowserAction, originOf, BrowserPermission, BROWSER_TOOL_PERMISSION,
+} from "./browser/policy.mjs";
+import { resolveInRoot } from "./paths.mjs";
 import { composePrompt, normalizeStyle, OutputStyle } from "./prompt.mjs";
 import { compact as compactContext } from "./compact.mjs";
 import { ModelEvent, ProviderFailure, estimateTokens } from "./providers/types.mjs";
@@ -85,15 +89,20 @@ export const StopReason = Object.freeze({
  * @param {string} [opts.mode]
  * @param {string} [opts.sessionId]
  * @param {(event: any) => void} opts.onEvent
- * @param {{snapshotDir?: string}} [opts.paths]
+ * @param {{snapshotDir?: string, downloadDir?: string}} [opts.paths]
  * @param {typeof LIMITS} [opts.limits]
  * @param {() => number} [opts.now]
+ * @param {string} [opts.style]
+ * @param {any} [opts.capabilities]
+ * @param {any[]} [opts.skills]
+ * @param {readonly string[]} [opts.groups]
+ * @param {((o: any) => Promise<any>)|null} [opts.browserFactory]
  */
 export function createOrchestrator({
   root, provider, mode = "manual", sessionId = randomUUID(),
   onEvent, paths = {}, limits: limitsIn = LIMITS, now = () => Date.now(),
   style = OutputStyle.ADAPTIVE, capabilities = null, skills = [],
-  groups = DEFAULT_GROUPS,
+  groups = DEFAULT_GROUPS, browserFactory = null,
 }) {
   let limits = limitsIn;
   // Reassigned by setEffort, which is why neither of these is a const.
@@ -109,16 +118,177 @@ export function createOrchestrator({
   const instructions = loadInstructions(root);
   const ledger = createLedger();
   const grants = new Set();
-  const ctx = { root, snapshotDir: paths.snapshotDir, plan: null };
+
+  /**
+   * Origins the person has approved for this session.
+   *
+   * Deliberately a second, separate set from `grants`. A file-tool grant and a
+   * browser origin are not the same kind of permission and must not be able to
+   * satisfy each other: approving edits to the project is not approval to act
+   * on a website, which is exactly the confusion the brief rules out.
+   *
+   * @type {Set<string>}
+   */
+  const grantedOrigins = new Set();
+
+  /**
+   * The tool context.
+   *
+   * `browser` starts null and only `openBrowser` fills it, so a browser tool
+   * called before browser_open gets the refusal in tools/browser.mjs rather
+   * than a half-built session. `capabilities` is here so browser_screenshot
+   * can decline for a model that cannot see, instead of handing it an image
+   * it will describe from the URL.
+   */
+  /** @type {any} */
+  const ctx = {
+    root,
+    snapshotDir: paths.snapshotDir,
+    plan: null,
+    browser: null,
+    capabilities,
+    /** Absolute path inside the project, or a throw. Used by browser upload. */
+    resolveInRoot: (p) => resolveInRoot(root, p).absolute,
+    openBrowser: () => openBrowser(),
+  };
+
+  /** In flight, so two browser_open calls in one turn cannot race two browsers.
+   *  @type {Promise<any>|null} */
+  let openingBrowser = null;
+
+  /**
+   * Start the isolated browser, once.
+   *
+   * The factory is injectable so a test can drive the whole permission and
+   * event path without a browser binary, and so the import of playwright-core
+   * stays lazy: a session that never browses must not pay for it, and a
+   * machine without it must still run everything else.
+   */
+  async function openBrowser() {
+    if (ctx.browser && !ctx.browser.closed) return ctx.browser;
+    if (openingBrowser) return openingBrowser;
+    openingBrowser = (async () => {
+      const create = browserFactory
+        ?? (await import("./browser/session.mjs")).createBrowserSession;
+      const s = await create({
+        // Browser events carry no turnId of their own: they are emitted from
+        // page callbacks that outlive the call that caused them.
+        emit: (type, payload) => emit(type, payload),
+        downloadDir: paths.downloadDir,
+      });
+      ctx.browser = s;
+      return s;
+    })();
+    try { return await openingBrowser; }
+    finally { openingBrowser = null; }
+  }
+
+  /** Close the browser and destroy its cookies and storage. Safe to repeat. */
+  async function closeBrowser() {
+    const s = ctx.browser;
+    ctx.browser = null;
+    if (s && !s.closed) await s.close().catch(() => {});
+  }
+
+  /**
+   * The origin an action would land on.
+   *
+   * For a navigation that is the destination, because approving "open
+   * example.com" is a statement about example.com and not about wherever the
+   * browser happens to be sitting. For everything else it is the page's
+   * current URL, read from the page rather than from whatever the model last
+   * said: a redirect moves the origin without the model mentioning it.
+   *
+   * @param {string} tool @param {any} args @returns {string|null}
+   */
+  function targetOrigin(tool, args) {
+    if (tool === "browser_navigate") return originOf(args?.url);
+    if (!ctx.browser || ctx.browser.closed) return null;
+    return originOf(ctx.browser.url);
+  }
+
+  /**
+   * Decide whether a call may proceed.
+   *
+   * Two axes, kept apart on purpose.
+   *
+   * The file/command policy in permissions.mjs answers "may this session do
+   * this kind of thing at all", and browser/policy.mjs answers "may it do this
+   * to this origin". Neither can satisfy the other, which is the concrete
+   * meaning of the rule that Allow edits must not imply permission for browser
+   * side effects: allow_edits never puts anything in `grantedOrigins`, so a
+   * session that may rewrite the whole project still has to be asked before it
+   * clicks a button on a website.
+   *
+   * Composition is strictest-wins with one asymmetry: for a browser tool the
+   * browser policy is the authority on whether to ask, because an approved
+   * origin IS the answer to the question the coarse policy would otherwise
+   * ask again on every click. The coarse policy keeps its veto — a DENY there
+   * (plan mode, an unknown tool) stands whatever the browser policy says.
+   *
+   * @param {string} tool @param {any} args
+   */
+  function permissionFor(tool, args) {
+    const coarse = decide({
+      mode: currentMode, tool, args, sessionGrants: grants,
+    });
+    const permission = BROWSER_TOOL_PERMISSION[tool];
+    if (!permission) return coarse;
+    if (coarse.decision === Decision.DENY) return coarse;
+
+    /* An action that needs a page when there is no browser at all is not a
+       decision anyone can usefully make: approving it only produces "No
+       browser is open. Call browser_open first." So it goes straight to the
+       tool, which says exactly that. Nothing can happen either way — there is
+       no session for it to happen to — and a prompt with no real choice in it
+       is how people learn to approve without reading. */
+    if (tool !== "browser_open" && (!ctx.browser || ctx.browser.closed)) {
+      return { decision: Decision.ALLOW, reason: "no browser session to act on" };
+    }
+
+    const origin = targetOrigin(tool, args);
+    /* The element's name comes from the snapshot, so an action naming a stale
+       ref is classified with no name at all rather than with the name of
+       whatever now sits at that position. */
+    const target = (args?.ref && ctx.browser && !ctx.browser.closed)
+      ? ctx.browser.describeRef(args.ref)
+      : null;
+
+    const b = classifyBrowserAction({
+      tool,
+      origin,
+      grantedOrigins,
+      targetName: target?.name ?? "",
+      targetRole: target?.role ?? "",
+      enabled: groups.includes("browser"),
+    });
+
+    if (b.decision === "deny") return { decision: Decision.DENY, reason: b.reason };
+    if (b.decision === "allow") return { decision: Decision.ALLOW, reason: b.reason };
+    return {
+      decision: Decision.ASK,
+      reason: b.reason,
+      /* An always-confirm action is decided each time it is asked, so it is
+         not offered a session-wide answer. Neither is one with no origin to
+         remember: "for this session" has to mean something specific, and
+         offering it where it would remember nothing is a lie in a button. */
+      options: (b.permission === BrowserPermission.CONSEQUENTIAL || !origin)
+        ? ["approve_once", "deny"]
+        : ["approve_once", "approve_for_session", "deny"],
+      browser: { permission: b.permission, origin },
+    };
+  }
   let currentMode = normalizeMode(mode);
   let currentStyle = normalizeStyle(style);
-  /** The compacted summary of everything trimmed out of `messages`, or null. */
+  /** The compacted summary of everything trimmed out of `messages`, or null.
+   *  @type {string|null} */
   let compacted = null;
   /** Fraction the last compaction freed. Two poor results in a row is thrashing. */
   let lastFreed = 1;
   /** The first thing the user asked for, which is the objective a summary keeps. */
   let firstRequest = "";
-  /** Every event this session emitted, which is what compaction summarises from. */
+  /** Every event this session emitted, which is what compaction summarises from.
+   *  @type {any[]} */
   const history = [];
 
   /** provider-neutral message list; the working context, not the transcript */
@@ -126,8 +296,10 @@ export function createOrchestrator({
   let messages = [];
   /** @type {AbortController|null} */
   let abort = null;
-  /** set while a turn is suspended waiting on the user */
+  /** set while a turn is suspended waiting on the user
+   *  @type {any} */
   let pending = null;
+  /** @type {any} */
   let lastUsage = null;
   /* Reliability counters belong to the user's request, not to one entry into
      the loop. Keeping them inside runLoop meant every permission prompt handed
@@ -148,6 +320,7 @@ export function createOrchestrator({
   };
 
   /** The last phase emitted, so a repeat is not a second event. */
+  /** @type {string} */
   let currentPhase = Phase.IDLE;
 
   /**
@@ -274,7 +447,7 @@ export function createOrchestrator({
         emit(EventType.RUNTIME_ERROR, {
           code: "CONTEXT_EXHAUSTED", message: fit.reason,
         }, { turnId });
-        return finish(turnId, StopReason.ERROR, { message: fit.reason });
+        return finish(turnId, StopReason.RUNTIME_ERROR, { message: fit.reason });
       }
 
       /* A compaction that could not help is not a boundary.
@@ -287,14 +460,17 @@ export function createOrchestrator({
          detector and changes nothing else. */
       if (fit.needed && fit.noop) {
         lastFreed = 0;
-      } else if (fit.needed) {
+      } else if (fit.needed && fit.messages) {
+        /* Guarded on fit.messages rather than on fit.needed alone: that is
+           the field whose absence caused the wipe, so it is the field the
+           branch tests. */
         setPhase(Phase.COMPACTING, turnId);
         emit(EventType.COMPACTION_STARTED, {
           before_tokens: fit.before, dropped: fit.dropped ?? 0,
         }, { turnId });
         messages = fit.messages;
         if (fit.summaryText) compacted = fit.summaryText;
-        lastFreed = fit.freed;
+        lastFreed = fit.freed ?? 0;
         emit(EventType.COMPACTION_COMPLETED, {
           after_tokens: fit.after, freed: fit.freed, summary: compacted ?? null,
         }, { turnId });
@@ -313,6 +489,7 @@ export function createOrchestrator({
       const calls = new Map();
       let order = [];
       let finishReason = null;
+      /** @type {any} */
       let providerError = null;
 
       try {
@@ -368,7 +545,7 @@ export function createOrchestrator({
               break;
           }
         }
-      } catch (e) {
+      } catch (/** @type {any} */ e) {
         if (e instanceof ProviderFailure && e.kind === "cancelled") {
           return finish(turnId, StopReason.CANCELLED);
         }
@@ -465,9 +642,7 @@ export function createOrchestrator({
         }
 
         // ---- permission -----------------------------------------------
-        const verdict = decide({
-          mode: currentMode, tool: call.name, args: parsed.value, sessionGrants: grants,
-        });
+        const verdict = permissionFor(call.name, parsed.value);
         if (verdict.decision === Decision.DENY) {
           emit(EventType.TOOL_FAILED, {
             tool_call_id: id, error: verdict.reason, code: "DENIED",
@@ -481,6 +656,7 @@ export function createOrchestrator({
             request_id: requestId, tool_call_id: id, tool: call.name,
             args: parsed.value, reason: verdict.reason,
             mode: currentMode, options: verdict.options ?? [],
+            ...(verdict.browser ? { browser: verdict.browser } : {}),
           }, { turnId });
           setState(SessionState.AWAITING_PERMISSION, turnId);
           status("Waiting for approval", turnId);
@@ -489,6 +665,7 @@ export function createOrchestrator({
           pending = {
             kind: StopReason.AWAITING_PERMISSION, turnId, deadline,
             requestId, callId: id, tool: call.name, args: parsed.value,
+            browser: verdict.browser ?? null,
             remaining: order.slice(order.indexOf(id) + 1).map((x) => ({ id: x, ...calls.get(x) })),
             detail: { tool: call.name, reason: verdict.reason },
           };
@@ -567,7 +744,11 @@ export function createOrchestrator({
 
       recordInLedger(ledger, name, args, result);
       emit(EventType.TOOL_COMPLETED, {
-        tool_call_id: id, result: summarize(name, result),
+        /* The name as well as the id. tool_started carries it and a
+           reducer can correlate, but anything reading one event at a
+           time — a log line, a filter, a test — could not tell which
+           tool finished. */
+        tool_call_id: id, tool: name, result: summarize(name, result),
         duration_ms: now() - startedAt,
         truncated: !!result.truncated,
       }, { turnId });
@@ -593,7 +774,7 @@ export function createOrchestrator({
         return { suspended: true, stop: StopReason.AWAITING_ANSWER, detail: pending.detail };
       }
       return { suspended: false };
-    } catch (e) {
+    } catch (/** @type {any} */ e) {
       // A tool that throws is a fact the model needs, not a crash. It is
       // reported as a failed call and the loop continues so the model can
       // react, which is the difference between an agent and a script.
@@ -643,8 +824,50 @@ export function createOrchestrator({
     get ledger() { return ledger; },
     get messages() { return messages; },
     get awaiting() { return pending; },
+    get groups() { return groups.slice(); },
+    /** What the interface needs to show a browser panel, or null when none. */
+    get browser() {
+      const s = ctx.browser;
+      if (!s || s.closed) return null;
+      return { id: s.id, url: s.url, snapshotId: s.snapshotId, quarantineDir: s.quarantineDir };
+    },
+    /** Origins the person approved this session, for the panel to show. */
+    get approvedOrigins() { return [...grantedOrigins]; },
 
     start() { started(); },
+
+    /**
+     * Turn tool groups on or off for subsequent turns.
+     *
+     * Groups are the progressive part of the tool surface: a session that is
+     * never going to browse should not spend context describing sixteen
+     * browser tools to the model, and a model graded chat-only should not be
+     * offered them at all. Unknown names are dropped rather than trusted, so
+     * a bad value cannot enable a group that does not exist.
+     *
+     * @param {string[]} next
+     */
+    setGroups(next) {
+      const known = new Set(/** @type {string[]} */ (Object.values(ToolGroup)));
+      const wanted = [...new Set((Array.isArray(next) ? next : []).filter((g) => known.has(g)))];
+      // read is not optional: a loop that cannot read anything has nothing to
+      // reason from, and every other group assumes it.
+      if (!wanted.includes(ToolGroup.READ)) wanted.unshift(ToolGroup.READ);
+      groups = wanted;
+      return groups.slice();
+    },
+
+    /**
+     * Release everything this session holds.
+     *
+     * Today that is the browser, whose cookies and storage must not outlive
+     * the session that created them. The host calls this when a session is
+     * closed or deleted; it is safe to call more than once.
+     */
+    async dispose() {
+      if (abort) abort.abort();
+      await closeBrowser();
+    },
 
     setMode(next) {
       currentMode = normalizeMode(next);
@@ -693,7 +916,17 @@ export function createOrchestrator({
       if (decision === "deny") {
         pushToolResult(p.callId, { error: "The person declined this action. Do not retry it; find another way or explain what you need." });
       } else {
-        if (decision === "approve_for_session") grantForSession(grants, p.tool, p.args);
+        if (decision === "approve_for_session") {
+          /* A browser approval is remembered as an origin, never as a tool
+             grant. grantKey() would store "browser_click:*", which would make
+             one approved click on a local dev server into approval to click
+             anything on any site for the rest of the session. */
+          if (p.browser) {
+            if (p.browser.origin) grantedOrigins.add(p.browser.origin);
+          } else {
+            grantForSession(grants, p.tool, p.args);
+          }
+        }
         const outcome = await execute(p.callId, p.tool, p.args, p.turnId);
         if (outcome.suspended) return { stop: outcome.stop, turnId: p.turnId, detail: outcome.detail };
       }
@@ -769,7 +1002,7 @@ function safeParse(raw) {
   const text = (raw ?? "").trim();
   if (!text) return { ok: true, value: {} };
   try { return { ok: true, value: JSON.parse(text) }; }
-  catch (e) { return { ok: false, error: e.message, value: null }; }
+  catch (/** @type {any} */ e) { return { ok: false, error: e.message, value: null }; }
 }
 
 /** Stable stringify, so argument order cannot hide a repeated call. */

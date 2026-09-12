@@ -166,10 +166,12 @@ test("compaction frees room and reports how much", () => {
 
   assert.equal(r.needed, true);
   assert.equal(r.thrashing, undefined);
-  assert.ok(r.after < r.before, `after ${r.after} was not less than before ${r.before}`);
-  assert.ok(r.freed > 0.5, `only freed ${r.freed}`);
-  assert.ok(r.dropped > 0, "nothing was dropped despite being over target");
-  assert.ok(r.messages.length <= KEEP_RECENT);
+  assert.ok(r.messages, "compact reported a rewrite but returned no messages");
+  const { after = 0, before = 0, freed = 0, dropped = 0, messages: kept = [] } = r;
+  assert.ok(after < before, `after ${after} was not less than before ${before}`);
+  assert.ok(freed > 0.5, `only freed ${freed}`);
+  assert.ok(dropped > 0, "nothing was dropped despite being over target");
+  assert.ok(kept.length <= KEEP_RECENT);
   // And the summary that replaces them still carries the failure.
   assert.match(String(r.summaryText), /node --test -> exit 1/);
 });
@@ -207,8 +209,9 @@ test("compaction never returns a context larger than it was given", () => {
   for (const c of cases) {
     const r = compact({ messages: c.messages, events: history(), window: 4000, headTokens: 50 });
     if (!r.needed) continue;
-    assert.ok(r.after <= r.before,
-      `${c.name}: compaction grew the context from ${r.before} to ${r.after}`);
+    const { after = 0, before = 0 } = r;
+    assert.ok(after <= before,
+      `${c.name}: compaction grew the context from ${before} to ${after}`);
     if (r.noop) assert.equal(r.messages, undefined, `${c.name}: a noop must not rewrite anything`);
   }
 });

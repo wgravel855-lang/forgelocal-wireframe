@@ -194,7 +194,8 @@ export function invalidReason(e) {
   return null;
 }
 
-/** The reduced view. Nothing in it is writable by the renderer. */
+/** The reduced view. Nothing in it is writable by the renderer.
+ *  @param {string|null} [sessionId] */
 export function initialState(sessionId = null) {
   return {
     sessionId,

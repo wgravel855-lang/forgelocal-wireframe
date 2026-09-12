@@ -26,11 +26,17 @@ export const MAX_PATCH_BYTES = 512 * 1024;
 export const MAX_FILES = 20;
 
 export class PatchConflict extends Error {
-  /** @param {string} message @param {object} detail */
+  /** @param {string} message @param {{rejected?: any[], [k: string]: any}} detail */
   constructor(message, detail) {
     super(message);
     this.name = "PatchConflict";
     this.code = "PATCH_CONFLICT";
+    /* Declared rather than only Object.assign-ed, so the fields callers
+       read off this error are visible to the checker. `rejected` is the
+       list of edits that did not apply, which is what the model needs in
+       order to fix them — not a flag. */
+    /** @type {any[]} */
+    this.rejected = detail.rejected ?? [];
     Object.assign(this, detail);
   }
 }

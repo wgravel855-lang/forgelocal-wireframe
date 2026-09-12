@@ -19,6 +19,23 @@ import { initialState, reduceAgentEvent, EventType } from "./events.mjs";
 const dir = () => mkdtempSync(join(tmpdir(), "fl-store-"));
 const clean = (d) => rmSync(d, { recursive: true, force: true });
 
+/**
+ * A row that must be there.
+ *
+ * Reading `.status` straight off a lookup that can return null fails two lines
+ * later with "cannot read properties of null", which says nothing about which
+ * session went missing. This fails on the spot, by name.
+ *
+ * @template T @param {T|null|undefined} v @param {string} what @returns {T}
+ */
+function must(v, what) {
+  assert.ok(v != null, what);
+  return /** @type {T} */ (v);
+}
+
+/** @param {any} store @param {string} id */
+const row = (store, id) => must(store.getSession(id), `no session named ${id}`);
+
 let seq = 0;
 const ev = (type, payload = {}, over = {}) => ({
   event_id: over.event_id ?? `e${++seq}`,
@@ -149,11 +166,11 @@ test("a session the host died inside is marked interrupted on open", () => {
   store = openStore(d);
   const result = store.markInterrupted();
 
-  assert.equal(store.getSession("running").status, SessionStatus.INTERRUPTED,
+  assert.equal(row(store, "running").status, SessionStatus.INTERRUPTED,
     "a run that was mid-flight must not claim to still be running");
-  assert.equal(store.getSession("asked").status, SessionStatus.AWAITING_USER,
+  assert.equal(row(store, "asked").status, SessionStatus.AWAITING_USER,
     "a session waiting on the user is not interrupted; it is waiting");
-  assert.equal(store.getSession("done").status, SessionStatus.COMPLETED);
+  assert.equal(row(store, "done").status, SessionStatus.COMPLETED);
   assert.equal(result.interrupted, 1);
   store.close();
   clean(d);
@@ -175,7 +192,7 @@ test("an unanswered question survives a restart", () => {
 
   store = openStore(d);
   store.markInterrupted();
-  assert.equal(store.getSession("s1").status, SessionStatus.AWAITING_USER);
+  assert.equal(row(store, "s1").status, SessionStatus.AWAITING_USER);
 
   // And the question itself comes back whole, so the card can be re-rendered
   // rather than the user being told a question was asked at some point.
@@ -198,7 +215,7 @@ test("compactions are recorded with the transcript they replaced", () => {
     sessionId: "s1", atSequence: 40, summary: "Fixed the divisor; tests pass.", dropped: 22,
   });
   assert.equal(store.compactionCount("s1"), 1);
-  const last = store.lastCompaction("s1");
+  const last = must(store.lastCompaction("s1"), "a compaction was recorded but none came back");
   assert.equal(last.at_sequence, 40);
   assert.equal(last.dropped, 22);
   assert.match(String(last.summary), /divisor/);

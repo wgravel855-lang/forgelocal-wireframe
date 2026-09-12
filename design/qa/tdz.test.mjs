@@ -76,3 +76,34 @@ test("the real controller is clean", async () => {
   const src = readFileSync(join(here, "..", "assets", "forgelocal.js"), "utf8");
   assert.deepEqual(findTemporalDeadZones(src), []);
 });
+
+test("text inside a string literal is not a call", () => {
+  /* The store module prepares `INSERT INTO blobs (...)` in a template and
+     declares a `const blobs` inside a function further down. Scanning the raw
+     text reported a dead zone in code that is correct and runs every day. */
+  const src = [
+    "(() => {",
+    "  const stmt = db.prepare(",
+    "    `INSERT INTO blobs (session_id, id, bytes)",
+    "     VALUES (?, ?, ?)`);",
+    "  const blobs = [];",
+    "  return [stmt, blobs];",
+    "})();",
+  ].join("\n");
+  assert.deepEqual(findTemporalDeadZones(src), []);
+});
+
+test("a call inside a template interpolation is still a call", () => {
+  // The exemption above must not become a way to hide one: ${helper()} runs
+  // when the template is evaluated, which at module scope is load time.
+  const src = [
+    "(() => {",
+    "  const LABEL = `today is ${stamp()}`;",
+    "  const stamp = () => Date.now();",
+    "  return LABEL;",
+    "})();",
+  ].join("\n");
+  const found = findTemporalDeadZones(src);
+  assert.equal(found.length, 1, JSON.stringify(found));
+  assert.match(found[0], /LABEL on line 2 calls stamp\(\)/);
+});

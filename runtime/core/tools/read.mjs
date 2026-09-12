@@ -137,7 +137,7 @@ export function listDirectory(ctx, args = {}) {
     let items;
     try {
       items = readdirSync(dir, { withFileTypes: true });
-    } catch (e) {
+    } catch (/** @type {any} */ e) {
       // A directory the user cannot read is a fact to report, not a crash.
       entries.push({ path: prefix.replace(/\/$/, ""), type: "unreadable", note: String(e.code ?? "EACCES") });
       return;
@@ -239,7 +239,7 @@ export function grep(ctx, args) {
   let re;
   try {
     re = new RegExp(args.query, args.case_sensitive ? "" : "i");
-  } catch (e) {
+  } catch (/** @type {any} */ e) {
     // An invalid pattern is the model's mistake to correct, so say what broke.
     throw Object.assign(new Error(`Invalid search pattern: ${e.message}`), { code: "BAD_PATTERN" });
   }
@@ -302,6 +302,7 @@ function* walkFiles(dir, root, includeIgnored) {
   const seen = new Set();
   while (stack.length) {
     const cur = stack.pop();
+    if (cur === undefined) break;
     if (budget-- <= 0) return;
     let items;
     try { items = readdirSync(cur, { withFileTypes: true }); } catch { continue; }

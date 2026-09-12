@@ -238,7 +238,7 @@ test("apply_patch refuses an edit when the file changed since it was read", () =
     () => applyPatch(f.ctx, {
       edits: [{ path: "src/app.js", operation: "replace", find: "const a = 1;", replace: "x", expected_hash: stale }],
     }),
-    (e) => e instanceof PatchConflict && e.rejected[0].reason.includes("changed since it was read"),
+    (/** @type {any} */ e) => e instanceof PatchConflict && e.rejected[0].reason.includes("changed since it was read"),
   );
   // and the file is untouched
   assert.ok(readFileSync(join(f.base, "src", "app.js"), "utf8").includes("const a = 1;"));
@@ -264,7 +264,7 @@ test("ambiguous find text is rejected rather than guessed", () => {
   writeFileSync(join(f.base, "dup.js"), "let x = 1;\nlet x = 1;\n");
   assert.throws(
     () => applyPatch(f.ctx, { edits: [{ path: "dup.js", operation: "replace", find: "let x = 1;", replace: "let x = 2;" }] }),
-    (e) => e.rejected[0].reason.includes("occurs 2 times"),
+    (/** @type {any} */ e) => e.rejected[0].reason.includes("occurs 2 times"),
   );
   cleanup(f);
 });
@@ -273,7 +273,7 @@ test("a whitespace mismatch says so instead of just failing", () => {
   const f = fixture();
   assert.throws(
     () => applyPatch(f.ctx, { edits: [{ path: "src/app.js", operation: "replace", find: "const  a  =  1;", replace: "x" }] }),
-    (e) => /whitespace or indentation differs/.test(e.rejected[0].hint ?? ""),
+    (/** @type {any} */ e) => /whitespace or indentation differs/.test(e.rejected[0].hint ?? ""),
   );
   cleanup(f);
 });
@@ -312,7 +312,7 @@ test("create, delete and writes outside the root behave correctly", () => {
   assert.ok(existsSync(join(f.base, "src", "new.js")));
 
   assert.throws(() => applyPatch(f.ctx, { edits: [{ path: "src/new.js", operation: "create", content: "x" }] }),
-    (e) => e.rejected[0].reason.includes("already exists"));
+    (/** @type {any} */ e) => e.rejected[0].reason.includes("already exists"));
 
   applyPatch(f.ctx, { edits: [{ path: "src/new.js", operation: "delete" }] });
   assert.equal(existsSync(join(f.base, "src", "new.js")), false);
@@ -383,7 +383,7 @@ test("a command that exceeds its timeout is killed", async () => {
   });
   assert.equal(r.timed_out, true);
   assert.notEqual(r.exit_code, 0);
-  assert.match(r.note, /Killed after/);
+  assert.match(String(r.note), /Killed after/);
   cleanup(f);
 });
 
@@ -447,7 +447,7 @@ test("output is bounded and the truncation is reported", async () => {
   });
   assert.equal(r.truncated, true);
   assert.ok(r.stdout.length <= LIMITS.FILE_BYTES, "output exceeded the cap");
-  assert.match(r.note, /cut off/);
+  assert.match(String(r.note), /cut off/);
   cleanup(f);
 });
 

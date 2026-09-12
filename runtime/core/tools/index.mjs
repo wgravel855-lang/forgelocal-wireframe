@@ -422,7 +422,7 @@ export function toolSpecs(groups = DEFAULT_GROUPS) {
 /**
  * Validate a call without running it. Used before asking for permission, so
  * the user is never shown an approval prompt for arguments that cannot run.
- * @param {string} name @param {any} args
+ * @param {string} name @param {any} args @param {readonly string[]} [groups]
  * @returns {{ok: true} | {ok: false, errors: string[]}}
  */
 export function validateCall(name, args, groups = DEFAULT_GROUPS) {

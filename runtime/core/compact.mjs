@@ -99,6 +99,7 @@ export function summarise(events, extra = {}) {
 
   /** @type {Map<string, any>} */
   const calls = new Map();
+  /** @type {string|null} */
   let firstUser = null;
 
   for (const ev of events) {
@@ -260,9 +261,15 @@ export function shedToolResults(messages, keepRecent = KEEP_RECENT) {
  * @param {number} [input.previousFreed] how much the last compaction freed, 0..1
  * @param {string} [input.objective]
  * @param {any[]} [input.plan]
+ * The result is one of three things and the caller has to tell them apart:
+ * nothing to do (`needed: false`), nothing that would help (`noop`), or a
+ * rewritten context. Only the last carries `messages`; treating a noop as a
+ * rewrite assigns undefined over the working context, which is a bug this
+ * code has actually had.
+ *
  * @returns {{
- *   needed: boolean, thrashing?: boolean, reason?: string,
- *   messages?: any[], summary?: SessionSummary, summaryText?: string,
+ *   needed: boolean, thrashing?: boolean, noop?: boolean, reason?: string,
+ *   messages?: any[], summary?: SessionSummary|null, summaryText?: string,
  *   before?: number, after?: number, dropped?: number, freed?: number,
  * }}
  */
@@ -286,12 +293,13 @@ export function compact({
      case stage two drops nothing and adds a summary, which grew the context
      by 2.6% the first time this ran. A compaction that makes things worse is
      worse than no compaction. */
+  /** @type {SessionSummary|null} */
   let summary = null;
   let summaryText = "";
   let dropped = 0;
   if (after > window * COMPACT_TARGET && next.length > KEEP_RECENT) {
     summary = summarise(events, { objective, plan });
-    summaryText = renderSummary(summary);
+    summaryText = renderSummary(/** @type {SessionSummary} */ (summary));
     const keep = next.slice(next.length - KEEP_RECENT);
     const candidate = headTokens + estimateTokens(summaryText) + cost(keep);
     if (candidate < after) {

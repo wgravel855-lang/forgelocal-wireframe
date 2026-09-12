@@ -18,7 +18,7 @@ const probe = createOpenAIProvider({ baseUrl, model: "" });
 let info;
 try {
   info = await probe.probe();
-} catch (e) {
+} catch (/** @type {any} */ e) {
   console.error(`Could not reach ${baseUrl}: ${e && e.message ? e.message : e}`);
   console.error("Start LM Studio's server, or pass a different base URL.");
   process.exit(2);

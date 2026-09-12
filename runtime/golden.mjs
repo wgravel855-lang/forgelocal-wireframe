@@ -110,7 +110,7 @@ async function main() {
   try {
     const probe = await provider.probe();
     console.log(`server:   ${probe.models.length} model(s) loaded\n`);
-  } catch (e) {
+  } catch (/** @type {any} */ e) {
     console.error(`provider unreachable: ${e.message}`);
     process.exit(3);
   }

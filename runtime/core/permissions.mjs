@@ -94,6 +94,10 @@ export const Decision = Object.freeze({
  * @property {"allow"|"ask"|"deny"} decision
  * @property {string} reason        shown to the user, so it must be plain
  * @property {string[]} [options]   answers offered when asking
+ * @property {{permission?: string, origin: string|null}} [browser]
+ *   set for a browser tool: which browser capability was weighed and against
+ *   which origin, so an approval is remembered as an origin rather than as a
+ *   blanket grant on the tool name
  */
 
 const ASK_OPTIONS = ["approve_once", "approve_for_session", "deny"];
@@ -136,6 +140,7 @@ export function decide({ mode, tool, args = {}, sessionGrants }) {
   // cover a blocked or always-confirm command, then approving one harmless
   // command would be an escalation path, and the always-block list would only
   // hold until the user said yes to something unrelated.
+  /** @type {{level: string, reason: string}} */
   let danger = { level: Danger.ORDINARY, reason: "" };
   if (tool === "run_command") {
     danger = classifyCommand(Array.isArray(args.argv) ? args.argv : []);

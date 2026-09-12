@@ -29,7 +29,7 @@
 
 import { randomUUID } from "node:crypto";
 import { existsSync, mkdirSync } from "node:fs";
-import { join } from "node:path";
+import { join, basename } from "node:path";
 import { WALKER, renderSnapshot } from "./snapshot.mjs";
 
 /** Where a Chromium-family binary might be, in preference order. */
@@ -131,6 +131,12 @@ export async function createBrowserSession({
   let version = 0;
   let snapshotId = "s0";
   let closed = false;
+  /* ref -> what that element was when it was snapshotted. The permission
+     classifier needs the accessible name of the thing a click would hit, and
+     reading it back off the page at decision time would mean deciding against
+     a DOM that may already have changed. */
+  /** @type {Map<string, {role: string, name: string}>} */
+  const refIndex = new Map();
 
   const note = (kind, payload) => {
     findings.push({ kind, ...payload, at: Date.now() });
@@ -177,7 +183,7 @@ export async function createBrowserSession({
           text: `Downloaded ${name} to quarantine. It has not been moved into the project and has not been run.`,
           url: dl.url(),
         });
-      } catch (e) {
+      } catch (/** @type {any} */ e) {
         note("download", { level: "error", text: `Download of ${name} failed: ${e && e.message}` });
       }
     });
@@ -211,6 +217,28 @@ export async function createBrowserSession({
     get closed() { return closed; },
     get findings() { return findings.slice(); },
     get snapshotId() { return snapshotId; },
+    /* Where the session is now. The permission policy needs this to work out
+       the origin an action would land on, and it has to come from the page
+       rather than from the URL the model last asked for: a redirect moves the
+       origin without the model saying anything. */
+    get url() { return closed ? "" : current().url(); },
+
+    /**
+     * What the last snapshot said a ref was.
+     *
+     * Returns the role and accessible name only, and returns null for a ref
+     * from an older snapshot. The caller is the permission classifier, which
+     * uses the name to make a decision *stricter* and never looser, so a page
+     * that lies about its own button names can cost the user an extra prompt
+     * and nothing else.
+     *
+     * @param {string} ref @returns {{role: string, name: string}|null}
+     */
+    describeRef(ref) {
+      const r = String(ref ?? "");
+      if (!r.startsWith(`${snapshotId}-`)) return null;
+      return refIndex.get(r) ?? null;
+    },
 
     async navigate(url) {
       const p = current();
@@ -236,6 +264,10 @@ export async function createBrowserSession({
          second argument, so the walker ran with version undefined. */
       const raw = await current().evaluate(
         `(${WALKER})(${JSON.stringify(snapshotId)})`);
+      refIndex.clear();
+      for (const node of raw.nodes ?? []) {
+        if (node.ref) refIndex.set(node.ref, { role: node.role, name: node.name });
+      }
       emit("browser_snapshot", {
         snapshot_id: snapshotId, url: raw.url, title: raw.title,
         elements: raw.interactive,
@@ -286,6 +318,7 @@ export async function createBrowserSession({
       return { ok: true };
     },
 
+    /** @param {{text?: string|null, ms?: number|null}} [opts] */
     async waitFor({ text = null, ms = null } = {}) {
       const p = current();
       if (text) {
@@ -305,6 +338,29 @@ export async function createBrowserSession({
         url: p.url(), title: await p.title(),
         text: body.slice(0, MAX_TEXT), truncated,
       };
+    },
+
+    /**
+     * Hand files from the project to a file input on the page.
+     *
+     * The most consequential thing in this file: it is the one action that
+     * moves the user's data outward. Paths arrive already resolved inside the
+     * project root by the caller, and the policy above classifies this as
+     * always-confirm, so a page cannot obtain a file by asking for one.
+     *
+     * @param {string} ref @param {string[]} paths absolute, inside the root
+     */
+    async uploadTo(ref, paths) {
+      const loc = locate(ref);
+      const name = await describe(loc);
+      await loc.setInputFiles(paths, { timeout: ACTION_TIMEOUT });
+      emit("browser_action", {
+        action: "upload", target: name, url: current().url(), ok: true,
+        // Names, not contents, and not the absolute paths: an event is
+        // written to disk and a home directory is identifying.
+        detail: `${paths.length} file(s): ${paths.map((p) => basename(p)).join(", ")}`,
+      });
+      return { ok: true, target: name };
     },
 
     async tabs() {

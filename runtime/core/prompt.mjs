@@ -44,7 +44,7 @@ export const OutputStyle = Object.freeze({
 
 export const OUTPUT_STYLES = Object.freeze(Object.values(OutputStyle));
 
-/** @param {unknown} v */
+/** @param {unknown} v @returns {string} */
 export function normalizeStyle(v) {
   const k = String(v ?? "").toLowerCase();
   return OUTPUT_STYLES.includes(/** @type {any} */ (k)) ? k : OutputStyle.ADAPTIVE;
@@ -81,6 +81,7 @@ export function invariantsLayer() {
  * rather than replacing them, so "concise" cannot quietly drop the prohibition
  * on claiming unverified results.
  */
+/** @param {string} [style] */
 export function styleLayer(style = OutputStyle.ADAPTIVE) {
   const base = [
     "HOW TO WRITE",

@@ -45,6 +45,7 @@ const clean = (f) => rmSync(f.base, { recursive: true, force: true });
 /** Every refusal must also have read nothing. */
 function refuses(ctx, path, label) {
   assert.throws(() => resolveInRoot(ctx.root, path), PathEscape, label);
+  /** @type {any} */
   let leaked = null;
   try { leaked = readFile(ctx, { path }); } catch { /* expected */ }
   assert.equal(leaked, null, `${label}: the tool returned content for an escaping path`);
@@ -128,6 +129,7 @@ test("reserved device names cannot be read or written", { skip: !win }, () => {
   // on Windows, with or without an extension. Opening one is not a file
   // operation at all; writing to it is a device write.
   for (const name of ["CON", "NUL", "PRN", "AUX", "COM1", "LPT1", "con.txt", "nul.log", "src/NUL"]) {
+    /** @type {any} */
     let out = null;
     try { out = readFile(f.ctx ?? { root: f.root }, { path: name }); } catch { /* expected */ }
     assert.equal(out && out.content ? out.binary === false && out.content.length > 0 : false, false,

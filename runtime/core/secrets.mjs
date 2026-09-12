@@ -53,7 +53,7 @@ export function redact(text) {
     out = out.replace(re, (match, ...caps) => {
       if (group === "pem") return `${caps[0]}\n${PLACEHOLDER}\n${caps[1]}`;
       if (group === 0) return PLACEHOLDER;
-      const captured = caps[group - 1];
+      const captured = caps[Number(group) - 1];
       if (typeof captured !== "string") return match;
       return match.replace(captured, PLACEHOLDER);
     });

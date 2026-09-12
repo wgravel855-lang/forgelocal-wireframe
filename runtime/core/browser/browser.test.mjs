@@ -138,7 +138,8 @@ test("every browser tool has a permission classification", () => {
   // model without a classification would be denied after the user was asked.
   for (const [tool, permission] of Object.entries(BROWSER_TOOL_PERMISSION)) {
     assert.ok(permission, `${tool} has no permission`);
-    assert.ok(Object.values(BrowserPermission).includes(permission), `${tool}: ${permission}`);
+    assert.ok(Object.values(BrowserPermission).includes(/** @type {any} */ (permission)),
+      `${tool}: ${permission}`);
   }
 });
 
@@ -246,7 +247,7 @@ describe("an isolated browser session", { skip: noBrowser ? "no Chromium-family 
       await s.navigate(page("<button>Second</button><button>Third</button>"));
       await s.snapshot();
 
-      await assert.rejects(() => s.click(ref), (e) => {
+      await assert.rejects(() => s.click(ref), (/** @type {any} */ e) => {
         assert.equal(e.name, "StaleRef");
         assert.match(e.message, /browser_snapshot again/, "the model is not told how to recover");
         return true;

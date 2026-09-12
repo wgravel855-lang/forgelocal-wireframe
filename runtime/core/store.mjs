@@ -151,29 +151,39 @@ export function openStore(dir) {
   const now = () => Date.now();
 
   return {
-    /** @returns {string} the session id */
+    /**
+     * @param {object} s
+     * @param {string} [s.id] @param {string} s.root @param {string} s.mode
+     * @param {string} [s.style] @param {string|null} [s.model] @param {string|null} [s.title]
+     * @returns {string} the session id
+     */
     createSession({ id = randomUUID(), root, mode, style = "adaptive", model = null, title = null }) {
       const t = now();
       stmt.createSession.run(id, root, title, mode, style, model, SessionStatus.RUNNING, t, t);
       return id;
     },
 
+    /** @param {string} id */
     getSession(id) {
       return stmt.getSession.get(id) ?? null;
     },
 
+    /** @param {number} [limit] */
     listSessions(limit = 50) {
       return stmt.listSessions.all(limit);
     },
 
+    /** @param {string} id @param {string|null} title */
     setTitle(id, title) {
       stmt.setTitle.run(title, now(), id);
     },
 
+    /** @param {string} id @param {string} status */
     setStatus(id, status) {
       stmt.touchSession.run(now(), status, id);
     },
 
+    /** @param {string} id @param {string} status */
     closeSession(id, status) {
       const t = now();
       stmt.closeSession.run(status, t, t, id);
@@ -223,27 +233,34 @@ export function openStore(dir) {
       }));
     },
 
+    /** @param {string} sessionId */
     lastSequence(sessionId) {
       const r = stmt.lastSequence.get(sessionId);
       return r && r.seq != null ? Number(r.seq) : 0;
     },
 
-    /** Read one externalised blob by reference. */
+    /** Read one externalised blob by reference. @param {string} ref */
     readBlob(ref) {
       const file = join(blobDir, `${ref}.txt`);
       return existsSync(file) ? readFileSync(file, "utf8") : null;
     },
 
+    /**
+     * @param {{sessionId: string, atSequence: number, summary: string,
+     *   dropped: number}} c
+     */
     recordCompaction({ sessionId, atSequence, summary, dropped }) {
       const id = randomUUID();
       stmt.addCompaction.run(id, sessionId, atSequence, summary, dropped, now());
       return id;
     },
 
+    /** @param {string} sessionId */
     lastCompaction(sessionId) {
       return stmt.lastCompaction.get(sessionId) ?? null;
     },
 
+    /** @param {string} sessionId */
     compactionCount(sessionId) {
       const r = stmt.countCompactions.get(sessionId);
       return r ? Number(r.n) : 0;
@@ -277,6 +294,7 @@ export function openStore(dir) {
      * records which session wrote which file. Dropping the rows first leaves
      * the bytes on disk with no way left to find them.
      */
+    /** @param {string} id */
     deleteSession(id) {
       const files = db.prepare("SELECT id FROM blobs WHERE session_id = ?").all(id);
       stmt.deleteEvents.run(id);

@@ -17,14 +17,20 @@ const SKIP = new Set(["node_modules", ".git", "public", ".vercel"]);
 
 /** @type {string[]} */
 const files = [];
-(function walk(dir) {
-  for (const name of readdirSync(dir)) {
-    if (SKIP.has(name)) continue;
-    const p = join(dir, name);
-    if (statSync(p).isDirectory()) walk(p);
-    else if ([".mjs", ".js"].includes(extname(name))) files.push(p);
-  }
-})(join(root, "design"));
+/* Both trees. The runtime was scanned by nothing for a long time, which meant
+   the two rules below that exist because shell heredocs eat backslashes and
+   dollar signs were watching the half of the repo that was written the same
+   way but not the other half. */
+for (const top of ["design", "runtime"]) {
+  (function walk(dir) {
+    for (const name of readdirSync(dir)) {
+      if (SKIP.has(name)) continue;
+      const p = join(dir, name);
+      if (statSync(p).isDirectory()) walk(p);
+      else if ([".mjs", ".js"].includes(extname(name))) files.push(p);
+    }
+  })(join(root, top));
+}
 
 /** @type {string[]} */
 const problems = [];

@@ -147,7 +147,10 @@ export const askUserSchema = assertStrictSchema({
 /**
  * Asking suspends the turn. The tool itself only records the question; the
  * orchestrator is what stops, because resuming needs the session, not the tool.
- * @param {any} _ctx @param {{question: string, options?: string[]}} args
+ * @param {any} _ctx
+ * @param {{questions?: Array<{header?: string, question: string,
+ *   multiSelect?: boolean, options?: Array<{label: string,
+ *   description?: string, recommended?: boolean}>}>}} args
  */
 export function askUser(_ctx, args) {
   /* The first option is the recommendation unless one says otherwise. The

@@ -48,6 +48,7 @@ function start() {
     child,
     get frames() { return frames; },
     get stderr() { return stderr; },
+    /** @param {string} type @param {any} [payload] @param {string|null} [sessionId] */
     send(type, payload = {}, sessionId = null) {
       const id = `r${++seq}`;
       child.stdin.write(`${JSON.stringify({ v: PROTOCOL_VERSION, id, type, sessionId, payload })}\n`);

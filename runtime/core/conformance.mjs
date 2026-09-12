@@ -96,6 +96,7 @@ export async function runConformance({
     let detail = "";
 
     try {
+      /** @type {any[]} */
       const messages = [
         {
           role: "system",
@@ -141,7 +142,7 @@ export async function runConformance({
           if (i + 1 < turnCount) break;
         }
       }
-    } catch (e) {
+    } catch (/** @type {any} */ e) {
       outcome = { ok: false, why: `threw: ${e && e.message ? e.message : e}` };
       detail = outcome.why;
     }

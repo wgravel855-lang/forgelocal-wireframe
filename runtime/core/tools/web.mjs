@@ -186,6 +186,10 @@ export async function webFetch(ctx, args) {
 
   try {
     let url = check.url;
+    /* any rather than Response because ctx.fetch is injectable: what comes
+       back is whatever the caller supplied. The loop below always runs at
+       least once, so the initial null never reaches the code after it. */
+    /** @type {any} */
     let response = null;
 
     /* Redirects are followed by hand so every hop is re-checked. Letting
@@ -235,7 +239,7 @@ export async function webFetch(ctx, args) {
          model is told the handle exists rather than given the content. */
       retrieval: truncated ? { bytes: raw.length, note: "Full content stored with the session." } : null,
     };
-  } catch (e) {
+  } catch (/** @type {any} */ e) {
     if (e && e.name === "AbortError") {
       return { ok: false, error: `${args.url} did not respond within ${TIMEOUT_MS / 1000}s.` };
     }

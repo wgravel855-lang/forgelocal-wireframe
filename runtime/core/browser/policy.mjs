@@ -146,7 +146,15 @@ export function classifyBrowserAction({
     };
   }
 
-  // Opening and closing the browser itself is not origin-scoped.
+  /* Closing is the one browser action that only ever removes capability: it
+     ends the session and destroys its cookies and storage. Asking permission
+     to give something up trains people to click through prompts, so it is
+     allowed outright. */
+  if (tool === "browser_close") {
+    return { decision: "allow", permission, reason: "Closing the browser removes access, never grants it." };
+  }
+
+  // Opening the browser is not origin-scoped: there is no page yet.
   if (permission === BrowserPermission.OPEN) {
     return { decision: "confirm", permission, reason: "Open an isolated browser for this session." };
   }

@@ -24,8 +24,11 @@ const DEFAULT_BASE = "http://127.0.0.1:1234/v1";
  * @param {string} [opts.baseUrl]      e.g. http://127.0.0.1:8080/v1
  * @param {string} opts.model
  * @param {string} [opts.apiKey]       never logged, never persisted here
- * @param {number} [opts.contextWindow]
- * @param {typeof fetch} [opts.fetch]  injectable for tests
+ * @param {number|null} [opts.contextWindow]
+ * @param {(url: string, init?: any) => Promise<any>} [opts.fetch]
+ *   The HTTP seam. Typed by what this file actually uses of it rather than
+ *   as the DOM `fetch`, because a test double returns a plain object with
+ *   ok/status/json/text/body and is not a Response.
  */
 export function createOpenAIProvider({
   baseUrl = DEFAULT_BASE, model, apiKey, contextWindow = null, fetch: f = fetch,
@@ -55,7 +58,7 @@ export function createOpenAIProvider({
       let res;
       try {
         res = await f(`${url}/models`, { headers: headers() });
-      } catch (e) {
+      } catch (/** @type {any} */ e) {
         throw new ProviderFailure(
           ProviderError.UNREACHABLE,
           `No inference server is listening at ${url}. Start one, then try again.`,
@@ -125,7 +128,7 @@ export function createOpenAIProvider({
           method: "POST", headers: headers(),
           body: JSON.stringify(body), signal: opts.signal,
         });
-      } catch (e) {
+      } catch (/** @type {any} */ e) {
         if (opts.signal?.aborted) {
           yield { type: ModelEvent.FINISH, reason: "cancelled" };
           return;
@@ -150,6 +153,7 @@ export function createOpenAIProvider({
       /** index -> {id, name, started} */
       const calls = new Map();
       let finish = null;
+      /** @type {any} */
       let usage = null;
       let sawText = false;
 
@@ -211,7 +215,7 @@ export function createOpenAIProvider({
 
           if (choice.finish_reason) finish = choice.finish_reason;
         }
-      } catch (e) {
+      } catch (/** @type {any} */ e) {
         if (opts.signal?.aborted) {
           yield { type: ModelEvent.FINISH, reason: "cancelled" };
           return;

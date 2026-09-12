@@ -61,9 +61,10 @@ export function createLedger() {
     read: new Map(),
     /** rel path -> {added, removed, hash} */
     changed: new Map(),
-    /** {argv, exit, at} */
+    /** @type {Array<{argv: string[], exit: number|null, timedOut: boolean, at: number}>} */
     commands: [],
-    /** unresolved problems the model has not yet fixed */
+    /** unresolved problems the model has not yet fixed
+     *  @type {Array<{what: string, exit: number|null, detail: string}>} */
     failures: [],
   };
 }
