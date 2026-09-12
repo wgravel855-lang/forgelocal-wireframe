@@ -139,11 +139,20 @@ const proofSurface = () => {
       /(<span data-model-label>)[\s\S]*?(<\/span>)/,
       "$1Qwen2.5 Coder 14B$2",
     )
+    // The header's details panel names the model too. One preview cannot say
+    // two different things about the same session.
+    .replace(
+      /(<span data-pd-model>)[\s\S]*?(<\/span>)/,
+      "$1Qwen2.5 Coder 14B$2",
+    )
     // The workspace titles itself with an h1. A picture of the product must not
     // add a second top-level heading to the marketing page's outline, so the
     // element changes and the styling does not.
-    .replace(/<h1 class="ws-h1"([^>]*)>/, '<div class="ws-h1"$1>')
-    .replace(/<\/h1>/, "</div>");
+    //
+    // This keys off data-ws-title, the semantic hook, rather than the class
+    // list. Keying off the class meant the header redesign silently stopped
+    // the replacement and the page shipped two h1 elements.
+    .replace(/<h1([^>]*data-ws-title[^>]*)>([^]*?)<\/h1>/, "<div$1>$2</div>");
   // .app carries the dark palette. On an app route it sits on <body>; here it
   // has to be on the surface itself, or the workspace renders with the
   // marketing page's light tokens.

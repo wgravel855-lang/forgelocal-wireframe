@@ -1,27 +1,28 @@
 <header class="topbar">
-  <button class="btn btnq ico btns" type="button" data-sidebar-toggle aria-expanded="true" aria-label="Hide sidebar">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M9.5 4v16"/></svg>
+  <button class="iconbtn" type="button" data-sidebar-toggle aria-expanded="true" aria-label="Show sidebar" title="Show sidebar">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M9.5 4v16"/></svg>
   </button>
 
-  <!-- The chevron now opens something. Project, model, permission preset,
-       context and checkpoint are the five things a user asks about mid-task. -->
-  <div style="position:relative;min-width:0">
-    <button class="hit" style="gap:7px;padding:0 8px;border-radius:7px;min-width:0"
-      data-popover="project-details" aria-expanded="false" aria-haspopup="dialog"
-      aria-label="Project and session details">
-      <h1 class="ws-h1" data-ws-title>{{title}}</h1>
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="m6 9.5 6 6 6-6"/></svg>
+  <!-- Breadcrumbs: where this session lives, and what it is. Each half opens
+       the selector it already had; the header used to be nearly empty and said
+       neither. -->
+  <nav class="crumbs" aria-label="Location">
+    <button class="crumb crumb-proj" type="button" data-popover="project-details"
+      aria-expanded="false" aria-haspopup="dialog" aria-label="Project details">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5A2 2 0 0 1 5 5.5h3.6l1.8 2H19a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+      <span data-pd-name>task-tracker</span>
     </button>
+    <span class="crumb-sep" aria-hidden="true">/</span>
+    <h1 class="crumb crumb-title ws-h1" data-ws-title>{{title}}</h1>
+
     <div class="menu popover pdetails" id="project-details" role="dialog" aria-label="Project and session details" hidden>
       <dl class="pd-kv">
         <dt>Project</dt><dd><span data-pd-name>task-tracker</span></dd>
         <dt>Root</dt><dd><span class="m" data-pd-path>~/projects/task-tracker</span></dd>
         <dt>Repository</dt><dd><span data-pd-branch>Git repo, on main</span></dd>
         <dt>Stack</dt><dd><span data-pd-stack>Vite + React detected</span></dd>
-        <dt>Model</dt><dd><span data-pd-model>Qwen2.5 Coder 14B</span> <span class="faint">Q4_K_M</span></dd>
-        <dt>Permissions</dt><dd><span data-preset-label>Balanced</span></dd>
-        <dt>Context used</dt><dd><span class="num">5.6k of 16k</span> <span class="faint">34%</span></dd>
-        <dt>Checkpoint</dt><dd>Checkpoint 4, before the last edit</dd>
+        <dt>Model</dt><dd><span data-pd-model>No model loaded</span></dd>
+        <dt>Permissions</dt><dd><span data-preset-label>Ask before changes</span></dd>
       </dl>
       <div class="sep"></div>
       <div class="pd-a">
@@ -29,7 +30,7 @@
         <a class="btn btns" href="/app/settings/">Project settings</a>
       </div>
     </div>
-  </div>
+  </nav>
 
   <span class="grow"></span>
 
@@ -49,17 +50,25 @@
 
   {{artifacts}}
 
+  <!-- The work pane toggle. It reflects a pane this build actually has. -->
+  <button class="iconbtn" type="button" data-pane-toggle aria-expanded="false"
+    aria-label="Show work pane" title="Work pane">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M15 4v16"/></svg>
+  </button>
+
   <div style="position:relative">
-    <button class="btn btnq ico btns" type="button" data-popover="more-pop" aria-expanded="false"
-      aria-haspopup="menu" aria-label="More options">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r=".8"/><circle cx="12" cy="12" r=".8"/><circle cx="19" cy="12" r=".8"/></svg>
+    <button class="iconbtn" type="button" data-popover="more-pop" aria-expanded="false"
+      aria-haspopup="menu" aria-label="More options" title="More">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r=".9"/><circle cx="12" cy="12" r=".9"/><circle cx="19" cy="12" r=".9"/></svg>
     </button>
     <div class="menu popover" id="more-pop" role="menu" aria-label="More" hidden
-      style="top:calc(100% + 6px);right:0;width:236px;padding:6px">
-      <button role="menuitem" class="srow" type="button" data-shortcuts>
-        <span class="t">Keyboard shortcuts</span><span class="lab">?</span></button>
-      <a role="menuitem" class="srow" href="/app/settings/"><span class="t">Settings</span></a>
-      <a role="menuitem" class="srow" href="/docs/"><span class="t">Docs</span></a>
+      style="top:calc(100% + 6px);right:0;width:238px;padding:6px">
+      <button role="menuitem" class="mrow-item" type="button" data-chat-action="rename">Rename&hellip;<span class="mrow-k">R</span></button>
+      <button role="menuitem" class="mrow-item" type="button" data-chat-action="pin">Pin session<span class="mrow-k">P</span></button>
+      <div class="sep"></div>
+      <button role="menuitem" class="mrow-item" type="button" data-shortcuts>Keyboard shortcuts<span class="mrow-k">?</span></button>
+      <a role="menuitem" class="mrow-item" href="/app/settings/">Settings<span class="mrow-k">Ctrl ,</span></a>
+      <a role="menuitem" class="mrow-item" href="/docs/">Docs</a>
     </div>
   </div>
 </header>

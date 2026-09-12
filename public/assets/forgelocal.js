@@ -310,12 +310,13 @@ import {
         b.setAttribute("aria-label", collapsed ? "Show sidebar" : "Hide sidebar");
       });
     };
-    // Narrow windows start collapsed regardless of the stored preference. On a
-    // wide display a first-time user also starts collapsed, so the canvas
-    // belongs to the work rather than to an empty session list; an explicit
+    // Narrow windows start collapsed regardless of the stored preference. A
+    // wide display starts expanded: the sidebar is the application's navigation
+    // — project, sessions and their states — and starting it as a rail of
+    // unlabelled icons hides the thing a person needs to orient by. An explicit
     // choice is remembered and never overridden.
     const narrow = innerWidth <= 1180;
-    apply(narrow ? true : store.get("sidebar-collapsed", true));
+    apply(narrow ? true : store.get("sidebar-collapsed", false));
     $$("[data-sidebar-toggle]").forEach((b) =>
       b.addEventListener("click", () => {
         const now = !shell.classList.contains("is-collapsed");
@@ -2148,30 +2149,38 @@ import {
   /* One question above the input, and nothing else. Suggestion bars filled the
      canvas with three guesses about the user's work and pushed the greeting to
      the bottom of the viewport; the composer already says what to do. */
+  /* The empty state is a heading and the composer.
+   *
+   * The mark above it was decoration that communicated no state, so it is gone.
+   * What remains is the question and the thing that answers it. */
   const emptyState = () => `
     <div class="empty" data-empty>
-      <span class="empty-mark" aria-hidden="true"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" aria-hidden="true"><rect x="2.4" y="2.4" width="19.2" height="19.2" rx="5.6" stroke="currentColor" stroke-width="1.7"/><path d="M8.6 8.9 11.7 12l-3.1 3.1" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><path d="M13.6 15.1h3.3" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg></span>
       <h2 class="empty-q">What do you want to build?</h2>
     </div>`;
 
-  /* Up to three stored sessions, as plain rows under the composer.
+  /* Example tasks, not a second copy of the session list.
    *
-   * These are the same sessions the sidebar lists and each one opens its real
-   * transcript. Nothing invented: with no stored session the area is absent
-   * rather than filled with sample prompts. */
+   * This used to repeat the three most recent sessions, which the sidebar
+   * already lists two inches to the left. They are plain text rows, there are
+   * never more than three, and they disappear once the project has any session
+   * at all: an example is for someone who has nothing yet. */
+  const EXAMPLES = [
+    "Explain how this project is organized",
+    "Find one small bug and propose a fix",
+    "Run the tests and explain any failures",
+  ];
+
   function renderRecents() {
     const host = $("[data-recents]");
     if (!host) return;
     const raw = $("#fl-sessions");
-    if (!raw) return;
     let chats = [];
-    try { chats = JSON.parse(raw.textContent).chats || []; } catch { chats = []; }
-    const rows = chats.filter((c) => c.hasThread).slice(0, 3);
-    host.innerHTML = rows.length ? rows.map((c) => `
-      <a href="/app/" data-open-chat="${esc(c.id)}">
-        ${ICON.plan()}<span class="t">${esc(c.title)}</span>
-      </a>`).join("") : "";
-    host.hidden = rows.length === 0;
+    if (raw) { try { chats = JSON.parse(raw.textContent).chats || []; } catch { chats = []; } }
+    const hasHistory = chats.some((c) => c.hasThread);
+    if (hasHistory) { host.innerHTML = ""; host.hidden = true; return; }
+    host.innerHTML = EXAMPLES.map((text) => `
+      <button type="button" data-starter="${esc(text)}"><span class="t">${esc(text)}</span></button>`).join("");
+    host.hidden = false;
   }
 
   /* Which of the two workspace compositions is showing.
@@ -3562,6 +3571,121 @@ import {
     });
   }
 
+  /* ------------------------------------------------------------ session find */
+
+  /* The search surface.
+   *
+   * It replaces a permanent field that was the loudest thing in the sidebar.
+   * The control lives in the brand row; this opens over the list, focuses
+   * itself, answers the arrow keys, and closes on Escape with focus returned to
+   * the trigger. It searches the same sessions the sidebar renders, so there is
+   * no second index to drift.
+   */
+  function wireSessionSearch() {
+    const panel = $("[data-search-panel]");
+    const trigger = $("[data-search-open]");
+    if (!panel || !trigger) return;
+    const input = $("[data-chat-search]", panel);
+    const results = $("[data-search-results]", panel);
+    const close = $("[data-search-close]", panel);
+
+    const sessions = () => {
+      const raw = $("#fl-sessions");
+      if (!raw) return [];
+      try { return JSON.parse(raw.textContent).chats || []; } catch { return []; }
+    };
+
+    let active = -1;
+
+    const render = () => {
+      const q = (input.value || "").trim().toLowerCase();
+      const all = sessions();
+      const hits = q ? all.filter((c) => c.title.toLowerCase().includes(q)) : all.slice(0, 8);
+      active = hits.length ? 0 : -1;
+      results.innerHTML = hits.length
+        ? hits.map((c, i) => `
+          <button class="find-row" type="button" role="option" data-find="${esc(c.id)}"
+            data-active="${String(i === 0)}">
+            <span class="t">${esc(c.title)}</span>
+            <span class="p">${esc(c.project || "")}</span>
+          </button>`).join("")
+        : `<p class="side-find-e">No session matches “${esc(input.value.trim())}”.</p>`;
+      $$("[data-find]", results).forEach((b) => b.addEventListener("click", () => open(b.dataset.find)));
+    };
+
+    const open = (id) => {
+      hide();
+      const row = $(`.chat[data-chat="${id}"] .chat-open`);
+      if (row) row.click();
+    };
+
+    const move = (delta) => {
+      const rows = $$("[data-find]", results);
+      if (!rows.length) return;
+      active = (active + delta + rows.length) % rows.length;
+      rows.forEach((r, i) => { r.dataset.active = String(i === active); });
+      rows[active].scrollIntoView({ block: "nearest" });
+    };
+
+    const show = () => {
+      panel.hidden = false;
+      trigger.setAttribute("aria-expanded", "true");
+      input.value = "";
+      render();
+      input.focus();
+    };
+    const hide = () => {
+      if (panel.hidden) return;
+      panel.hidden = true;
+      trigger.setAttribute("aria-expanded", "false");
+      // The filter the panel applied is released with it.
+      if (input.value) { input.value = ""; input.dispatchEvent(new Event("input", { bubbles: true })); }
+      trigger.focus();
+    };
+
+    trigger.addEventListener("click", () => (panel.hidden ? show() : hide()));
+    if (close) close.addEventListener("click", hide);
+    input.addEventListener("input", render);
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); hide(); return; }
+      if (e.key === "ArrowDown") { e.preventDefault(); move(1); return; }
+      if (e.key === "ArrowUp") { e.preventDefault(); move(-1); return; }
+      if (e.key === "Enter") {
+        const row = $$("[data-find]", results)[active];
+        if (row) { e.preventDefault(); open(row.dataset.find); }
+      }
+    });
+    document.addEventListener("pointerdown", (e) => {
+      if (panel.hidden) return;
+      if (panel.contains(e.target) || trigger.contains(e.target)) return;
+      hide();
+    });
+    // Ctrl/Cmd+K is the shortcut people already try.
+    document.addEventListener("keydown", (e) => {
+      if (e.key.toLowerCase() !== "k" || !(e.ctrlKey || e.metaKey) || e.shiftKey) return;
+      e.preventDefault();
+      panel.hidden ? show() : hide();
+    });
+  }
+
+  /* The session filter. It hides groups rather than rebuilding the list, so a
+     row's own state survives filtering. */
+  function wireSessionFilter() {
+    const buttons = $$("[data-session-filter]");
+    if (!buttons.length) return;
+    const apply = (which) => {
+      buttons.forEach((b) => b.setAttribute("aria-checked", String(b.dataset.sessionFilter === which)));
+      $$(".cgroup").forEach((g) => {
+        const id = g.dataset.group;
+        const hasRows = !!$(".chat", g);
+        g.hidden = !hasRows || (which !== "all" && id !== which);
+      });
+      store.set("session-filter", which);
+    };
+    buttons.forEach((b) => b.addEventListener("click", () => { apply(b.dataset.sessionFilter); closePop(); }));
+    apply(store.get("session-filter", "all"));
+  }
+
   /* ---------------------------------------------------------------- desktop */
 
   /* The live session.
@@ -4434,7 +4558,7 @@ import {
     wireDensity(); wireQueue(); wireCaretMenus(); wirePaste();
     wireSettings(); wireShortcuts(); wireDownloadRow(); wireLanding();
     wireScan(); wireSetupProject(); wireSetupPermissions(); wireSetupDownload();
-    wireDesktop();
+    wireSessionSearch(); wireSessionFilter(); wireDesktop();
     wireInert();
     document.documentElement.dataset.reducedMotion = String(reduced);
   };

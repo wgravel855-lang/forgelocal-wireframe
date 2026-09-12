@@ -25,42 +25,45 @@
 <main id="main" style="height:100%"><div class="app" style="height:100%;position:relative">
   <div class="shell">
 
-    <aside class="sidebar" data-active="s3" data-sidebar-mode="normal" aria-label="Chats and projects">
+    <aside class="sidebar" data-active="s3" data-sidebar-mode="normal" aria-label="Sessions and projects">
 
-  <!-- Header: the collapse control stays where it has always been, with the
-       section name beside it and compose on the right. -->
-  <div class="side-hd">
-    <button class="btn btnq ico btns" type="button" data-sidebar-toggle aria-expanded="true" aria-label="Hide sidebar">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M9.5 4v16"/></svg>
-    </button>
-    <span class="side-hd-t" data-hide-collapsed>Chats</span>
-    <span class="grow" data-hide-collapsed></span>
-    <a class="btn btnq ico btns" href="/app/" aria-label="New chat" title="New chat">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.6 3.6a2.1 2.1 0 0 1 3 3L7.4 18.8 3.5 20l1.2-3.9z"/></svg>
+  <!-- Brand row. The product identity and the three controls that act on the
+       whole sidebar: collapse, search, new session. -->
+  <div class="side-brand">
+    <a class="side-mark" href="/app/" aria-label="ForgeLocal">
+      <svg viewBox="0 0 24 24" fill="none" width="20" height="20" aria-hidden="true" focusable="false" style="flex-shrink:0">
+  <rect x="2.4" y="2.4" width="19.2" height="19.2" rx="5.6" stroke="currentColor" stroke-width="1.7"/>
+  <path d="M8.6 8.9 11.7 12l-3.1 3.1" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M13.6 15.1h3.3" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+</svg>
+      <span class="side-word" data-hide-collapsed>ForgeLocal</span>
     </a>
+    <span class="grow" data-hide-collapsed></span>
+    <button class="iconbtn" type="button" data-search-open aria-label="Search sessions"
+      title="Search sessions" aria-haspopup="dialog" aria-expanded="false">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>
+    </button>
+    <a class="iconbtn" href="/app/" aria-label="New session" title="New session">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M12 5.5v13M5.5 12h13"/></svg>
+    </a>
+    <button class="iconbtn" type="button" data-sidebar-toggle aria-expanded="true" aria-label="Collapse sidebar" title="Collapse sidebar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M9.5 4v16"/></svg>
+    </button>
   </div>
 
-  <div class="side-search" data-hide-collapsed>
-    <label class="field">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="flex-shrink:0"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>
-      <span class="vh">Search chats</span>
-      <input type="search" data-chat-search placeholder="Search chats" autocomplete="off">
-    </label>
-  </div>
-
-  <!-- Projects, not folders: a chat belongs to a project, and the picker scopes
-       the list to one. -->
-  <div class="side-project" data-hide-collapsed>
-    <div style="position:relative">
-      <button class="field" type="button" style="width:100%" data-popover="project-pop"
-        aria-expanded="false" aria-haspopup="menu" aria-label="Switch project">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M3 7.5A2 2 0 0 1 5 5.5h3.6l1.8 2H19a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
-        <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--fg);text-align:left" data-project-label>task-tracker</span>
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="m6 9.5 6 6 6-6"/></svg>
-      </button>
-      <div class="menu popover" id="project-pop" role="menu" aria-label="Projects" hidden
-        style="top:calc(100% + 6px);left:0;right:0;padding:6px">
-        <button role="menuitemradio" class="srow" type="button" data-project-pick="task-tracker"
+  <!-- The project is a navigation row, not a card. It opens the same picker it
+       always did. -->
+  <div class="side-nav">
+    <button class="navrow" type="button" data-popover="project-pop"
+      aria-expanded="false" aria-haspopup="menu" aria-label="Switch project">
+      <svg class="navrow-i" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5A2 2 0 0 1 5 5.5h3.6l1.8 2H19a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+      <span class="navrow-t" data-project-label data-hide-collapsed>task-tracker</span>
+      <span class="navrow-n" data-project-count data-hide-collapsed hidden></span>
+      <svg class="navrow-c" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-hide-collapsed><path d="m6 9.5 6 6 6-6"/></svg>
+    </button>
+    <div class="menu popover" id="project-pop" role="menu" aria-label="Projects" hidden
+      style="top:calc(100% + 6px);left:8px;right:8px;padding:6px">
+      <button role="menuitemradio" class="srow" type="button" data-project-pick="task-tracker"
           aria-checked="true">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M3 7.5A2 2 0 0 1 5 5.5h3.6l1.8 2H19a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
           <span class="t">task-tracker</span>
@@ -75,11 +78,28 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M3 7.5A2 2 0 0 1 5 5.5h3.6l1.8 2H19a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
           <span class="t">api-gateway</span>
         </button>
-      </div>
     </div>
   </div>
 
-  <nav class="chat-list scroll" data-hide-collapsed aria-label="Chats">
+  <div class="side-sec" data-hide-collapsed>
+    <span class="seclabel" id="sessions-label">Sessions</span>
+    <span class="grow"></span>
+    <button class="iconbtn iconbtn-sm" type="button" data-popover="filter-pop"
+      aria-expanded="false" aria-haspopup="menu" aria-label="Filter sessions" title="Filter sessions">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M7 12h10M10 17h4"/></svg>
+    </button>
+    <a class="iconbtn iconbtn-sm" href="/app/" aria-label="New session" title="New session">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M12 5.5v13M5.5 12h13"/></svg>
+    </a>
+    <div class="menu popover" id="filter-pop" role="menu" aria-label="Filter sessions" hidden
+      style="top:calc(100% + 4px);right:8px;width:200px;padding:6px">
+      <button role="menuitemradio" aria-checked="true" class="mrow-item" type="button" data-session-filter="all">All sessions</button>
+      <button role="menuitemradio" aria-checked="false" class="mrow-item" type="button" data-session-filter="needs">Needs input</button>
+      <button role="menuitemradio" aria-checked="false" class="mrow-item" type="button" data-session-filter="working">Working</button>
+    </div>
+  </div>
+
+  <nav class="chat-list scroll" data-hide-collapsed aria-labelledby="sessions-label">
     <section class="cgroup" data-group="needs">
       <h2 class="cgroup-hd">
         <button type="button" data-group-toggle aria-expanded="true">
@@ -265,11 +285,11 @@
   </nav>
 
   <!-- One shared row menu, moved to whichever row opened it. -->
-  <div class="menu popover chat-menu" id="chat-menu" role="menu" aria-label="Chat actions" hidden>
-    <button role="menuitem" type="button" data-chat-action="rename">Rename</button>
-    <button role="menuitem" type="button" data-chat-action="pin">Pin to top</button>
+  <div class="menu popover chat-menu" id="chat-menu" role="menu" aria-label="Session actions" hidden>
+    <button role="menuitem" class="mrow-item" type="button" data-chat-action="rename">Rename<span class="mrow-k">R</span></button>
+    <button role="menuitem" class="mrow-item" type="button" data-chat-action="pin">Pin session<span class="mrow-k">P</span></button>
     <div class="sep"></div>
-    <p class="chat-menu-hd">Move to project</p>
+    <p class="menu-hd">Move to project</p>
     <button role="menuitemradio" type="button" data-move-to="task-tracker" aria-checked="false">
           <span class="check" aria-hidden="true"></span>task-tracker
         </button>
@@ -280,37 +300,48 @@
           <span class="check" aria-hidden="true"></span>api-gateway
         </button>
     <div class="sep"></div>
-    <button role="menuitem" type="button" data-chat-action="archive">Archive</button>
-    <button role="menuitem" type="button" data-chat-action="delete" class="is-bad">Delete</button>
+    <button role="menuitem" class="mrow-item" type="button" data-chat-action="archive">Archive session<span class="mrow-k">A</span></button>
+    <button role="menuitem" class="mrow-item is-bad" type="button" data-chat-action="delete">Delete&hellip;<span class="mrow-k">D</span></button>
   </div>
 
-  <div class="side-foot">
-    <a class="srow" data-id="models" href="/app/models/" aria-label="Models" title="Models">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true" style="flex-shrink:0"><rect x="3" y="3" width="18" height="18" rx="3.5"/><rect x="8" y="8" width="8" height="8" rx="1.8"/></svg>
-      <span class="t">Models</span>
+  <!-- One account row, not three unrelated navigation lines. -->
+  <div class="side-acct">
+    <button class="acctbtn" type="button" data-popover="profile-pop" aria-expanded="false"
+      aria-haspopup="menu" aria-label="Local profile">
+      <span class="acct-av" aria-hidden="true">L</span>
+      <span class="acct-n" data-hide-collapsed>Local</span>
+    </button>
+    <span class="grow" data-hide-collapsed></span>
+    <a class="iconbtn iconbtn-sm" data-id="models" href="/app/models/" aria-label="Models" title="Models" data-hide-collapsed>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3.5"/><rect x="8" y="8" width="8" height="8" rx="1.8"/></svg>
     </a>
-    <div style="position:relative">
-      <button class="srow" type="button" data-popover="profile-pop" aria-expanded="false"
-        aria-haspopup="menu" aria-label="Local profile and help" title="Local profile and help">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><circle cx="12" cy="8.2" r="3.6"/><path d="M4.8 20a7.2 7.2 0 0 1 14.4 0"/></svg>
-        <span class="t">Local profile</span>
-      </button>
-      <div class="menu popover" id="profile-pop" role="menu" aria-label="Local profile" hidden
-        style="bottom:calc(100% + 6px);left:0;width:244px;padding:6px">
-        <p class="chat-menu-hd">Signed out &middot; no account needed</p>
-        <a role="menuitem" class="srow" href="/app/settings/"><span class="t">Settings</span></a>
-        <button role="menuitem" class="srow" type="button" data-shortcuts>
-          <span class="t">Keyboard shortcuts</span><span class="lab">?</span></button>
-        <a role="menuitem" class="srow" href="/docs/"><span class="t">Docs</span></a>
-        <div class="sep" style="margin:5px 0"></div>
-        <a role="menuitem" class="srow" href="/changelog/"><span class="t">What is new</span></a>
-        <p class="chat-menu-hd" style="margin-bottom:4px">Wireframe build &middot; no installer yet</p>
-      </div>
+    <a class="iconbtn iconbtn-sm" data-id="settings" href="/app/settings/" aria-label="Settings" title="Settings" data-hide-collapsed>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><circle cx="12" cy="12" r="8.5"/></svg>
+    </a>
+    <div class="menu popover" id="profile-pop" role="menu" aria-label="Local profile" hidden
+      style="bottom:calc(100% + 6px);left:8px;width:236px;padding:6px">
+      <p class="menu-hd">Local profile &middot; no account</p>
+      <a role="menuitem" class="mrow-item" href="/app/settings/">Settings<span class="mrow-k">Ctrl ,</span></a>
+      <button role="menuitem" class="mrow-item" type="button" data-shortcuts>Keyboard shortcuts<span class="mrow-k">?</span></button>
+      <a role="menuitem" class="mrow-item" href="/app/models/">Models</a>
+      <div class="sep"></div>
+      <a role="menuitem" class="mrow-item" href="/docs/">Docs</a>
+      <a role="menuitem" class="mrow-item" href="/changelog/">What is new</a>
     </div>
-    <a class="srow" data-id="settings" href="/app/settings/" aria-label="Settings" title="Settings">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true" style="flex-shrink:0"><circle cx="12" cy="12" r="3.2"/><circle cx="12" cy="12" r="8.5"/></svg>
-      <span class="t">Settings</span>
-    </a>
+  </div>
+
+  <!-- The session search surface. Opened from the brand row, focused on open,
+       closed on Escape. It searches the same list the sidebar renders. -->
+  <div class="side-find" data-search-panel hidden role="dialog" aria-modal="false" aria-label="Search sessions">
+    <label class="side-find-f">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>
+      <span class="vh">Search sessions</span>
+      <input type="search" data-chat-search placeholder="Search sessions" autocomplete="off">
+      <button class="iconbtn iconbtn-sm" type="button" data-search-close aria-label="Close search">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </label>
+    <div class="side-find-r" data-search-results></div>
   </div>
 
   <script type="application/json" id="fl-sessions">{"projects":[{"id":"task-tracker","name":"task-tracker","path":"~/projects/task-tracker","branch":"Git repo, on main","stack":"Vite + React detected"},{"id":"portfolio-site","name":"portfolio-site","path":"~/projects/portfolio-site","branch":"Git repo, on redesign","stack":"Astro + Tailwind detected"},{"id":"api-gateway","name":"api-gateway","path":"~/projects/api-gateway","branch":"Git repo, on main","stack":"Node + Fastify detected"}],"chats":[{"id":"c1","title":"Persist tasks to localStorage","project":"task-tracker","state":"running","route":"/app/running/","hasThread":false},{"id":"c2","title":"Add a filter bar to the list","project":"task-tracker","state":"done","route":null,"hasThread":true},{"id":"c3","title":"Switch the date helper to Temporal","project":"task-tracker","state":"failed","route":"/app/stopped/","hasThread":false},{"id":"c4","title":"Scaffold the project","project":"task-tracker","state":"done","route":null,"hasThread":true},{"id":"c5","title":"Set up Vitest","project":"task-tracker","state":"done","route":null,"hasThread":true},{"id":"c6","title":"Move request logging behind a flag","project":"task-tracker","state":"done","route":null,"hasThread":true},{"id":"c7","title":"Extract the card grid into a component","project":"portfolio-site","state":"done","route":null,"hasThread":true},{"id":"c8","title":"Fix the contrast on the dark header","project":"portfolio-site","state":"done","route":null,"hasThread":true},{"id":"c9","title":"Rate limit the public endpoints","project":"api-gateway","state":"done","route":null,"hasThread":true}],"threads":{"route:running":{"chat":"c1","state":"tool-running","composer":{"placeholder":"Describe a task or ask a question","mode":"Allow edits"},"turns":[{"role":"user","text":"Save the task list to localStorage so it survives a refresh, and add a test for it."},{"role":"assistant","blocks":[{"t":"p","text":"I will move state into a small hook so the components stay unaware of storage, then cover the reload behaviour with one test."},{"t":"plan","title":"Plan","items":[{"state":"done","label":"Read how state is handled today"},{"state":"done","label":"Extract a useTasks hook backed by localStorage"},{"state":"now","label":"Add a test that survives a reload"},{"state":"todo","label":"Run the suite and report"}]}],"activity":{"state":"running","label":"Working","elapsed":"14s","rows":[{"icon":"done","label":"Read 4 files","meta":"1.2s"},{"icon":"done","label":"Searched 21 files for localStorage","meta":"0.4s"},{"icon":"done","label":"Edited 2 files","add":"+46","del":"−12"},{"icon":"running","label":"npm test -- --run","mono":true,"meta":"running","output":"> vitest --run\n\n ✓ src/App.test.jsx (3)\n · src/useTasks.test.js"}]}}]},"route:permission":{"chat":"c1","state":"tool-running","composer":{"placeholder":"Describe a task or ask a question","mode":"Allow edits","blocked":true},"turns":[{"role":"user","text":"Save the task list to localStorage so it survives a refresh, and add a test for it."},{"role":"assistant","blocks":[{"t":"p","text":"The hook is in place. The test needs a DOM environment, and this project has none installed."}],"activity":{"state":"paused","label":"Paused","elapsed":"22s","rows":[{"icon":"done","label":"Read 4 files","meta":"1.2s"},{"icon":"done","label":"Edited 2 files","add":"+46","del":"−12"}]},"permission":{"title":"Install one package before running the test","scopeTag":"Network","command":"npm install --save-dev jsdom","why":"The test asserts that tasks reload after a refresh, which needs a DOM. Nothing in the project provides one.","cwd":"~/projects/task-tracker","scope":"Reaches the npm registry. Writes only inside node_modules and package.json.","reversible":"Yes, checkpoint 3 was taken before the last edit"}}]},"route:stopped":{"chat":"c3","state":"stopped","composer":{"placeholder":"Describe a task or ask a question","mode":"Plan"},"turns":[{"role":"user","text":"Switch the date helper over to the Temporal API."},{"role":"assistant","blocks":[{"t":"p","text":"Temporal is unavailable in this Node version and no polyfill is installed."}],"activity":{"state":"stopped","label":"Stopped after 3 repeated failures","summary":"","elapsed":"2m 11s","rows":[{"icon":"done","label":"Read 6 files","meta":"1.8s"},{"icon":"done","label":"Edited src/lib/date.js","add":"+21","del":"−19"},{"icon":"fail","label":"Ran tests · 3 failed, same failure each time","meta":"×3"}],"diagnostics":{"label":"The failure, unchanged across all three attempts","text":"TypeError: Temporal.PlainDate.from is not a function\n  at formatDue (src/lib/date.js:14:26)"}},"recovery":{"primary":{"label":"Use a polyfill","href":"/app/permission/"},"alternatives":[{"label":"Keep current code","action":"keep"}],"text":{"label":"Open diagnostics","action":"diagnostics"}}}]},"c2":{"chat":"c2","state":"complete","turns":[{"role":"user","text":"Add a filter bar above the list so I can show all, active or done."},{"role":"assistant","blocks":[{"t":"p","text":"Added a filter bar as a controlled component above the list. The filter is a single piece of state in App, so the list stays the only thing that knows how to render a task."}],"activity":{"state":"complete","label":"Completed","elapsed":"31s","rows":[{"icon":"done","label":"Read 3 files","meta":"0.9s"},{"icon":"done","label":"Edited 2 files","add":"+34","del":"−21"},{"icon":"done","label":"npm test -- --run","mono":true,"meta":"3.1s"}],"files":[["src/App.jsx","+34","−21"],["src/FilterBar.jsx","new",""]],"tests":"3 tests passed","exit":"exit 0"}}]},"c4":{"chat":"c4","state":"complete","turns":[{"role":"user","text":"Set up a Vite React project called task-tracker with a basic list."},{"role":"assistant","blocks":[{"t":"p","text":"Created the project with Vite's react template and a single App component holding an in-memory list. No state library and no router: neither is needed yet."}],"activity":{"state":"complete","label":"Completed","elapsed":"1m 12s","rows":[{"icon":"done","label":"npm create vite@latest","mono":true,"meta":"42s"},{"icon":"done","label":"Installed 2 packages","meta":"18s"},{"icon":"done","label":"Edited 4 files"}],"files":[["package.json","new",""],["src/App.jsx","new",""],["index.html","new",""]],"tests":"No tests yet","exit":"exit 0"}}]},"c5":{"chat":"c5","state":"complete","turns":[{"role":"user","text":"Add Vitest and one test that proves adding a task works."},{"role":"assistant","blocks":[{"t":"p","text":"Added Vitest with jsdom and a single test that renders App, adds a task and asserts it is listed. The test script runs in watch mode locally and once in CI."},{"t":"code","file":"package.json","lang":"json","code":"\"scripts\": {\n  \"test\": \"vitest\",\n  \"test:ci\": \"vitest --run\"\n}"}],"activity":{"state":"complete","label":"Completed","elapsed":"48s","rows":[{"icon":"done","label":"Installed 3 packages","meta":"21s"},{"icon":"done","label":"Edited 2 files","add":"+4","del":""},{"icon":"done","label":"npm test -- --run","mono":true,"meta":"2.4s"}],"files":[["package.json","+4",""],["src/App.test.jsx","new",""]],"tests":"1 test passed","exit":"exit 0"}}]},"c6":{"chat":"c6","state":"complete","turns":[{"role":"user","text":"Request logging is noisy in development. Put it behind a flag."},{"role":"assistant","blocks":[{"t":"p","text":"I read the two call sites first. Both log unconditionally on every request, which is why development output is unreadable."}],"activity":{"state":"complete","label":"Completed","elapsed":"4s","rows":[{"icon":"done","label":"Searched 14 files for logger","meta":"0.6s"},{"icon":"done","label":"Read 3 files","meta":"0.4s"}]}},{"role":"user","text":"Use an env var rather than a config file. It should default to off."},{"role":"assistant","blocks":[{"t":"p","text":"DEBUG_HTTP now gates both call sites and defaults to off, so a developer opts in rather than opting out."},{"t":"plan","title":"Plan","items":[{"state":"done","label":"Read how logging is wired today"},{"state":"done","label":"Add a DEBUG_HTTP gate with an off default"},{"state":"done","label":"Update the two call sites"},{"state":"done","label":"Run the suite"}]}],"activity":{"state":"complete","label":"Completed","elapsed":"26s","rows":[{"icon":"done","label":"Edited 3 files","add":"+14","del":"−6"},{"icon":"done","label":"npm test -- --run","mono":true,"meta":"exit 0","output":"> task-tracker@0.1.0 test\n> vitest --run\n\n ✓ src/log.test.js (4)\n\n Test Files  1 passed (1)\n      Tests  4 passed (4)\n   Duration  1.94s"}],"files":[["src/log.js","+12","−4"],["src/server.js","+2","−2"]],"tests":"4 tests passed","exit":"exit 0"}},{"role":"user","text":"What happens on the hosted environment where the var is not set at all?"},{"role":"assistant","blocks":[{"t":"p","text":"It stays off. The gate reads the variable as a string and treats anything other than \"1\" or \"true\" as off, so an unset variable and an empty one behave the same."}]},{"role":"user","text":"Good. Now add one test that proves the default, and one that proves it turns on."},{"role":"assistant","blocks":[{"t":"p","text":"Both cases are covered. The second test sets the variable inside the test and restores it afterwards so the suite order cannot matter."}],"activity":{"state":"complete","label":"Completed","elapsed":"18s","rows":[{"icon":"done","label":"Edited src/log.test.js","add":"+22","del":""},{"icon":"done","label":"npm test -- --run","mono":true,"meta":"exit 0","output":"> vitest --run\n\n ✓ src/log.test.js (6)\n\n Test Files  1 passed (1)\n      Tests  6 passed (6)"}],"files":[["src/log.test.js","+22",""]],"tests":"6 tests passed","exit":"exit 0"}},{"role":"user","text":"One more: the flag name should match the one the deploy scripts already use."},{"role":"assistant","blocks":[{"t":"p","text":"The deploy scripts use LOG_HTTP, not DEBUG_HTTP. I renamed the gate and both tests to match, so there is one name across the repository."}],"activity":{"state":"complete","label":"Completed","elapsed":"11s","rows":[{"icon":"done","label":"Searched 21 files for DEBUG_HTTP","meta":"0.5s"},{"icon":"done","label":"Edited 3 files","add":"+6","del":"−6"},{"icon":"done","label":"npm test -- --run","mono":true,"meta":"exit 0"}],"files":[["src/log.js","+3","−3"],["src/log.test.js","+2","−2"],["src/server.js","+1","−1"]],"tests":"6 tests passed","exit":"exit 0"}}]},"c7":{"chat":"c7","state":"complete","turns":[{"role":"user","text":"The card grid is copied on three pages. Pull it into one component."},{"role":"assistant","blocks":[{"t":"p","text":"Extracted the grid into CardGrid.astro and replaced all three copies. The markup was identical apart from the heading, so that is the only prop it takes."}],"activity":{"state":"complete","label":"Completed","elapsed":"54s","rows":[{"icon":"done","label":"Read 6 files","meta":"1.1s"},{"icon":"done","label":"Edited 4 files","add":"+9","del":"−82"},{"icon":"done","label":"npm run build","mono":true,"meta":"6.8s"}],"files":[["src/components/CardGrid.astro","new",""],["src/pages/index.astro","+3","−28"],["src/pages/work.astro","+3","−28"],["src/pages/writing.astro","+3","−26"]],"tests":"Build succeeded","exit":"exit 0"}}]},"c8":{"chat":"c8","state":"complete","turns":[{"role":"user","text":"The nav links fail contrast on the dark header. Fix them."},{"role":"assistant","blocks":[{"t":"p","text":"Raised the muted link colour until it clears 4.5:1 against the header background, and left the hover state alone because it already passed."}],"activity":{"state":"complete","label":"Completed","elapsed":"19s","rows":[{"icon":"done","label":"Read 2 files","meta":"0.5s"},{"icon":"done","label":"Edited 1 file","add":"+2","del":"−2"}],"files":[["src/styles/tokens.css","+2","−2"]],"tests":"Build succeeded","exit":"exit 0"}}]},"c9":{"chat":"c9","state":"complete","turns":[{"role":"user","text":"Add rate limiting to the public routes, 60 requests a minute."},{"role":"assistant","blocks":[{"t":"p","text":"Registered @fastify/rate-limit on the public route prefix only. The internal prefix is untouched, so service-to-service calls are not throttled."},{"t":"code","file":"src/server.js","lang":"js","code":"app.register(rateLimit, {\n  max: 60,\n  timeWindow: '1 minute',\n  keyGenerator: (req) => req.ip,\n});"}],"activity":{"state":"complete","label":"Completed","elapsed":"37s","rows":[{"icon":"done","label":"Installed 1 package","meta":"9s"},{"icon":"done","label":"Edited 2 files","add":"+12","del":"−1"},{"icon":"done","label":"npm test -- --run","mono":true,"meta":"4.0s"}],"files":[["src/server.js","+9",""],["src/routes/public.js","+3","−1"]],"tests":"11 tests passed","exit":"exit 0"}}]}},"modelSeed":[{"id":"qwen25-coder-7b-q4km","displayName":"Qwen2.5 Coder 7B","publisher":"Alibaba Qwen","family":"","architecture":"","parameterCount":"7.6B","format":"GGUF","quantization":"Q4_K_M","fileSizeBytes":5025111736,"maxContextTokens":32768,"capabilities":["chat","tool_use","agent_ready","fim"],"license":"Apache-2.0","sourceUrl":"https://huggingface.co/Qwen/Qwen2.5-Coder-7B-Instruct-GGUF","installed":true,"loadedInstances":[],"downloadState":{"modelId":"qwen25-coder-7b-q4km","state":"completed","receivedBytes":5025111736,"totalBytes":5025111736},"hardwareFit":"excellent","bestFor":"Quick single-file edits, short scripts and focused fixes."},{"id":"qwen25-coder-14b-q4km","displayName":"Qwen2.5 Coder 14B","publisher":"Alibaba Qwen","family":"","architecture":"","parameterCount":"15B","format":"GGUF","quantization":"Q4_K_M","fileSizeBytes":9652938998,"maxContextTokens":32768,"capabilities":["chat","tool_use","agent_ready","fim"],"license":"Apache-2.0","sourceUrl":"https://huggingface.co/Qwen/Qwen2.5-Coder-14B-Instruct-GGUF","installed":true,"loadedInstances":[{"instanceId":"seed-qwen25-coder-14b-q4km","contextTokens":8192}],"downloadState":{"modelId":"qwen25-coder-14b-q4km","state":"completed","receivedBytes":9652938998,"totalBytes":9652938998},"hardwareFit":"good","bestFor":"Multi-file edits, running commands, tests and previews."},{"id":"deepseek-coder-v2-lite-q4km","displayName":"DeepSeek-Coder-V2 Lite 16B","publisher":"DeepSeek","family":"","architecture":"","parameterCount":"16B","format":"GGUF","quantization":"Q4_K_M","fileSizeBytes":11123965297,"maxContextTokens":32768,"capabilities":["chat","tool_use","agent_ready","fim"],"license":"DeepSeek License","sourceUrl":"https://huggingface.co/bartowski/DeepSeek-Coder-V2-Lite-Instruct-GGUF","installed":false,"loadedInstances":[],"downloadState":{"modelId":"deepseek-coder-v2-lite-q4km","state":"downloading","receivedBytes":4894544731,"totalBytes":11123965297,"bytesPerSecond":28600000,"etaSeconds":180},"hardwareFit":"tight","bestFor":"Reading an unfamiliar codebase and explaining it back."},{"id":"qwen25-coder-32b-q4km","displayName":"Qwen2.5 Coder 32B","publisher":"Alibaba Qwen","family":"","architecture":"","parameterCount":"33B","format":"GGUF","quantization":"Q4_K_M","fileSizeBytes":21313775206,"maxContextTokens":32768,"capabilities":["chat","tool_use","agent_ready","fim"],"license":"Apache-2.0","sourceUrl":"https://huggingface.co/Qwen/Qwen2.5-Coder-32B-Instruct-GGUF","installed":false,"loadedInstances":[],"hardwareFit":"tight","bestFor":"Longer plans and wider context on a machine with room for it."},{"id":"llama33-70b-q4km","displayName":"Llama 3.3 70B","publisher":"Meta","family":"","architecture":"","parameterCount":"71B","format":"GGUF","quantization":"Q4_K_M","fileSizeBytes":45655502356,"maxContextTokens":16384,"capabilities":["chat","agent_ready","fim"],"license":"Llama 3.3 Community License","sourceUrl":"https://huggingface.co/bartowski/Llama-3.3-70B-Instruct-GGUF","installed":false,"loadedInstances":[],"downloadState":{"modelId":"llama33-70b-q4km","state":"failed","receivedBytes":6657199309,"totalBytes":45655502356,"failure":"The disk had 19 GB free and this profile needs 42.5 GB. Free space or choose a smaller profile, then retry."},"hardwareFit":"unknown","bestFor":"Reasoning over long, tangled tasks."},{"id":"gemma2-9b-q4km","displayName":"Gemma 2 9B","publisher":"Google","family":"","architecture":"","parameterCount":"9.2B","format":"GGUF","quantization":"Q4_K_M","fileSizeBytes":6184752906,"maxContextTokens":8192,"capabilities":["chat"],"license":"Gemma Terms of Use","sourceUrl":"https://huggingface.co/bartowski/gemma-2-9b-it-GGUF","installed":false,"loadedInstances":[],"hardwareFit":"excellent","bestFor":"Writing and explanation."}]}</script>
@@ -319,29 +350,30 @@
     <div class="main">
 
       <header class="topbar">
-  <button class="btn btnq ico btns" type="button" data-sidebar-toggle aria-expanded="true" aria-label="Hide sidebar">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M9.5 4v16"/></svg>
+  <button class="iconbtn" type="button" data-sidebar-toggle aria-expanded="true" aria-label="Show sidebar" title="Show sidebar">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M9.5 4v16"/></svg>
   </button>
 
-  <!-- The chevron now opens something. Project, model, permission preset,
-       context and checkpoint are the five things a user asks about mid-task. -->
-  <div style="position:relative;min-width:0">
-    <button class="hit" style="gap:7px;padding:0 8px;border-radius:7px;min-width:0"
-      data-popover="project-details" aria-expanded="false" aria-haspopup="dialog"
-      aria-label="Project and session details">
-      <h1 class="ws-h1" data-ws-title>Switch the date helper to Temporal</h1>
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="m6 9.5 6 6 6-6"/></svg>
+  <!-- Breadcrumbs: where this session lives, and what it is. Each half opens
+       the selector it already had; the header used to be nearly empty and said
+       neither. -->
+  <nav class="crumbs" aria-label="Location">
+    <button class="crumb crumb-proj" type="button" data-popover="project-details"
+      aria-expanded="false" aria-haspopup="dialog" aria-label="Project details">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5A2 2 0 0 1 5 5.5h3.6l1.8 2H19a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+      <span data-pd-name>task-tracker</span>
     </button>
+    <span class="crumb-sep" aria-hidden="true">/</span>
+    <h1 class="crumb crumb-title ws-h1" data-ws-title>Switch the date helper to Temporal</h1>
+
     <div class="menu popover pdetails" id="project-details" role="dialog" aria-label="Project and session details" hidden>
       <dl class="pd-kv">
         <dt>Project</dt><dd><span data-pd-name>task-tracker</span></dd>
         <dt>Root</dt><dd><span class="m" data-pd-path>~/projects/task-tracker</span></dd>
         <dt>Repository</dt><dd><span data-pd-branch>Git repo, on main</span></dd>
         <dt>Stack</dt><dd><span data-pd-stack>Vite + React detected</span></dd>
-        <dt>Model</dt><dd><span data-pd-model>Qwen2.5 Coder 14B</span> <span class="faint">Q4_K_M</span></dd>
-        <dt>Permissions</dt><dd><span data-preset-label>Balanced</span></dd>
-        <dt>Context used</dt><dd><span class="num">5.6k of 16k</span> <span class="faint">34%</span></dd>
-        <dt>Checkpoint</dt><dd>Checkpoint 4, before the last edit</dd>
+        <dt>Model</dt><dd><span data-pd-model>No model loaded</span></dd>
+        <dt>Permissions</dt><dd><span data-preset-label>Ask before changes</span></dd>
       </dl>
       <div class="sep"></div>
       <div class="pd-a">
@@ -349,7 +381,7 @@
         <a class="btn btns" href="/app/settings/">Project settings</a>
       </div>
     </div>
-  </div>
+  </nav>
 
   <span class="grow"></span>
 
@@ -369,17 +401,25 @@
 
   <a class="btn btns btnq" href="/app/review/" style="gap:7px" data-artifacts hidden><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 6.5A2 2 0 0 1 5.5 4.5h3.4l1.6 2h8A2 2 0 0 1 20.5 8.5v9a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/></svg>Artifacts<span class="pill" style="padding:0 6px" data-artifacts-n>0</span></a>
 
+  <!-- The work pane toggle. It reflects a pane this build actually has. -->
+  <button class="iconbtn" type="button" data-pane-toggle aria-expanded="false"
+    aria-label="Show work pane" title="Work pane">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M15 4v16"/></svg>
+  </button>
+
   <div style="position:relative">
-    <button class="btn btnq ico btns" type="button" data-popover="more-pop" aria-expanded="false"
-      aria-haspopup="menu" aria-label="More options">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r=".8"/><circle cx="12" cy="12" r=".8"/><circle cx="19" cy="12" r=".8"/></svg>
+    <button class="iconbtn" type="button" data-popover="more-pop" aria-expanded="false"
+      aria-haspopup="menu" aria-label="More options" title="More">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r=".9"/><circle cx="12" cy="12" r=".9"/><circle cx="19" cy="12" r=".9"/></svg>
     </button>
     <div class="menu popover" id="more-pop" role="menu" aria-label="More" hidden
-      style="top:calc(100% + 6px);right:0;width:236px;padding:6px">
-      <button role="menuitem" class="srow" type="button" data-shortcuts>
-        <span class="t">Keyboard shortcuts</span><span class="lab">?</span></button>
-      <a role="menuitem" class="srow" href="/app/settings/"><span class="t">Settings</span></a>
-      <a role="menuitem" class="srow" href="/docs/"><span class="t">Docs</span></a>
+      style="top:calc(100% + 6px);right:0;width:238px;padding:6px">
+      <button role="menuitem" class="mrow-item" type="button" data-chat-action="rename">Rename&hellip;<span class="mrow-k">R</span></button>
+      <button role="menuitem" class="mrow-item" type="button" data-chat-action="pin">Pin session<span class="mrow-k">P</span></button>
+      <div class="sep"></div>
+      <button role="menuitem" class="mrow-item" type="button" data-shortcuts>Keyboard shortcuts<span class="mrow-k">?</span></button>
+      <a role="menuitem" class="mrow-item" href="/app/settings/">Settings<span class="mrow-k">Ctrl ,</span></a>
+      <a role="menuitem" class="mrow-item" href="/docs/">Docs</a>
     </div>
   </div>
 </header>

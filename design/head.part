@@ -52,25 +52,39 @@
       --shadow-menu:0 10px 30px rgba(23,24,26,.14), 0 1px 3px rgba(23,24,26,.10);
     }
     .app {
-      /* Three persistent surfaces and nothing else: canvas, sidebar, floating
-         layer. --raised is the floating/inset surface; --sunk is the quiet fill
-         a row takes when it is hovered or selected. */
-      --bg:#0E0F10; --panel:#171718; --raised:#1E1E20; --sunk:#252527;
-      --line:#2B2B2E; --line-soft:#212123; --line-strong:#39393D;
-      --fg:#ECECEA; --mut:#AAA9A3; --faint:#8B8C87;
-      --acc:#6366D9; --acc-hi:#7275E2; --acc-text:#9698F2; --acc-soft:#191A2B;
-      --ok:#7FB98A; --ok-line:#4F7A59; --ok-soft:#131C16;
-      --warn:#D0A36B; --warn-line:#8A6A2E; --warn-soft:#1F1A10;
-      --bad:#D8847B; --bad-line:#8E4A44; --bad-soft:#211413;
-      /* Focus is blue and only blue, so it is never confused with selection. */
-      --focus:#5B7CFF;
-      --flow-head:#38BDF8; --flow-tail:#6366D9; --flow-far:#3B82F6;
-      --dis-fg:#85878A; --dis-bd:#2A2D31; --dis-bg:#141518; --dis-icon:#6C6F73;
+      /* One neutral ramp, five steps, named by the job each does rather than by
+         how light it is. Every surface in the application comes from here; a
+         route that wants a shade it cannot name is a route that has invented a
+         component.
+
+           bg        the canvas the work sits on
+           panel     the sidebar, one step up from the canvas
+           raised    an inset or floating surface: menus, code, panels
+           sunk      the fill a row takes on hover
+           selected  the fill a row keeps while it is the current one
+
+         Selection is a flat fill, not an accent bar and not a glow: an accent on
+         every selected row makes the accent meaningless by the fourth one. */
+      --bg:#0E0F12; --panel:#111216; --raised:#181A20; --sunk:#1D2026;
+      --selected:#23262D;
+      --line:#252830; --line-soft:#1F222A; --line-strong:#30343C;
+      --fg:#F1F2F4; --mut:#ADB1BA; --faint:#7F848F;
+      /* One accent. It marks focus, the send action, an active step, and a
+         selected settings row, and nothing else. */
+      --acc:#7B72F2; --acc-hi:#8D85FF; --acc-text:#A79FFF; --acc-soft:#1A1830;
+      --ok:#7FBE94; --ok-line:#467A58; --ok-soft:#121C16;
+      --warn:#D6AC73; --warn-line:#8A6C33; --warn-soft:#1F1A11;
+      --bad:#E08B80; --bad-line:#93504A; --bad-soft:#221414;
+      /* Focus is the accent, at full strength, and never used for selection. */
+      --focus:#8D85FF;
+      --flow-head:#8D85FF; --flow-tail:#7B72F2; --flow-far:#5E57C9;
+      --dis-fg:#7F848F; --dis-bd:#252830; --dis-bg:#15171B; --dis-icon:#666B75;
       --shadow-menu:0 16px 40px rgba(0,0,0,.55), 0 2px 6px rgba(0,0,0,.4);
-      /* The sidebar is one surface with rows on it. These name the states a
-         row can take so no rule reaches for an accent to show selection. */
-      --sidebar-hover:#212123; --sidebar-selected:#272729; --sidebar-line:#2B2B2E;
-      --sidebar-secondary:#AAA9A3; --sidebar-tertiary:#777873;
+      /* The sidebar is one surface with rows on it, so its states are the
+         shared ones rather than a second private palette. */
+      --sidebar-hover:var(--sunk); --sidebar-selected:var(--selected);
+      --sidebar-line:var(--line);
+      --sidebar-secondary:var(--mut); --sidebar-tertiary:var(--faint);
     }
 
     /* ---- reset / base ------------------------------------------------ */
@@ -138,8 +152,31 @@
     .sidebar { width: 256px; flex-shrink: 0; border-right: 1px solid var(--sidebar-line);
       background: var(--panel); display: flex; flex-direction: column; min-height: 0; }
     .main { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--bg); }
-    .topbar { height: 52px; flex-shrink: 0; display: flex; align-items: center; gap: 10px;
-      padding: 0 16px 0 12px; border-bottom: 1px solid var(--line-soft); }
+    .topbar { height: 48px; flex-shrink: 0; display: flex; align-items: center; gap: 4px;
+      padding: 0 10px; border-bottom: 1px solid var(--line-soft); }
+
+    /* Breadcrumbs. The project and the session title, separated by a slash,
+       each opening the selector it already had. */
+    .crumbs { display: flex; align-items: center; gap: 2px; min-width: 0; flex: 1;
+      position: relative; }
+    .crumb { display: inline-flex; align-items: center; gap: 7px; min-width: 0;
+      height: 30px; padding: 0 8px; border: 0; border-radius: 6px;
+      background: transparent; color: var(--mut); cursor: pointer;
+      font-size: 14px; line-height: 20px; font-weight: 500;
+      transition: background 120ms ease-out, color 120ms ease-out; }
+    .crumb:hover { background: var(--sunk); color: var(--fg); }
+    .crumb:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+    .crumb[aria-expanded="true"] { background: var(--selected); color: var(--fg); }
+    .crumb svg { flex-shrink: 0; color: var(--faint); }
+    .crumb-proj { flex-shrink: 0; max-width: 200px; }
+    .crumb-proj span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .crumb-sep { flex-shrink: 0; color: var(--faint); font-size: 14px; user-select: none; }
+    /* The session title is the h1. There is no second, larger copy of it inside
+       the transcript. */
+    .crumb-title { flex: 1; min-width: 0; color: var(--fg); cursor: default;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block;
+      padding: 0 8px; }
+    .crumb-title:hover { background: transparent; }
     .scroll { flex: 1; min-height: 0; overflow: hidden; }
     .col { width: 100%; max-width: 792px; margin: 0 auto; padding: 0 28px; }
     .drawer { position: relative; width: 480px; flex-shrink: 0;
@@ -189,10 +226,10 @@
     /* ---- first run ---------------------------------------------------------- */
     /* A new user has no history, no second project and no settings to manage
        yet, so none of that is drawn. */
-    .sidebar[data-sidebar-mode="first-run"] .side-search,
+    .sidebar[data-sidebar-mode="first-run"] .side-sec,
     .sidebar[data-sidebar-mode="first-run"] .cgroup,
     .sidebar[data-sidebar-mode="first-run"] .chat-archived,
-    .sidebar[data-sidebar-mode="first-run"] .side-foot { display: none; }
+    .sidebar[data-sidebar-mode="first-run"] .side-acct { display: none; }
     .sidebar[data-sidebar-mode="first-run"] [data-first-run] { display: block; }
 
     /* ---- downloads ---------------------------------------------------------- */
@@ -344,8 +381,8 @@
     /* A new session has no title and no state, so it gets no header and no
        rule under it. The rail controls stay reachable in the corner. */
     [data-composition="start"] .topbar { border-bottom: 0; }
-    [data-composition="start"] .topbar > div:nth-child(2),
-    [data-composition="start"] [data-ws-title] { display: none; }
+    [data-composition="start"] .crumb-title,
+    [data-composition="start"] .crumb-sep { display: none; }
     /* The recomposition is one settle, not a flight across the canvas. */
     .is-recomposing .thread-scroll > * { animation: recompose 220ms ease-out; }
     @keyframes recompose { from { opacity: 0; transform: translateY(10px); } }
@@ -354,14 +391,15 @@
     }
 
     /* Recent sessions: plain rows, no card, no chevron, no description. */
-    .recents { display: flex; flex-direction: column; margin-top: 20px; }
-    .recents > a { display: flex; align-items: center; gap: 11px; min-height: 44px;
-      padding: 0 12px; border-radius: 8px; font-size: 14px; line-height: 20px;
-      color: var(--mut); text-decoration: none;
-      transition: background 140ms ease-out, color 140ms ease-out; }
-    .recents > a:hover { background: var(--sunk); color: var(--fg); text-decoration: none; }
-    .recents > a:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
-    .recents svg { flex-shrink: 0; color: var(--faint); }
+    /* Example tasks. Plain rows, no icon, no card, no chevron: they are text
+       someone can click, and they are gone once there is any real history. */
+    .recents { display: flex; flex-direction: column; margin-top: 16px; align-items: center; }
+    .recents > button { display: flex; align-items: center; min-height: 38px;
+      padding: 0 12px; border: 0; border-radius: 8px; background: transparent;
+      font-size: 15px; line-height: 22px; color: var(--faint); cursor: pointer;
+      transition: background 120ms ease-out, color 120ms ease-out; }
+    .recents > button:hover { background: var(--sunk); color: var(--fg); }
+    .recents > button:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
     .recents .t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .turn { display: flex; flex-direction: column; gap: 12px; }
     .turn-user { align-items: flex-end; }
@@ -507,8 +545,7 @@
     /* ---- empty conversation ---------------------------------------------- */
     /* A question above the input and nothing else. The mark is small and quiet
        so the eye lands on the question, then on the composer under it. */
-    .empty { display: flex; flex-direction: column; align-items: center; gap: 14px; }
-    .empty-mark { color: var(--faint); line-height: 0; }
+    .empty { display: flex; flex-direction: column; align-items: center; }
     .empty-q { margin: 0; font-size: var(--t-hero); line-height: var(--lh-hero); font-weight: 600;
       letter-spacing: -0.3px; color: var(--fg); text-align: center; }
     @media (max-width: 720px) {
@@ -547,34 +584,129 @@
     /* One horizontal grid for every row in the sidebar: 8px outer inset, and
        text 12px inside that. Search, project, chats and the footer all sit on
        it, so nothing reads as a component dropped into a panel. */
-    .side-hd { height: 52px; flex-shrink: 0; display: flex; align-items: center; gap: 8px;
-      padding: 0 10px; }
-    .side-hd-t { font-size: 15px; line-height: 22px; font-weight: 600; letter-spacing: -.005em;
-      color: var(--fg); }
-    .side-search { flex-shrink: 0; padding: 0 8px 4px; }
-    /* Not a form card: a quiet row that fills only when it is used. */
-    .side-search .field { height: 36px; width: 100%; border: 0; border-radius: 7px;
-      background: transparent; transition: background 140ms ease-out; }
-    .side-search .field:hover { background: var(--sidebar-hover); }
-    .side-search .field:focus-within { background: var(--sidebar-hover);
-      outline: 2px solid var(--focus); outline-offset: -2px; }
-    .side-search input { font-size: 14px; color: var(--fg); }
-    .side-search input::placeholder { color: var(--sidebar-tertiary); }
-    .side-project { flex-shrink: 0; padding: 0 8px 10px; }
-    .chat-list { flex: 1; min-height: 0; overflow-y: auto; padding: 0 8px 8px; }
-    .side-foot { flex-shrink: 0; border-top: 1px solid var(--sidebar-line); padding: 8px; }
-    /* the footer uses the chat rows' geometry exactly, not its own */
-    .side-foot .srow { min-height: 40px; padding: 0 12px; border-radius: 7px;
-      color: var(--sidebar-secondary); }
-    .side-foot .srow:hover { background: var(--sidebar-hover); color: var(--fg); }
+    /* ---- one menu ---------------------------------------------------------
+       Every popover menu in the application uses these. Before this there were
+       several near-identical row treatments differing by a few pixels, which is
+       what made the interface read as a collection of components rather than
+       one product. */
+    .mrow-item { display: flex; align-items: center; gap: 10px; width: 100%;
+      min-height: 36px; padding: 0 10px; border: 0; border-radius: 7px;
+      background: transparent; color: var(--fg); cursor: pointer; text-align: left;
+      font-size: 14px; line-height: 20px;
+      transition: background 120ms ease-out, color 120ms ease-out; }
+    .mrow-item:hover { background: var(--sunk); text-decoration: none; }
+    .mrow-item:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+    .mrow-item[aria-checked="true"] { background: var(--selected); font-weight: 500; }
+    .mrow-item svg { flex-shrink: 0; color: var(--mut); }
+    /* The shortcut hint sits right and never competes with the label. */
+    .mrow-k { margin-left: auto; flex-shrink: 0; font-size: 13px; line-height: 18px;
+      color: var(--mut); font-variant-numeric: tabular-nums; }
+    /* Destructive is red and separated, so it cannot be hit on the way past. */
+    .mrow-item.is-bad { color: var(--bad); }
+    .mrow-item.is-bad:hover { background: var(--bad-soft); }
+    .mrow-item.is-bad .mrow-k { color: var(--bad); opacity: .8; }
+    .mrow-item[aria-disabled="true"], .mrow-item:disabled {
+      color: var(--dis-fg); cursor: default; background: transparent; }
+    .menu-hd { margin: 0; padding: 8px 10px 4px; font-size: 13px; line-height: 18px;
+      color: var(--mut); }
 
-    /* The project switcher is a navigation row, not a second input. */
-    .side-project .field { display: flex; align-items: center; gap: 10px; width: 100%;
-      height: 36px; padding: 0 12px; border: 0; border-radius: 7px; background: transparent;
-      font-size: 14px; line-height: 20px; font-weight: 500; color: var(--fg);
-      transition: background 140ms ease-out; }
-    .side-project .field:hover { background: var(--sidebar-hover); }
-    .side-project .field:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+    /* ---- sidebar structure ------------------------------------------------
+       Four regions with fixed jobs: identity and sidebar-wide controls, the
+       project, the sessions, the account. The old sidebar was one flat column
+       whose search field was the loudest thing in it, and whose bottom was
+       three unrelated navigation lines. */
+
+    /* One icon button, used everywhere in the chrome. 18px glyph, 34px target,
+       no border and no fill until it is hovered, focused or open. */
+    .iconbtn { display: inline-flex; align-items: center; justify-content: center;
+      width: 34px; height: 34px; min-width: 34px; flex-shrink: 0;
+      border: 0; border-radius: 7px; background: transparent; color: var(--mut);
+      cursor: pointer; transition: background 120ms ease-out, color 120ms ease-out; }
+    .iconbtn:hover { background: var(--sunk); color: var(--fg); }
+    .iconbtn:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+    .iconbtn[aria-expanded="true"] { background: var(--selected); color: var(--fg); }
+    .iconbtn-sm { width: 30px; height: 30px; min-width: 30px; border-radius: 6px; }
+
+    /* A section label. 13px medium with modest tracking; not monospaced, and
+       not shouting. */
+    .seclabel { font-size: 13px; line-height: 18px; font-weight: 500;
+      letter-spacing: .04em; text-transform: uppercase; color: var(--mut); }
+
+    .side-brand { height: 52px; flex-shrink: 0; display: flex; align-items: center;
+      gap: 2px; padding: 0 9px; }
+    .side-mark { display: flex; align-items: center; gap: 9px; min-width: 0;
+      padding: 0 4px; height: 34px; border-radius: 7px; color: var(--fg); }
+    .side-mark:hover { text-decoration: none; background: var(--sunk); }
+    .side-mark:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+    .side-mark svg { flex-shrink: 0; }
+    .side-word { font-size: 15px; line-height: 22px; font-weight: 600;
+      letter-spacing: -.005em; white-space: nowrap; }
+
+    .side-nav { flex-shrink: 0; position: relative; padding: 2px 8px 6px; }
+    /* The project row. A row, not an outlined card. */
+    .navrow { display: flex; align-items: center; gap: 10px; width: 100%;
+      height: 38px; padding: 0 10px; border: 0; border-radius: 7px;
+      background: transparent; color: var(--fg); cursor: pointer;
+      font-size: 14px; line-height: 20px; font-weight: 500; text-align: left;
+      transition: background 120ms ease-out; }
+    .navrow:hover { background: var(--sidebar-hover); }
+    .navrow:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+    .navrow[aria-expanded="true"] { background: var(--selected); }
+    .navrow-i { flex-shrink: 0; color: var(--mut); }
+    .navrow-t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+      white-space: nowrap; }
+    .navrow-n { flex-shrink: 0; font-size: 13px; line-height: 18px; color: var(--mut);
+      font-variant-numeric: tabular-nums; }
+    .navrow-c { flex-shrink: 0; color: var(--faint); }
+
+    .side-sec { flex-shrink: 0; position: relative; display: flex; align-items: center;
+      gap: 2px; height: 34px; padding: 0 10px 0 18px; }
+
+    .chat-list { flex: 1; min-height: 0; overflow-y: auto; padding: 0 8px 8px; }
+
+    /* One account row. */
+    .side-acct { flex-shrink: 0; height: 50px; display: flex; align-items: center;
+      gap: 2px; padding: 0 9px; border-top: 1px solid var(--sidebar-line);
+      position: relative; }
+    .acctbtn { display: flex; align-items: center; gap: 9px; min-width: 0;
+      height: 36px; padding: 0 8px 0 4px; border: 0; border-radius: 7px;
+      background: transparent; color: var(--fg); cursor: pointer;
+      font-size: 14px; line-height: 20px; transition: background 120ms ease-out; }
+    .acctbtn:hover { background: var(--sunk); }
+    .acctbtn:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+    .acctbtn[aria-expanded="true"] { background: var(--selected); }
+    .acct-av { display: inline-flex; align-items: center; justify-content: center;
+      width: 24px; height: 24px; flex-shrink: 0; border-radius: 50%;
+      background: var(--selected); color: var(--mut);
+      font-size: 13px; line-height: 1; font-weight: 600; }
+    .acct-n { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* The search surface. It replaces the permanent field: the control lives in
+       the brand row and this opens over the list when it is wanted. */
+    .side-find { position: absolute; inset: 52px 8px auto 8px; z-index: 60;
+      border: 1px solid var(--line-strong); border-radius: 10px;
+      background: var(--raised); box-shadow: var(--shadow-menu);
+      display: flex; flex-direction: column; max-height: calc(100% - 110px); }
+    .side-find[hidden] { display: none !important; }
+    .side-find-f { display: flex; align-items: center; gap: 9px; height: 42px;
+      padding: 0 8px 0 12px; border-bottom: 1px solid var(--line-soft);
+      color: var(--faint); }
+    .side-find-f input { flex: 1; min-width: 0; border: 0; background: none;
+      font-size: 14px; line-height: 20px; color: var(--fg); }
+    .side-find-f input::placeholder { color: var(--faint); }
+    .side-find-f input:focus { outline: none; }
+    .side-find-r { overflow-y: auto; padding: 6px; display: flex; flex-direction: column; gap: 1px; }
+    .side-find-e { margin: 0; padding: 14px 8px; font-size: 14px; line-height: 20px;
+      color: var(--faint); }
+    .find-row { display: flex; align-items: center; gap: 9px; width: 100%;
+      min-height: 34px; padding: 0 9px; border: 0; border-radius: 7px;
+      background: transparent; color: var(--fg); cursor: pointer; text-align: left;
+      font-size: 14px; line-height: 20px; }
+    .find-row:hover, .find-row[data-active="true"] { background: var(--sunk); }
+    .find-row:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+    .find-row .t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+      white-space: nowrap; }
+    .find-row .p { flex-shrink: 0; font-size: 13px; line-height: 18px; color: var(--mut); }
 
     .cgroup[hidden] { display: none !important; }
     .cgroup-hd { margin: 0; }
