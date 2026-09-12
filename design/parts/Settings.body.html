@@ -1,28 +1,47 @@
-<div class="app" style="height:100%;position:relative">
-  <div class="shell">
+<!-- Settings is its own place.
 
-    <!--#include sidebar.html {"active":"settings","mode":"normal"} -->
+     It replaces the session sidebar rather than sitting inside it: a list of
+     chats is no help while changing a preference, and leaving it there made
+     Settings feel like a page that happened to load in the chat window. The
+     column carries its own navigation and the build version, and one control
+     goes back. -->
+<div class="app" style="height:100%;position:relative">
+  <div class="shell shell-set">
+
+    <aside class="setside" aria-label="Settings">
+      <div class="setside-top">
+        <a class="backrow" href="/app/">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+          <span>Back to app</span>
+          <span class="mrow-k">Esc</span>
+        </a>
+        <!-- A label for the column, not a heading for the page: the visible
+             section already carries the h1. -->
+        <p class="setside-h">Settings</p>
+        <label class="setside-f">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>
+          <span class="vh">Search settings</span>
+          <input type="search" data-set-search placeholder="Search settings" autocomplete="off">
+        </label>
+      </div>
+
+      <nav class="setnav" aria-label="Settings sections">
+        <p class="setnav-g seclabel">Workspace</p>
+        <a class="setnav-r is-on" href="#general" data-set-nav="general" aria-current="location">General</a>
+        <a class="setnav-r" href="#appearance" data-set-nav="appearance">Appearance</a>
+        <p class="setnav-g seclabel">Agents</p>
+        <a class="setnav-r" href="#models" data-set-nav="models">Models & runtime</a>
+        <a class="setnav-r" href="#permissions" data-set-nav="permissions">Permissions</a>
+        <p class="setnav-g seclabel">System</p>
+        <a class="setnav-r" href="#privacy" data-set-nav="privacy">Privacy & diagnostics</a>
+        <a class="setnav-r" href="#about" data-set-nav="about">About</a>
+      </nav>
+
+      <p class="setside-v" data-build-version>Wireframe build</p>
+    </aside>
 
     <div class="main">
-      <header class="topbar">
-        <button class="btn btnq ico btns" type="button" data-sidebar-toggle aria-expanded="true" aria-label="Hide sidebar">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M9.5 4v16"/></svg>
-        </button>
-        <span style="font-size:14px;font-weight:600">Settings</span>
-        <span class="grow"></span>
-      </header>
-
       <div class="scroll setwrap">
-        <!-- A section list and one readable column, not a grid of cards. -->
-        <nav class="setnav" aria-label="Settings sections">
-          <a class="srow is-on" href="#general" aria-current="location"><span class="t">General</span></a>
-          <a class="srow" href="#appearance"><span class="t">Appearance</span></a>
-          <a class="srow" href="#models"><span class="t">Models &amp; runtime</span></a>
-          <a class="srow" href="#permissions"><span class="t">Permissions</span></a>
-          <a class="srow" href="#privacy"><span class="t">Privacy &amp; diagnostics</span></a>
-          <a class="srow" href="#about"><span class="t">About</span></a>
-        </nav>
-
         <div class="setcol">
           <section class="setsec" id="general">
             <h1 class="h1" style="font-size:20px">General</h1>

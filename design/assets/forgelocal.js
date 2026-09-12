@@ -926,6 +926,67 @@ import {
   /* Toggles, and the revocation path that every "always allow this here"
      decision promises. Choices persist in the same local state the rest of the
      prototype uses. */
+  /* The settings column's search and its way out.
+   *
+   * Selecting a section is already handled in wireSettings, which shows one
+   * section at a time and marks the nav. An earlier version of this function
+   * added a scroll-spy on top of that and fought it: the sections are hidden
+   * rather than stacked, so every one of them measured at the top of the
+   * viewport and the last always won. What is left here is the part that is
+   * genuinely new.
+   */
+  function wireSettingsNav() {
+    const nav = $(".setnav");
+    if (!nav) return;
+    const links = $$("[data-set-nav]", nav);
+    const search = $("[data-set-search]");
+
+    if (search) {
+      search.addEventListener("input", () => {
+        const q = search.value.trim().toLowerCase();
+        // A section survives if its own name matches or any row in it does, and
+        // its navigation entry goes with it.
+        for (const a of links) {
+          const sec = $("#" + a.dataset.setNav);
+          if (!sec) continue;
+          const heading = (a.textContent || "").toLowerCase();
+          // Matching the section's own name keeps the whole section. Hiding its
+          // rows because only the heading matched left the reader looking at a
+          // title with nothing under it.
+          const wholeSection = !!q && heading.includes(q);
+          let hits = 0;
+          $(".setrow", sec).forEach((row) => {
+            const show = !q || wholeSection || (row.textContent || "").toLowerCase().includes(q);
+            row.hidden = !show;
+            if (show) hits++;
+          });
+          a.hidden = !!q && hits === 0;
+        }
+        const visible = links.filter((a) => !a.hidden);
+        // Searching moves you to the first thing that matched, rather than
+        // leaving you on a section that now shows nothing.
+        if (q && visible.length && !visible.includes(links.find((a) => a.classList.contains("is-on")))) {
+          visible[0].click();
+        }
+      });
+      search.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && search.value) {
+          e.stopPropagation();
+          search.value = "";
+          search.dispatchEvent(new Event("input"));
+        }
+      });
+    }
+
+    // Escape leaves settings, unless something smaller is open or being typed.
+    document.addEventListener("keydown", (e) => {
+      if (e.key !== "Escape") return;
+      if (search && document.activeElement === search && search.value) return;
+      if ($(".popover:not([hidden])") || $("dialog[open]")) return;
+      location.href = "/app/";
+    });
+  }
+
   function wireSettings() {
     $$(".switch").forEach((b) => {
       const key = "switch:" + (b.getAttribute("aria-label") || "");
@@ -4558,7 +4619,7 @@ import {
     wireDensity(); wireQueue(); wireCaretMenus(); wirePaste();
     wireSettings(); wireShortcuts(); wireDownloadRow(); wireLanding();
     wireScan(); wireSetupProject(); wireSetupPermissions(); wireSetupDownload();
-    wireSessionSearch(); wireSessionFilter(); wireDesktop();
+    wireSessionSearch(); wireSessionFilter(); wireSettingsNav(); wireDesktop();
     wireInert();
     document.documentElement.dataset.reducedMotion = String(reduced);
   };
