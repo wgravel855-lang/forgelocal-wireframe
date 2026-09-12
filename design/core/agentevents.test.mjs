@@ -3,8 +3,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   EventType, SessionState, EVENT_TYPES,
-  createEmitter, reduce, replay, initialState, stateLabel, invalidReason,
-} from "./events.mjs";
+  createEmitter, reduceAgentEvent as reduce, replay, initialState, stateLabel, invalidReason,
+} from "./agentevents.mjs";
 
 /** A deterministic emitter, so tests compare state and not clocks. */
 function emitter(sessionId = "s1") {
@@ -42,7 +42,7 @@ test("the protocol defines every required event type", () => {
     "background_task_updated", "background_task_completed", "turn_completed",
     "turn_cancelled", "runtime_error",
   ];
-  for (const t of required) assert.ok(EVENT_TYPES.includes(t), `missing ${t}`);
+  for (const t of required) assert.ok(/** @type {string[]} */ (EVENT_TYPES).includes(t), `missing ${t}`);
   assert.equal(EVENT_TYPES.length, required.length, "an undocumented type was added");
 });
 

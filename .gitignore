@@ -12,3 +12,5 @@ Thumbs.db
 
 # QA harness is copied into public/ only while auditing locally
 public/qa-audit.js
+desktop/src-tauri/target/
+desktop/src-tauri/gen/

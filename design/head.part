@@ -1902,6 +1902,66 @@
       letter-spacing:-.024em; }
     .stack { display:flex; flex-direction:column; }
 
+    /* ---- live session --------------------------------------------------- */
+    /* The transcript of a real run. It borrows the classes the stored
+       transcript already uses; only the parts that have no equivalent yet are
+       defined here. */
+    .lv-row { list-style: none; }
+    .lv-row > summary { display: flex; align-items: center; gap: 10px;
+      min-height: 36px; padding: 6px 0; cursor: pointer; list-style: none;
+      font-size: var(--t-label); line-height: var(--lh-label); color: var(--mut); }
+    .lv-row > summary::-webkit-details-marker { display: none; }
+    .lv-row > summary:hover { color: var(--fg); }
+    .lv-row > summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px;
+      border-radius: 6px; }
+    .lv-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+      white-space: nowrap; }
+    /* A failed or denied step is never quiet. */
+    .lv-row[data-status="failed"] > summary,
+    .lv-row[data-status="denied"] > summary { color: var(--bad); }
+    .lv-row[data-status="cancelled"] > summary { color: var(--faint); }
+    .lv-row[data-status="awaiting_permission"] > summary { color: var(--warn); }
+    .lv-detail { padding: 4px 0 12px 24px; display: flex; flex-direction: column; gap: 10px; }
+    .lv-kv { margin: 0; display: grid; grid-template-columns: 110px minmax(0, 1fr);
+      gap: 4px 12px; font-size: var(--t-label); line-height: var(--lh-label); }
+    .lv-kv dt { color: var(--faint); }
+    .lv-kv dd { margin: 0; color: var(--fg); word-break: break-word; }
+    .lv-out { margin: 0; padding: 10px 12px; border-radius: 8px; background: var(--panel);
+      border: 1px solid var(--line-soft); font-size: var(--t-label);
+      line-height: var(--lh-label); max-height: 320px; overflow: auto;
+      white-space: pre-wrap; word-break: break-word; }
+    .lv-note { margin: 0; font-size: var(--t-label); line-height: var(--lh-label);
+      color: var(--faint); }
+
+    /* A running step turns, once, quietly. */
+    .lv-spin { width: 12px; height: 12px; flex-shrink: 0; border-radius: 50%;
+      border: 1.6px solid var(--line-strong); border-top-color: var(--acc);
+      animation: lv-turn 900ms linear infinite; }
+    @keyframes lv-turn { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) { .lv-spin { animation: none; } }
+
+    .lv-plan .lv-step { gap: 10px; }
+    .lv-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+      border: 1.5px solid var(--line-strong); }
+    .lv-step[data-step="done"] .lv-dot { background: var(--ok); border-color: var(--ok); }
+    .lv-step[data-step="active"] .lv-dot { border-color: var(--acc); border-width: 3px; }
+    .lv-step[data-step="blocked"] .lv-dot { border-color: var(--bad); background: var(--bad-soft); }
+    .lv-step[data-step="done"] { color: var(--faint); }
+
+    /* The decision surface. It is the loudest thing on the screen while it is
+       open, because execution is genuinely paused behind it. */
+    .lv-perm, .lv-ask { display: flex; flex-direction: column; gap: 12px;
+      padding: 16px; border: 1px solid var(--warn-line); border-radius: 12px;
+      background: var(--warn-soft); }
+    .lv-ask { border-color: var(--line-strong); background: var(--raised); }
+    .lv-perm-h { display: flex; align-items: center; gap: 10px; }
+    .lv-perm-t { flex: 1; font-size: var(--t-body); line-height: var(--lh-body); font-weight: 600; }
+    .lv-perm-cmd { margin: 0; padding: 10px 12px; border-radius: 8px; background: var(--bg);
+      border: 1px solid var(--line); font-size: var(--t-label); line-height: var(--lh-label);
+      white-space: pre-wrap; word-break: break-all; }
+    .lv-perm-a { display: flex; gap: 8px; flex-wrap: wrap; }
+    .lv-ask-q { margin: 0; font-size: var(--t-body); line-height: var(--lh-body); color: var(--fg); }
+
     /* ---- landing page --------------------------------------------------- */
     /* Scoped to body.lp rather than retuning the shared marketing classes,
        because /models/, /security/, /pricing/ and /docs/ are out of this

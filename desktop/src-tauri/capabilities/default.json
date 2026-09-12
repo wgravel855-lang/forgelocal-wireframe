@@ -1,0 +1,12 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "The narrowest set the renderer needs: receive host events, and open a folder chooser. Everything privileged goes through this crate's own commands, which validate their arguments, so no filesystem or shell plugin is granted here.",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "core:event:allow-listen",
+    "core:event:allow-unlisten",
+    "dialog:allow-open"
+  ]
+}

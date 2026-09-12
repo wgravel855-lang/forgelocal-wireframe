@@ -1,0 +1,40 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "ForgeLocal",
+  "version": "0.1.0",
+  "identifier": "dev.forgelocal.desktop",
+  "build": {
+    "frontendDist": "../../public"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "ForgeLocal",
+        "width": 1440,
+        "height": 900,
+        "minWidth": 900,
+        "minHeight": 600,
+        "resizable": true,
+        "url": "/app/index.html",
+        "label": "main"
+      }
+    ],
+    "security": {
+      "csp": null
+    },
+    "withGlobalTauri": true
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "nsis"
+    ],
+    "icon": [
+      "icons/icon.ico"
+    ],
+    "resources": {
+      "../../runtime": "runtime",
+      "../../design/core": "design/core"
+    }
+  }
+}

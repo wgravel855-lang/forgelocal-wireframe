@@ -15,6 +15,7 @@
     "golden": "node runtime/golden.mjs"
   },
   "devDependencies": {
+    "@tauri-apps/cli": "^2.11.4",
     "@types/node": "^26.5.0",
     "jsdom": "^30.0.1",
     "typescript": "^7.0.2"

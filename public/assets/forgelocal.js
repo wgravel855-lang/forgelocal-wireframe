@@ -29,6 +29,10 @@ import { renderCard } from "../core/modelcard.mjs";
 import { normalizeMode, modeLabel } from "../core/modes.mjs";
 import { readDemoFlag, desktopState, applyDesktopState, NO_HARDWARE_NOTE as NO_HARDWARE } from "../core/localstate.mjs";
 import { catalogHtml, modelDetail, loaderRow, isSort, sortedIds, sortLabel } from "../core/catalog.mjs";
+import { hasTauri, tauriTransport, createHostClient, NO_HOST } from "../core/hostclient.mjs";
+import { runningLabel } from "../core/activity.mjs";
+import { liveTranscript, planBlock, permissionCard, questionCard } from "../core/liveview.mjs";
+import { initialState as initialRunView, reduceAgentEvent as reduceAgent } from "../core/agentevents.mjs";
 import { catalogViewState, localViewState, showsRows, showsDetail, stateBlockHtml } from "../core/viewstate.mjs";
 import {
   detectEnvironment, initialRuntime, reduceRuntime, isConnected,
@@ -3558,6 +3562,318 @@ import {
     });
   }
 
+  /* ---------------------------------------------------------------- desktop */
+
+  /* The live session.
+   *
+   * Everything below runs only when a desktop host is present. In a browser
+   * there is no runtime, so none of it activates and the interface keeps saying
+   * "Desktop not connected", which is the truth rather than a placeholder.
+   *
+   * The rule this code exists to enforce: no row appears without an event
+   * behind it. The transcript is a render of the reducer's state, so a session
+   * that has done nothing shows nothing. */
+  const LIVE = {
+    client: null,
+    view: initialRunView(),
+    permission: null,
+    question: null,
+    project: null,
+    running: false,
+  };
+
+  function liveThread() { return $("[data-thread]"); }
+
+  function paintLive() {
+    const host = liveThread();
+    if (!host) return;
+    const parts = [];
+    if (LIVE.view.plan && LIVE.view.plan.items.length) parts.push(planBlock(LIVE.view.plan.items));
+    parts.push(liveTranscript(LIVE.view));
+    if (LIVE.permission) parts.push(permissionCard(LIVE.permission));
+    if (LIVE.question) parts.push(questionCard(LIVE.question));
+    const html = parts.filter(Boolean).join("\n");
+
+    // Keep the reader where they are unless they were already at the bottom.
+    const scroller = $("[data-thread-scroll]") || host.parentElement;
+    const atBottom = scroller
+      ? scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 80 : true;
+    host.innerHTML = html;
+    host.classList.toggle("is-empty", !html);
+    if (scroller && atBottom) scroller.scrollTop = scroller.scrollHeight;
+
+    wireLiveDecisions();
+    paintLiveComposer();
+  }
+
+  /* The composer reflects the runtime, and only the runtime. */
+  function paintLiveComposer() {
+    const form = $("[data-composer]");
+    if (!form) return;
+    const send = $("[data-send]", form);
+    const label = runningLabel(LIVE.view);
+
+    form.toggleAttribute("data-running", LIVE.running);
+    form.toggleAttribute("data-awaiting", !!LIVE.permission || !!LIVE.question);
+    form.toggleAttribute("data-error", !!LIVE.view.error);
+
+    if (send) {
+      // Stop replaces Send in the same control, in the same place.
+      send.dataset.stop = String(LIVE.running);
+      send.setAttribute("aria-label", LIVE.running ? "Stop generating" : "Send");
+      const ta = $("textarea", form);
+      const blocked = LIVE.running ? false : !(ta && ta.value.trim()) || !canSendLive();
+      send.disabled = blocked;
+      send.setAttribute("aria-disabled", String(blocked));
+    }
+    $$("[data-env-label]").forEach((el) => { el.textContent = liveRuntimeLabel(); });
+    if (label) announce(label);
+  }
+
+  function canSendLive() {
+    return !!(LIVE.client && LIVE.client.runtime.connected
+      && LIVE.client.provider.connected && LIVE.client.provider.model && LIVE.project);
+  }
+
+  /* The one place the runtime line is written. Every part of it is a fact the
+     host reported. */
+  function liveRuntimeLabel() {
+    if (!LIVE.client) return NO_HOST.reason;
+    const r = LIVE.client.runtime;
+    if (!r.connected) return r.fatal ? "Runtime stopped" : NO_HOST.reason;
+    const p = LIVE.client.provider;
+    if (!p.connected) return "Connected · no model server";
+    if (!p.model) return "Connected · no model selected";
+    return `Connected · ${p.model}`;
+  }
+
+  function wireLiveDecisions() {
+    $$("[data-perm-decide]").forEach((b) => b.addEventListener("click", async () => {
+      const decision = b.dataset.permDecide;
+      const card = LIVE.permission;
+      if (!card) return;
+      LIVE.permission = null;
+      LIVE.running = true;
+      paintLive();
+      try {
+        await LIVE.client.resolvePermission(card.requestId, decision);
+      } catch (e) {
+        showLiveError(e);
+      } finally {
+        LIVE.running = false;
+        paintLive();
+      }
+    }));
+    $$("[data-answer-option]").forEach((b) => b.addEventListener("click", () => {
+      const ta = $("[data-composer] textarea");
+      if (!ta) return;
+      ta.value = b.dataset.answerOption;
+      ta.dispatchEvent(new Event("input", { bubbles: true }));
+      ta.focus();
+    }));
+  }
+
+  /* A failure is shown as a failure. It never becomes an assistant message.
+     It is also reported to the host, which logs it only in a debug build: a
+     renderer that caught its own error and drew a toast tells the host nothing,
+     and that is exactly how a window sat there having never started the runtime
+     with no line anywhere saying why. */
+  function tellHost(line) {
+    try {
+      const w = /** @type {any} */ (window);
+      if (w.__TAURI_INTERNALS__) w.__TAURI_INTERNALS__.invoke("host_log", { line: String(line) });
+    } catch { /* no host, or it refused: nothing to do about it here */ }
+  }
+
+  function showLiveError(e) {
+    tellHost(`live error: ${e && e.message ? e.message : e}`);
+    LIVE.view = reduceRunSafe(LIVE.view, {
+      event_id: `err-${Date.now()}`, session_id: LIVE.client?.sessionId ?? "none",
+      turn_id: null, sequence: LIVE.view.sequence + 1, timestamp: Date.now(),
+      type: "runtime_error", payload: { message: e && e.message ? e.message : String(e), code: e && e.code },
+      parent_tool_call_id: null,
+    });
+    paintLive();
+    toast(e && e.message ? e.message : "The runtime failed.", "bad");
+  }
+
+  function reduceRunSafe(view, event) {
+    try { return reduceAgent(view, event); }
+    catch (err) {
+      console.debug("[forgelocal] unreducible event", err);
+      return view;
+    }
+  }
+
+  async function wireDesktop() {
+    if (!hasTauri()) return;                       // browser: nothing to connect
+    const form = $("[data-composer]");
+    if (!form) { tellHost("wireDesktop: no composer on this route"); return; }
+    tellHost(`wireDesktop: starting; globalApi=${!!(/** @type {any} */ (window).__TAURI__)}`);
+
+    LIVE.client = createHostClient({
+      transport: tauriTransport(),
+      onRuntimeState: () => paintLiveComposer(),
+      onProviderState: (p) => { paintLiveModels(p); paintLiveComposer(); },
+      onAgentEvent: (event) => {
+        LIVE.view = reduceRunSafe(LIVE.view, event);
+        paintLive();
+      },
+      onPermission: (card) => { LIVE.permission = card; paintLive(); },
+      onQuestion: (q) => { LIVE.question = q; paintLive(); },
+      onLog: (line) => console.debug("[runtime]", line),
+    });
+
+    try {
+      await LIVE.client.connect();
+    } catch (e) {
+      showLiveError(e);
+      return;
+    }
+
+    // The fixture transcript has no place in a live window.
+    const host = liveThread();
+    if (host) { host.innerHTML = ""; host.dataset.live = "true"; }
+    paintLive();
+
+    // Reach the model server. Failure is reported and the app stays usable.
+    try {
+      await LIVE.client.connectProvider(store.get("provider-url", "http://127.0.0.1:1234/v1"), null);
+    } catch (e) {
+      console.debug("[forgelocal] provider not reachable yet", e && e.message);
+    }
+
+    wireLiveProject();
+    wireLiveModelPicker();
+    wireLiveComposer(form);
+    paintLiveComposer();
+  }
+
+  /* The project comes from the OS dialog, through the host. */
+  function wireLiveProject() {
+    $$("[data-project-choose]").forEach((btn) => {
+      const fresh = btn.cloneNode(true);           // drop the browser-mode handler
+      btn.parentNode.replaceChild(fresh, btn);
+      fresh.addEventListener("click", async () => {
+        let picked;
+        try { picked = await LIVE.client.chooseProject(); }
+        catch (e) { return showLiveError(e); }
+        if (!picked) return;                        // the dialog was cancelled
+        await openProject(picked);
+      });
+    });
+    const saved = store.get("project", null);
+    if (saved && saved.path) openProject(saved.path).catch(() => {});
+  }
+
+  async function openProject(path) {
+    try {
+      const frame = await LIVE.client.createSession(path, store.get("mode", "manual"));
+      LIVE.project = { path: frame.payload.root, name: basename(frame.payload.root) };
+      store.set("project", { name: LIVE.project.name, path: LIVE.project.path });
+      // The canonical path the runtime resolved, not the string the dialog gave.
+      $$("[data-project-name]").forEach((el) => { el.textContent = LIVE.project.name; });
+      $$("[data-project-choose]").forEach((b) => {
+        b.dataset.empty = "false";
+        b.title = LIVE.project.path;
+      });
+      $$("[data-pd-name]").forEach((el) => { el.textContent = LIVE.project.name; });
+      $$("[data-pd-path]").forEach((el) => { el.textContent = LIVE.project.path; el.title = ""; });
+      LIVE.view = initialRunView();
+      paintLive();
+    } catch (e) {
+      showLiveError(e);
+    }
+  }
+
+  const basename = (p) => String(p).replace(/[\\/]+$/, "").split(/[\\/]/).pop() || p;
+
+  /* Only models the server actually has. */
+  function paintLiveModels(p) {
+    const host = $('[data-models-mount="picker"]');
+    if (!host) return;
+    if (!p.connected) {
+      host.innerHTML = `<p class="mpick-empty">${esc(p.error?.message
+        || "No model server is reachable. Start LM Studio or llama-server, then try again.")}</p>`;
+      return;
+    }
+    if (!p.models.length) {
+      host.innerHTML = `<p class="mpick-empty">The server is running but has no model loaded.</p>`;
+      return;
+    }
+    host.innerHTML = p.models.map((id) => `
+      <button class="mpick-row srow" type="button" role="menuitemradio"
+        aria-checked="${String(id === p.model)}" data-live-model="${esc(id)}">
+        <span class="t">${esc(id)}</span>
+      </button>`).join("");
+    $$("[data-live-model]", host).forEach((b) => b.addEventListener("click", async () => {
+      closePop();
+      try {
+        await LIVE.client.connectProvider(
+          store.get("provider-url", "http://127.0.0.1:1234/v1"), b.dataset.liveModel);
+        $$("[data-model-label]").forEach((el) => { el.textContent = b.dataset.liveModel; });
+        // A model change means a new session against the same project.
+        if (LIVE.project) await openProject(LIVE.project.path);
+      } catch (e) { showLiveError(e); }
+    }));
+    $$("[data-model-label]").forEach((el) => {
+      el.textContent = p.model || "No model loaded";
+    });
+  }
+
+  function wireLiveModelPicker() {
+    paintLiveModels(LIVE.client.provider);
+  }
+
+  /* Submitting starts a real turn. Stop cancels one. */
+  function wireLiveComposer(form) {
+    const ta = $("textarea", form);
+    const send = $("[data-send]", form);
+    if (!ta || !send) return;
+
+    ta.addEventListener("input", paintLiveComposer);
+
+    const submit = async (e) => {
+      if (e) e.preventDefault();
+      if (LIVE.running) return stopLive();
+
+      const text = ta.value.trim();
+      if (!text) return;
+      if (!canSendLive()) {
+        toast(!LIVE.project ? "Choose a project folder first."
+          : "Connect a model before sending.", "warn");
+        return;
+      }
+
+      // A pending question is answered rather than starting a new turn.
+      const answering = !!LIVE.question;
+      LIVE.question = null;
+      ta.value = "";
+      LIVE.running = true;
+      paintLive();
+
+      try {
+        if (answering) await LIVE.client.answerQuestion(text);
+        else await LIVE.client.startTurn(text, store.get("mode", "manual"));
+      } catch (err) {
+        showLiveError(err);
+      } finally {
+        LIVE.running = false;
+        paintLive();
+      }
+    };
+
+    form.addEventListener("submit", submit);
+    send.addEventListener("click", (e) => {
+      if (send.type !== "submit" || LIVE.running) { e.preventDefault(); submit(); }
+    });
+  }
+
+  async function stopLive() {
+    try { await LIVE.client.cancelTurn(); }
+    catch (e) { showLiveError(e); }
+  }
+
   /* ---------------------------------------------------------------- landing */
 
   /* The header carries no border until the page has moved under it, and the
@@ -4105,6 +4421,7 @@ import {
   }
 
   const boot = () => {
+    tellHost("boot: controller running");
     wireSidebar(); wireComposer(); wireModelPicker(); wireTabs(); wireDrawer();
     wireReview(); wireFilters(); wireNav(); wirePricing(); wirePlatform(); wireSignin();
     wireDownloadRows(); wireFilesTab(); wirePresets(); showPreset();
@@ -4117,6 +4434,7 @@ import {
     wireDensity(); wireQueue(); wireCaretMenus(); wirePaste();
     wireSettings(); wireShortcuts(); wireDownloadRow(); wireLanding();
     wireScan(); wireSetupProject(); wireSetupPermissions(); wireSetupDownload();
+    wireDesktop();
     wireInert();
     document.documentElement.dataset.reducedMotion = String(reduced);
   };

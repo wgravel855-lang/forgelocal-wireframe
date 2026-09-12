@@ -369,24 +369,35 @@ test("killing a command kills the whole process tree", async () => {
   const f = fixture();
   // A parent that spawns a detached grandchild writing to a file. If only the
   // parent is killed, the grandchild keeps writing and the file keeps growing.
-  const marker = join(f.base, "grandchild.txt").replace(/\\/g, "/");
-  const script = `
-    const { spawn } = require("node:child_process");
-    spawn(process.execPath, ["-e",
-      "const fs=require('node:fs');setInterval(()=>fs.appendFileSync(${JSON.stringify(marker)},'x'),50)"],
-      { stdio: "ignore" });
-    setInterval(() => {}, 1000);
-  `;
+  //
+  // The scripts are files, not `-e` strings. Interpolating a path with
+  // JSON.stringify into an already-quoted `-e` string produced a syntax error,
+  // so the grandchild never started, both sizes were zero, and this test passed
+  // while proving nothing. The assertion that the tree was alive at kill time
+  // is what stops that happening again.
+  const marker = join(f.base, "grandchild.txt");
+  writeFileSync(join(f.base, "gc.cjs"),
+    `const fs = require("node:fs");\n`
+    + `setInterval(() => fs.appendFileSync(${JSON.stringify(marker)}, "x"), 30);\n`);
+  writeFileSync(join(f.base, "parent.cjs"),
+    `const { spawn } = require("node:child_process");\n`
+    + `spawn(process.execPath, [${JSON.stringify(join(f.base, "gc.cjs"))}], `
+    + `{ stdio: "ignore", detached: true });\n`
+    + `setInterval(() => {}, 1000);\n`);
+
   await runCommand(f.ctx, {
-    argv: [process.execPath, "-e", script],
+    argv: [process.execPath, join(f.base, "parent.cjs")],
     purpose: "test",
-    timeout_ms: 1200,
+    timeout_ms: 1500,
   });
 
+  const size = (p) => (existsSync(p) ? readFileSync(p, "utf8").length : 0);
+  assert.ok(size(marker) > 0, "the grandchild never started, so this proves nothing");
+
   await new Promise((r) => setTimeout(r, 700));
-  const sizeA = existsSync(marker) ? readFileSync(marker, "utf8").length : 0;
+  const sizeA = size(marker);
   await new Promise((r) => setTimeout(r, 700));
-  const sizeB = existsSync(marker) ? readFileSync(marker, "utf8").length : 0;
+  const sizeB = size(marker);
 
   assert.equal(sizeB, sizeA, `a grandchild survived the kill and kept writing (${sizeA} -> ${sizeB})`);
   cleanup(f);
