@@ -596,6 +596,20 @@ export function reduceAgentEvent(prev, ev) {
         before: p.before_tokens ?? null, after: p.after_tokens ?? null,
         digestId: p.digest_id ?? null,
       };
+      /* Also a row, at the point in the conversation where it happened.
+         Compaction changes what the model can still see, and a reader
+         scrolling back past it needs to know that the agent cannot: as
+         session state alone it was a number in a panel, and the transcript
+         above it looked like context the model still had. */
+      pushRow(s, {
+        kind: "notice", tone: "context", id: ev.event_id,
+        text: "Earlier work was summarised to fit the model's context.",
+        detail: p.before_tokens && p.after_tokens
+          ? `${Number(p.before_tokens).toLocaleString()} tokens down to ${
+            Number(p.after_tokens).toLocaleString()}. Everything above still happened; the model now reads a summary of it.`
+          : "Everything above still happened; the model now reads a summary of it.",
+        at: ev.timestamp, turnId: ev.turn_id,
+      });
       break;
 
     case EventType.BACKGROUND_TASK_STARTED:
@@ -624,8 +638,28 @@ export function reduceAgentEvent(prev, ev) {
       break;
     }
 
-    case EventType.TURN_COMPLETED:
+    case EventType.TURN_COMPLETED: {
       if (ev.turn_id) s.completedTurns.push(ev.turn_id);
+      /* A turn that stopped for a reason other than answering leaves a
+         transcript that reads as if the agent finished. The stop reason was
+         session state, which the next turn overwrites, so scrolling back
+         through a session showed nothing at all where a run hit its turn
+         limit. It is a row now, and the four that mean "this did not finish"
+         are named as such. */
+      const stopped = {
+        turn_limit: "Stopped at the turn limit for this effort setting. Nothing above was undone.",
+        time_limit: "Stopped at the time limit. Nothing above was undone.",
+        repeated_calls: "Stopped: the same call was repeated with nothing changing in between.",
+        malformed_limit: "Stopped: the model could not produce a usable tool call.",
+      }[String(p.stop_reason ?? "")];
+      if (stopped) {
+        pushRow(s, {
+          kind: "notice", tone: "stopped", id: ev.event_id,
+          text: stopped,
+          detail: p.detail && p.detail.tool ? `Last tool: ${p.detail.tool}.` : null,
+          at: ev.timestamp, turnId: ev.turn_id,
+        });
+      }
       // A turn that ended because the provider failed is still a turn that
       // ended, but the session is not idle: it is in an error the user has not
       // seen resolved. Returning to idle here would erase the only signal that
@@ -635,6 +669,7 @@ export function reduceAgentEvent(prev, ev) {
       s.turnId = null;
       s.stopReason = p.stop_reason ?? null;
       break;
+    }
 
     case EventType.TURN_CANCELLED:
       s.state = SessionState.CANCELLED;

@@ -32,15 +32,153 @@ export function liveTranscript(view) {
     toolRun = [];
   };
 
+  /** @type {any[]} */
+  let browserRun = [];
+  const flushBrowser = () => {
+    if (!browserRun.length) return;
+    html.push(browserBlock(browserRun));
+    browserRun = [];
+  };
+
+  /* Every kind the reducer produces has a branch here.
+   *
+   * It used to have three, and rows of any other kind fell through and
+   * rendered nothing: a run of browser actions, and every question the agent
+   * asked once it had been answered, were simply absent from the transcript.
+   * A transcript that silently omits what happened is worse than one that
+   * renders it plainly, so the default branch below is loud rather than a
+   * no-op — a new row kind must be given a block, not quietly dropped. */
   for (const row of view.rows) {
-    if (row.kind === "tool") { toolRun.push(row); continue; }
+    if (row.kind === "tool") { flushBrowser(); toolRun.push(row); continue; }
+    if (row.kind === "browser") { flush(); browserRun.push(row); continue; }
     flush();
-    if (row.kind === "user") html.push(userTurn(row));
-    if (row.kind === "assistant") html.push(assistantTurn(row));
+    flushBrowser();
+    switch (row.kind) {
+      case "user": html.push(userTurn(row)); break;
+      case "assistant": html.push(assistantTurn(row)); break;
+      case "question": html.push(askedBlock(row)); break;
+      case "notice": html.push(noticeBlock(row)); break;
+      default:
+        html.push(`<article class="turn turn-assistant"><p class="lv-note">${
+          esc(`A ${row.kind} entry was recorded here and this build has no way to show it.`)
+        }</p></article>`);
+    }
   }
   flush();
+  flushBrowser();
 
   return html.join("\n");
+}
+
+/**
+ * A run of browser actions.
+ *
+ * Grouped like a run of tool calls, and for the same reason: six clicks on one
+ * page are one passage of work, not six objects. What each row carries is the
+ * action, what it targeted, and the origin — never the value typed, because a
+ * typed value can be a password even when the field is not marked as one.
+ * @param {any[]} rows
+ */
+function browserBlock(rows) {
+  const origins = [...new Set(rows.map((r) => originOf(r.url)).filter(Boolean))];
+  const failed = rows.filter((r) => r.ok === false).length;
+  const label = origins.length === 1
+    ? `Browsed ${origins[0]}`
+    : `Browsed ${origins.length} sites`;
+
+  const items = rows.map((r) => {
+    const bad = r.ok === false;
+    return `<div class="lv-call" data-status="${bad ? "failed" : "completed"}">
+      <dl class="lv-kv"><dt>${esc(r.action ?? "action")}</dt>
+      <dd class="m">${esc(clipOutput(r.target ?? "", 200))}${
+        bad ? " — did not succeed" : ""}</dd>
+      ${r.detail ? `<dt>detail</dt><dd class="m">${esc(clipOutput(r.detail, 200))}</dd>` : ""}
+      ${r.url ? `<dt>page</dt><dd class="m">${esc(clipOutput(r.url, 200))}</dd>` : ""}
+      </dl></div>`;
+  }).join("\n");
+
+  return `<article class="turn turn-assistant">
+  <div class="lvact">
+    <details class="lv-row" data-activity="browser" data-status="${failed ? "failed" : "completed"}">
+      <summary>
+        <span class="lv-ico" aria-hidden="true">${failed ? ICON.bad : ICON.ok}</span>
+        <span class="lv-label">${esc(label)}</span>
+        <span class="lv-meta">${rows.length}</span>
+        ${ICON.chev}
+      </summary>
+      <div class="lv-detail">${items}</div>
+    </details>
+  </div>
+</article>`;
+}
+
+/**
+ * A question the agent asked, after it was answered.
+ *
+ * The pending question is a card with controls; this is the record of one, and
+ * it is deliberately not interactive. A replayed session shows what was asked
+ * and what was chosen rather than a gap where a pause used to be — and it must
+ * not offer buttons that would answer a question nobody is waiting on.
+ * @param {any} row
+ */
+function askedBlock(row) {
+  const list = Array.isArray(row.questions) ? row.questions : [];
+  if (!list.length) return "";
+
+  const asked = list.map((q) => `<dt>${esc(q.question ?? "")}</dt><dd>${
+    esc(answerFor(row, q) || (row.answered ? "(no answer recorded)" : "waiting"))
+  }</dd>`).join("");
+
+  return `<article class="turn turn-assistant">
+  <div class="lvact">
+    <details class="lv-row" data-activity="ask" data-status="${row.answered ? "completed" : "awaiting_permission"}">
+      <summary>
+        <span class="lv-ico" aria-hidden="true">${row.answered ? ICON.ok : ICON.wait}</span>
+        <span class="lv-label">${esc(row.answered ? "Asked, and answered" : "Waiting for an answer")}</span>
+        ${ICON.chev}
+      </summary>
+      <div class="lv-detail"><div class="lv-call" data-status="completed">
+        <dl class="lv-kv">${asked}</dl>
+      </div></div>
+    </details>
+  </div>
+</article>`;
+}
+
+/** What the person chose for one question, from either shape of answer. */
+function answerFor(row, q) {
+  const found = Array.isArray(row.answers)
+    ? row.answers.find((a) => a && a.id === q.id)
+    : null;
+  if (found) {
+    const chosen = Array.isArray(found.choice) ? found.choice : [found.choice];
+    const said = chosen.filter((c) => typeof c === "string" && c.trim()).join(", ");
+    if (said) return said;
+  }
+  // A free-text reply answers whatever was asked; with one question it is the
+  // answer, and with several there is no way to say which it belonged to.
+  return row.answered && typeof row.answerText === "string" ? row.answerText : "";
+}
+
+/**
+ * Something that happened to the conversation rather than in it.
+ *
+ * Compaction and a turn that stopped short are both facts a reader scrolling
+ * back needs, and both used to be session state that the next turn overwrote.
+ * @param {any} row
+ */
+function noticeBlock(row) {
+  return `<article class="turn turn-assistant">
+  <p class="lv-notice" data-tone="${esc(row.tone ?? "context")}">
+    <span>${esc(row.text ?? "")}</span>
+    ${row.detail ? `<span class="lv-notice-d">${esc(row.detail)}</span>` : ""}
+  </p>
+</article>`;
+}
+
+/** The origin of a URL, for a label. Never throws on a page's own nonsense. */
+function originOf(url) {
+  try { return new URL(String(url)).origin; } catch { return ""; }
 }
 
 function userTurn(row) {

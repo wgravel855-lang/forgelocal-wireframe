@@ -1350,6 +1350,18 @@
     .askq-q { margin: 0; font-size: var(--t-copy); line-height: var(--lh-copy); color: var(--fg); }
     .askq-o { display: flex; flex-direction: column; gap: 6px; }
 
+    /* ---- a notice in the transcript ------------------------------------ */
+    /* Something that happened TO the conversation rather than in it: a
+       compaction, or a turn that stopped short of answering. Quiet, and a
+       full-width rule rather than a card, because it is a boundary in the
+       reading rather than an object to act on. */
+    .lv-notice { display: flex; flex-direction: column; gap: 2px; margin: 6px 0;
+      padding: 8px 0 8px 11px; border-left: 2px solid var(--line-strong);
+      font-size: var(--t-label); line-height: var(--lh-label); color: var(--mut); }
+    .lv-notice-d { font-size: var(--t-meta); line-height: var(--lh-meta); color: var(--faint); }
+    /* A run that stopped short is not an answer, and does not read as one. */
+    .lv-notice[data-tone="stopped"] { border-left-color: var(--warn-line); color: var(--warn); }
+
     /* ---- what a model turned out to be --------------------------------- */
     .capbox { display: flex; flex-direction: column; gap: 8px; align-items: flex-start;
       padding: 12px 14px; border: 1px solid var(--line); border-radius: 9px;
