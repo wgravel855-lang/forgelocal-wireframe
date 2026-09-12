@@ -22,6 +22,7 @@ import { createState, clearLoaded } from "./core/modelstore.mjs";
 import { THIS_PC } from "./core/machine.mjs";
 import * as V from "./core/modelviews.mjs";
 import { modeMenuHtml } from "./core/modes.mjs";
+import { styleChooserHtml, OutputStyle } from "./core/styles.mjs";
 // The build renders the disconnected state, because a served page is always a
 // web preview. The desktop shell replaces it after its own handshake.
 import { initialRuntime, runtimeLabel } from "./core/runtime.mjs";
@@ -48,6 +49,9 @@ const DESKTOP = desktopState(WEB_RUNTIME, false);
 const SEED = clearLoaded(createState(applyDesktopState(modelSeed(), DESKTOP)));
 const BIND = {
   "<!--MODE_MENU-->": () => modeMenuHtml(),
+  // Rendered from the one table, so adding a style is one entry rather than
+  // four blocks of markup and a settings page that disagrees with itself.
+  "<!--OUTPUT_STYLES-->": () => styleChooserHtml(OutputStyle.ADAPTIVE),
   "<!--RUNTIME_LABEL-->": () => runtimeLabel(WEB_RUNTIME),
   "<!--MODEL_PICKER-->": () => V.pickerHtml(SEED, THIS_PC),
   "<!--MODEL_LABEL-->": () => V.composerModelLabel(SEED),

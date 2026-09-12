@@ -44,8 +44,14 @@ test("every app route exposes exactly one h1", () => {
     const html = page(route);
     const count = (html.match(/<h1[\s>]/g) || []).length;
     if (route === "app/settings") {
-      // one per section, and the controller unhides exactly one
-      assert.equal(count, 6, "settings: one heading per section");
+      /* One per section, and the controller unhides exactly one.
+         Counted from the navigation rather than written down: the number
+         was a literal 6, so adding a section failed this test with an
+         arithmetic complaint instead of checking the rule it states. */
+      const sections = (html.match(/data-set-nav="/g) || []).length;
+      assert.ok(sections >= 5, `settings has only ${sections} sections`);
+      assert.equal(count, sections,
+        `settings: ${sections} sections but ${count} headings`);
       assert.ok(/hidden/.test(html), "inactive sections ship hidden");
     } else {
       assert.equal(count, 1, `${route} has one h1, found ${count}`);

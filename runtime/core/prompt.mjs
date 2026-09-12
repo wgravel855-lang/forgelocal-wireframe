@@ -44,6 +44,50 @@ export const OutputStyle = Object.freeze({
 
 export const OUTPUT_STYLES = Object.freeze(Object.values(OutputStyle));
 
+/**
+ * What each style is, in the words a settings page shows.
+ *
+ * Here rather than in the interface because the description has to match what
+ * styleLayer actually tells the model. A settings page that promises "explains
+ * its reasoning" while the layer says something else is a lie the user cannot
+ * check, and the two drift the moment they live in different files. The test
+ * for this asserts the pairing rather than the wording.
+ */
+export const STYLE_COPY = Object.freeze({
+  [OutputStyle.ADAPTIVE]: {
+    label: "Adaptive",
+    summary: "Match the answer to the question.",
+    detail:
+      "A one-line question gets a one-line answer; a change to your code gets "
+      + "what changed and what verified it. This is the default because most "
+      + "sessions are a mix of both.",
+  },
+  [OutputStyle.CONCISE]: {
+    label: "Concise",
+    summary: "The result, and what proves it.",
+    detail:
+      "No preamble, no restating the request, no summary of work you watched "
+      + "happen. Evidence is never trimmed: a command and its exit code are the "
+      + "answer, not decoration around it.",
+  },
+  [OutputStyle.EXPLANATORY]: {
+    label: "Explanatory",
+    summary: "Say why, not just what.",
+    detail:
+      "Names the approach before taking it and the trade-off behind a choice. "
+      + "Useful in code you do not know well, and on decisions you will have to "
+      + "live with.",
+  },
+  [OutputStyle.LEARNING]: {
+    label: "Learning",
+    summary: "Explain the decisions as they happen.",
+    detail:
+      "Names the pattern being followed and offers a genuinely open choice "
+      + "rather than picking silently. It does not turn a simple task into a "
+      + "lesson, and it does not slow one down.",
+  },
+});
+
 /** @param {unknown} v @returns {string} */
 export function normalizeStyle(v) {
   const k = String(v ?? "").toLowerCase();

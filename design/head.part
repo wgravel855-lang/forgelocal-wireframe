@@ -1350,6 +1350,31 @@
     .askq-q { margin: 0; font-size: var(--t-copy); line-height: var(--lh-copy); color: var(--fg); }
     .askq-o { display: flex; flex-direction: column; gap: 6px; }
 
+    /* ---- what a model turned out to be --------------------------------- */
+    .capbox { display: flex; flex-direction: column; gap: 8px; align-items: flex-start;
+      padding: 12px 14px; border: 1px solid var(--line); border-radius: 9px;
+      background: var(--raised); margin: 4px 0 10px; }
+    .capbox .set-d { margin: 0; }
+    .cap-h { margin: 0; display: flex; align-items: center; gap: 9px; flex-wrap: wrap;
+      min-width: 0; font-size: var(--t-label); line-height: var(--lh-label); color: var(--mut); }
+    /* The grade, stated once. Untested is neutral rather than amber: nobody
+       having run a test is not a fault in the model, and colouring it as a
+       warning pushes people into a suite they may not need. */
+    .cap-pill { display: inline-flex; align-items: center; height: 22px; padding: 0 9px;
+      border-radius: 999px; border: 1px solid var(--line-strong);
+      font-size: var(--t-meta); line-height: var(--lh-meta); color: var(--mut);
+      background: var(--sunk); white-space: nowrap; }
+    .cap-pill[data-tone="ok"] { border-color: var(--ok-line); background: var(--ok-soft); color: var(--ok); }
+    .cap-pill[data-tone="warn"] { border-color: var(--warn-line); background: var(--warn-soft); color: var(--warn); }
+    .cap-pill[data-tone="bad"] { border-color: var(--bad-line); background: var(--bad-soft); color: var(--bad); }
+    .capbox code { font-family: var(--mono); font-size: var(--t-meta); color: var(--fg); }
+
+    /* One-of-several, shared. The agent's question card and the output-style
+       setting are the same control doing the same job — pick one of a small
+       set, each with a label and a description — so they are one set of rules
+       rather than two that drift. Stated here because the coupling is
+       deliberate: a change to these changes both surfaces. */
+    .setopts { display: flex; flex-direction: column; gap: 8px; margin: 4px 0 10px; }
     .askopt { display: flex; align-items: flex-start; gap: 10px;
       padding: 9px 11px; border: 1px solid var(--line); border-radius: 8px;
       background: var(--raised); cursor: pointer;

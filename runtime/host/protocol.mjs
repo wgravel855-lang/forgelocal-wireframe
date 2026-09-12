@@ -36,6 +36,11 @@ export const Request = Object.freeze({
      the whole point is to reach a session this process did not create. */
   SESSION_LIST: "session.list",
   SESSION_RESUME: "session.resume",
+  /* Run the conformance suite against the connected model. Its own request
+     because it costs ten real model turns: it is something a person chooses
+     to do, never something that happens on connect. */
+  MODEL_TEST: "model.test",
+  MODEL_TEST_CANCEL: "model.test.cancel",
 });
 
 /** Runtime -> frontend. */
@@ -56,6 +61,12 @@ export const Notify = Object.freeze({
   /* Sent after a reopened session's events have all been replayed, so the
      interface knows the transcript is complete rather than still arriving. */
   SESSION_REPLAYED: "session.replayed",
+  /* One per case as the suite runs, then one with the verdict. Progress is
+     sent because ten model turns is long enough that a silent interface looks
+     broken, and because a person watching a case fail learns more from that
+     than from a grade at the end. */
+  MODEL_TEST_PROGRESS: "model.test.progress",
+  MODEL_TESTED: "model.tested",
 });
 
 export const REQUEST_TYPES = Object.freeze(Object.values(Request));

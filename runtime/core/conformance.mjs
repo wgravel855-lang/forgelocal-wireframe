@@ -90,6 +90,12 @@ export async function runConformance({
   const results = [];
 
   for (const kase of CASES) {
+    /* Checked between cases as well as inside the stream. Aborting only the
+       HTTP request would stop the turn in flight and then start the next case,
+       so a cancelled run would keep going for up to nine more prompts. */
+    if (signal && signal.aborted) {
+      throw new Error("The conformance run was stopped.");
+    }
     const started = Date.now();
     /** @type {any} */
     let outcome = { ok: true };

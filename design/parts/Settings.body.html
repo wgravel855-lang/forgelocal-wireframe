@@ -31,6 +31,7 @@
         <a class="setnav-r" href="#appearance" data-set-nav="appearance">Appearance</a>
         <p class="setnav-g seclabel">Agents</p>
         <a class="setnav-r" href="#models" data-set-nav="models">Models & runtime</a>
+        <a class="setnav-r" href="#answers" data-set-nav="answers">Answers</a>
         <a class="setnav-r" href="#permissions" data-set-nav="permissions">Permissions</a>
         <p class="setnav-g seclabel">System</p>
         <a class="setnav-r" href="#privacy" data-set-nav="privacy">Privacy & diagnostics</a>
@@ -79,6 +80,35 @@
                  runtime reports, so there is no markup here to print them from
                  when none is connected. -->
             <div data-runtime-settings></div>
+
+            <!-- What the loaded model turned out to be.
+
+                 Deliberately nothing here for the disconnected case beyond the
+                 sentence the renderer writes: a parameter count, a name or the
+                 server's "supports tools" flag are not evidence, and markup
+                 that could print one is markup that eventually will. -->
+            <h3 class="set-h3">Agent capability</h3>
+            <div data-capability></div>
+          </section>
+
+          <!-- Output style.
+
+               A setting, not a composer control. The brief is explicit that
+               the composer is not being redesigned, and this is the right
+               place for it anyway: it is a preference that holds across
+               sessions, not a per-message choice.
+
+               The four options are rendered from one table shared with the
+               runtime's prompt layer, and a test asserts the two agree. What
+               they cannot do is stated below the list, because a control that
+               looks like it might relax a rule is worse than no control. -->
+          <section class="setsec" id="answers">
+            <h1 class="h1" style="font-size:20px">Answers</h1>
+            <p class="set-lede">How the agent writes. This changes length, ordering and how much
+              it explains. It never changes what it is allowed to do, what needs your approval,
+              or what counts as proof that something ran.</p>
+            <div class="setopts" data-style-chooser><!--OUTPUT_STYLES--></div>
+            <p class="set-d" data-style-state>Applies from your next message.</p>
           </section>
 
           <!-- Every "always allow" made in a permission prompt lands here, with

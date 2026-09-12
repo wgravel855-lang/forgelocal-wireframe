@@ -34,6 +34,8 @@ import { runningLabel } from "../core/activity.mjs";
 import { liveTranscript, planBlock, permissionCard, questionCard } from "../core/liveview.mjs";
 import { initialState as initialRunView, reduceAgentEvent as reduceAgent } from "../core/agentevents.mjs";
 import { browserPanelBody, browserPanelHeader, VIEWPORTS } from "../core/browserpanel.mjs";
+import { normalizeStyle, styleLabel, OutputStyle } from "../core/styles.mjs";
+import { capabilityBlock, agentAllowed, gradeOf, GRADE_COPY } from "../core/capabilityview.mjs";
 import { catalogViewState, localViewState, showsRows, showsDetail, stateBlockHtml } from "../core/viewstate.mjs";
 import {
   detectEnvironment, initialRuntime, reduceRuntime, isConnected,
@@ -1008,7 +1010,42 @@ import {
     });
   }
 
+  /**
+   * The output-style setting.
+   *
+   * Stored, not sent: it travels with the next turn, so there is never a
+   * moment where the radio the person can see and the layer the model was
+   * given disagree. Nothing here reaches the runtime, which is also why it
+   * works in the web preview — the preference is real even when no runtime is.
+   */
+  function wireOutputStyle() {
+    const box = $("[data-style-chooser]");
+    if (!box) return;
+    const state = $("[data-style-state]");
+
+    const current = normalizeStyle(store.get("output-style", OutputStyle.ADAPTIVE));
+    $$('input[name="output-style"]', box).forEach((r) => { r.checked = r.value === current; });
+
+    const say = (id) => {
+      if (!state) return;
+      state.textContent = id === OutputStyle.ADAPTIVE
+        ? "Adaptive is the default. Applies from your next message."
+        : `${styleLabel(id)} applies from your next message.`;
+    };
+    say(current);
+
+    box.addEventListener("change", (e) => {
+      const r = e.target instanceof Element ? e.target.closest('input[name="output-style"]') : null;
+      if (!r) return;
+      const id = normalizeStyle(r.value);
+      store.set("output-style", id);
+      say(id);
+      announce(`Answer style set to ${styleLabel(id)}.`);
+    });
+  }
+
   function wireSettings() {
+    wireOutputStyle();
     $$(".switch").forEach((b) => {
       const key = "switch:" + (b.getAttribute("aria-label") || "");
       // Each state carries its own sentence, because swapping only the leading
@@ -3958,6 +3995,10 @@ import {
     // A provider.connect this renderer has sent and not yet had answered. The
     // model dot reads it, because the provider itself only reports the result.
     providerBusy: false,
+    /** The stored conformance verdict for the loaded model, or null. */
+    profile: null,
+    /** A run in flight: {done, total, line}, or null. */
+    testing: null,
   };
 
   /** Run a provider.connect with the model dot showing it is in flight. */
@@ -4251,13 +4292,23 @@ import {
     LIVE.client = createHostClient({
       transport: tauriTransport(),
       onRuntimeState: () => paintLiveComposer(),
-      onProviderState: (p) => { paintLiveModels(p); paintLiveComposer(); },
+      onProviderState: (p) => {
+        LIVE.profile = p.profile ?? null;
+        paintLiveModels(p); paintLiveComposer(); paintCapability();
+      },
       onAgentEvent: (event) => {
         LIVE.view = reduceRunSafe(LIVE.view, event);
         paintLive();
       },
       onPermission: (card) => { LIVE.permission = card; paintLive(); },
       onQuestion: (q) => { LIVE.question = q; paintLive(); },
+      onModelTest: (type, payload) => {
+        LIVE.testing = type === "model.test.progress"
+          ? { done: payload.done, total: payload.total, line: payload.line }
+          : null;
+        if (type === "model.tested") LIVE.profile = payload.profile ?? null;
+        paintCapability();
+      },
       onLog: (line) => console.debug("[runtime]", line),
     });
 
@@ -4334,6 +4385,7 @@ import {
     wireLiveComposer(form);
     wireAskCard();
     wireBrowserPanel();
+    wireCapability();
     paintLiveComposer();
     paintBrowserPanel();
   }
@@ -4398,6 +4450,50 @@ import {
    * browser, which reads the catalogue, is where those live.
    * @param {any} p
    */
+  /**
+   * The agent-capability block in Settings.
+   *
+   * Everything it says comes from a conformance run. There is no path here
+   * from a model's name, its parameter count, or the server's "supports
+   * tools" flag to a grade — those are not evidence, and a block that could
+   * print one from them is a block that eventually will.
+   */
+  function paintCapability() {
+    const host = $("[data-capability]");
+    if (!host) return;
+    const p = LIVE.client ? LIVE.client.provider : null;
+    host.innerHTML = capabilityBlock({
+      profile: LIVE.profile ?? (p && p.profile) ?? null,
+      model: p && p.model ? p.model : null,
+      connected: !!(p && p.connected && LIVE.client && LIVE.client.runtime.connected),
+      running: LIVE.testing,
+    });
+  }
+
+  /** Delegated once, because the block is replaced on every progress frame. */
+  function wireCapability() {
+    const host = $("[data-capability]");
+    if (!host) return;
+    host.addEventListener("click", async (e) => {
+      const el = e.target instanceof Element ? e.target : null;
+      if (!el || !LIVE.client) return;
+      if (el.closest("[data-cap-test]")) {
+        LIVE.testing = { done: 0, total: 10, line: "Starting." };
+        paintCapability();
+        try { await LIVE.client.testModel(); }
+        catch (err) {
+          LIVE.testing = null;
+          paintCapability();
+          announce(err && err.message ? err.message : "The test could not run.");
+        }
+      }
+      if (el.closest("[data-cap-cancel]")) {
+        LIVE.client.cancelModelTest().catch(() => {});
+      }
+    });
+    paintCapability();
+  }
+
   function paintLiveModels(p) {
     const host = $('[data-models-mount="picker"]');
     if (!host) return;
@@ -4601,7 +4697,10 @@ import {
       try {
         if (answering) await LIVE.client.answerQuestion({ answers: [], text });
         else await LIVE.client.startTurn(text, store.get("mode", "manual"),
-          String(store.get("data-effort", "Standard")).toLowerCase());
+          String(store.get("data-effort", "Standard")).toLowerCase(),
+          /* The style travels with the turn, so the setting the person can
+             see and the one the model was given cannot disagree. */
+          normalizeStyle(store.get("output-style", OutputStyle.ADAPTIVE)));
       } catch (err) {
         showLiveError(err);
       } finally {

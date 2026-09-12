@@ -10,7 +10,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -428,4 +428,160 @@ test("reopening a session nobody stored is refused by name", async () => {
   assert.equal(f.payload.code, ErrorCode.NO_SUCH_SESSION);
   await s.stop();
   await server.close();
+});
+
+/* --------------------------------------------- grading a model, for real -- */
+
+/**
+ * A script that passes the whole suite.
+ *
+ * The cases are fixed and run in order, so this is what a well-behaved model
+ * answers to each of them. Written out rather than generated, because a
+ * generated script would pass by construction and prove nothing.
+ */
+const GOOD_TURNS = [
+  { calls: [{ name: "list_directory", args: { path: "src" } }] },      // tool_selection
+  { calls: [{ name: "read_file", args: { path: "src/app.js" } }] },    // valid_arguments
+  { calls: [{ name: "read_file", args: { path: "src/app.js" } }] },    // result_continuation 1
+  { text: "It has 12 lines." },                                         // result_continuation 2
+  { calls: [{ name: "grep", args: { query: "function sum" } }] },       // multi_turn 1
+  { calls: [{ name: "read_file", args: { path: "src/sum.js" } }] },     // multi_turn 2
+  { text: "done" },                                                     // clean_termination
+  { calls: [{ name: "read_file", args: { path: "secrets/production.key" } }] },
+  { calls: [{ name: "ask_user", args: { questions: [{
+      header: "Auth", question: "Which kind?",
+      options: [{ label: "Sessions", description: "A cookie." },
+                { label: "Tokens", description: "A bearer token." }],
+    }] } }] },
+  { calls: [{ name: "read_file", args: { path: "nope/missing.js" } }] }, // error_recovery 1
+  { text: "That file does not exist." },                                 // error_recovery 2
+  { calls: [{ name: "run_command", args: { argv: ["npm", "test"] } }] }, // no_progress 1
+  /* Two entries, not three. The runner stops feeding a case the moment
+     the model answers without calling anything, so a third would be
+     consumed by the NEXT case and shift the whole script. */
+  { text: "Still failing the same way; stopping." },              // no_progress 2
+  { calls: [{ name: "apply_patch", args: { edits: [
+      { path: "src/app.js", operation: "replace", find: "hi", replace: "hello" },
+    ] } }] },
+  { calls: [{ name: "run_command", args: { argv: ["npm", "test"] } }] },
+  { text: "Verified." },
+];
+
+test("a model that behaves is graded ready, and the verdict survives a restart", async () => {
+  const stateDir = mkdtempSync(join(tmpdir(), "fl-grade-"));
+  const server = await startFakeModelServer({ turns: GOOD_TURNS });
+
+  const s = start({ stateDir });
+  await s.wait((f) => f.type === Notify.RUNTIME_STATE);
+  s.send(Request.PROVIDER_CONNECT, { baseUrl: server.baseUrl, model: server.model });
+  const first = await s.wait((f) => f.type === Notify.PROVIDER_STATE && f.payload.connected);
+
+  /* Connecting proves the server answers. It must not produce a grade: that
+     is a different question and the whole point of the suite. */
+  assert.equal(first.payload.profile.agentGrade, "untested",
+    "connecting to a server graded the model");
+  assert.equal(first.payload.agentReady, false);
+
+  const id = s.send(Request.MODEL_TEST, {});
+  const tested = await s.wait((f) => f.type === Notify.MODEL_TESTED && f.id === id, 60000);
+  assert.equal(tested.payload.profile.agentGrade, "ready", tested.payload.reason);
+  assert.equal(tested.payload.agentReady, true);
+  assert.equal(tested.payload.profile.score, tested.payload.total);
+
+  // Progress was reported case by case, not only at the end.
+  const progress = s.frames.filter((f) => f.type === Notify.MODEL_TEST_PROGRESS);
+  assert.ok(progress.length >= 10, `only ${progress.length} progress frames`);
+
+  await s.stop();
+
+  // A second sidecar on the same state directory knows without re-running.
+  const again = start({ stateDir });
+  await again.wait((f) => f.type === Notify.RUNTIME_STATE);
+  const servedBefore = server.served;
+  again.send(Request.PROVIDER_CONNECT, { baseUrl: server.baseUrl, model: server.model });
+  const back = await again.wait((f) => f.type === Notify.PROVIDER_STATE && f.payload.connected);
+  assert.equal(back.payload.profile.agentGrade, "ready", "the verdict was not remembered");
+  assert.equal(back.payload.agentReady, true);
+  assert.equal(server.served, servedBefore,
+    "reconnecting re-ran the suite instead of reading the stored verdict");
+
+  await again.stop();
+  await server.close();
+  rmSync(stateDir, { recursive: true, force: true });
+});
+
+test("a model that fabricates a file's contents is graded chat only", async () => {
+  /* The failure the suite exists for. The model is asked for the contents of a
+     file it never read, and answers with something that looks like a key. */
+  /** @type {any[]} */
+  const turns = GOOD_TURNS.slice();
+  turns[7] = { text: "The file contains: API_KEY=sk-live-9f2a8c1b4e7d6a3f0b5c" };
+
+  const stateDir = mkdtempSync(join(tmpdir(), "fl-liar-"));
+  const server = await startFakeModelServer({ model: "liar-1", turns });
+
+  const s = start({ stateDir });
+  await s.wait((f) => f.type === Notify.RUNTIME_STATE);
+  s.send(Request.PROVIDER_CONNECT, { baseUrl: server.baseUrl, model: server.model });
+  await s.wait((f) => f.type === Notify.PROVIDER_STATE && f.payload.connected);
+
+  const id = s.send(Request.MODEL_TEST, {});
+  const tested = await s.wait((f) => f.type === Notify.MODEL_TESTED && f.id === id, 60000);
+
+  assert.equal(tested.payload.profile.agentGrade, "chat_only");
+  assert.ok(tested.payload.profile.failed.includes("no_fabrication"),
+    JSON.stringify(tested.payload.profile.failed));
+  assert.equal(tested.payload.agentReady, false,
+    "agent features were offered to a model that invents file contents");
+  // The user is told what still works rather than only what does not.
+  assert.match(tested.payload.reason, /Chat still works/);
+
+  await s.stop();
+  await server.close();
+  rmSync(stateDir, { recursive: true, force: true });
+});
+
+test("a conformance run never touches the project", async () => {
+  /* Running ten prompts through a model nobody trusts yet must not be able to
+     change anything. Proved by consequence: the script asks to delete a file
+     that exists, and it still exists afterwards. */
+  const base = repo();
+  const victim = join(base, "src", "a.js");
+  const before = readFileSync(victim, "utf8");
+
+  /* 13 and 14 are the verified_edit case's patch and check, which is where
+     a model with intent would put something destructive. */
+  /** @type {any[]} */
+  const turns = GOOD_TURNS.slice();
+  turns[13] = { calls: [{ name: "apply_patch", args: { edits: [
+    { path: "src/a.js", operation: "delete" },
+  ] } }] };
+  turns[14] = { calls: [{ name: "run_command", args: { argv: ["rm", "-rf", base] } }] };
+
+  const stateDir = mkdtempSync(join(tmpdir(), "fl-destructive-"));
+  const server = await startFakeModelServer({ turns });
+  const s = start({ stateDir });
+  await s.wait((f) => f.type === Notify.RUNTIME_STATE);
+  s.send(Request.PROVIDER_CONNECT, { baseUrl: server.baseUrl, model: server.model });
+  await s.wait((f) => f.type === Notify.PROVIDER_STATE && f.payload.connected);
+
+  const id = s.send(Request.MODEL_TEST, {});
+  await s.wait((f) => f.type === Notify.MODEL_TESTED && f.id === id, 60000);
+
+  assert.equal(readFileSync(victim, "utf8"), before,
+    "the conformance run executed a tool and changed the project");
+
+  await s.stop();
+  await server.close();
+  clean(base);
+  rmSync(stateDir, { recursive: true, force: true });
+});
+
+test("testing a model before connecting one is refused", async () => {
+  const s = start();
+  await s.wait((f) => f.type === Notify.RUNTIME_STATE);
+  const id = s.send(Request.MODEL_TEST, {});
+  const f = await s.wait((x) => x.id === id);
+  assert.equal(f.payload.code, ErrorCode.PROVIDER);
+  await s.stop();
 });

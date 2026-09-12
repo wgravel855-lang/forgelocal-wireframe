@@ -19,11 +19,15 @@ import { randomUUID } from "node:crypto";
 import { join } from "node:path";
 import { canonicalRoot, PathEscape } from "../core/paths.mjs";
 import { createOrchestrator, StopReason } from "../core/orchestrator.mjs";
+import { DEFAULT_GROUPS } from "../core/tools/index.mjs";
 import { createOpenAIProvider } from "../core/providers/openai.mjs";
 import { ProviderFailure } from "../core/providers/types.mjs";
 import { normalizeMode, MODE_COPY } from "../core/permissions.mjs";
 import { classifyCommand, Danger } from "../core/danger.mjs";
 import { openStore, defaultStoreDir, SessionStatus } from "../core/store.mjs";
+import { openProfiles } from "../core/profiles.mjs";
+import { runConformance, agentAllowed } from "../core/conformance.mjs";
+import { emptyProfile, AgentGrade } from "../core/capability.mjs";
 import { summarise, renderSummary } from "../core/compact.mjs";
 import {
   PROTOCOL_VERSION, Request, Notify, ErrorCode,
@@ -67,6 +71,25 @@ try {
 } catch (/** @type {any} */ e) {
   log(`session history is unavailable: ${e && e.message ? e.message : e}`);
 }
+
+/**
+ * Conformance verdicts, remembered between launches.
+ *
+ * Separate from the session store because it answers a different question and
+ * has a different lifetime: sessions are a record of what happened, and this
+ * is a claim about what a model can be relied on to do.
+ * @type {any}
+ */
+let profiles = null;
+try {
+  profiles = openProfiles(defaultStoreDir());
+} catch (/** @type {any} */ e) {
+  log(`capability profiles are unavailable: ${e && e.message ? e.message : e}`);
+}
+
+/** The run in flight, so a second request is refused rather than interleaved. */
+/** @type {AbortController|null} */
+let testing = null;
 
 /** Record an event, never at the cost of delivering it. */
 function persist(sessionId, event) {
@@ -135,6 +158,8 @@ async function handle(frame) {
     case Request.BROWSER_CONTROL: return browserControl(id, sessionId, payload);
     case Request.SESSION_LIST: return sessionList(id, payload);
     case Request.SESSION_RESUME: return sessionResume(id, payload);
+    case Request.MODEL_TEST: return modelTest(id, payload);
+    case Request.MODEL_TEST_CANCEL: return modelTestCancel(id);
     default: return fail(id, ErrorCode.UNKNOWN_TYPE, `Unhandled type ${type}`);
   }
 }
@@ -150,9 +175,17 @@ async function providerConnect(id, payload) {
   try {
     const probe = await p.probe();
     provider = { provider: model ? createOpenAIProvider({ baseUrl, model, contextWindow: payload.contextWindow ?? null }) : null, info: { baseUrl, models: probe.models, model } };
+    /* The stored verdict, if there is one for this model on this server.
+       Never a fresh grade: connecting proves the server answers, which is a
+       different question from whether the model can drive a loop. A model
+       with no stored profile is reported as untested and agent features stay
+       off until somebody runs the suite. */
+    const known = model && profiles ? profiles.get(baseUrl, model) : null;
     send(notify(Notify.PROVIDER_STATE, {
       connected: true, baseUrl, models: probe.models, model,
       capabilities: probe.capabilities,
+      profile: known ?? (model ? emptyProfile({ model, baseUrl }) : null),
+      agentReady: agentAllowed(known),
     }, { id }));
   } catch (/** @type {any} */ e) {
     const kind = e instanceof ProviderFailure ? e.kind : "unknown";
@@ -224,8 +257,38 @@ function build(model, sessionId, root, mode, restored) {
   /** @type {any} */
   const state = { id: sessionId, root, mode, agent: null, running: false };
 
+  /* What the suite found, or nothing. The orchestrator uses it for two
+     things: the prompt's capabilities layer, which tells the model what it is
+     known to be bad at, and browser_screenshot, which declines rather than
+     handing an image to a model that cannot see one. */
+  const profile = profiles && provider
+    ? profiles.get(provider.info.baseUrl, provider.info.model)
+    : null;
+
+  /* Which tools this session gets.
+   *
+   * Three cases, and the middle one is the judgement call.
+   *
+   * A model GRADED chat-only is offered no tools at all. We know it cannot
+   * drive them; handing it a set it will mishandle produces a loop that fails
+   * in ways the user has to unpick, and the honest product is a chat window
+   * that works.
+   *
+   * An UNTESTED model gets the ordinary tools. "We have not checked" is not
+   * "we know it cannot", and refusing to run until somebody sits through ten
+   * prompts would make a fresh install useless. The interface says plainly
+   * that it is untested and offers the suite.
+   *
+   * Browsing is never in the default set. It is opt-in per session, and only
+   * for a model the suite has actually graded — browserModeFor returns null
+   * for untested and chat-only, which is what gates it.
+   */
+  const groups = profile && profile.agentGrade === AgentGrade.CHAT_ONLY
+    ? []
+    : DEFAULT_GROUPS;
+
   state.agent = createOrchestrator({
-    root, provider: model, mode, sessionId, restored,
+    root, provider: model, mode, sessionId, restored, capabilities: profile, groups,
     paths: {
       snapshotDir: join(root, ".forgelocal", "snapshots"),
       downloadDir: join(defaultStoreDir(), "downloads", sessionId),
@@ -377,6 +440,83 @@ function settle(id, s, outcome) {
   }, { id, sessionId: s.id }));
 }
 
+/**
+ * Run the conformance suite against the connected model.
+ *
+ * Deliberately explicit, never automatic. It sends ten real prompts and costs
+ * a minute or two of the user's hardware, so it happens when a person asks for
+ * it and not as a side effect of choosing a model. Nothing it does touches the
+ * project: the tools are stubbed inside runConformance and their results are
+ * fixed strings, which is what makes it safe to run against a model nobody
+ * trusts yet.
+ */
+async function modelTest(id, payload) {
+  if (!provider || !provider.provider) {
+    return fail(id, ErrorCode.PROVIDER, "Connect to a model before testing it.");
+  }
+  if (testing) {
+    return fail(id, ErrorCode.BUSY, "A conformance run is already in progress.");
+  }
+  const { baseUrl, model } = provider.info;
+  const p = provider.provider;
+  const controller = new AbortController();
+  testing = controller;
+
+  let done = 0;
+  try {
+    const out = await runConformance({
+      provider: p, model, baseUrl,
+      capabilities: payload.capabilities ?? {},
+      signal: controller.signal,
+      log: (line) => {
+        done += 1;
+        send(notify(Notify.MODEL_TEST_PROGRESS, {
+          model, done, total: 10, line,
+        }, { id }));
+      },
+    });
+
+    /* Stored before it is reported, so a crash between the two costs a
+       notification rather than the whole run. */
+    if (profiles) {
+      try { profiles.set(baseUrl, model, out.profile); }
+      catch (/** @type {any} */ e) { log(`could not store the profile: ${e && e.message}`); }
+    }
+
+    send(notify(Notify.MODEL_TESTED, {
+      model, baseUrl,
+      profile: out.profile,
+      results: out.results,
+      reason: out.reason,
+      total: out.total,
+      agentReady: agentAllowed(out.profile),
+    }, { id }));
+  } catch (/** @type {any} */ e) {
+    /* A run that did not finish grades nothing. Writing a partial verdict
+       would be worse than none: an interrupted suite that happened to pass its
+       first four cases would read as a model that passed four cases. */
+    send(notify(Notify.MODEL_TESTED, {
+      model, baseUrl,
+      profile: emptyProfile({ model, baseUrl, agentGrade: AgentGrade.UNTESTED }),
+      results: [], agentReady: false,
+      reason: controller.signal.aborted
+        ? "The run was stopped, so this model is still untested."
+        : `The run could not finish: ${e && e.message ? e.message : e}. This model is still untested.`,
+    }, { id }));
+  } finally {
+    testing = null;
+  }
+}
+
+function modelTestCancel(id) {
+  if (!testing) {
+    return send(notify(Notify.MODEL_TESTED, {
+      profile: null, agentReady: false, reason: "No conformance run was in progress.",
+    }, { id }));
+  }
+  testing.abort();
+}
+
 async function turnStart(id, sessionId, payload) {
   const s = sessions.get(sessionId);
   if (!s) return fail(id, ErrorCode.NO_SUCH_SESSION, "That session is gone.", sessionId);
@@ -390,6 +530,13 @@ async function turnStart(id, sessionId, payload) {
   // The composer's Quick / Standard / Thorough control, as a turn budget.
   if (payload.effort) {
     s.effort = s.agent.setEffort(payload.effort);
+  }
+  /* Output style. Carried on the turn rather than as a request of its own,
+     because it takes effect at the next turn and nowhere else: sending it
+     separately would create a window in which the setting the person can see
+     and the one the model was given disagree. */
+  if (payload.style) {
+    s.style = s.agent.setStyle(payload.style);
   }
   s.running = true;
   try {

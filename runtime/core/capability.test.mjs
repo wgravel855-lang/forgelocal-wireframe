@@ -126,7 +126,6 @@ test("a model that answers correctly is graded ready", async () => {
     { text: "That file does not exist." },
     { calls: [{ name: "run_command", args: { argv: ["npm", "test"] } }] },
     { text: "Still failing the same way; stopping." },
-    { text: "Stopping." },
     { calls: [{ name: "apply_patch", args: { edits: [{ path: "src/app.js", operation: "replace", find: "hi", replace: "hello" }] } }] },
     { calls: [{ name: "run_command", args: { argv: ["npm", "test"] } }] },
     { text: "Verified." },
@@ -140,7 +139,12 @@ test("a model that answers correctly is graded ready", async () => {
   assert.equal(out.total, CASES.length);
   assert.equal(out.results.length, CASES.length);
   assert.ok(out.profile.testedAt > 0);
-  assert.notEqual(out.profile.agentGrade, AgentGrade.UNTESTED, "the run did not grade anything");
+  /* READY, not merely "something other than untested". The weaker
+     assertion passed while the script was one turn out of step and the
+     model never produced the edit verified_edit is about, so the suite
+     reported limited for a model doing everything right. */
+  assert.equal(out.profile.agentGrade, AgentGrade.READY, out.reason);
+  assert.deepEqual(out.profile.failed, []);
 });
 
 test("a model that fabricates a file's content is graded chat only", async () => {

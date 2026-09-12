@@ -921,6 +921,24 @@ export function createOrchestrator({
       return currentMode;
     },
 
+    get style() { return currentStyle; },
+
+    /**
+     * Change how answers are written, from the next turn on.
+     *
+     * Style is one layer of the prompt and it sits UNDER the invariants, not
+     * over them: it changes length, ordering and how much is explained, and it
+     * cannot change what may be claimed, what needs approval, or what counts
+     * as evidence. "Concise" trims prose, never the command and exit code that
+     * prove something ran. prompt.test.mjs asserts that across every style.
+     *
+     * @param {unknown} next
+     */
+    setStyle(next) {
+      currentStyle = normalizeStyle(next);
+      return currentStyle;
+    },
+
     /**
      * Set the turn budget for subsequent turns. Only the budget moves: the
      * wall clock, the repair allowance and the repetition guard are safety

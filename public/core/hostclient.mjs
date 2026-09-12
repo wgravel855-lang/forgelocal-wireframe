@@ -28,6 +28,8 @@ export const Request = Object.freeze({
   BROWSER_CONTROL: "browser.control",
   SESSION_LIST: "session.list",
   SESSION_RESUME: "session.resume",
+  MODEL_TEST: "model.test",
+  MODEL_TEST_CANCEL: "model.test.cancel",
 });
 
 export const Notify = Object.freeze({
@@ -42,6 +44,8 @@ export const Notify = Object.freeze({
   BROWSER_CONTROLLED: "browser.controlled",
   SESSION_LIST: "session.list",
   SESSION_REPLAYED: "session.replayed",
+  MODEL_TEST_PROGRESS: "model.test.progress",
+  MODEL_TESTED: "model.tested",
 });
 
 /** Is a desktop host present at all?
@@ -100,10 +104,12 @@ export function tauriTransport(w = window) {
  * @param {(event: any) => void} [opts.onAgentEvent]
  * @param {(card: any) => void} [opts.onPermission]
  * @param {(q: any) => void} [opts.onQuestion]
+ * @param {(type: string, payload: any) => void} [opts.onModelTest]
  * @param {(line: string) => void} [opts.onLog]
  */
 export function createHostClient({
   transport, onRuntimeState, onProviderState, onAgentEvent, onPermission, onQuestion, onLog,
+  onModelTest,
 }) {
   /** @type {any} */
   const io = transport;
@@ -155,6 +161,22 @@ export function createHostClient({
 
       case Notify.QUESTION_REQUESTED:
         if (onQuestion) onQuestion(frame.payload);
+        break;
+
+      case Notify.MODEL_TEST_PROGRESS:
+      case Notify.MODEL_TESTED:
+        /* The verdict is also merged into the provider state, so anything
+           already reading that gets it without a second subscription and
+           cannot end up a grade behind. */
+        if (frame.type === Notify.MODEL_TESTED && frame.payload.profile) {
+          providerState = {
+            ...providerState,
+            profile: frame.payload.profile,
+            agentReady: frame.payload.agentReady === true,
+          };
+          if (onProviderState) onProviderState(providerState);
+        }
+        if (onModelTest) onModelTest(frame.type, frame.payload);
         break;
 
       default:
@@ -236,7 +258,10 @@ export function createHostClient({
       return request(Request.SESSION_DISPOSE, { sessionId: id }, 5000);
     },
 
-    startTurn(text, mode, effort) { return request(Request.TURN_START, { text, mode, effort }); },
+    /** @param {string} text @param {string} [mode] @param {string} [effort] @param {string} [style] */
+    startTurn(text, mode, effort, style) {
+      return request(Request.TURN_START, { text, mode, effort, style });
+    },
     cancelTurn() { return request(Request.TURN_CANCEL, {}, 5000); },
     resolvePermission(requestId, decision) {
       return request(Request.PERMISSION_RESOLVE, { requestId, decision });
@@ -256,6 +281,16 @@ export function createHostClient({
     browserControl(action, opts = {}) {
       return request(Request.BROWSER_CONTROL, { action, ...opts }, 20000);
     },
+
+    /**
+     * Run the conformance suite against the connected model.
+     *
+     * Long: about ten real model turns, which on local hardware is a minute
+     * or two. Progress arrives as model.test.progress and the verdict as
+     * model.tested; both are routed to onModelTest.
+     */
+    testModel() { return request(Request.MODEL_TEST, {}, 20 * 60 * 1000); },
+    cancelModelTest() { return request(Request.MODEL_TEST_CANCEL, {}, 5000); },
 
     /** What is on disk. Rows only: no events, no payloads. */
     listSessions(limit = 50) {
