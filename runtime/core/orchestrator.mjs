@@ -28,7 +28,8 @@ import {
 } from "./tools/index.mjs";
 import { decide, grantForSession, Decision, normalizeMode } from "./permissions.mjs";
 import { composePrompt, normalizeStyle, OutputStyle } from "./prompt.mjs";
-import { ModelEvent, ProviderFailure } from "./providers/types.mjs";
+import { compact as compactContext } from "./compact.mjs";
+import { ModelEvent, ProviderFailure, estimateTokens } from "./providers/types.mjs";
 import {
   loadInstructions, createLedger, recordInLedger,
   ledgerSummary, contextUsage, isStale,
@@ -100,6 +101,7 @@ export function createOrchestrator({
   const emitter = createEmitter(sessionId);
   const emit = (type, payload, meta) => {
     const ev = emitter.emit(type, payload, meta);
+    history.push(ev);
     onEvent(ev);
     return ev;
   };
@@ -112,6 +114,12 @@ export function createOrchestrator({
   let currentStyle = normalizeStyle(style);
   /** The compacted summary of everything trimmed out of `messages`, or null. */
   let compacted = null;
+  /** Fraction the last compaction freed. Two poor results in a row is thrashing. */
+  let lastFreed = 1;
+  /** The first thing the user asked for, which is the objective a summary keeps. */
+  let firstRequest = "";
+  /** Every event this session emitted, which is what compaction summarises from. */
+  const history = [];
 
   /** provider-neutral message list; the working context, not the transcript */
   /** @type {any[]} */
@@ -224,6 +232,7 @@ export function createOrchestrator({
     wrote = false;
     emit(EventType.USER_MESSAGE_CREATED, { message_id: randomUUID(), text }, { turnId });
     messages.push({ role: "user", content: text });
+    if (!firstRequest) firstRequest = text;
 
     // A checkpoint per user prompt, which is what makes "undo that request"
     // meaningful later. It records the point, not the file bytes; those are
@@ -248,6 +257,49 @@ export function createOrchestrator({
        on how often a command may ever be run. */
 
     for (let turn = 0; turn < limits.MAX_TURNS; turn++) {
+      /* Before asking the model anything, check the context will fit. This
+         runs per turn rather than per request because a single turn can add
+         twenty tool results, and discovering the overflow from the server's
+         error is both slower and less recoverable. */
+      const fit = compactContext({
+        messages,
+        events: history,
+        window: provider.capabilities?.().contextWindow ?? null,
+        headTokens: estimateTokens(buildMessages()[0]?.content ?? ""),
+        previousFreed: lastFreed,
+        objective: firstRequest,
+        plan: ctx.plan ?? [],
+      });
+      if (fit.needed && fit.thrashing) {
+        emit(EventType.RUNTIME_ERROR, {
+          code: "CONTEXT_EXHAUSTED", message: fit.reason,
+        }, { turnId });
+        return finish(turnId, StopReason.ERROR, { message: fit.reason });
+      }
+
+      /* A compaction that could not help is not a boundary.
+
+         The first version of this fell through to the emit below, which put
+         a divider in the transcript for a rewrite that never happened AND
+         assigned messages = fit.messages, which is undefined for a noop. It
+         would have wiped the working context on the turn after a session got
+         close to its window. It records the failed attempt for the thrash
+         detector and changes nothing else. */
+      if (fit.needed && fit.noop) {
+        lastFreed = 0;
+      } else if (fit.needed) {
+        setPhase(Phase.COMPACTING, turnId);
+        emit(EventType.COMPACTION_STARTED, {
+          before_tokens: fit.before, dropped: fit.dropped ?? 0,
+        }, { turnId });
+        messages = fit.messages;
+        if (fit.summaryText) compacted = fit.summaryText;
+        lastFreed = fit.freed;
+        emit(EventType.COMPACTION_COMPLETED, {
+          after_tokens: fit.after, freed: fit.freed, summary: compacted ?? null,
+        }, { turnId });
+      }
+
       if (abort?.signal.aborted) return finish(turnId, StopReason.CANCELLED);
       if (now() > deadline) return finish(turnId, StopReason.TIME_LIMIT);
 

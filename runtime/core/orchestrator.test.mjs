@@ -603,6 +603,98 @@ test("the project's own instructions reach the model as content, not authority",
   cleanup(base);
 });
 
+/* ------------------------------------------------------ 9. compaction */
+
+test("a long session compacts, and the compaction keeps what a lie would need", async () => {
+  const base = fixture();
+
+  /* Reads of a large file, because a read needs no approval in allow_edits
+     and a command does: the first attempt at this test paused on a
+     permission card three turns in and never reached the threshold.
+
+     A small window rather than a realistic transcript. The arithmetic is
+     smaller; the mechanism under test is identical. */
+  /* Fourteen DIFFERENT files. Reading the same one fourteen times is caught
+     by the no-progress detector at the third identical call, which is
+     correct behaviour and defeated the first version of this test. */
+  for (let f = 0; f < 14; f++) {
+    writeFileSync(join(base, `big${f}.txt`),
+      `file ${f}: lorem ipsum dolor sit amet\n`.repeat(100));
+  }
+
+  const turns = [];
+  for (let i = 0; i < 14; i++) {
+    turns.push({ calls: [{ name: "read_file", args: { path: `big${i}.txt` } }] });
+  }
+  turns.push({ text: "Done." });
+
+  const events = [];
+  const agent = createOrchestrator({
+    root: canonicalRoot(base),
+    provider: createFakeProvider({ turns, contextWindow: 8000 }),
+    mode: "allow_edits",
+    onEvent: (e) => events.push(e),
+    paths: { snapshotDir: join(base, ".snapshots") },
+  });
+  agent.start();
+
+  const out = await agent.send("Fix the averaging bug and keep the public API unchanged.");
+
+  const started = events.filter((e) => e.type === EventType.COMPACTION_STARTED);
+  const done = events.filter((e) => e.type === EventType.COMPACTION_COMPLETED);
+  assert.ok(started.length > 0, "the session never compacted despite a 8000-token window");
+  assert.equal(started.length, done.length, "a compaction started without completing");
+
+  // A boundary is only emitted for a rewrite that actually happened, and
+  // every one of them must have reduced the context rather than grown it.
+  for (let i = 0; i < done.length; i++) {
+    assert.ok(done[i].payload.after_tokens < started[i].payload.before_tokens,
+      `compaction ${i} went from ${started[i].payload.before_tokens} to ${done[i].payload.after_tokens}`);
+    assert.ok(done[i].payload.freed > 0, `compaction ${i} freed ${done[i].payload.freed}`);
+  }
+
+  // The objective is the thing whose loss makes the agent finish a different
+  // task, so it has to survive into whatever the model sees next.
+  const summary = done[done.length - 1].payload.summary;
+  assert.ok(summary, "compaction dropped messages without leaving a summary");
+  assert.ok(summary.includes("big0.txt"), "the record of what had been read was dropped");
+
+  // And the session carried on rather than failing at the wall.
+  assert.ok(out.stop === StopReason.FINAL || out.stop === StopReason.TURN_LIMIT, out.stop);
+  cleanup(base);
+});
+
+test("a phase is emitted for every visible change of activity", async () => {
+  const base = fixture();
+  const h = harness(base, [
+    { calls: [{ name: "read_file", args: { path: "src/sum.js" } }] },
+    { calls: [{ name: "apply_patch", args: { edits: [{
+      operation: "replace", path: "src/sum.js",
+      find: "list.reduce((a, b) => a + b, 0)",
+      replace: "list.reduce((a, b) => a + b, 0) // checked",
+    }] } }] },
+    { text: "Done." },
+  ]);
+  await h.agent.send("Adjust it");
+
+  const phases = h.events.filter((e) => e.type === EventType.PHASE_CHANGED)
+    .map((e) => e.payload.phase);
+
+  assert.equal(phases[0], "understanding", "a turn starts by reading the request");
+  assert.ok(phases.includes("exploring"), JSON.stringify(phases));
+  assert.ok(phases.includes("acting"), JSON.stringify(phases));
+
+  // The order matters: a read before any write is exploration, and the same
+  // tool after a write would be verification.
+  assert.ok(phases.indexOf("exploring") < phases.indexOf("acting"), JSON.stringify(phases));
+
+  // And no phase repeats back to back, because a repeat is not an event.
+  for (let i = 1; i < phases.length; i++) {
+    assert.notEqual(phases[i], phases[i - 1], JSON.stringify(phases));
+  }
+  cleanup(base);
+});
+
 test("the session reports context usage and says whether it is estimated", async () => {
   const base = fixture();
   const h = harness(base, [
