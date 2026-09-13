@@ -425,42 +425,80 @@ export function compatibilityBadge(compat) {
     ${MB_ICON.chip}${esc(label)}</span>`;
 }
 
-/** The action on the right of the download row, by install state. */
-function actionButton(s, variant) {
+/**
+ * The download row, as three fixed slots rather than one variable blob.
+ *
+ * The button used to live inside a group that also held the status text, and
+ * the group's width followed the length of that text — so cancelling a
+ * download moved the button sideways, because "Paused at 0%" and "Download
+ * stopped. It can be resumed." are different lengths. A control that moves
+ * when you press it is a control you then press again by accident.
+ *
+ * So the slots are: the compatibility badge and the status message on the
+ * left, growing and truncating as they like, and the action hard against the
+ * right edge where it does not move between any two states. The progress bar
+ * is a full-width row underneath rather than a third thing competing for the
+ * same line.
+ *
+ * @returns {{status: string, action: string, bar: string}}
+ */
+function downloadSlots(s, variant) {
   const size = sizeLabel(variant?.bytes);
-  const pct = s.install?.total
-    ? Math.min(100, Math.round((s.install.bytes / s.install.total) * 100)) : 0;
+  const total = s.install?.total || variant?.bytes || 0;
+  const pct = total ? Math.min(100, Math.round(((s.install?.bytes ?? 0) / total) * 100)) : 0;
+  const btn = (attr, body, cls = "mb-btn mb-btn-p") =>
+    `<button class="${cls}" type="button" ${attr}>${body}</button>`;
 
   switch (s.install?.state) {
     case InstallState.DOWNLOADING:
-      return `<div class="mb-dl-live">
-        <div class="mb-prog" role="progressbar" aria-valuemin="0" aria-valuemax="100"
-          aria-valuenow="${pct}"><i style="width:${pct}%"></i></div>
-        <span class="mb-dl-pct">${pct}%${size ? ` of ${esc(size)}` : ""}</span>
-        <button class="mb-btn" type="button" data-mb-cancel>Cancel</button>
-      </div>`;
+      return {
+        status: `<span class="mb-dl-pct">${pct}%${size ? ` of ${esc(size)}` : ""}</span>`,
+        action: btn("data-mb-cancel", "Cancel", "mb-btn"),
+        bar: `<div class="mb-prog" role="progressbar" aria-valuemin="0" aria-valuemax="100"
+          aria-valuenow="${pct}"><i style="width:${pct}%"></i></div>`,
+      };
     case InstallState.PAUSED:
-      return `<div class="mb-dl-live">
-        <span class="mb-dl-pct">Paused at ${pct}%</span>
-        <button class="mb-btn mb-btn-p" type="button" data-mb-download>Resume</button>
-      </div>`;
+      return {
+        /* Says where it stopped, because that is what makes resuming worth
+           doing rather than starting again. */
+        status: `<span class="mb-dl-pct">Paused at ${pct}%${size ? ` of ${esc(size)}` : ""}</span>`,
+        action: btn("data-mb-download", "Resume"),
+        bar: pct > 0 ? `<div class="mb-prog is-paused" role="progressbar" aria-valuemin="0"
+          aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i></div>` : "",
+      };
     case InstallState.FAILED:
-      return `<div class="mb-dl-live">
-        <span class="mb-dl-pct is-bad">${esc(s.install.reason || "The download failed.")}</span>
-        <button class="mb-btn mb-btn-p" type="button" data-mb-download>Try again</button>
-      </div>`;
+      return {
+        status: `<span class="mb-dl-pct is-bad">${esc(s.install.reason || "The download failed.")}</span>`,
+        action: btn("data-mb-download", "Try again"),
+        bar: "",
+      };
     case InstallState.INSTALLED:
-      return `<button class="mb-btn mb-btn-p" type="button" data-mb-load>
-        Load${size ? ` <span class="mb-btn-sz">${esc(size)}</span>` : ""}</button>`;
+      return {
+        status: "",
+        action: btn("data-mb-load", `Load${size ? ` <span class="mb-btn-sz">${esc(size)}</span>` : ""}`),
+        bar: "",
+      };
     case InstallState.LOADING:
-      return `<button class="mb-btn mb-btn-p" type="button" disabled aria-disabled="true">
-        <span class="mb-spin" aria-hidden="true"></span>Loading&hellip;</button>`;
+      return {
+        status: "",
+        action: btn('disabled aria-disabled="true"',
+          '<span class="mb-spin" aria-hidden="true"></span>Loading&hellip;'),
+        bar: "",
+      };
     case InstallState.LOADED:
-      return `<span class="mb-loaded">${svg('<path d="m5 12.5 4.5 4.5L19 7.5"/>')}Loaded</span>`;
+      return {
+        status: "",
+        action: `<span class="mb-loaded">${svg('<path d="m5 12.5 4.5 4.5L19 7.5"/>')}Loaded</span>`,
+        bar: "",
+      };
     default:
-      return `<button class="mb-btn mb-btn-p" type="button" data-mb-download
-        ${s.desktop ? "" : 'disabled aria-disabled="true" title="Downloading needs the desktop app."'}>
-        ${MB_ICON.download}Download${size ? ` <span class="mb-btn-sz">${esc(size)}</span>` : ""}</button>`;
+      return {
+        status: "",
+        action: btn(
+          `data-mb-download ${s.desktop ? "" : 'disabled aria-disabled="true" title="Downloading needs the desktop app."'}`,
+          `${MB_ICON.download}Download${size ? ` <span class="mb-btn-sz">${esc(size)}</span>` : ""}`),
+        bar: "",
+      };
   }
 }
 
@@ -504,11 +542,16 @@ export function downloadOptions(s) {
         </select>
       </label>
     </div>
-    <div class="mb-dlbar">
+    ${(() => {
+    const slot = downloadSlots(s, v);
+    return `<div class="mb-dlbar">
       ${compatibilityBadge(s.compat)}
+      ${slot.status}
       <span class="grow"></span>
-      ${actionButton(s, v)}
+      ${slot.action}
     </div>
+    ${slot.bar}`;
+  })()}
     ${v.sha256 ? "" : `<p class="mb-note">Hugging Face publishes no checksum for this file. It will be checked for size and format only.</p>`}
   </section>`;
 }

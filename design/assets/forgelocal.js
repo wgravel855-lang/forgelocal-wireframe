@@ -5333,9 +5333,12 @@ import {
     if (!MB || MB.detail.state !== DetailState.READY) return;
     const v = MB.detail.model.variants?.[MB.variantIndex];
     if (!v) return;
-    try { await LIVE.client.cancelDownload(v.name); } catch { /* reported below */ }
-    MB.install = { state: InstallState.PAUSED, bytes: MB.install.bytes, total: v.bytes, reason: null };
+    /* Shown as paused straight away so the button stops saying Cancel, then
+       corrected by the runtime's own frame, which carries where it actually
+       stopped. */
+    MB.install = { state: InstallState.PAUSED, bytes: MB.install.bytes ?? 0, total: v.bytes, reason: null };
     paintBrowser();
+    try { await LIVE.client.cancelDownload(v.name); } catch { /* the final frame reports it */ }
   }
 
   /** Point the engine at the selected file. */
@@ -5371,13 +5374,34 @@ import {
     paintBrowser();
   }
 
+  /**
+   * The final frame of a download.
+   *
+   * Three outcomes, not two. The runtime distinguishes a cancellation from a
+   * failure — it sends `cancelled: true` with `resumeBytes` — and this used to
+   * throw both away, so pressing Cancel produced the red failure treatment and
+   * the message "Download stopped. It can be resumed." styled as an error. A
+   * deliberate stop is not something going wrong, and the partial file really
+   * is still there.
+   */
   function mbOnDownloaded(name, payload) {
     if (!MB || MB.detail.state !== DetailState.READY) return;
     const v = MB.detail.model.variants?.[MB.variantIndex];
     if (!v || v.name !== name) return;
-    MB.install = payload.ok
-      ? { state: InstallState.INSTALLED, bytes: v.bytes, total: v.bytes, reason: null }
-      : { state: InstallState.FAILED, bytes: 0, total: v.bytes, reason: payload.reason };
+
+    if (payload.ok) {
+      MB.install = { state: InstallState.INSTALLED, bytes: v.bytes, total: v.bytes, reason: null };
+    } else if (payload.cancelled) {
+      /* Keep the position. It is what makes resuming worth choosing over
+         starting again, and the runtime reports it. */
+      MB.install = {
+        state: InstallState.PAUSED,
+        bytes: payload.resumeBytes ?? MB.install.bytes ?? 0,
+        total: v.bytes, reason: null,
+      };
+    } else {
+      MB.install = { state: InstallState.FAILED, bytes: 0, total: v.bytes, reason: payload.reason };
+    }
     paintBrowser();
   }
 

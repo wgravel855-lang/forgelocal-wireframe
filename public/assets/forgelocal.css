@@ -3437,7 +3437,9 @@ a.vh:focus-visible { position: fixed; left: 12px; top: 12px; z-index: 400;
 .mb-var select:disabled { cursor: default; }
 .mb-var:focus-within .mb-var-face { border-color: var(--mb-acc-soft); }
 
-.mb-dlbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.mb-dlbar { display: flex; align-items: center; gap: 12px; }
+.mb-dlbar > .mb-btn, .mb-dlbar > .mb-loaded { flex-shrink: 0; }
+.mb-dlbar > .mb-compat { flex-shrink: 0; }
 .mb-compat { display: inline-flex; align-items: center; gap: 6px;
   height: 28px; padding: 0 11px; border-radius: 7px;
   font-size: 13px; font-weight: 550; border: 1px solid transparent; }
@@ -3465,13 +3467,19 @@ a.vh:focus-visible { position: fixed; left: 12px; top: 12px; z-index: 400;
 .mb-btn-sz { font-weight: 500; opacity: .82; }
 .mb-btn:focus-visible { outline: 2px solid var(--mb-acc-soft); outline-offset: 2px; }
 
-.mb-dl-live { display: flex; align-items: center; gap: 10px; min-width: 260px; }
-.mb-prog { flex: 1; height: 6px; border-radius: 3px; background: #1b1b1e;
-  overflow: hidden; }
+/* The bar is its own row, full width, under the action. It used to share
+   a line with the button inside a group whose width followed the status
+   text, which is what moved the button between states. */
+.mb-prog { height: 6px; border-radius: 3px; background: #1b1b1e;
+  overflow: hidden; margin-top: 10px; }
 .mb-prog i { display: block; height: 100%; background: var(--mb-acc);
   transition: width .25s ease-out; }
-.mb-dl-pct { font-size: 13px; color: var(--mb-mut); white-space: nowrap; }
-.mb-dl-pct.is-bad { color: #e0736b; white-space: normal; }
+.mb-prog.is-paused i { background: var(--mb-faint); }
+/* The message takes the room left between the badge and the button, and
+   truncates rather than pushing anything. */
+.mb-dl-pct { flex: 1; min-width: 0; font-size: 13px; color: var(--mb-mut);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mb-dl-pct.is-bad { color: #e0736b; }
 .mb-loaded { display: inline-flex; align-items: center; gap: 7px;
   height: 34px; padding: 0 14px; border-radius: 9px; font-size: 13px;
   font-weight: 600; color: #52b483; background: rgba(82, 180, 131, .1);

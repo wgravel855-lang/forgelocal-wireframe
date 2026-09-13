@@ -410,3 +410,72 @@ test("nothing in the browser escapes into markup", () => {
   }));
   assert.ok(!/<script/i.test(html), "a model name became markup");
 });
+
+/* ============================================ the action does not move == */
+
+test("the action button sits in the same place in every download state", () => {
+  /* Reported from use: cancelling a download moved the button sideways. It
+     lived inside a group whose width followed the status text, and "Paused at
+     0%" and "Download stopped. It can be resumed." are different lengths — so
+     the control moved at the moment it was pressed, which is how a second
+     press lands somewhere else.
+
+     The structural rule that prevents it: the action is the last child of
+     .mb-dlbar, preceded by the spacer, in every state. Nothing may nest it
+     inside a group that also holds text. */
+  const states = [
+    InstallState.NONE, InstallState.DOWNLOADING, InstallState.PAUSED,
+    InstallState.FAILED, InstallState.INSTALLED, InstallState.LOADING,
+    InstallState.LOADED,
+  ];
+  for (const st of states) {
+    const html = downloadOptions(state({
+      install: { state: st, bytes: 1e9, total: 4.68e9, reason: "A reason of some considerable length." },
+    }));
+    const bar = /<div class="mb-dlbar">([\s\S]*?)<\/div>/.exec(html);
+    assert.ok(bar, `${st}: no download bar`);
+
+    assert.ok(!/mb-dl-live/.test(html),
+      `${st}: the action is still wrapped in a width-following group`);
+
+    /* The spacer comes last before the action, so the action is flush right. */
+    const after = bar[1].slice(bar[1].lastIndexOf('<span class="grow">'));
+    assert.match(after, /mb-btn|mb-loaded/,
+      `${st}: the action is not the last thing in the bar`);
+    assert.ok(!/mb-dl-pct/.test(after),
+      `${st}: status text sits after the spacer and pushes the action`);
+  }
+});
+
+test("a long failure message truncates rather than moving the button", () => {
+  const html = downloadOptions(state({
+    install: {
+      state: InstallState.FAILED, bytes: 0, total: 4.68e9,
+      reason: "x".repeat(400),
+    },
+  }));
+  const found = /<div class="mb-dlbar">([\s\S]*?)<\/div>/.exec(html);
+  assert.ok(found, "no download bar");
+  const bar = found[1];
+  /* The message is before the spacer, so however long it is the button stays
+     put; the stylesheet gives .mb-dl-pct min-width:0 and an ellipsis. */
+  assert.ok(bar.indexOf("mb-dl-pct") < bar.indexOf('<span class="grow">'),
+    "the message is not in the flexible slot");
+});
+
+test("the progress bar is its own row, not a competitor for the button's line", () => {
+  const html = downloadOptions(state({
+    install: { state: InstallState.DOWNLOADING, bytes: 2.34e9, total: 4.68e9, reason: null },
+  }));
+  const found = /<div class="mb-dlbar">([\s\S]*?)<\/div>/.exec(html);
+  assert.ok(found, "no download bar");
+  assert.ok(!/mb-prog/.test(found[1]), "the progress bar is inside the action row");
+  assert.match(html, /mb-prog/, "there is no progress bar at all");
+});
+
+test("a paused download keeps its position, so resuming is worth choosing", () => {
+  const text = downloadOptions(state({
+    install: { state: InstallState.PAUSED, bytes: 2.34e9, total: 4.68e9, reason: null },
+  })).replace(/<[^>]+>/g, " ");
+  assert.match(text, /Paused at 50%/, "a paused download forgot where it stopped");
+});
