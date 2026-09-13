@@ -2174,17 +2174,19 @@ import {
   /* One answer to "is a local runtime connected", for every surface that used
      to carry its own. The environment is detected once, here; no component
      asks again, and nothing may substitute a fixture when the answer is no. */
-  /* The desktop shell identifies itself.
+  /* The desktop shell identifies itself — but not yet.
    *
-   * detectEnvironment reads window.forgelocalDesktop, and nothing ever set it
-   * — so inside the desktop app the page decided it was a web preview, and the
-   * reducer below refuses every transition unless the environment is
-   * "desktop". The result was a runtime state frozen at "disconnected,
-   * web-preview" for the life of the process, and every control keyed on it
-   * telling a person using the desktop app that they needed the desktop app.
+   * detectEnvironment reads window.forgelocalDesktop and nothing ever set it,
+   * so the page decided it was a web preview and reduceRuntime then refused
+   * every transition, because it only accepts them for a desktop environment.
+   * Setting the flag here fixed that in principle and not in fact: this module
+   * is evaluated before Tauri's IPC bootstrap has injected
+   * __TAURI_INTERNALS__, so hasTauri() is still false at this line and the
+   * environment was captured as "web-preview" anyway.
    *
-   * hasTauri is the real signal: it tests for the IPC bridge the shell
-   * injects, which a web page cannot fake into existence. */
+   * It is settled in adoptDesktopEnvironment instead, at the first moment
+   * something has actually spoken to the host. This is left as the fast path
+   * for the case where the bridge is already there. */
   if (hasTauri()) { /** @type {any} */ (window).forgelocalDesktop = true; }
 
   const RUNTIME = {
@@ -2245,9 +2247,39 @@ import {
     };
   }
 
+  /**
+   * Re-base the runtime state machine once the host is known to be there.
+   *
+   * The environment is read once, when this module is evaluated, and at that
+   * moment the IPC bridge may not exist yet — so the machine can be sitting in
+   * "web-preview", where the reducer discards everything it is sent. Rebuilding
+   * it as "desktop" is not a state change; it is correcting a guess made
+   * before the answer was available.
+   */
+  function adoptDesktopEnvironment() {
+    if (!hasTauri() || RUNTIME.state.environment === "desktop") return;
+    /** @type {any} */ (window).forgelocalDesktop = true;
+    RUNTIME.state = initialRuntime("desktop");
+    DESKTOP = desktopState(RUNTIME.state, DEMO);
+    /* Everything painted from this state has to hear about it.
+     *
+     * Re-basing is not a transition, so it does not go through
+     * dispatchRuntime and nothing was told. The next dispatch was often a
+     * no-op -- runtime.disconnected onto an already-disconnected state
+     * returns the same object -- so no notification followed either, and the
+     * runtime pill went on showing "Desktop not connected", the label
+     * computed from the web-preview state it was painted with at boot. */
+    RUNTIME.subs.forEach((fn) => fn());
+  }
+
   function syncRuntimeFromLive() {
     const c = LIVE.client;
     if (!c) return;
+    adoptDesktopEnvironment();
+    /* Logged, because this state machine has been wrong twice in ways that
+       were invisible from the interface: once frozen in the wrong
+       environment, once re-based without telling anyone. */
+    tellHost(`runtime sync: env=${RUNTIME.state.environment} connected=${c.runtime.connected} provider=${c.provider && c.provider.connected ? c.provider.model : "none"}`);
     if (!c.runtime.connected) { dispatchRuntime({ type: "runtime.disconnected" }); return; }
 
     /* connecting -> ready. The reducer only accepts ready from any state, but
@@ -4528,6 +4560,20 @@ import {
     LIVE.engine = await LIVE.client.engineStatus();
     paintEngine();
 
+    /* An engine that is already running is a model that is already loaded.
+     *
+     * The engine outlives the window: it is a child of the host, not of the
+     * page, so reloading the renderer — or pressing Escape out of the model
+     * browser, which navigates — leaves llama-server serving with several
+     * gigabytes in VRAM while the composer says "No model loaded". Nothing
+     * here used to reconnect to it, so the only way back was to load the model
+     * a second time.
+     *
+     * Connecting is separate from starting, which is what makes this safe to
+     * do on every load: it points the provider at an endpoint the host already
+     * holds and starts nothing. */
+    await attachRunningEngine();
+
     /* The engine's state arrives as events rather than being polled: loading
        a 30GB model produces a stream of progress lines, and asking every
        second would show a state a second out of date. */
@@ -4535,6 +4581,7 @@ import {
     if (io.onEngineState) {
       io.onEngineState(async (ev) => {
         LIVE.engine = ev.payload ?? ev;
+        if (LIVE.engine && LIVE.engine.state === "ready") await attachRunningEngine();
         if (LIVE.engine && LIVE.engine.state === "failed") {
           // The engine's own last words, which are more specific about why a
           // model would not load than anything this code could say.
@@ -4546,6 +4593,28 @@ import {
     }
 
     await refreshModels();
+  }
+
+  /**
+   * Connect the provider to a ready engine, if there is one and nothing else
+   * is already connected.
+   *
+   * Quiet about failure on purpose. This runs at startup on every launch,
+   * including the ordinary one where no engine is running, and an error toast
+   * there would be reporting the absence of something nobody asked for.
+   */
+  async function attachRunningEngine() {
+    const e = LIVE.engine;
+    if (!e || e.state !== "ready" || !e.model) return;
+    const p = LIVE.client ? LIVE.client.provider : null;
+    if (p && p.connected && p.model === e.model) return;   // already there
+    try {
+      await connectProviderTracked(null, e.model);
+    } catch (err) {
+      /* The engine says ready and the provider will not take it. Worth the
+         log, not worth a banner over a window the person has just opened. */
+      console.debug("[forgelocal] a ready engine could not be adopted", err);
+    }
   }
 
   /** Run a provider.connect with the model dot showing it is in flight. */
@@ -4871,6 +4940,15 @@ import {
            before this frame arrived. */
         syncRuntimeFromLive();
         paintLiveModels(p); paintLiveComposer(); paintCapability(); paintToolGroups();
+        /* A model arriving is what makes a session possible.
+         *
+         * wireLiveProject opens one at boot, but only if a model is already
+         * connected — and on a launch that adopts an engine left running
+         * from last time, the provider connects later, in
+         * startEngineSurfaces. So the composer sat with the model named
+         * beside it and Send still disabled, because nothing had opened the
+         * session it actually needs. */
+        ensureSession();
       },
       onAgentEvent: (event) => {
         LIVE.view = reduceRunSafe(LIVE.view, event);
@@ -5572,6 +5650,21 @@ import {
     } catch (e) {
       showLiveError(e);
     }
+  }
+
+  /**
+   * Open a session once there is something to open one with.
+   *
+   * Guarded on all three: a client to ask, a model to answer, and no
+   * session already. Without the last, every provider frame would start
+   * another one and abandon the transcript in the previous.
+   */
+  function ensureSession() {
+    if (!LIVE.client || LIVE.session) return;
+    const p = LIVE.client.provider;
+    if (!p || !p.connected || !p.model) return;
+    const saved = store.get("project", null);
+    openProject(saved && saved.path ? saved.path : null).catch(() => {});
   }
 
   /* The project comes from the OS dialog, through the host. */

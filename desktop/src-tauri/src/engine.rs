@@ -477,6 +477,21 @@ pub fn start(
         // including a web page the user happens to have open.
         .arg("--api-key").arg(&secret)
         .arg("-m").arg(&model_path)
+        /* The name the server advertises for this model.
+         *
+         * Without it, llama-server reports the id it was launched with, which
+         * is the absolute path — so `/v1/models` listed
+         * `C:\Users\...\models\qwen2.5-coder-7b-instruct-q4_k_m.gguf` while the
+         * rest of the app asks for `qwen2.5-coder-7b-instruct-q4_k_m.gguf`.
+         * They never matched, so connecting to an engine that had just loaded
+         * a model correctly was refused with "that model is not loaded", and
+         * the composer said "No model loaded" over a running engine holding
+         * gigabytes of VRAM.
+         *
+         * The file name is what the models folder, the browser, the download
+         * and the session store all use; the path is an implementation detail
+         * of where it happens to sit. */
+        .arg("--alias").arg(&name)
         // The server logs to stderr; it is read for progress and for the
         // sentence shown when a launch fails.
         .stdin(Stdio::null())

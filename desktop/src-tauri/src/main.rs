@@ -20,7 +20,7 @@ use std::sync::Arc;
 
 use serde::Serialize;
 use serde_json::Value;
-use tauri::{AppHandle, Manager, State};
+use tauri::{AppHandle, Emitter, Manager, State};
 use tauri_plugin_dialog::DialogExt;
 
 use engine::{Engine, EngineState, LaunchParams};
@@ -165,6 +165,31 @@ fn runtime_start(app: AppHandle, state: State<'_, HostState>) -> Result<u32, Str
     if state.sidecar.is_alive() {
         let pid = state.sidecar.pid();
         devlog(&format!("[host] runtime already running (pid {pid})"));
+
+        /* Tell this page, which has not heard it.
+         *
+         * The sidecar announces itself once, on stdout, when it starts. The
+         * renderer reloads far more often than that — navigating out of the
+         * model browser is a reload — and every page after the first was
+         * waiting for a hello that had already been said to somebody else. It
+         * sat at "Desktop not connected" with a live runtime and, if a model
+         * was loaded, an engine holding gigabytes of VRAM it could not see.
+         *
+         * Sent by the host rather than asked of the sidecar because the host
+         * is what knows: is_alive is the same fact runtime_start just acted
+         * on. `resumed` marks it as a re-announcement rather than a fresh
+         * start, so nothing downstream mistakes it for the runtime having
+         * restarted. */
+        let _ = app.emit(
+            "runtime://frame",
+            serde_json::json!({
+                "v": sidecar::PROTOCOL_VERSION,
+                "id": Value::Null,
+                "type": "runtime.state",
+                "payload": { "connected": true, "protocol": sidecar::PROTOCOL_VERSION,
+                             "pid": pid, "resumed": true }
+            }),
+        );
         return Ok(pid);
     }
     if state.node.is_empty() {
