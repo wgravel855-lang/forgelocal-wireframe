@@ -44,6 +44,16 @@ export const ALLOWED_HOSTS = Object.freeze([
   "cdn-lfs-us-1.huggingface.co",
   "cdn-lfs-eu-1.huggingface.co",
   "transfer.xethub.hf.co",
+  /* Hugging Face's Xet storage, which is where large files now actually come
+     from: a resolve URL on huggingface.co redirects to a regional host like
+     us.aws.cdn.hf.co. Without this the allowlist refused every real model
+     download while still passing its own tests, because the tests never
+     followed a redirect to the live CDN.
+
+     The suffix match below is anchored on a leading dot, so this admits
+     subdomains of cdn.hf.co and nothing that merely ends in those letters —
+     "evilcdn.hf.co" does not end with ".cdn.hf.co". */
+  "cdn.hf.co",
 ]);
 
 /** @param {string} url */

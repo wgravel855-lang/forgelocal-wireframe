@@ -86,6 +86,17 @@ async function sizeOf(p) {
   try { return (await stat(p)).size; } catch { return 0; }
 }
 
+/** Everything under a directory, one level deep, which is how an engine sits. */
+async function dirBytes(dir) {
+  let total = 0;
+  try {
+    for (const e of await readdir(dir, { withFileTypes: true })) {
+      if (e.isFile()) total += await sizeOf(join(dir, e.name));
+    }
+  } catch { /* an unreadable directory reports nothing rather than throwing */ }
+  return total;
+}
+
 /** @param {string} p */
 async function sha256File(p) {
   const h = createHash("sha256");
@@ -120,8 +131,16 @@ export async function listEngines(opts = {}) {
     if (e.name.startsWith(".")) continue;
     const dir = join(root, e.name);
     const path = join(dir, exe);
-    const bytes = await sizeOf(path);
-    if (!bytes) continue;                         // staging, or a failed install
+    if (!(await sizeOf(path))) continue;          // staging, or a failed install
+
+    /* The whole directory, not the executable.
+     *
+     * llama.cpp's Windows layout makes llama-server.exe a 9KB launcher and
+     * puts the engine in llama-server-impl.dll, ggml-cuda.dll and friends — so
+     * reporting the exe's size showed a 672MB CUDA install as 0.0MB. The
+     * number is there to answer "what would removing this get back", and that
+     * is the directory. */
+    const bytes = await dirBytes(dir);
     const dash = e.name.indexOf("-");
     let installedAt = null;
     try {

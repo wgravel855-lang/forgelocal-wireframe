@@ -405,3 +405,34 @@ test("deleting refuses anything that is not a model file", () => {
   assert.ok(existsSync(p));
   clean(d);
 });
+
+/* ------------------------------------ the CDN a real download comes from */
+
+test("Hugging Face's Xet CDN is reachable, and lookalikes are not", () => {
+  /* Found by downloading a model rather than by a test: a resolve URL on
+     huggingface.co redirects to a regional Xet host, and the allowlist knew
+     nothing about those. Every real download failed with "us.aws.cdn.hf.co is
+     not somewhere ForgeLocal downloads models from" while the suite stayed
+     green, because nothing here had ever followed a redirect to the live CDN.
+
+     The second half is the part worth keeping: widening an allowlist is
+     exactly where a suffix check quietly becomes a substring check. */
+  for (const good of [
+    "https://us.aws.cdn.hf.co/repos/a/b.gguf",
+    "https://eu.aws.cdn.hf.co/repos/a/b.gguf",
+    "https://huggingface.co/o/r/resolve/main/m.gguf",
+    "https://transfer.xethub.hf.co/xet/abc",
+  ]) {
+    assert.equal(checkUrl(good).ok, true, `${good} was refused`);
+  }
+
+  for (const bad of [
+    "https://evilcdn.hf.co/x.gguf",          // ends in the letters, not the domain
+    "https://cdn.hf.co.attacker.net/x.gguf", // the real host as a prefix
+    "https://hf.co/x.gguf",                  // the bare domain is not a CDN
+    "http://us.aws.cdn.hf.co/x.gguf",        // plaintext
+    "https://notxethub.hf.co/x",
+  ]) {
+    assert.equal(checkUrl(bad).ok, false, `${bad} was accepted as a model source`);
+  }
+});
