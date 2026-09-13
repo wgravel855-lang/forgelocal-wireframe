@@ -337,25 +337,22 @@ function statsRow(m) {
 }
 
 /**
- * The badges at the right of the statistics strip.
+ * The badge at the right of the statistics strip.
  *
- * Two different claims, and they are kept apart. "Staff pick" is ours: this
- * repository is on the curated list, and the tooltip says why we put it there.
- * "Verified" is Hugging Face's, read from the publisher's own profile — Google
- * carries it and Qwen does not — so it appears only where they say so and
- * never as decoration beside our own recommendation.
+ * Only one, and it is not ours. "Verified" is Hugging Face's own flag, read
+ * from the publisher's profile — Google carries it, Qwen does not.
+ *
+ * There is deliberately no "staff pick" badge. Every model in the default
+ * collection is one, so the badge was on almost every model anyone looked at
+ * and distinguished nothing; the collection heading already says what the list
+ * is. The reasons are still carried in `pickReasons` and still shown, as the
+ * tooltip on the row rather than as a second badge competing with a claim
+ * somebody else made.
  */
-function badgeRow(m, s) {
-  const out = [];
-  const why = s.pickReasons?.[m.repoId];
-  if (why) {
-    out.push(`<span class="mb-staff" title="${esc(why)}">${MB_ICON.star}Staff pick</span>`);
-  }
-  if (m.verified === true) {
-    out.push(`<span class="mb-staff is-verified"
-      title="Hugging Face lists this publisher as verified.">${verifiedMark(true)}Verified</span>`);
-  }
-  return out.length ? `<span class="mb-badgerow">${out.join("")}</span>` : "";
+function badgeRow(m) {
+  if (m.verified !== true) return "";
+  return `<span class="mb-badgerow"><span class="mb-staff is-verified"
+    title="Hugging Face lists this publisher as verified.">${verifiedMark(true)}Verified</span></span>`;
 }
 
 /**
@@ -575,7 +572,7 @@ export function detailPane(s) {
     </div>
     <div class="mb-substats">
       ${statsRow(m)}
-      ${badgeRow(m, s)}
+      ${badgeRow(m)}
     </div>
     ${summaryCard(m)}
     ${downloadOptions(s)}

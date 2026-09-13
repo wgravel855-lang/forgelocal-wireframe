@@ -115,8 +115,38 @@ const MEASURE = `(() => {
     listPct: list ? Math.round((list.width / m.width) * 100) : null,
     detailPct: detail ? Math.round((detail.width / m.width) * 100) : null,
     narrow,
+    /* Whether a pane scrolls, and — the part that matters — whether it fits.
+     *
+     * "scrollHeight > clientHeight" is true of a pane that scrolls properly
+     * AND of one that has grown past the modal and is being clipped, which is
+     * how this check passed while the detail pane was 976px tall in a 778px
+     * box with its last 198px unreachable. The comparison against the row
+     * height is what tells those two apart. */
     listScrolls: rows ? rows.scrollHeight > rows.clientHeight + 1 : false,
     detailScrolls: detailEl ? detailEl.scrollHeight > detailEl.clientHeight + 1 : false,
+    paneOverflow: (() => {
+      const panes = q('.mb-panes');
+      if (!panes) return null;
+      const room = panes.getBoundingClientRect().height;
+      const over = [];
+      for (const sel of ['.mb-list', '.mb-detail']) {
+        const el = q(sel);
+        if (!el) continue;
+        const h = el.getBoundingClientRect().height;
+        if (h > room + 1) over.push(sel + ' ' + Math.round(h) + '>' + Math.round(room));
+      }
+      return over;
+    })(),
+    /* Proof the wheel actually moves the list, rather than the list merely
+       reporting that it could. */
+    listCanScroll: (() => {
+      if (!rows) return false;
+      const before = rows.scrollTop;
+      rows.scrollTop = 400;
+      const moved = rows.scrollTop > before;
+      rows.scrollTop = before;
+      return moved;
+    })(),
     readmeChars: (q('.mb-readme')?.textContent || '').trim().length,
     rowCount: document.querySelectorAll('.mb-row[data-mb-row]').length,
     selected: document.querySelectorAll('.mb-row.is-on').length,
@@ -193,6 +223,12 @@ export function checkVisual(r) {
   say(r.selected === 1, `${r.selected} rows are marked selected, expected exactly 1`);
   say(r.readmeChars > 400, `the README pane holds ${r.readmeChars} characters; the lower pane is empty`);
   say(r.detailScrolls, "the detail pane does not scroll, so the README is not reachable");
+  /* A pane taller than the row it sits in is clipped by the modal, and the
+     part below the fold cannot be scrolled to. */
+  say(!r.paneOverflow?.length,
+    `a pane is taller than the modal and is being clipped: ${(r.paneOverflow ?? []).join("; ")}`);
+  say(r.listCanScroll || !r.listScrolls,
+    "the model list reports more content than fits but will not scroll to it");
   say(!r.overflowing.length, `content overflows its box: ${r.overflowing.join("; ")}`);
   say(!r.small.length,
     `text below the 13px floor: ${r.small.map((x) => `${x.c} ${x.px}px`).join("; ")}`);

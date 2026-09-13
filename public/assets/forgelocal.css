@@ -3215,6 +3215,19 @@ a.vh:focus-visible { position: fixed; left: 12px; top: 12px; z-index: 400;
 
 .mb-panes { flex: 1; min-height: 0; display: grid;
   grid-template-columns: 40% 1px 1fr; }
+/* Both panes, held to the height of the row rather than to their content.
+ *
+ * A grid item's min-height is auto, so a pane grows to fit whatever is
+ * inside it — a 2,458px README made the detail pane 976px tall inside a
+ * 778px modal, and .mb-modal's overflow:hidden then clipped the bottom
+ * 198px away where no amount of scrolling could reach it. The list was
+ * worse: .mb-rows is flex:1 of a parent that had itself grown, so its
+ * scrollHeight equalled its clientHeight and the wheel did nothing at all.
+ *
+ * This is the whole fix for both. It has to be min-height rather than
+ * height, because the narrow layout stacks the panes into rows and a fixed
+ * height there would be wrong. */
+.mb-list, .mb-detail { min-height: 0; }
 .mb-div { background: var(--mb-line-soft); }
 
 /* ------------------------------------------------------- list pane -- */
