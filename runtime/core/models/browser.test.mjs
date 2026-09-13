@@ -242,3 +242,48 @@ test("the README arrives as prose, not as YAML", () => {
   assert.ok(!stripped.includes("license:"), "front matter survived into the README");
   assert.match(stripped, /^# Real Title/);
 });
+
+/* ------------------------------------------- a description is one sentence */
+
+test("the description is one sentence, not the whole opening paragraph", () => {
+  /* A model card opens with three sentences of marketing. In a 40%-wide list
+     row and in a summary card above the download options it is scanned, not
+     read, and a paragraph there pushes what somebody came for below the fold.
+     The full text is in the README pane underneath. */
+  const md = "Qwen2.5-Coder is the latest series of Code-Specific Qwen large language "
+    + "models (formerly known as CodeQwen). As of now, Qwen2.5-Coder has covered six "
+    + "mainstream model sizes to meet the needs of different developers.";
+  const lead = leadParagraph(md);
+  assert.equal(lead,
+    "Qwen2.5-Coder is the latest series of Code-Specific Qwen large language models (formerly known as CodeQwen).");
+  assert.ok(!lead.includes("As of now"), "the second sentence came along");
+});
+
+test("a decimal point does not end a sentence", () => {
+  /* Model cards are full of them -- "Qwen2.5", "0.5, 1.5, 3, 7, 14, 32 billion
+     parameters" -- and a naive split on "." cuts the description to three
+     words. The stop has to be preceded by a letter, not a digit. */
+  const md = "Qwen2.5-Coder covers sizes 0.5, 1.5, 3, 7, 14 and 32 billion parameters. Second.";
+  const lead = leadParagraph(md, 200);
+  assert.ok(lead, "no description at all");
+  assert.match(lead, /0\.5, 1\.5, 3, 7, 14 and 32 billion parameters\.$/,
+    `a decimal ended the sentence early: ${lead}`);
+});
+
+test("a sentence longer than the limit is cut at a word and marked", () => {
+  const lead = leadParagraph(`${"alpha ".repeat(60)}end.`, 60);
+  assert.ok(lead, "no description at all");
+  assert.ok(lead.length <= 60, `too long: ${lead.length}`);
+  assert.ok(lead.endsWith("…"), "a truncated description does not say it was cut");
+  assert.ok(!/alph…$/.test(lead), "it was cut mid-word");
+});
+
+test("a one-sentence card is left alone", () => {
+  const lead = leadParagraph("Using llama.cpp release b3821 for quantization.");
+  assert.equal(lead, "Using llama.cpp release b3821 for quantization.");
+});
+
+test("prose with no sentence end at all still yields something", () => {
+  const lead = leadParagraph("a description with no full stop anywhere in it at all");
+  assert.equal(lead, "a description with no full stop anywhere in it at all");
+});

@@ -84,15 +84,51 @@ export function stripFrontMatter(md) {
 }
 
 /**
+ * Where a sentence ends.
+ *
+ * The stop has to be preceded by a letter or a closing bracket, which is what
+ * keeps it away from the decimal points model cards are full of: "Qwen2.5" and
+ * "0.5, 1.5, 3, 7, 14, 32 billion parameters" both survive, because a digit
+ * before the stop disqualifies it. And it has to be followed by whitespace and
+ * a capital, or the end of the text.
+ */
+const SENTENCE_END = /(?<=[a-zA-Z)\]"”'])[.!?](?=\s+[A-Z(“"]|\s*$)/;
+
+/**
+ * The first sentence of a block of prose.
+ *
+ * One sentence rather than one paragraph, because a description is read at a
+ * glance in a list row and a model card's opening paragraph is three sentences
+ * of marketing. Falls back to a hard truncation when the text has no sentence
+ * end within the limit.
+ *
+ * @param {string} text @param {number} limit
+ */
+function firstSentence(text, limit) {
+  const m = SENTENCE_END.exec(text);
+  let out = (m ? text.slice(0, m.index + 1) : text).trim();
+  if (out.length > limit) {
+    /* Cut at a word, not mid-word, and say that it was cut. */
+    out = `${out.slice(0, limit - 1).replace(/\s+\S*$/, "")}…`;
+  }
+  return out;
+}
+
+/**
  * The first real sentence of a README, for the one-line description.
  *
  * Skips headings, badges and images, which is what the top of a model card is
  * mostly made of. Returns null rather than a heading when there is no prose —
  * "# Qwen2.5-Coder-7B-Instruct-GGUF" as a description tells nobody anything.
  *
+ * The limit is deliberately short. This lands in a 40%-wide list row and in a
+ * summary card above the download options, and in both places it is scanned
+ * rather than read; a paragraph there pushes the thing somebody came for below
+ * the fold. The full text is in the README pane underneath.
+ *
  * @param {string|null} md @param {number} [limit]
  */
-export function leadParagraph(md, limit = 240) {
+export function leadParagraph(md, limit = 120) {
   if (!md) return null;
   const body = stripFrontMatter(md);
   for (const block of body.split(/\r?\n\s*\r?\n/)) {
@@ -128,7 +164,7 @@ export function leadParagraph(md, limit = 240) {
       .replace(/&nbsp;/gi, " ");
     prose = prose.replace(/\s+/g, " ").trim();
     if (prose.length < 24) continue;
-    return prose.length > limit ? `${prose.slice(0, limit - 1).trimEnd()}…` : prose;
+    return firstSentence(prose, limit);
   }
   return null;
 }
