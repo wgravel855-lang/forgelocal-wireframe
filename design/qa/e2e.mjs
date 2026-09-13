@@ -443,6 +443,17 @@ test("the composer's control row never wraps, so Send cannot move", () => {
     "the control row does not declare nowrap");
   assert.match(css, /\.cbar\s*>\s*\.btn\.sendbtn\s*\{[^}]*flex-shrink:\s*0/,
     "Send can be shrunk out of place");
-  assert.match(css, /\.cbar-r\s*\{[^}]*overflow-x:\s*auto/,
-    "the middle group cannot scroll, so something else has to give");
+  /* And the group holding the popovers does not clip them.
+
+     This assertion replaced its own opposite. The first fix for the wrap
+     gave .cbar-r overflow-x: auto so it could scroll, and the spec makes
+     that a clipping context in BOTH axes — so the model picker, which
+     opens above the row, was cut to the height of a 36px control and
+     rendered as a dark sliver. The controls truncate instead. */
+  const cbarR = css.match(/\.cbar-r\s*\{([^}]*)\}/g) || [];
+  assert.ok(cbarR.length, "no .cbar-r rule at all");
+  for (const rule of cbarR) {
+    assert.ok(!/overflow[-a-z]*:\s*(auto|scroll|hidden|clip)/.test(rule),
+      `.cbar-r clips or scrolls, which hides the popovers inside it: ${rule}`);
+  }
 });

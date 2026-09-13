@@ -1219,24 +1219,42 @@ body.is-blurred .cshell::after { animation-play-state: paused; }
 .cbar-ctx { font-size: var(--t-label); line-height: var(--lh-label); color: var(--faint); padding: 0 8px; }
 .cbar > .btn { min-width: 0; }
 .cbar-l { flex-wrap: nowrap; flex-shrink: 0; }
-/* This group scrolls; the row does not. */
-.cbar-r { flex-wrap: nowrap; flex: 1 1 auto; min-width: 0;
-  overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none; }
-.cbar-r::-webkit-scrollbar { display: none; }
-.cbar-r > * { flex-shrink: 0; }
+
+/* The middle group shrinks. It must not scroll, and must not clip.
+ *
+ * The first version of this row scrolled here, which is a reasonable way
+ * to fit three controls into a narrow composer and was carried over from
+ * the rules written for phone widths. It is wrong in this one, because
+ * both of this group's controls open a popover ABOVE the row: overflow-x
+ * makes an element a clipping context in BOTH axes — the spec computes
+ * overflow-y to auto alongside it — so the model picker was clipped to the
+ * height of a 36px row and rendered as a dark sliver behind the controls.
+ * It looked like the picker was broken. It was being cut in half.
+ *
+ * So the controls truncate instead. Every one of them keeps its icon and
+ * its chevron and gives up label text, which is legible down to widths the
+ * window cannot even be resized to: the desktop window has a 900px
+ * minimum. A shortened label is a smaller loss than a menu nobody can
+ * read. */
+.cbar-r { flex-wrap: nowrap; flex: 1 1 auto; min-width: 0; overflow: visible; }
+/* Shrinkable, and truncating rather than overflowing when they do. */
+.cbar-r > * { flex-shrink: 1; min-width: 0; }
+.cbar-r > div { flex-shrink: 1; min-width: 0; }
+.cbar-r .btn { min-width: 0; overflow: hidden; }
+.cbar-r .btn > span:not(.modeldot) { overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; }
+/* The icon and the chevron are what make a control recognisable once its
+   label has gone, so they never shrink. */
+.cbar-r .btn > svg, .cbar-r .modeldot { flex-shrink: 0; }
 /* Send is the one control whose position is fixed. */
 .cbar > .btn.sendbtn { flex-shrink: 0; }
 .cbar [data-model-label] { overflow: hidden; text-overflow: ellipsis;
   white-space: nowrap; max-width: 22ch; }
 
 @media (max-width: 620px) {
-  /* The spacer earns nothing once the middle group is scrolling, and the
-     fade tells the reader there is more to the right — worth its
-     compositing cost only where the overflow is the normal case. */
+  /* The spacer earns nothing at this width, and the labels have given up
+     most of what they had. */
   .cbar > .grow { display: none; }
-  .cbar-r {
-    mask-image: linear-gradient(to right, #000 calc(100% - 18px), transparent);
-    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 18px), transparent); }
 }
 
 /* ---- the browser work surface --------------------------------------- */
