@@ -134,3 +134,46 @@ test("a model name cannot become markup", () => {
   const html = toolGroupsHtml(["<img src=x>"], graded(AgentGrade.READY));
   assert.ok(!html.includes("<img src=x"));
 });
+
+/* ------------------------------------------- 4. a session with no project */
+
+test("with no project open, nothing is claimed to be always on", () => {
+  /* The panel used to print "Always on" beside reading, editing, commands and
+     planning unconditionally. In a conversation with no folder the sidecar
+     grants none of them, so that line was false exactly where a person is
+     most likely to be wondering what the agent can do. */
+  const html = toolGroupsHtml([], graded("ready"), false);
+  assert.ok(!html.includes("Always on"), "claimed a tool group was on with no project open");
+  for (const id of Object.values(ToolGroup)) {
+    assert.match(html, new RegExp(`data-group-blocked="${id}"`),
+      `${id} was offered with no project open, and no reason given`);
+  }
+  assert.match(html, /No project folder is open/);
+});
+
+test("with a project open, the panel is unchanged", () => {
+  const html = toolGroupsHtml([], graded("ready"), true);
+  assert.equal((html.match(/Always on/g) ?? []).length, DEFAULT_GROUPS.length);
+  assert.ok(!html.includes("No project folder is open"));
+});
+
+test("a session with no project asks the runtime for nothing", () => {
+  /* Matching allowedGroups, which returns [] for a session with no root. The
+     runtime is what enforces it — sidecar.test.mjs proves that end to end —
+     and this keeps the interface from asking for four groups it knows will be
+     refused, which would only produce a refusal it then has to explain. */
+  assert.deepEqual(requestedGroups(["web", "browser"], graded("ready"), false), []);
+  assert.deepEqual(requestedGroups([], graded("ready"), false), []);
+
+  // and with a folder, exactly what it asked for before
+  assert.deepEqual(requestedGroups([], graded("ready"), true), [...DEFAULT_GROUPS]);
+});
+
+test("every group is unavailable without a project, base groups included", () => {
+  for (const id of Object.values(ToolGroup)) {
+    assert.ok(unavailableBecause(id, graded("ready"), false),
+      `${id} was available in a session with nothing to use it on`);
+    // the default is the ordinary case, so no call site accidentally opts out
+    assert.equal(unavailableBecause(id, graded("ready")), unavailableBecause(id, graded("ready"), true));
+  }
+});

@@ -187,7 +187,9 @@ export function openStore(dir) {
   return {
     /**
      * @param {object} s
-     * @param {string} [s.id] @param {string} s.root @param {string} s.mode
+     * @param {string} [s.id]
+     * @param {string} s.root  the project folder, or "" for a session with none
+     * @param {string} s.mode
      * @param {string} [s.style] @param {string|null} [s.model] @param {string|null} [s.title]
      * @returns {string} the session id
      */

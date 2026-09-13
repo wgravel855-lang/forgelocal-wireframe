@@ -128,10 +128,18 @@ let engineEndpoint = null;
  *     to reason from.
  *
  * @param {readonly string[]} requested @param {any} profile
+ * @param {string|null} [root]  the session's project folder, if it has one
  * @returns {string[]}
  */
-function allowedGroups(requested, profile) {
+function allowedGroups(requested, profile, root = null) {
   if (profile && profile.agentGrade === AgentGrade.CHAT_ONLY) return [];
+
+  /* No project, no tools. Every group except plan acts on a folder — reading,
+     editing, running commands — and browsing is not something to hand a
+     session the person opened to ask a question. This is what makes "you can
+     chat without choosing a folder" safe rather than merely permitted: there
+     is nothing for the agent to reach. */
+  if (!root) return [];
 
   const known = new Set(Object.values(ToolGroup));
   const want = new Set([
@@ -471,12 +479,22 @@ async function sessionCreate(id, payload) {
     return fail(id, ErrorCode.PROVIDER,
       "Connect to a model before starting a session. Nothing can run without one.");
   }
-  let root;
-  try {
-    root = canonicalRoot(String(payload.root ?? ""));
-  } catch (/** @type {any} */ e) {
-    return fail(id, ErrorCode.BAD_ARGUMENT,
-      e instanceof PathEscape ? e.message : "That project folder could not be opened.");
+  /* A project is optional.
+   *
+   * Without one this is a conversation: the person can ask a question without
+   * first nominating a folder, which is the ordinary thing to want and was
+   * previously impossible. What they cannot do is have the agent touch
+   * anything, and allowedGroups below is where that is enforced rather than
+   * hoped for. */
+  /** @type {string|null} */
+  let root = null;
+  if (payload.root) {
+    try {
+      root = canonicalRoot(String(payload.root));
+    } catch (/** @type {any} */ e) {
+      return fail(id, ErrorCode.BAD_ARGUMENT,
+        e instanceof PathEscape ? e.message : "That project folder could not be opened.");
+    }
   }
 
   const sessionId = randomUUID();
@@ -486,7 +504,11 @@ async function sessionCreate(id, payload) {
   if (store) {
     try {
       store.createSession({
-        id: sessionId, root, mode: state.mode,
+        /* The store column is NOT NULL, so no project is recorded as an
+           empty string rather than a null. Every reader treats a falsy root
+           the same way, and this avoids a schema change that an existing
+           database would not pick up. */
+        id: sessionId, root: root ?? "", mode: state.mode,
         model: provider.info.model, title: null,
       });
     } catch (/** @type {any} */ e) {
@@ -496,6 +518,10 @@ async function sessionCreate(id, payload) {
 
   send(notify(Notify.SESSION_CREATED, {
     sessionId, root, mode: state.mode, model: provider.info.model, resumed: false,
+    /* Said explicitly rather than left for the interface to infer from a null
+       root, so a session that cannot act never looks like one that can. */
+    canAct: !!root,
+    groups: state.agent.groups,
   }, { id, sessionId }));
 }
 
@@ -512,7 +538,9 @@ async function sessionCreate(id, payload) {
  * and the build hands the orchestrator a null it will only discover mid-turn.
  *
  * @param {any} model  the connected provider
- * @param {string} sessionId @param {string} root @param {string} mode
+ * @param {string} sessionId
+ * @param {string|null} root  the project folder, or null for a conversation
+ * @param {string} mode
  * @param {{summary: string|null, objective: string}|null} restored
  */
 function build(model, sessionId, root, mode, restored) {
@@ -545,12 +573,15 @@ function build(model, sessionId, root, mode, restored) {
    * for a model the suite has actually graded — browserModeFor returns null
    * for untested and chat-only, which is what gates it.
    */
-  const groups = allowedGroups(DEFAULT_GROUPS, profile);
+  const groups = allowedGroups(DEFAULT_GROUPS, profile, root);
 
   state.agent = createOrchestrator({
     root, provider: model, mode, sessionId, restored, capabilities: profile, groups,
     paths: {
-      snapshotDir: join(root, ".forgelocal", "snapshots"),
+      /* Checkpoints live in the project, so a session without one has
+         nowhere to put them — and nothing to checkpoint either, since it
+         has no tools that write. */
+      snapshotDir: root ? join(root, ".forgelocal", "snapshots") : undefined,
       downloadDir: join(defaultStoreDir(), "downloads", sessionId),
     },
     onEvent: (event) => {
@@ -625,12 +656,15 @@ function sessionResume(id, payload) {
     return fail(id, ErrorCode.BUSY, "That session is already open.");
   }
 
-  let root;
-  try {
-    root = canonicalRoot(String(row.root));
-  } catch (/** @type {any} */ e) {
-    return fail(id, ErrorCode.BAD_ARGUMENT,
-      `That session's project folder is no longer there: ${row.root}`);
+  /** @type {string|null} */
+  let root = null;
+  if (row.root) {
+    try {
+      root = canonicalRoot(String(row.root));
+    } catch (/** @type {any} */ e) {
+      return fail(id, ErrorCode.BAD_ARGUMENT,
+        `That session's project folder is no longer there: ${row.root}`);
+    }
   }
 
   const events = store.readEvents(wanted, { inflate: false });
@@ -807,7 +841,7 @@ async function turnStart(id, sessionId, payload) {
     const profile = profiles && provider
       ? profiles.get(provider.info.baseUrl, provider.info.model)
       : null;
-    s.groups = s.agent.setGroups(allowedGroups(payload.groups, profile));
+    s.groups = s.agent.setGroups(allowedGroups(payload.groups, profile, s.root));
     const denied = payload.groups.filter((g) => !s.groups.includes(g));
     if (denied.length) {
       send(notify(Notify.SESSION_TOOLS, {

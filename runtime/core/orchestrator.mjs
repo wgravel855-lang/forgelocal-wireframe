@@ -84,7 +84,8 @@ export const StopReason = Object.freeze({
 
 /**
  * @param {object} opts
- * @param {string} opts.root                canonical project root
+ * @param {string|null} opts.root           canonical project root, or null for a
+ *   session that is only a conversation: no folder, and so no tools that need one
  * @param {any} opts.provider
  * @param {string} [opts.mode]
  * @param {string} [opts.sessionId]
@@ -150,8 +151,17 @@ export function createOrchestrator({
     plan: null,
     browser: null,
     capabilities,
-    /** Absolute path inside the project, or a throw. Used by browser upload. */
-    resolveInRoot: (p) => resolveInRoot(root, p).absolute,
+    /**
+     * Absolute path inside the project, or a throw.
+     *
+     * Throws rather than returning null when there is no project: every caller
+     * is a tool that needs a folder, and those tools are not offered at all in
+     * a session without one. Reaching here means something got past that.
+     */
+    resolveInRoot: (p) => {
+      if (!root) throw new Error("This conversation has no project folder open.");
+      return resolveInRoot(root, p).absolute;
+    },
     openBrowser: () => openBrowser(),
   };
 
@@ -862,6 +872,17 @@ export function createOrchestrator({
     setGroups(next) {
       const known = new Set(/** @type {string[]} */ (Object.values(ToolGroup)));
       const wanted = [...new Set((Array.isArray(next) ? next : []).filter((g) => known.has(g)))];
+
+      /* Nothing means nothing.
+       *
+       * Below, read is added back to any non-empty set, because a loop that
+       * can edit but not read has nothing to reason from. That must not apply
+       * to the empty set: the caller asking for no groups is the sidecar
+       * saying this session gets no tools — a model graded chat-only, or a
+       * conversation with no project folder to act on. Handing back read
+       * there would defeat the only gate those have. */
+      if (!wanted.length) { groups = []; return []; }
+
       // read is not optional: a loop that cannot read anything has nothing to
       // reason from, and every other group assumes it.
       if (!wanted.includes(ToolGroup.READ)) wanted.unshift(ToolGroup.READ);

@@ -7,7 +7,9 @@
 
       <div class="stack" style="gap:14px">
         <h1 class="ob-h1">Choose what ForgeLocal can access.</h1>
-        <p class="ob-lede">ForgeLocal can read and change files only inside the project you select.</p>
+        <p class="ob-lede">ForgeLocal can read and change files only inside the project you select.
+          You can skip this and just talk to the model, then open a folder whenever you have
+          something for it to work on.</p>
       </div>
 
       <button class="ob-pick" type="button" data-proj-pick>
@@ -41,6 +43,11 @@
   <footer class="ob-foot">
     <div class="inner">
       <a class="btn btnp btnl" href="/setup/permissions/" data-proj-next aria-disabled="true">Use this project</a>
+      <!-- Not a lesser path, just a different one. Someone who opened this to
+           ask a question has no folder to nominate, and the step after this one
+           decides what the agent may do to files there are none of. So this
+           goes straight to the workspace rather than through it. -->
+      <a class="btn btnl" href="/app/" data-proj-skip>Skip, just chat</a>
       <span class="grow"></span>
       <span class="lab">Step 3 of 4</span>
     </div>

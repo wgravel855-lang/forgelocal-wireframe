@@ -30,7 +30,11 @@ export const MAX_INSTRUCTION_BYTES = 16 * 1024;
  * @param {string} root canonical
  * @returns {{path: string, text: string, truncated: boolean}|null}
  */
+/** @param {string|null} root */
 export function loadInstructions(root) {
+  // No project, no project instructions. A session that is only a
+  // conversation has no folder to read them from.
+  if (!root) return null;
   for (const rel of INSTRUCTION_FILES) {
     const abs = join(root, ...rel.split("/"));
     if (!existsSync(abs)) continue;

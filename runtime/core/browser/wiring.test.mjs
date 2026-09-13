@@ -454,6 +454,22 @@ test("with the browser group off, browsing is not part of the session", async ()
   h.clean();
 });
 
+test("setGroups treats an empty request as no tools, not as read", () => {
+  /* "Always keeps read", below, has one exception, and it is the one that
+     matters for safety. The sidecar passes an empty list to say this session
+     gets nothing: a model the conformance suite graded chat-only, or a
+     conversation with no project folder to act in. Adding read back there
+     would hand tools to exactly the two cases that are meant to have none,
+     and the caller would have no way to say what it meant. */
+  const h = harness([{ text: "ok" }], { groups: [ToolGroup.READ, ToolGroup.EDIT] });
+  assert.deepEqual(h.agent.setGroups([]), []);
+  assert.deepEqual(h.agent.groups, []);
+
+  // and a list of nothing-but-nonsense is an empty request, not a read grant
+  assert.deepEqual(h.agent.setGroups(["not-a-group"]), []);
+  h.clean();
+});
+
 test("setGroups can turn browsing on later and always keeps read", () => {
   const h = harness([{ text: "ok" }], { groups: [ToolGroup.READ] });
   const next = h.agent.setGroups([ToolGroup.BROWSER, "not-a-group"]);

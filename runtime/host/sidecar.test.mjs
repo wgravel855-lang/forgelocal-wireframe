@@ -831,3 +831,103 @@ test("detaching the engine takes the endpoint with it", async () => {
   await s.stop();
   await server.close();
 });
+
+/* ------------------------------------------- a conversation with no project */
+
+/** Connect a sidecar to a scripted model, with no project folder. */
+async function chatOnly(s, server, payload = {}) {
+  await s.wait((f) => f.type === Notify.RUNTIME_STATE);
+  s.send(Request.PROVIDER_CONNECT, { baseUrl: server.baseUrl, model: server.model });
+  await s.wait((f) => f.type === Notify.PROVIDER_STATE && f.payload.connected);
+  const id = s.send(Request.SESSION_CREATE, payload);
+  return s.wait((f) => f.id === id
+    && (f.type === Notify.SESSION_CREATED || f.type === Notify.TURN_FAILED));
+}
+
+test("a session opens with no project folder, and answers", async () => {
+  /* Asking a question should not require nominating a folder first. It used
+     to: session.create refused without a root, so "what does this error mean"
+     was unreachable until you had chosen a directory it had no use for. */
+  const server = await startFakeModelServer({ turns: [{ text: "A segfault is a memory error." }] });
+  const s = start();
+
+  const created = await chatOnly(s, server, { mode: "manual" });
+  assert.equal(created.type, Notify.SESSION_CREATED,
+    `refused a session with no project: ${created.payload?.message}`);
+  assert.equal(created.payload.root, null);
+  assert.equal(created.payload.canAct, false, "a session with no folder claimed it could act");
+  assert.deepEqual(created.payload.groups, [], "tools were offered with nothing to use them on");
+
+  const sessionId = created.payload.sessionId;
+  s.send(Request.TURN_START, { text: "What is a segfault?" }, sessionId);
+  const done = await s.wait((f) => f.type === Notify.TURN_COMPLETED && f.sessionId === sessionId);
+  assert.equal(done.payload.stop, "final", `the turn did not answer: ${done.payload.detail}`);
+
+  await s.stop();
+  await server.close();
+});
+
+test("a conversation is offered no tools, whatever the renderer asks for", async () => {
+  /* The enforcement, in the runtime rather than in the interface. A session
+     with no folder has nothing to read, write or run, so it is given nothing
+     that could — and a request for groups is not a grant of them. */
+  const server = await startFakeModelServer({ turns: [{ text: "ok" }, { text: "ok" }] });
+  const s = start();
+  const created = await chatOnly(s, server, { mode: "allow_edits" });
+  const sessionId = created.payload.sessionId;
+
+  s.send(Request.TURN_START, {
+    text: "read my files",
+    groups: ["read", "edit", "command", "plan", "browser"],
+  }, sessionId);
+  await s.wait((f) => f.type === Notify.TURN_COMPLETED && f.sessionId === sessionId);
+
+  const sent = server.requests[server.requests.length - 1];
+  const offered = (sent.tools ?? []).map((t) => t.function.name);
+  assert.deepEqual(offered, [], `tools reached a session with no project: ${offered}`);
+
+  await s.stop();
+  await server.close();
+});
+
+test("the model is told there is no project, rather than shown an empty root", async () => {
+  /* Otherwise it reads "Project root:" followed by nothing, tries a path, is
+     refused, and has no way to work out why. */
+  const server = await startFakeModelServer({ turns: [{ text: "ok" }] });
+  const s = start();
+  const created = await chatOnly(s, server);
+  s.send(Request.TURN_START, { text: "hello" }, created.payload.sessionId);
+  await s.wait((f) => f.type === Notify.TURN_COMPLETED);
+
+  const sent = server.requests[server.requests.length - 1];
+  const system = sent.messages.filter((m) => m.role === "system")
+    .map((m) => m.content).join("\n");
+  assert.match(system, /No project folder is open/);
+  assert.ok(!/Project root:\s*$/m.test(system),
+    "the prompt printed an empty project root");
+
+  await s.stop();
+  await server.close();
+});
+
+test("a folder still gives a session its tools", async () => {
+  // The other half: this must not have cost the ordinary case.
+  const base = repo();
+  const server = await startFakeModelServer({ turns: [{ text: "ok" }] });
+  const s = start();
+
+  const created = await open(s, server, base);
+  assert.equal(created.payload.canAct, true);
+  assert.ok(created.payload.groups.includes("read"),
+    `no read group with a folder open: ${created.payload.groups}`);
+
+  s.send(Request.TURN_START, { text: "look" }, created.payload.sessionId);
+  await s.wait((f) => f.type === Notify.TURN_COMPLETED);
+  const offered = (server.requests[server.requests.length - 1].tools ?? [])
+    .map((t) => t.function.name);
+  assert.ok(offered.length > 0, "a session with a folder was offered no tools at all");
+
+  await s.stop();
+  await server.close();
+  clean(base);
+});

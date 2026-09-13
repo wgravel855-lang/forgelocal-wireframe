@@ -242,14 +242,28 @@ export function toolsLayer(tools) {
 
 /**
  * Layer 6: where this is running.
- * @param {{root: string, cwd?: string|null, platform?: string}} env
+ * A null root is a real state, not a missing value: a conversation with no
+ * project folder open. Such a session is given no tools that touch a folder,
+ * and this says so plainly rather than printing "Project root: null" and
+ * leaving the model to work out why every path it tries is refused.
+ *
+ * @param {{root: string|null, cwd?: string|null, platform?: string}} env
  */
 export function environmentLayer({ root, cwd = null, platform = process.platform }) {
-  const lines = [
-    "ENVIRONMENT",
-    `Platform: ${platform}`,
-    `Project root: ${root}`,
-  ];
+  const lines = ["ENVIRONMENT", `Platform: ${platform}`];
+
+  if (!root) {
+    lines.push(
+      "No project folder is open. This is a conversation, not a task: you have no "
+      + "tools, you cannot read or write files, and you cannot run commands.",
+      "Answer from what you know. If something genuinely needs the person's code, "
+      + "say so and tell them to open a project folder — do not guess at the "
+      + "contents of files you cannot read.",
+    );
+    return lines.join("\n");
+  }
+
+  lines.push(`Project root: ${root}`);
   if (cwd && cwd !== root) lines.push(`Working directory: ${cwd}`);
   lines.push("Every path you name is relative to the project root. You cannot read or write outside it.");
   return lines.join("\n");
@@ -301,7 +315,7 @@ export function summaryLayer(summary) {
 
 /**
  * @typedef {object} PromptParts
- * @property {string} root
+ * @property {string|null} root  the project folder, or null for a conversation
  * @property {string} mode
  * @property {string} [style]
  * @property {string|null} [cwd]

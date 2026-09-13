@@ -305,8 +305,18 @@ export function createHostClient({
     },
     disconnectProvider() { return request(Request.PROVIDER_DISCONNECT, {}, 5000); },
 
+    /**
+     * Open a session.
+     *
+     * `root` may be null. A session without one is a conversation: the runtime
+     * gives it no tools, because there is no folder to read, write or run
+     * anything in. Asking a question should not require nominating a folder
+     * first, and this is what makes that possible.
+     *
+     * @param {string|null} root @param {string} [mode]
+     */
     createSession(root, mode) {
-      return request(Request.SESSION_CREATE, { root, mode }, 20000);
+      return request(Request.SESSION_CREATE, { root: root ?? null, mode }, 20000);
     },
     disposeSession() {
       if (!sessionId) return Promise.resolve(null);

@@ -457,3 +457,44 @@ test("the composer's control row never wraps, so Send cannot move", () => {
       `.cbar-r clips or scrolls, which hides the popovers inside it: ${rule}`);
   }
 });
+
+/* ------------------------------------ a chat that needs no project folder */
+
+test("setup offers a way past the project step", () => {
+  /* The runtime allows a session with no folder, but the flow to reach it went
+     through a step whose only exit was a folder picker: Continue stayed
+     aria-disabled until one was chosen. Allowing it in the runtime and walling
+     it off in setup is the same as not allowing it. */
+  const html = page("setup/project");
+  const skip = /<a[^>]*data-proj-skip[^>]*>/.exec(html);
+  assert.ok(skip, "the project step has no way past it");
+  assert.match(skip[0], /href="\/app\/"/,
+    "skip went to the permission step, which asks about files there are none of");
+  assert.ok(!/data-proj-skip[^>]*aria-disabled="true"/.test(html),
+    "the way past the project step is itself disabled");
+});
+
+test("the composer does not require a project folder", () => {
+  /* The check Send is gated on. A folder in this list is what made asking a
+     question impossible without one. */
+  const js = readFileSync(join(pub, "assets/forgelocal.js"), "utf8");
+  const fn = /function canSendLive\(\)\s*\{([\s\S]*?)\n  \}/.exec(js);
+  assert.ok(fn, "canSendLive is not where this test expects it");
+  assert.ok(!/LIVE\.project/.test(fn[1]),
+    "sending still requires a project folder");
+  assert.match(fn[1], /LIVE\.session/,
+    "sending no longer checks that a session is open, which a project used to stand in for");
+});
+
+test("loading a model opens a session whether or not a project is open", () => {
+  /* Three places load a model and each opened a session only if a project
+     happened to be open. Without one that left Send enabled with nothing
+     behind it — the worst of the three possible states, because it looks
+     ready. */
+  const js = readFileSync(join(pub, "assets/forgelocal.js"), "utf8");
+  const guarded = js.match(/if \(LIVE\.project\) await openProject\(/g) ?? [];
+  assert.deepEqual(guarded, [],
+    "a model-load path still opens a session only when a project is open");
+  const opens = js.match(/await openProject\(LIVE\.project \? LIVE\.project\.path : null\)/g) ?? [];
+  assert.equal(opens.length, 3, `expected three model-load paths, found ${opens.length}`);
+});

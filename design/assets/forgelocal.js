@@ -955,8 +955,10 @@ import {
       }
       try {
         await connectProviderTracked(store.get("provider-url", "http://127.0.0.1:1234/v1"), id);
-        // A model change means a new session against the same project.
-        if (LIVE.project) await openProject(LIVE.project.path);
+        /* A model change means a new session: against the same project when
+           there is one, and a conversation when there is not. Skipping it
+           without a project left Send enabled with nothing behind it. */
+        await openProject(LIVE.project ? LIVE.project.path : null);
       } catch (e) {
         // MODEL_MISSING carries the models the server does have, which is the
         // useful half of "that one is not loaded".
@@ -1096,7 +1098,11 @@ import {
     if (!host) return;
     const p = LIVE.client ? LIVE.client.provider : null;
     const profile = LIVE.profile ?? (p && p.profile) ?? null;
-    host.innerHTML = toolGroupsHtml(enabledGroups(), profile);
+    /* A live session with no folder has no tools, so the panel says so rather
+       than listing four that are "always on" and are not. In the static
+       preview there is no session to ask, and the panel describes the app. */
+    const hasProject = LIVE.client ? !!LIVE.project : true;
+    host.innerHTML = toolGroupsHtml(enabledGroups(), profile, hasProject);
   }
 
   /** What the person has turned on, from storage. */
@@ -1248,7 +1254,9 @@ import {
          source rather than an address: it has never been told where the
          engine is. */
       await connectProviderTracked(null, name);
-      if (LIVE.project) await openProject(LIVE.project.path);
+      /* Same as the picker: a session either way, so a model loaded with no
+         project open is still something you can talk to. */
+      await openProject(LIVE.project ? LIVE.project.path : null);
     } catch (err) {
       announce(errText(err));
     }
@@ -4107,6 +4115,21 @@ import {
     if (saved && saved.name) show(saved.name, saved.path);
     else if (next) next.setAttribute("aria-disabled", "true");
 
+    /* Leaving without a folder.
+     *
+     * This clears any folder a previous run through setup remembered, so
+     * "skip" means what it says rather than quietly reopening something from
+     * last time. The permission step is skipped with it: it asks what the
+     * agent may do to the project's files, and there is no project. */
+    const skip = $("[data-proj-skip]");
+    if (skip) {
+      skip.addEventListener("click", () => {
+        setupSave({ project: null });
+        store.set("project", null);
+        store.set("mode", "manual");
+      });
+    }
+
     btn.addEventListener("click", async () => {
       if (typeof window.showDirectoryPicker === "function") {
         try {
@@ -4331,6 +4354,12 @@ import {
     permission: null,
     question: null,
     project: null,
+    /* The open session's id, or null.
+     *
+     * This used to be inferable from `project`: no folder meant no session. A
+     * conversation has a session and no folder, so the two came apart and the
+     * composer needs the one it actually depends on. */
+    session: null,
     running: false,
     // A provider.connect this renderer has sent and not yet had answered. The
     // model dot reads it, because the provider itself only reports the result.
@@ -4597,9 +4626,22 @@ import {
     if (label) announce(label);
   }
 
+  /**
+   * Whether a message can be sent.
+   *
+   * A project folder is deliberately NOT required. It used to be, which meant
+   * you could not ask a question without first nominating a folder — a demand
+   * that makes sense for a task and none at all for "what does this error
+   * mean". Without one the session simply has no tools, which the runtime
+   * enforces rather than the interface promising it.
+   *
+   * What IS required is a model. There is nothing to send a message to
+   * otherwise, and that is a different kind of missing.
+   */
   function canSendLive() {
     return !!(LIVE.client && LIVE.client.runtime.connected
-      && LIVE.client.provider.connected && LIVE.client.provider.model && LIVE.project);
+      && LIVE.client.provider.connected && LIVE.client.provider.model
+      && LIVE.session);
   }
 
   /* The one place the runtime line is written. Every part of it is a fact the
@@ -4827,15 +4869,53 @@ import {
        the window loaded, before the person had done anything at all. With no
        model the control stays in its empty state and the choice is theirs. */
     const saved = store.get("project", null);
-    if (saved && saved.path && LIVE.client.provider.connected && LIVE.client.provider.model) {
-      openProject(saved.path).catch(() => {});
+    if (LIVE.client.provider.connected && LIVE.client.provider.model) {
+      /* A session either way. With a remembered folder it reopens that; with
+         none it opens a conversation, so the composer is usable the moment a
+         model is loaded rather than after a trip through a folder dialog. */
+      openProject(saved && saved.path ? saved.path : null).catch(() => {});
     }
   }
 
+  /**
+   * Open a session on a folder, or on nothing.
+   *
+   * `null` is a real argument here and means a conversation with no project.
+   * The name is now half a lie — it opens a session, which may or may not have
+   * a project — but every call site says openProject and renaming it would
+   * touch more than this change should.
+   *
+   * @param {string|null} path
+   */
   async function openProject(path) {
+    /* Cleared first. If the call fails there is no session, and Send must not
+       stay enabled on the strength of the last one. */
+    LIVE.session = null;
     try {
-      const frame = await LIVE.client.createSession(path, store.get("mode", "manual"));
-      LIVE.project = { path: frame.payload.root, name: basename(frame.payload.root) };
+      const frame = await LIVE.client.createSession(path ?? null, store.get("mode", "manual"));
+      const root = frame.payload.root || null;
+      LIVE.session = frame.payload.sessionId ?? null;
+
+      if (!root) {
+        /* No folder: the controls say so rather than naming a stale one from
+           a previous session, and the stored project is cleared so the next
+           launch does not silently reopen something the person left. */
+        LIVE.project = null;
+        store.set("project", null);
+        $$("[data-project-name]").forEach((el) => { el.textContent = "Choose project"; });
+        $$("[data-project-choose]").forEach((b) => {
+          b.dataset.empty = "true";
+          b.title = "No folder open. The agent can talk, but cannot read or change anything.";
+        });
+        $$("[data-pd-name]").forEach((el) => { el.textContent = "No project"; });
+        $$("[data-pd-path]").forEach((el) => { el.textContent = "Not open"; el.title = ""; });
+        $$("[data-project-label]").forEach((el) => { el.textContent = "No project"; });
+        LIVE.view = initialRunView();
+        paintLive();
+        return;
+      }
+
+      LIVE.project = { path: root, name: basename(root) };
       store.set("project", { name: LIVE.project.name, path: LIVE.project.path });
       // The canonical path the runtime resolved, not the string the dialog gave.
       $$("[data-project-name]").forEach((el) => { el.textContent = LIVE.project.name; });
@@ -4852,6 +4932,8 @@ import {
       LIVE.view = initialRunView();
       paintLive();
     } catch (e) {
+      LIVE.session = null;
+      paintLive();
       showLiveError(e);
     }
   }
@@ -4958,8 +5040,10 @@ import {
       try {
         await connectProviderTracked(
           store.get("provider-url", "http://127.0.0.1:1234/v1"), b.dataset.liveModel);
-        // A model change means a new session against the same project.
-        if (LIVE.project) await openProject(LIVE.project.path);
+        /* A model change means a new session: against the same project when
+           there is one, and a conversation when there is not. Skipping it
+           without a project left Send enabled with nothing behind it. */
+        await openProject(LIVE.project ? LIVE.project.path : null);
       } catch (e) { showLiveError(e); }
     }));
     wireBrowserOpeners(host);
@@ -5100,8 +5184,14 @@ import {
       const text = ta.value.trim();
       if (!text) return;
       if (!canSendLive()) {
-        toast(!LIVE.project ? "Choose a project folder first."
-          : "Connect a model before sending.", "warn");
+        /* A missing folder is no longer a reason a message cannot be sent, so
+           it is no longer a reason this can report. What is left is the model
+           and the session it opens — and if a session failed to open, the
+           error that says why has already been shown. */
+        const noModel = !(LIVE.client && LIVE.client.provider.connected
+          && LIVE.client.provider.model);
+        toast(noModel ? "Load a model before sending."
+          : "No session is open. Try loading the model again.", "warn");
         return;
       }
 
@@ -5123,7 +5213,8 @@ import {
              preference from a session with a graded model cannot silently
              carry into one without. The runtime filters it again. */
           requestedGroups(enabledGroups(),
-            LIVE.profile ?? (LIVE.client ? LIVE.client.provider.profile : null)));
+            LIVE.profile ?? (LIVE.client ? LIVE.client.provider.profile : null),
+            !!LIVE.project));
       } catch (err) {
         showLiveError(err);
       } finally {

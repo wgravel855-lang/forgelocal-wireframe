@@ -74,16 +74,27 @@ export const GROUP_COPY = Object.freeze({
 });
 
 /**
- * Why an optional group is unavailable, or null when it is offered.
+ * Why a group is unavailable, or null when it is offered.
  *
- * Browsing needs a model the suite has graded. That is a real bar and the
- * interface states it rather than showing a control that does nothing: a
- * disabled toggle with no reason beside it reads as a bug.
+ * Two bars, and the interface states both rather than showing controls that do
+ * nothing: a disabled toggle with no reason beside it reads as a bug.
+ *
+ * The first is the project. A session with no folder open gets no tools at
+ * all — the sidecar enforces it, because every group acts on a folder — so
+ * this applies to the base four as well, and they stop saying "Always on" in a
+ * session where they are not on at all.
+ *
+ * The second is the grade: browsing needs a model the suite has tested.
  *
  * @param {string} group @param {any} profile
+ * @param {boolean} [hasProject]  false for a conversation with no folder open
  * @returns {string|null}
  */
-export function unavailableBecause(group, profile) {
+export function unavailableBecause(group, profile, hasProject = true) {
+  if (!hasProject) {
+    return "No project folder is open, so there is nothing to read, change or run in. "
+      + "Open one and this comes back.";
+  }
   const grade = profile && typeof profile.agentGrade === "string" ? profile.agentGrade : "untested";
   if (grade === "chat_only") {
     return "This model was graded chat only, so it has no tools at all.";
@@ -100,17 +111,23 @@ export function unavailableBecause(group, profile) {
  * @param {any} profile
  * @returns {string}
  */
-export function toolGroupsHtml(enabled, profile) {
+export function toolGroupsHtml(enabled, profile, hasProject = true) {
   const on = new Set(enabled);
 
-  const base = DEFAULT_GROUPS.map((id) => `<div class="setrow">
+  const base = DEFAULT_GROUPS.map((id) => {
+    /* "Always on" is true of a session with a project and false of one
+       without, so it is not printed unconditionally. */
+    const why = unavailableBecause(id, profile, hasProject);
+    return `<div class="setrow">
   <div><span class="set-l">${esc(GROUP_COPY[id].label)}</span>
-    <p class="set-d">${esc(GROUP_COPY[id].detail)}</p></div>
-  <span class="set-v faint">Always on</span>
-</div>`).join("\n");
+    <p class="set-d">${esc(GROUP_COPY[id].detail)}</p>
+    ${why ? `<p class="set-d" data-group-blocked="${esc(id)}"><em>${esc(why)}</em></p>` : ""}</div>
+  <span class="set-v faint">${why ? "Off" : "Always on"}</span>
+</div>`;
+  }).join("\n");
 
   const optional = OPTIONAL_GROUPS.map((id) => {
-    const why = unavailableBecause(id, profile);
+    const why = unavailableBecause(id, profile, hasProject);
     const checked = !why && on.has(id);
     return `<div class="setrow">
   <div><span class="set-l">${esc(GROUP_COPY[id].label)}</span>
@@ -128,17 +145,22 @@ export function toolGroupsHtml(enabled, profile) {
 /**
  * The groups to ask the runtime for.
  *
- * Always includes the base four. An optional one is included only when the
- * person turned it on AND nothing blocks it — so a stored preference from a
- * session with a graded model cannot silently carry into one without.
+ * Includes the base four when there is a project, and nothing at all when
+ * there is not — which is what the sidecar would grant anyway, so asking for
+ * more would only produce a refusal to explain. An optional group is included
+ * only when the person turned it on AND nothing blocks it, so a stored
+ * preference from a session with a graded model cannot silently carry into one
+ * without.
  *
  * @param {string[]} enabled @param {any} profile
+ * @param {boolean} [hasProject]
  * @returns {string[]}
  */
-export function requestedGroups(enabled, profile) {
+export function requestedGroups(enabled, profile, hasProject = true) {
+  if (!hasProject) return [];
   const on = new Set(Array.isArray(enabled) ? enabled : []);
   return [
     ...DEFAULT_GROUPS,
-    ...OPTIONAL_GROUPS.filter((id) => on.has(id) && !unavailableBecause(id, profile)),
+    ...OPTIONAL_GROUPS.filter((id) => on.has(id) && !unavailableBecause(id, profile, true)),
   ];
 }
