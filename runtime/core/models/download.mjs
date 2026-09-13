@@ -54,6 +54,10 @@ export const ALLOWED_HOSTS = Object.freeze([
      subdomains of cdn.hf.co and nothing that merely ends in those letters —
      "evilcdn.hf.co" does not end with ".cdn.hf.co". */
   "cdn.hf.co",
+  /* Publisher avatars. A separate host from the weights CDN, and needed
+     because the browser shows real artwork rather than initials where a
+     publisher has any -- inlineAvatar fetches through this same check. */
+  "cdn-avatars.huggingface.co",
 ]);
 
 /** @param {string} url */

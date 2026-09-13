@@ -212,3 +212,33 @@ test("compatibility with real hardware answers, and agrees with the model list",
   assert.ok(c.suggested, "a fitting model got no load suggestion");
   assert.ok(c.detail.includes("RTX 5070"), "the verdict does not name what it measured");
 });
+
+test("HTML in a model card does not become the description", () => {
+  /* Markdown permits inline HTML and model cards are full of it. bartowski's
+     cards open with `Using <a href="...">llama.cpp</a> release b4404...`,
+     which arrived in the list rows as visible angle brackets and an href. A
+     description is one line of text. */
+  const md = 'Using <a href="https://github.com/ggerganov/llama.cpp">llama.cpp</a> '
+    + "release b4404 for quantization of this model.";
+  const lead = leadParagraph(md);
+  assert.ok(lead, "no description at all");
+  assert.ok(!lead.includes("<"), `markup survived into the description: ${lead}`);
+  assert.ok(!lead.includes("href"), `an href survived into the description: ${lead}`);
+  assert.match(lead, /llama\.cpp/, "the link text was thrown away with its tag");
+});
+
+test("block tags become a space, so words do not run together", () => {
+  const lead = leadParagraph("<p>The first sentence.</p><p>And the second one here.</p>");
+  assert.ok(lead, "no description at all");
+  assert.ok(!/sentence\.And/.test(lead), `tags were removed without a gap: ${lead}`);
+});
+
+test("the README arrives as prose, not as YAML", () => {
+  /* The front matter is machine metadata and every field in it that matters
+     is already a field on this object. Rendered, it is a wall of keys above
+     the heading, which is what the README pane showed at first. */
+  const md = "---\nlicense: apache-2.0\ntags:\n- code\n---\n\n# Real Title\n\nReal prose.";
+  const stripped = stripFrontMatter(md);
+  assert.ok(!stripped.includes("license:"), "front matter survived into the README");
+  assert.match(stripped, /^# Real Title/);
+});

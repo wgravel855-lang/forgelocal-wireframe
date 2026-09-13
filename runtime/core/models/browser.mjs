@@ -98,8 +98,12 @@ export function leadParagraph(md, limit = 240) {
   for (const block of body.split(/\r?\n\s*\r?\n/)) {
     const line = block.trim();
     if (!line) continue;
-    if (line.startsWith("#") || line.startsWith("<") || line.startsWith("|")) continue;
-    if (line.startsWith("```")) continue;
+    /* Headings, tables and fences are skipped outright: they are never the
+       sentence somebody wants. HTML is not skipped — it is stripped below and
+       then judged on what is left, because a block may be `<div><img></div>`,
+       which reduces to nothing and falls through, or `<p>Real prose.</p>`,
+       which is exactly what we are looking for. */
+    if (line.startsWith("#") || line.startsWith("|") || line.startsWith("```")) continue;
     /* A line that is only links and images is a badge row.
      *
      * Images go before links, and both go repeatedly, because the badge idiom
@@ -113,6 +117,15 @@ export function leadParagraph(md, limit = 240) {
         .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1");            // links, keeping their text
       if (prose === before) break;
     }
+    /* Raw HTML, which model cards are full of. Markdown permits it inline, so
+       a perfectly ordinary card opens with `Using <a href="...">llama.cpp</a>
+       release b4404...` — and a description is a single line of text, not a
+       place to render anchors. The tags go and their text stays. `<br>` and
+       block tags become a space so words either side do not run together. */
+    prose = prose
+      .replace(/<(br|\/p|\/div|\/li|hr)\b[^>]*>/gi, " ")
+      .replace(/<[^>]+>/g, "")
+      .replace(/&nbsp;/gi, " ");
     prose = prose.replace(/\s+/g, " ").trim();
     if (prose.length < 24) continue;
     return prose.length > limit ? `${prose.slice(0, limit - 1).trimEnd()}…` : prose;
@@ -329,6 +342,47 @@ export async function inlineAvatar(url, opts = {}) {
 }
 
 /**
+ * Who published this, from Hugging Face's own record of them.
+ *
+ * Two things come from here and nowhere else. The avatar, so a row shows the
+ * publisher's actual mark rather than two letters — initials are a fallback
+ * for a publisher with no artwork, not a house style. And `isVerified`, which
+ * is Hugging Face's own badge: Google is verified, Qwen is not, and inventing
+ * the difference would be inventing exactly the signal the badge exists to
+ * carry.
+ *
+ * Organisations and users are different endpoints and a name is one or the
+ * other, so both are tried. Neither answering is a normal outcome — plenty of
+ * publishers have no profile — and it produces nulls, not an error.
+ *
+ * @param {string} name @param {{fetch?: typeof fetch, signal?: AbortSignal}} [opts]
+ * @returns {Promise<{avatarUrl: string|null, verified: boolean|null}>}
+ */
+export async function publisherInfo(name, opts = {}) {
+  const f = opts.fetch ?? fetch;
+  const clean = String(name ?? "").replace(/[^\w.-]/g, "");
+  if (!clean) return { avatarUrl: null, verified: null };
+
+  for (const kind of ["organizations", "users"]) {
+    try {
+      const res = await f(`https://huggingface.co/api/${kind}/${clean}/overview`, {
+        signal: opts.signal, headers: { accept: "application/json" },
+      });
+      if (!res.ok) continue;
+      const j = await res.json();
+      return {
+        avatarUrl: typeof j.avatarUrl === "string" ? j.avatarUrl : null,
+        /* Only an organisation carries the flag. A user account has no
+           verification to report, so it stays unknown rather than false --
+           "not verified" and "cannot be verified" are different claims. */
+        verified: kind === "organizations" ? !!j.isVerified : null,
+      };
+    } catch { /* try the other kind, then give up */ }
+  }
+  return { avatarUrl: null, verified: null };
+}
+
+/**
  * Everything the browser needs about one repository.
  *
  * Assembled from three requests that are allowed to fail independently: the
@@ -404,7 +458,11 @@ export async function describeModel(repoId, opts = {}) {
   let readme = null;
   try {
     const res = await f(`https://huggingface.co/${clean}/raw/main/README.md`, { signal: opts.signal });
-    if (res.ok) readme = await res.text();
+    /* Stored without its front matter. That block is YAML for machines --
+       license, tags, pipeline -- and every field in it that matters has
+       already been read into this object. Rendered, it is a wall of keys
+       above the prose, which is what the README pane was showing. */
+    if (res.ok) readme = stripFrontMatter(await res.text());
     else notes.push("This repository has no README.");
   } catch {
     notes.push("The README could not be fetched.");
@@ -413,9 +471,12 @@ export async function describeModel(repoId, opts = {}) {
   const author = String(info.author ?? clean.split("/")[0]);
   /** @type {string|null} */
   let dataUri = null;
+  /** @type {boolean|null} */
+  let verified = null;
   if (opts.artwork) {
-    const avatar = typeof info.avatarUrl === "string" ? info.avatarUrl : null;
-    if (avatar) dataUri = await inlineAvatar(new URL(avatar, "https://huggingface.co").toString(), { fetch: f });
+    const who = await publisherInfo(author, { fetch: f, signal: opts.signal });
+    verified = who.verified;
+    if (who.avatarUrl) dataUri = await inlineAvatar(who.avatarUrl, { fetch: f });
   }
 
   const params = parameterLabel(info?.gguf?.total);
@@ -436,10 +497,10 @@ export async function describeModel(repoId, opts = {}) {
       displayName: clean.split("/")[1] ?? clean,
       author,
       artwork: { dataUri, monogram: monogramFor(author) },
-      /* Hugging Face's model endpoint does not report whether an organisation
-         is verified, and guessing from a well-known name would be exactly the
-         wrong kind of badge. Unknown until there is a source. */
-      verified: null,
+      /* Hugging Face's own flag, read from the publisher's profile above.
+         Null when nobody asked for artwork (the profile was not fetched), or
+         when the publisher is a user account, which carries no such flag. */
+      verified,
       description: leadParagraph(readme),
       downloads: typeof info.downloads === "number" ? info.downloads : null,
       likes: typeof info.likes === "number" ? info.likes : null,

@@ -24,6 +24,10 @@ import {
   downloadsBadge, downloadsSummary, pickerHtml, composerModelLabel,
 } from "../core/modelviews.mjs";
 import { liveModelState } from "../core/liveModels.mjs";
+import {
+  modelBrowser, initialBrowserState, ListState, DetailState, InstallState,
+} from "../core/modelbrowser.mjs";
+import { STAFF_PICKS, pickReason } from "../core/staffpicks.mjs";
 import { THIS_PC } from "../core/machine.mjs";
 import { gb, fmtCtx as fmtCtxUI } from "../core/units.mjs";
 import { renderCard } from "../core/modelcard.mjs";
@@ -4980,9 +4984,11 @@ import {
         }
         if (type === "model.search") { LIVE.found = payload; paintFound(); }
         if (type === "model.download.progress") {
+          mbOnDownloadProgress(payload.name, payload);
           LIVE.downloads.set(payload.name, payload);
         }
         if (type === "model.downloaded") {
+          mbOnDownloaded(payload.name, payload);
           LIVE.downloads.delete(payload.name);
           announce(payload.ok
             ? `${payload.name} is ready.${payload.note ? " " + payload.note : ""}`
@@ -5094,6 +5100,9 @@ import {
 
     /* Screens. Each wires itself if its markup is on this route, so opening
        Models or Settings directly gets a live page instead of a dead one. */
+    /* The route, now that there is a runtime behind it. */
+    if (location.pathname.startsWith("/app/models")) void openBrowser();
+
     wireLiveProject();
     wireLiveModelPicker();
     if (form) wireLiveComposer(form);
@@ -5104,6 +5113,364 @@ import {
     await restoreSessions();
     paintLiveComposer();
     paintBrowserPanel();
+  }
+
+  /* --------------------------------------------------------- model browser */
+
+  /**
+   * The model browser's state, and the one place it is drawn from.
+   *
+   * Held outside LIVE because the browser is also the whole of the
+   * /app/models/ route, which the web preview reaches with no runtime at all.
+   * The two differ in exactly one way — whether `desktop` is true — and every
+   * other difference follows from that rather than from a second code path.
+   */
+  let MB = null;
+  /** @type {AbortController|null} */
+  let mbDetailReq = null;
+
+  function mbHost() {
+    let host = $("[data-mb-host]");
+    if (!host) {
+      host = document.createElement("div");
+      host.setAttribute("data-mb-host", "");
+      document.body.appendChild(host);
+    }
+    return host;
+  }
+
+  /** Draw, preserving the scroll of whichever pane the person was reading. */
+  function paintBrowser() {
+    const host = mbHost();
+    if (!MB) { host.innerHTML = ""; document.body.classList.remove("has-mb"); return; }
+    const keep = {
+      list: $(".mb-rows", host)?.scrollTop ?? 0,
+      detail: $(".mb-detail", host)?.scrollTop ?? 0,
+      focus: document.activeElement instanceof HTMLElement
+        ? document.activeElement.getAttribute("data-mb-search") !== null : false,
+      caret: /** @type {any} */ (document.activeElement)?.selectionStart ?? null,
+    };
+    host.innerHTML = modelBrowser(MB);
+    document.body.classList.add("has-mb");
+    const rows = $(".mb-rows", host);
+    if (rows) rows.scrollTop = keep.list;
+    const detail = $(".mb-detail", host);
+    if (detail && !MB.detailJustChanged) detail.scrollTop = keep.detail;
+    MB.detailJustChanged = false;
+    if (keep.focus) {
+      const input = $("[data-mb-search]", host);
+      if (input) {
+        input.focus();
+        if (keep.caret !== null) { try { input.setSelectionRange(keep.caret, keep.caret); } catch { /* not a text input */ } }
+      }
+    }
+    const panes = $(".mb-panes", host);
+    if (panes) panes.dataset.mbView = MB.selectedId ? "detail" : "list";
+  }
+
+  /**
+   * Open the browser.
+   *
+   * The same call from the route and from the composer's model control, so the
+   * two cannot become two different browsers.
+   */
+  async function openBrowser() {
+    if (MB) return;
+    MB = initialBrowserState({
+      desktop: hasTauri() && !!LIVE.client,
+      /* Why each curated entry is on the list, so the badge can say rather
+         than just assert. */
+      pickReasons: Object.fromEntries(
+        STAFF_PICKS.map((x) => [x.repoId, pickReason(x.repoId)]).filter(([, w]) => w)),
+    });
+    paintBrowser();
+    document.addEventListener("keydown", mbKeys, true);
+    await mbLoadList();
+  }
+
+  function closeBrowser({ back = true } = {}) {
+    if (!MB) return;
+    MB = null;
+    mbDetailReq?.abort();
+    mbDetailReq = null;
+    document.removeEventListener("keydown", mbKeys, true);
+    paintBrowser();
+    /* Opened as a route, closing means leaving it. Opened over the workspace,
+       it means putting the workspace back. */
+    if (back && location.pathname.startsWith("/app/models")) location.href = "/app/";
+  }
+
+  /** @param {KeyboardEvent} e */
+  function mbKeys(e) {
+    if (!MB) return;
+    if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); closeBrowser(); return; }
+    if (e.key !== "Tab") return;
+    const host = mbHost();
+    const items = $$("button:not(:disabled), input, select, a[href]", host)
+      .filter((el) => el.offsetParent !== null);
+    if (!items.length) return;
+    const first = items[0], last = items[items.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  }
+
+  /**
+   * Fill the list.
+   *
+   * With a runtime this is a real Hugging Face search. Without one there is
+   * nothing to search and the pane says so — the staff picks are a curated
+   * list of repository names, not fixture metadata, so the preview shows the
+   * shape of the surface and never a fabricated download count.
+   */
+  async function mbLoadList() {
+    if (!MB) return;
+    if (!MB.desktop) {
+      MB.listState = ListState.DISCONNECTED;
+      MB.models = [];
+      paintBrowser();
+      return;
+    }
+    MB.listState = ListState.LOADING;
+    paintBrowser();
+    try {
+      const frame = await LIVE.client.browseModels({
+        query: MB.query, sort: MB.sort, picks: STAFF_PICKS,
+      });
+      const models = frame.payload?.models ?? [];
+      MB.models = models;
+      MB.collection = MB.query ? "Search results" : "Staff picks";
+      MB.listState = models.length ? ListState.READY : ListState.EMPTY;
+      /* Selecting the first result is what makes the right pane useful on
+         open. It is a selection, so it loads like one. */
+      if (models.length && !models.some((m) => m.repoId === MB.selectedId)) {
+        paintBrowser();
+        await mbSelect(models[0].repoId);
+        return;
+      }
+    } catch (e) {
+      MB.listState = ListState.ERROR;
+      MB.listError = errText(e);
+    }
+    paintBrowser();
+  }
+
+  /** Load one model's detail. */
+  async function mbSelect(repoId) {
+    if (!MB || !repoId) return;
+    MB.selectedId = repoId;
+    MB.detail = { state: DetailState.LOADING, model: null, reason: null };
+    MB.variantIndex = 0;
+    MB.compat = null;
+    MB.install = { state: InstallState.NONE, bytes: 0, total: 0, reason: null };
+    MB.detailJustChanged = true;
+    paintBrowser();
+
+    mbDetailReq?.abort();
+    mbDetailReq = new AbortController();
+    try {
+      const frame = await LIVE.client.describeModel(repoId);
+      if (!MB || MB.selectedId !== repoId) return;      // superseded by another click
+      const payload = frame.payload ?? {};
+      if (!payload.ok) {
+        MB.detail = { state: DetailState.ERROR, model: null, reason: payload.reason };
+      } else {
+        MB.detail = { state: DetailState.READY, model: payload.model, reason: null };
+        mbSyncVariant();
+      }
+    } catch (e) {
+      if (MB && MB.selectedId === repoId) {
+        MB.detail = { state: DetailState.ERROR, model: null, reason: errText(e) };
+      }
+    }
+    paintBrowser();
+  }
+
+  /**
+   * Recompute everything that depends on which file is selected.
+   *
+   * Compatibility comes from the runtime's answer for this variant, and the
+   * install state from what is on disk and what the provider is serving —
+   * never from each other.
+   */
+  function mbSyncVariant() {
+    if (!MB || MB.detail.state !== DetailState.READY) return;
+    const m = MB.detail.model;
+    const v = m.variants?.[MB.variantIndex];
+    if (!v) return;
+    MB.compat = v.compat ?? null;
+
+    const installed = LIVE.models?.models ?? [];
+    const onDisk = installed.find((x) => x.name === v.name);
+    const p = LIVE.client ? LIVE.client.provider : null;
+    const serving = p && p.connected ? p.model : null;
+
+    if (serving && serving === v.name) MB.install.state = InstallState.LOADED;
+    else if (onDisk) MB.install.state = InstallState.INSTALLED;
+    else if (MB.install.state === InstallState.LOADED || MB.install.state === InstallState.INSTALLED) {
+      MB.install.state = InstallState.NONE;
+    }
+  }
+
+  /** Start, resume or retry the download of the selected variant. */
+  async function mbDownload() {
+    if (!MB || !MB.desktop || MB.detail.state !== DetailState.READY) return;
+    const v = MB.detail.model.variants?.[MB.variantIndex];
+    if (!v) return;
+    MB.install = { state: InstallState.DOWNLOADING, bytes: 0, total: v.bytes, reason: null };
+    paintBrowser();
+    try {
+      await LIVE.client.downloadModel({
+        url: v.url, name: v.name, bytes: v.bytes, sha256: v.sha256,
+      });
+    } catch (e) {
+      if (!MB) return;
+      MB.install = { state: InstallState.FAILED, bytes: 0, total: v.bytes, reason: errText(e) };
+      paintBrowser();
+    }
+  }
+
+  async function mbCancel() {
+    if (!MB || MB.detail.state !== DetailState.READY) return;
+    const v = MB.detail.model.variants?.[MB.variantIndex];
+    if (!v) return;
+    try { await LIVE.client.cancelDownload(v.name); } catch { /* reported below */ }
+    MB.install = { state: InstallState.PAUSED, bytes: MB.install.bytes, total: v.bytes, reason: null };
+    paintBrowser();
+  }
+
+  /** Point the engine at the selected file. */
+  async function mbLoad() {
+    if (!MB || !MB.desktop || MB.detail.state !== DetailState.READY) return;
+    const v = MB.detail.model.variants?.[MB.variantIndex];
+    if (!v) return;
+    MB.install.state = InstallState.LOADING;
+    paintBrowser();
+    try {
+      await loadModelFile(v.name);
+      if (!MB) return;
+      MB.install.state = InstallState.LOADED;
+    } catch (e) {
+      if (!MB) return;
+      MB.install = { state: InstallState.INSTALLED, bytes: 0, total: 0, reason: errText(e) };
+      toast(errText(e), "bad");
+    }
+    paintBrowser();
+  }
+
+  /** Progress frames from the runtime, folded into the open browser. */
+  function mbOnDownloadProgress(name, payload) {
+    if (!MB || MB.detail.state !== DetailState.READY) return;
+    const v = MB.detail.model.variants?.[MB.variantIndex];
+    if (!v || v.name !== name) return;
+    MB.install = {
+      state: InstallState.DOWNLOADING,
+      bytes: payload.bytes ?? payload.done ?? 0,
+      total: payload.total ?? v.bytes,
+      reason: null,
+    };
+    paintBrowser();
+  }
+
+  function mbOnDownloaded(name, payload) {
+    if (!MB || MB.detail.state !== DetailState.READY) return;
+    const v = MB.detail.model.variants?.[MB.variantIndex];
+    if (!v || v.name !== name) return;
+    MB.install = payload.ok
+      ? { state: InstallState.INSTALLED, bytes: v.bytes, total: v.bytes, reason: null }
+      : { state: InstallState.FAILED, bytes: 0, total: v.bytes, reason: payload.reason };
+    paintBrowser();
+  }
+
+  /** One delegated listener for the whole modal. */
+  function wireBrowser() {
+    const host = mbHost();
+    let searchTimer = null;
+
+    host.addEventListener("click", (e) => {
+      const el = e.target instanceof Element ? e.target : null;
+      if (!el || !MB) return;
+      if (el.closest("[data-mb-close]") || el.closest("[data-mb-scrim]")) return closeBrowser();
+      const row = el.closest("[data-mb-row]");
+      if (row) return void mbSelect(row.getAttribute("data-mb-row"));
+      if (el.closest("[data-mb-refresh]")) return void mbLoadList();
+      if (el.closest("[data-mb-retry-list]")) return void mbLoadList();
+      if (el.closest("[data-mb-retry-detail]")) return void mbSelect(MB.selectedId);
+      if (el.closest("[data-mb-download]")) return void mbDownload();
+      if (el.closest("[data-mb-cancel]")) return void mbCancel();
+      if (el.closest("[data-mb-load]")) return void mbLoad();
+      if (el.closest("[data-mb-clear]")) {
+        MB.query = "";
+        return void mbLoadList();
+      }
+      const copy = el.closest("[data-mb-copy]");
+      if (copy) {
+        const text = copy.getAttribute("data-mb-copy");
+        navigator.clipboard?.writeText(text)
+          .then(() => toast(`Copied ${text}`))
+          .catch(() => toast("The clipboard is not available.", "warn"));
+      }
+    });
+
+    host.addEventListener("input", (e) => {
+      const el = e.target;
+      if (!MB || !(el instanceof HTMLElement)) return;
+      if (el.hasAttribute("data-mb-search")) {
+        MB.query = /** @type {HTMLInputElement} */ (el).value;
+        clearTimeout(searchTimer);
+        /* Debounced, because every keystroke is a request to Hugging Face. */
+        searchTimer = setTimeout(() => void mbLoadList(), 320);
+      }
+    });
+
+    host.addEventListener("change", (e) => {
+      const el = e.target;
+      if (!MB || !(el instanceof HTMLElement)) return;
+      if (el.hasAttribute("data-mb-variant")) {
+        MB.variantIndex = Number(/** @type {HTMLSelectElement} */ (el).value) || 0;
+        mbSyncVariant();
+        paintBrowser();
+      }
+      if (el.hasAttribute("data-mb-sort")) {
+        MB.sort = /** @type {HTMLSelectElement} */ (el).value;
+        void mbLoadList();
+      }
+    });
+  }
+
+  /**
+   * Every way into the browser.
+   *
+   * The route and the composer's model control open the same component, which
+   * is the point: /app/models/ was a page and the composer had a popover, and
+   * they were two different pictures of the same thing that drifted apart.
+   *
+   * The route keeps working as a URL — a person can bookmark it, and the
+   * desktop window can be pointed at it — but what it renders is the modal
+   * over whatever the app already had behind it.
+   */
+  function wireBrowserEntry() {
+    /* On the route, open it now only when there is no host to wait for.
+     *
+     * With a desktop host the browser's list is a live search through the
+     * runtime, and the runtime is connected by wireDesktop, which runs after
+     * this and is asynchronous besides. Opening here meant the modal captured
+     * `desktop: false` before the client existed and showed "the desktop app
+     * is not connected" inside the connected desktop app. wireDesktop opens it
+     * once the handshake is done. */
+    if (location.pathname.startsWith("/app/models") && !hasTauri()) {
+      /* The page beneath is left as it is and dimmed by the scrim. Replacing
+         it would mean the modal had nothing to sit over, and closing would
+         have nowhere to go back to. */
+      void openBrowser();
+    }
+
+    /* Anything that says "open the model browser" goes to one place. */
+    $$("[data-open-models]").forEach((el) => {
+      el.addEventListener("click", (e) => {
+        e.preventDefault();
+        void openBrowser();
+      });
+    });
   }
 
   /* ------------------------------------------------------- session history */
@@ -6263,7 +6630,8 @@ import {
     wireDensity(); wireQueue(); wireCaretMenus(); wirePaste();
     wireSettings(); wireShortcuts(); wireDownloadRow(); wireLanding();
     wireScan(); wireSetupProject(); wireSetupPermissions(); wireSetupDownload();
-    wireSessionSearch(); wireSessionFilter(); wireSettingsNav(); wireDesktop();
+    wireSessionSearch(); wireSessionFilter(); wireSettingsNav(); wireBrowser();
+    wireBrowserEntry(); wireDesktop();
     wireModelBrowser();
     wireInert();
     document.documentElement.dataset.reducedMotion = String(reduced);

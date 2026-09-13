@@ -37,6 +37,8 @@ export const Request = Object.freeze({
   MODEL_DOWNLOAD: "model.download",
   MODEL_DOWNLOAD_CANCEL: "model.download.cancel",
   MODEL_VERIFY: "model.verify",
+  MODEL_BROWSE: "model.browse",
+  MODEL_DESCRIBE: "model.describe",
 });
 
 export const Notify = Object.freeze({
@@ -61,6 +63,8 @@ export const Notify = Object.freeze({
   MODEL_DOWNLOAD_PROGRESS: "model.download.progress",
   MODEL_DOWNLOADED: "model.downloaded",
   MODEL_VERIFIED: "model.verified",
+  MODEL_BROWSE: "model.browse",
+  MODEL_DESCRIBE: "model.describe",
 });
 
 /** Is a desktop host present at all?
@@ -427,6 +431,27 @@ export function createHostClient({
     },
     cancelDownload(name) { return request(Request.MODEL_DOWNLOAD_CANCEL, { name }, 5000); },
     verifyModel(file) { return request(Request.MODEL_VERIFY, file, 60 * 60 * 1000); },
+
+    /**
+     * The browser's list.
+     *
+     * `picks` is the curated set of repository names; the runtime fetches
+     * each one's real record rather than trusting anything sent with it, so a
+     * renderer cannot inject a download count.
+     * @param {{query?: string, sort?: string, picks?: readonly any[]}} opts
+     */
+    browseModels(opts = {}) {
+      return request(Request.MODEL_BROWSE, {
+        query: opts.query ?? "",
+        sort: opts.sort ?? "Best Match",
+        picks: (opts.picks ?? []).map((p) => (typeof p === "string" ? p : p.repoId)),
+      }, 30000);
+    },
+
+    /** One repository in full: metadata, variants, compatibility and README. */
+    describeModel(repoId) {
+      return request(Request.MODEL_DESCRIBE, { repoId }, 30000);
+    },
 
     /**
      * Give the open conversation a project folder, or take one away.

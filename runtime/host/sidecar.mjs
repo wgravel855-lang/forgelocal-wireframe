@@ -31,6 +31,7 @@ import { emptyProfile, AgentGrade, browserModeFor } from "../core/capability.mjs
 import { summarise, renderSummary } from "../core/compact.mjs";
 import { listModels, deleteModel, verifyModel, defaultModelDir } from "../core/models/files.mjs";
 import { downloadModel, listRepoFiles } from "../core/models/download.mjs";
+import { describeModel, compatibilityFor, installStateFor } from "../core/models/browser.mjs";
 import { fitFor, suggestLoad } from "../core/models/fit.mjs";
 import {
   installEngine, listEngines, removeEngine, engineDirName,
@@ -233,6 +234,8 @@ async function handle(frame) {
     case Request.MODEL_DOWNLOAD: return modelDownload(id, payload);
     case Request.MODEL_DOWNLOAD_CANCEL: return modelDownloadCancel(id, payload);
     case Request.MODEL_VERIFY: return modelVerify(id, payload);
+    case Request.MODEL_BROWSE: return modelBrowse(id, payload);
+    case Request.MODEL_DESCRIBE: return modelDescribe(id, payload);
     case Request.ENGINE_LIST: return engineList(id);
     case Request.ENGINE_INSTALL: return engineInstall(id, payload);
     case Request.ENGINE_INSTALL_CANCEL: return engineInstallCancel(id);
@@ -265,8 +268,21 @@ const downloading = new Map();
  * With no hardware, every model is listed with a null fit and the interface
  * says it does not know — not a default that would be wrong for most people.
  */
+/**
+ * The last hardware profile the renderer sent.
+ *
+ * The runtime does not probe hardware — the Rust host does, and the renderer
+ * passes the result down with the requests that need it. Remembering it here
+ * means a later request that did not carry one can still answer a question
+ * about fit, rather than reporting "unknown" because of which request it was.
+ * Null until something has been measured, which is the honest starting point.
+ * @type {any}
+ */
+let lastHardware = null;
+
 function modelList(id, payload = {}) {
-  const hardware = payload.hardware ?? null;
+  const hardware = payload.hardware ?? lastHardware;
+  if (payload.hardware) lastHardware = payload.hardware;
   try {
     const models = listModels().map((m) => ({
       ...m,
@@ -351,6 +367,112 @@ function modelDownloadCancel(id, payload) {
   /* The partial file survives. A cancel that threw away thirty gigabytes
      would make cancelling something people are afraid to do. */
   c.abort();
+}
+
+/* -------------------------------------------------------- the model browser */
+
+/**
+ * The browser's list.
+ *
+ * With no query this is the curated set; with one it is a Hugging Face search
+ * narrowed to repositories publishing GGUF, because a result the engine cannot
+ * load is not a result. Either way each row is built from that repository's own
+ * record — the renderer sends names and gets back facts.
+ *
+ * Rows are fetched in parallel and a failure drops the row rather than the
+ * list: one repository being renamed should not empty the browser.
+ */
+async function modelBrowse(id, payload) {
+  const query = String(payload.query ?? "").trim();
+  const picks = Array.isArray(payload.picks) ? payload.picks.map(String).slice(0, 24) : [];
+
+  /** @type {string[]} */
+  let ids = [];
+  let curatedCount = 0;
+  if (!query) {
+    ids = picks;
+    curatedCount = ids.length;
+  } else {
+    try {
+      const url = new URL("https://huggingface.co/api/models");
+      url.searchParams.set("search", query);
+      url.searchParams.set("filter", "gguf");
+      url.searchParams.set("limit", "24");
+      url.searchParams.set("sort", sortKey(payload.sort));
+      url.searchParams.set("direction", "-1");
+      const res = await fetch(url, { headers: { accept: "application/json" } });
+      if (!res.ok) {
+        return fail(id, ErrorCode.INTERNAL, `Hugging Face answered ${res.status}.`);
+      }
+      const list = await res.json();
+      ids = (Array.isArray(list) ? list : []).map((x) => String(x.modelId ?? x.id)).filter(Boolean);
+    } catch (/** @type {any} */ e) {
+      return fail(id, ErrorCode.INTERNAL, `Could not reach Hugging Face: ${e?.message ?? e}`);
+    }
+  }
+
+  const settled = await Promise.all(ids.map(async (repoId, i) => {
+    const r = await describeModel(repoId, { artwork: true });
+    if (!r.ok) return null;
+    /* The list row carries only what a row shows. The full record is fetched
+       again on selection, which keeps a twenty-row list from shipping twenty
+       READMEs through the pipe. */
+    const m = r.model;
+    return {
+      repoId: m.repoId, displayName: m.displayName, author: m.author,
+      artwork: m.artwork, verified: m.verified, description: m.description,
+      updatedAt: m.updatedAt, downloads: m.downloads, likes: m.likes,
+      capabilities: m.capabilities,
+      curated: !query && i < curatedCount,
+    };
+  }));
+
+  send(notify(Notify.MODEL_BROWSE, {
+    models: settled.filter(Boolean),
+    query,
+    /* Said plainly when some rows did not load, rather than silently showing
+       a shorter list than was asked for. */
+    missing: settled.filter((x) => !x).length,
+  }, { id }));
+}
+
+/** Hugging Face's sort keys, from the words the interface shows. */
+function sortKey(label) {
+  switch (String(label)) {
+    case "Most Downloads": return "downloads";
+    case "Most Likes": return "likes";
+    case "Recently Updated": return "lastModified";
+    default: return "downloads";
+  }
+}
+
+/**
+ * One repository in full, with this machine's answer folded in.
+ *
+ * Compatibility and install state are attached here rather than in the
+ * renderer, because both depend on things only this side knows: the hardware
+ * probe, the models folder, and what the provider is serving.
+ */
+async function modelDescribe(id, payload) {
+  const repoId = String(payload.repoId ?? "");
+  const r = await describeModel(repoId, { artwork: true });
+  if (!r.ok) {
+    return send(notify(Notify.MODEL_DESCRIBE, { ok: false, repoId, reason: r.reason }, { id }));
+  }
+
+  const hardware = payload.hardware ?? lastHardware;
+  const onDisk = listModels();
+  const serving = provider && provider.info ? provider.info.model : null;
+
+  const variants = installStateFor(r.model.variants, onDisk, serving).map((v) => ({
+    ...v, compat: compatibilityFor(v, hardware),
+  }));
+
+  send(notify(Notify.MODEL_DESCRIBE, {
+    ok: true,
+    model: { ...r.model, variants },
+    hardwareKnown: !!hardware,
+  }, { id }));
 }
 
 /* ------------------------------------------------------------- the engine */

@@ -67,6 +67,11 @@ export const Request = Object.freeze({
   MODEL_DOWNLOAD: "model.download",
   MODEL_DOWNLOAD_CANCEL: "model.download.cancel",
   MODEL_VERIFY: "model.verify",
+  /* The model browser. A catalogue search and one repository's full record —
+     metadata, files and README — assembled by the runtime because it is the
+     side that may talk to Hugging Face. */
+  MODEL_BROWSE: "model.browse",
+  MODEL_DESCRIBE: "model.describe",
   /* The engine itself. Not host-only: these say "fetch the llama.cpp build
      this machine can use" and carry no address and no token. The endpoint and
      the session secret still only ever come from the host, through
@@ -133,6 +138,8 @@ export const Notify = Object.freeze({
   MODEL_DOWNLOAD_PROGRESS: "model.download.progress",
   MODEL_DOWNLOADED: "model.downloaded",
   MODEL_VERIFIED: "model.verified",
+  MODEL_BROWSE: "model.browse",
+  MODEL_DESCRIBE: "model.describe",
   /* What is installed, what is available for this machine, and how a fetch of
      one is going. The progress frames carry the asset name because a CUDA
      install is two archives and a bar that restarts with no explanation looks

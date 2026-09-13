@@ -3162,4 +3162,389 @@ a.vh:focus-visible { position: fixed; left: 12px; top: 12px; z-index: 400;
   .cchip, .chipf, .lsort, .vstate-a, summary { min-height: 44px; }
 }
 
+
+/* ==================================================== model browser ==
+   A floating two-pane dialog over the application.
+
+   The palette is its own, declared here rather than borrowed from the
+   app's tokens, because this surface sits *over* the app and has to read
+   as a layer above it: modal ground, one step lighter for the cards
+   nested inside it, and borders low enough in contrast that they separate
+   without drawing. Everything else in the file inherits the app's tokens
+   and should keep doing so. */
+.mb-scrim { position: fixed; inset: 0; z-index: 90;
+  background: rgba(8, 8, 10, .62); backdrop-filter: blur(2px); }
+
+.mb-modal {
+  --mb-bg: #222225;
+  --mb-surface: #29292e;
+  --mb-surface-2: #2f2f35;
+  --mb-line: #34343b;
+  --mb-line-soft: #2c2c32;
+  --mb-fg: #f1f1f4;
+  --mb-mut: #9b9ba4;
+  --mb-faint: #77777f;
+  --mb-acc: #6d5df0;
+  --mb-acc-soft: #8d80f5;
+  --mb-lede: #97a4f7;
+  position: fixed; z-index: 91;
+  top: 50%; left: 50%; transform: translate(-50%, -50%);
+  width: min(1160px, calc(100vw - 64px));
+  height: min(780px, calc(100vh - 56px));
+  min-height: 600px;
+  display: flex; flex-direction: column;
+  background: var(--mb-bg); color: var(--mb-fg);
+  border: 1px solid var(--mb-line); border-radius: 19px;
+  box-shadow: 0 32px 90px rgba(0, 0, 0, .62), 0 2px 10px rgba(0, 0, 0, .4);
+  overflow: hidden;
+  font-size: 14px; line-height: 1.5;
+}
+/* A viewport shorter than the minimum gets a modal that scrolls with the
+   page rather than one with its head cut off. */
+@media (max-height: 660px) {
+  .mb-modal { height: calc(100vh - 24px); min-height: 0; }
+}
+
+.mb-close { position: absolute; top: 14px; right: 16px; z-index: 3;
+  width: 30px; height: 30px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--mb-surface-2); border: 1px solid var(--mb-line);
+  color: var(--mb-mut); }
+.mb-close svg { width: 15px; height: 15px; }
+.mb-close:hover { color: var(--mb-fg); background: #36363d; }
+
+.mb-panes { flex: 1; min-height: 0; display: grid;
+  grid-template-columns: 40% 1px 1fr; }
+.mb-div { background: var(--mb-line-soft); }
+
+/* ------------------------------------------------------- list pane -- */
+.mb-list { min-width: 0; display: flex; flex-direction: column; }
+.mb-listhead { padding: 16px 14px 10px; display: flex; flex-direction: column;
+  gap: 10px; flex-shrink: 0; }
+
+.mb-search { position: relative; display: flex; align-items: center; }
+.mb-search-i { position: absolute; left: 11px; display: grid; place-items: center;
+  color: var(--mb-faint); pointer-events: none; }
+.mb-search-i svg { width: 15px; height: 15px; }
+.mb-search-in { width: 100%; height: 36px; padding: 0 32px 0 33px;
+  border: 1px solid var(--mb-line); border-radius: 9px;
+  background: #1b1b1e; color: var(--mb-fg); font: inherit; font-size: 14px; }
+.mb-search-in::placeholder { color: var(--mb-faint); }
+.mb-search-in:focus { outline: none; border-color: #4a4a55; }
+.mb-search-in::-webkit-search-cancel-button { display: none; }
+.mb-search-x { position: absolute; right: 7px; width: 20px; height: 20px;
+  border-radius: 50%; display: grid; place-items: center;
+  color: var(--mb-faint); background: transparent; }
+.mb-search-x svg { width: 12px; height: 12px; }
+.mb-search-x:hover { color: var(--mb-fg); background: var(--mb-surface-2); }
+
+.mb-collect { display: flex; align-items: center; gap: 7px; }
+.mb-collect-n { font-size: 13px; color: var(--mb-mut); }
+.mb-icon-btn { width: 22px; height: 22px; border-radius: 6px;
+  display: grid; place-items: center; color: var(--mb-faint);
+  background: transparent; }
+.mb-icon-btn svg { width: 13px; height: 13px; }
+.mb-icon-btn:hover { color: var(--mb-fg); background: var(--mb-surface-2); }
+
+.mb-sort { position: relative; display: inline-flex; align-items: center; }
+.mb-sort select { appearance: none; height: 28px; padding: 0 26px 0 11px;
+  border: 1px solid var(--mb-line); border-radius: 7px;
+  background: var(--mb-surface); color: var(--mb-fg);
+  font: inherit; font-size: 13px; }
+.mb-sort select:focus { outline: none; border-color: #4a4a55; }
+.mb-sort-c { position: absolute; right: 7px; display: grid; place-items: center;
+  color: var(--mb-faint); pointer-events: none; }
+.mb-sort-c svg { width: 11px; height: 11px; }
+
+.mb-rows { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden;
+  padding: 0 8px 12px; scrollbar-width: thin;
+  scrollbar-color: #45454d transparent; }
+.mb-rows::-webkit-scrollbar { width: 9px; }
+.mb-rows::-webkit-scrollbar-thumb { background: #45454d; border-radius: 5px;
+  border: 3px solid transparent; background-clip: content-box; }
+
+.mb-group { margin: 14px 6px 5px; font-size: 13px; font-weight: 500;
+  letter-spacing: .05em; text-transform: uppercase; color: var(--mb-faint); }
+
+/* One row: artwork, two lines of text, marks and a date. Rows are
+   separated by a hairline rather than boxed, so the list reads as a list.
+   The rule is on the row itself and suppressed on the selected one, which
+   is what keeps the purple block clean at both edges. */
+.mb-row { position: relative; width: 100%; display: flex; align-items: center;
+  gap: 11px; min-height: 72px; padding: 12px 10px; border-radius: 10px;
+  text-align: left; color: inherit; background: transparent; }
+.mb-row + .mb-row::before { content: ""; position: absolute;
+  left: 61px; right: 10px; top: -1px; height: 1px; background: var(--mb-line-soft); }
+.mb-row:hover { background: #2a2a30; }
+.mb-row:hover::before, .mb-row:hover + .mb-row::before { background: transparent; }
+.mb-row.is-on { background: var(--mb-acc); }
+.mb-row.is-on::before, .mb-row.is-on + .mb-row::before { background: transparent; }
+.mb-row:focus-visible { outline: 2px solid var(--mb-acc-soft); outline-offset: -2px; }
+
+.mb-art { width: 40px; height: 40px; flex-shrink: 0; border-radius: 9px;
+  object-fit: cover; background: var(--mb-surface-2); }
+.mb-art-fb { display: grid; place-items: center;
+  font-size: 13px; font-weight: 650; letter-spacing: .02em;
+  color: hsl(var(--mono-h, 250) 55% 82%);
+  background: hsl(var(--mono-h, 250) 32% 26%);
+  border: 1px solid hsl(var(--mono-h, 250) 30% 34%); }
+
+.mb-row-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.mb-row-top { display: flex; align-items: center; gap: 5px; min-width: 0; }
+.mb-row-name { font-size: 14px; font-weight: 620; color: var(--mb-fg);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mb-row-desc { font-size: 13px; line-height: 1.35; color: var(--mb-mut);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mb-row.is-on .mb-row-name { color: #fff; }
+.mb-row.is-on .mb-row-desc { color: rgba(255, 255, 255, .82); }
+
+.mb-row-right { flex-shrink: 0; display: flex; flex-direction: column;
+  align-items: flex-end; gap: 6px; }
+.mb-row-when { font-size: 13px; color: var(--mb-faint); white-space: nowrap; }
+.mb-row.is-on .mb-row-when { color: rgba(255, 255, 255, .76); }
+
+.mb-verified { display: inline-grid; place-items: center; flex-shrink: 0;
+  color: #4c8ff0; }
+.mb-verified svg { width: 14px; height: 14px; }
+.mb-row.is-on .mb-verified { color: #cfd8ff; }
+
+/* Capability marks. Each keeps its own hue on the neutral ground and turns
+   to a light wash on the selected row, so they stay legible on purple
+   without becoming three identical white blobs. */
+.mb-caps { display: inline-flex; gap: 4px; }
+.mb-cap { display: grid; place-items: center; width: 21px; height: 21px;
+  border-radius: 6px; border: 1px solid transparent; }
+.mb-cap svg { width: 13px; height: 13px; }
+.mb-cap-vision { color: #d6a548; background: rgba(214, 165, 72, .12);
+  border-color: rgba(214, 165, 72, .26); }
+.mb-cap-toolUse { color: #5f9ede; background: rgba(95, 158, 222, .12);
+  border-color: rgba(95, 158, 222, .26); }
+.mb-cap-reasoning { color: #52b483; background: rgba(82, 180, 131, .12);
+  border-color: rgba(82, 180, 131, .26); }
+.mb-row.is-on .mb-cap { color: #fff; background: rgba(255, 255, 255, .17);
+  border-color: rgba(255, 255, 255, .24); }
+
+/* ----------------------------------------------------- detail pane -- */
+.mb-detail { min-width: 0; overflow-y: auto; overflow-x: hidden;
+  padding: 18px 22px 26px; scrollbar-width: thin;
+  scrollbar-color: #45454d transparent; }
+.mb-detail::-webkit-scrollbar { width: 9px; }
+.mb-detail::-webkit-scrollbar-thumb { background: #45454d; border-radius: 5px;
+  border: 3px solid transparent; background-clip: content-box; }
+
+.mb-dhead { display: flex; align-items: center; gap: 8px;
+  padding-right: 44px; min-width: 0; }
+.mb-title { margin: 0; font-size: 20px; line-height: 1.3; font-weight: 620;
+  color: var(--mb-fg); white-space: nowrap; overflow: hidden;
+  text-overflow: ellipsis; }
+
+.mb-substats { display: flex; align-items: center; gap: 10px;
+  margin: 10px 0 14px; flex-wrap: wrap; }
+.mb-stats { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.mb-stat { display: inline-flex; align-items: center; gap: 5px;
+  font-size: 13px; color: var(--mb-mut); }
+.mb-stat svg { width: 13px; height: 13px; color: var(--mb-faint); }
+.mb-stat.is-none { color: var(--mb-faint); font-style: italic; }
+.mb-badgerow { margin-left: auto; display: inline-flex; align-items: center; gap: 7px; }
+.mb-staff { display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 9px; border-radius: 7px; font-size: 13px; color: var(--mb-acc-soft);
+  background: rgba(109, 93, 240, .12); border: 1px solid rgba(109, 93, 240, .3); }
+.mb-staff svg { width: 12px; height: 12px; }
+.mb-staff.is-verified { color: #7fb1f5; background: rgba(76, 143, 240, .12);
+  border-color: rgba(76, 143, 240, .3); }
+.mb-staff .mb-verified { display: inline-grid; }
+
+/* A nested surface, one step lighter than the modal. */
+.mb-card { background: var(--mb-surface); border: 1px solid var(--mb-line-soft);
+  border-radius: 11px; padding: 14px 16px; }
+.mb-rule { height: 1px; background: var(--mb-line); margin: 12px -16px; }
+
+/* Two lines, then an ellipsis. The full text is in the README below, and a
+   summary that grows to five lines pushes the download options off the
+   first screen — which is the one thing the card is above. */
+.mb-lede { margin: 0; font-size: 14px; line-height: 1.5; color: var(--mb-lede);
+  display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2;
+  -webkit-box-orient: vertical; overflow: hidden; }
+.mb-lede.is-none { color: var(--mb-faint); font-style: italic; }
+
+.mb-meta { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.mb-meta-caps { margin-top: 12px; gap: 8px; }
+.mb-kv { display: inline-flex; align-items: center; gap: 7px; }
+.mb-kv-k { font-size: 13px; font-weight: 500; letter-spacing: .05em;
+  text-transform: uppercase; color: var(--mb-faint); }
+.mb-kv-v { display: inline-flex; align-items: center; gap: 5px;
+  font-size: 14px; font-weight: 650; color: var(--mb-fg); }
+.mb-kv-v.is-none { font-weight: 400; font-style: italic; color: var(--mb-faint); }
+
+.mb-pill { display: inline-flex; align-items: center; height: 22px; padding: 0 8px;
+  border-radius: 5px; font-size: 13px; font-weight: 600; letter-spacing: .02em;
+  color: var(--mb-fg); background: var(--mb-surface-2);
+  border: 1px solid var(--mb-line); }
+.mb-pill.is-fmt { color: #fff; background: var(--mb-acc); border-color: transparent; }
+.mb-pill.is-mut { color: var(--mb-mut); }
+
+/* Badges say all three capabilities, including the ones that are absent or
+   unknown, because the card is where a person decides if a model suits
+   them. The three states look different on purpose. */
+.mb-badge { display: inline-flex; align-items: center; gap: 6px;
+  height: 26px; padding: 0 10px; border-radius: 7px;
+  font-size: 13px; font-weight: 550; border: 1px solid transparent; }
+.mb-badge svg { width: 13px; height: 13px; }
+.mb-badge.is-yes.mb-badge-vision { color: #d6a548; background: rgba(214, 165, 72, .12);
+  border-color: rgba(214, 165, 72, .3); }
+.mb-badge.is-yes.mb-badge-toolUse { color: #5f9ede; background: rgba(95, 158, 222, .12);
+  border-color: rgba(95, 158, 222, .3); }
+.mb-badge.is-yes.mb-badge-reasoning { color: #52b483; background: rgba(82, 180, 131, .12);
+  border-color: rgba(82, 180, 131, .3); }
+.mb-badge.is-no { color: var(--mb-faint); background: transparent;
+  border-color: var(--mb-line); opacity: .7; }
+.mb-badge.is-no svg { opacity: .55; }
+.mb-badge.is-unknown { color: var(--mb-faint); background: transparent;
+  border-color: var(--mb-line); border-style: dashed; }
+
+/* ------------------------------------------------------- downloads -- */
+.mb-sec { margin-top: 20px; }
+.mb-h3 { margin: 0 0 10px; font-size: 16px; font-weight: 620; color: var(--mb-fg); }
+
+.mb-varrow { margin-bottom: 10px; }
+.mb-var { position: relative; display: block; }
+.mb-var-face { display: flex; align-items: center; gap: 9px;
+  height: 42px; padding: 0 12px; border-radius: 9px;
+  background: var(--mb-surface); border: 1px solid var(--mb-line);
+  pointer-events: none; }
+.mb-var-name { font-size: 13px; font-weight: 600; color: var(--mb-fg);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mb-var-size { font-size: 13px; color: var(--mb-mut); white-space: nowrap; }
+.mb-var-c { display: grid; place-items: center; color: var(--mb-faint); }
+.mb-var-c svg { width: 12px; height: 12px; }
+/* The real control sits over its own face: one element to click, one to
+   style, and no custom listbox to get the keyboard wrong. */
+.mb-var select { position: absolute; inset: 0; width: 100%; height: 100%;
+  opacity: 0; cursor: pointer; font: inherit; }
+.mb-var select:disabled { cursor: default; }
+.mb-var:focus-within .mb-var-face { border-color: var(--mb-acc-soft); }
+
+.mb-dlbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.mb-compat { display: inline-flex; align-items: center; gap: 6px;
+  height: 28px; padding: 0 11px; border-radius: 7px;
+  font-size: 13px; font-weight: 550; border: 1px solid transparent; }
+.mb-compat svg { width: 13px; height: 13px; }
+.mb-compat.is-good { color: #52b483; background: rgba(82, 180, 131, .1);
+  border-color: rgba(82, 180, 131, .3); }
+.mb-compat.is-ok { color: #5f9ede; background: rgba(95, 158, 222, .1);
+  border-color: rgba(95, 158, 222, .3); }
+.mb-compat.is-warn { color: #d6a548; background: rgba(214, 165, 72, .1);
+  border-color: rgba(214, 165, 72, .3); }
+.mb-compat.is-bad { color: #e0736b; background: rgba(224, 115, 107, .1);
+  border-color: rgba(224, 115, 107, .3); }
+.mb-compat.is-unknown { color: var(--mb-faint); border-color: var(--mb-line);
+  border-style: dashed; }
+
+.mb-btn { display: inline-flex; align-items: center; gap: 7px;
+  height: 34px; padding: 0 14px; border-radius: 9px;
+  font-size: 13px; font-weight: 600; color: var(--mb-fg);
+  background: var(--mb-surface-2); border: 1px solid var(--mb-line); }
+.mb-btn svg { width: 14px; height: 14px; }
+.mb-btn:hover:not(:disabled) { background: #35353d; }
+.mb-btn-p { color: #fff; background: var(--mb-acc); border-color: transparent; }
+.mb-btn-p:hover:not(:disabled) { background: #7d6ef4; }
+.mb-btn:disabled { opacity: .5; }
+.mb-btn-sz { font-weight: 500; opacity: .82; }
+.mb-btn:focus-visible { outline: 2px solid var(--mb-acc-soft); outline-offset: 2px; }
+
+.mb-dl-live { display: flex; align-items: center; gap: 10px; min-width: 260px; }
+.mb-prog { flex: 1; height: 6px; border-radius: 3px; background: #1b1b1e;
+  overflow: hidden; }
+.mb-prog i { display: block; height: 100%; background: var(--mb-acc);
+  transition: width .25s ease-out; }
+.mb-dl-pct { font-size: 13px; color: var(--mb-mut); white-space: nowrap; }
+.mb-dl-pct.is-bad { color: #e0736b; white-space: normal; }
+.mb-loaded { display: inline-flex; align-items: center; gap: 7px;
+  height: 34px; padding: 0 14px; border-radius: 9px; font-size: 13px;
+  font-weight: 600; color: #52b483; background: rgba(82, 180, 131, .1);
+  border: 1px solid rgba(82, 180, 131, .3); }
+.mb-loaded svg { width: 14px; height: 14px; }
+.mb-spin { width: 13px; height: 13px; border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, .35); border-top-color: #fff;
+  animation: mb-spin .7s linear infinite; }
+@keyframes mb-spin { to { transform: rotate(360deg); } }
+
+.mb-note { margin: 10px 0 0; font-size: 13px; line-height: 1.5;
+  color: var(--mb-faint); }
+
+/* ---------------------------------------------------------- readme -- */
+.mb-readme { padding: 18px 20px; }
+.mb-readme > :first-child { margin-top: 0; }
+.mb-readme > :last-child { margin-bottom: 0; }
+.mb-mdh { color: var(--mb-fg); font-weight: 640; line-height: 1.3;
+  margin: 22px 0 8px; }
+/* The renderer demotes headings by two, so that a README embedded under
+   this card's own <h3>README</h3> does not claim to be a document
+   heading. The sizes therefore hang off h3 and h4, which are what a
+   card's # and ## actually become -- targeting h1 and h2 styled nothing
+   at all and left every README heading at one flat size. */
+h3.mb-mdh { font-size: 21px; }
+h4.mb-mdh { font-size: 17px; }
+h5.mb-mdh, h6.mb-mdh { font-size: 15px; }
+h1.mb-mdh { font-size: 21px; }
+h2.mb-mdh { font-size: 17px; }
+.mb-p { margin: 0 0 11px; font-size: 14px; line-height: 1.5; color: #d9d9de; }
+.mb-ul { margin: 0 0 12px; padding-left: 20px; }
+.mb-ul li { margin-bottom: 7px; font-size: 14px; line-height: 1.5; color: #d9d9de; }
+.mb-readme strong { color: var(--mb-fg); font-weight: 620; }
+.mb-readme a { color: var(--mb-lede); text-decoration: underline;
+  text-underline-offset: 2px; }
+.mb-readme code { padding: 1px 5px; border-radius: 4px; font-size: 13px;
+  background: #1c1c20; border: 1px solid var(--mb-line);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.mb-code { margin: 0 0 12px; padding: 12px 14px; border-radius: 9px;
+  background: #1a1a1d; border: 1px solid var(--mb-line);
+  overflow-x: auto; font-size: 13px; line-height: 1.5; }
+.mb-code code { padding: 0; background: none; border: none; font-size: inherit; }
+.mb-readme .tablewrap { overflow-x: auto; margin: 0 0 12px; }
+.mb-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.mb-table th, .mb-table td { padding: 7px 10px; text-align: left;
+  border: 1px solid var(--mb-line); }
+.mb-table th { color: var(--mb-mut); font-weight: 600; background: #232327; }
+
+/* ----------------------------------------------------------- states -- */
+.mb-state { margin: 18px 6px; padding: 22px 18px; border-radius: 11px;
+  background: var(--mb-surface); border: 1px dashed var(--mb-line);
+  text-align: center; }
+.mb-state-t { margin: 0; font-size: 15px; font-weight: 600; color: var(--mb-fg); }
+.mb-state-b { margin: 7px 0 0; font-size: 13px; line-height: 1.5;
+  color: var(--mb-mut); }
+.mb-state .mb-btn { margin-top: 13px; }
+
+.mb-skel { display: block; border-radius: 6px; background: #2c2c32;
+  animation: mb-pulse 1.4s ease-in-out infinite; }
+.mb-skel-l { height: 11px; width: 72%; margin-bottom: 7px; }
+.mb-skel-s { height: 10px; width: 45%; }
+.mb-skel-title { height: 19px; width: 240px; }
+.mb-row.is-skel { pointer-events: none; }
+@keyframes mb-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .55; } }
+@media (prefers-reduced-motion: reduce) {
+  .mb-skel, .mb-spin { animation: none; }
+  .mb-prog i { transition: none; }
+}
+
+/* ------------------------------------------------------ responsive -- */
+/* Below about 900px the two panes stop fitting side by side. Rather than
+   squeeze both, the modal becomes list-then-detail: the list is the view,
+   and choosing a model swaps to the detail with a way back. */
+@media (max-width: 900px) {
+  .mb-modal { width: calc(100vw - 24px); height: calc(100vh - 24px);
+    min-height: 0; border-radius: 15px; }
+  .mb-panes { grid-template-columns: 1fr; }
+  .mb-div { display: none; }
+  .mb-panes[data-mb-view="list"] .mb-detail,
+  .mb-panes[data-mb-view="detail"] .mb-list { display: none; }
+  .mb-detail { padding: 18px 16px 24px; }
+  .mb-dhead { padding-right: 40px; }
+}
+/* There is deliberately no wide-screen override. The modal is capped at
+   1160px, so it never grows past it however large the display is, and a
+   rule pinning the list to a fixed width only broke the 40/60 ratio the
+   specification asks for -- 430px of 1160 is 37%. */
+
   

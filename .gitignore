@@ -26,3 +26,9 @@ desktop/src-tauri/binaries/
 # runtime/vendor/node-manifest.mjs, verified against the checksum nodejs.org
 # publishes. The manifest is committed; the payload is not.
 desktop/src-tauri/vendor/
+
+# The model browser's measurement page, produced by design/qa/model-preview.mjs
+# from live Hugging Face metadata. Regenerated rather than committed: it inlines
+# the stylesheet and a dozen publisher avatars, and it would go stale the moment
+# any of those repositories changed.
+public/_mbpreview.html
