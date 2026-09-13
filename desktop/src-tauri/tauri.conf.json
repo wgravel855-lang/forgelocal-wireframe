@@ -34,7 +34,8 @@
     ],
     "resources": {
       "../../runtime": "runtime",
-      "../../design/core": "design/core"
+      "../../design/core": "design/core",
+      "binaries/*": ""
     }
   }
 }
