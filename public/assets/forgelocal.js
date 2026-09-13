@@ -5518,6 +5518,16 @@ import {
     MM.recommended = {};
     paintModels();
 
+    /* Ask once, now, rather than waiting to be told. The page opened in
+       `loading` and only left it when a runtime announced itself, so with no
+       runtime it never left: the web preview showed five skeleton rows for
+       ever and a footer reading "You have 0 local models", which is a count
+       of a folder nothing has looked in. mmRefresh reports the honest
+       disconnected state when there is no host, and the real list when there
+       is, so the announcement below is a second opinion rather than the only
+       one. */
+    void mmRefresh();
+
     document.addEventListener("click", (e) => {
       const el = e.target instanceof Element ? e.target : null;
       if (!el) return;

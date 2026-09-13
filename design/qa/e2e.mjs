@@ -839,3 +839,22 @@ test("a menu opened from the rail is a menu, not a column of icons", () => {
   assert.match(css, /\.shell\.is-collapsed\s+\.sidebar\s+\.popover\s+\.srow[\s\S]{0,120}?justify-content:\s*flex-start/,
     "a menu's rows must not be centred like rail icons");
 });
+
+test("a page that opens in loading asks once, rather than waiting to be told", () => {
+  /* My Models opened in `loading` and left it only when the runtime announced
+     itself. With no runtime nothing announced, so the web preview showed five
+     skeleton rows for ever under a footer reading "You have 0 local models" —
+     a count of a folder nothing had looked in. The refresh has to be kicked at
+     mount, where it reports the honest disconnected state instead. */
+  const js = readFileSync(join(pub, "assets/forgelocal.js"), "utf8");
+  const fn = /function wireMyModels\(\)\s*\{([\s\S]*?)\n  \}/.exec(js);
+  assert.ok(fn, "wireMyModels is in the bundle");
+  assert.match(fn[1], /mmRefresh\(\)/,
+    "wireMyModels never asks for the list, so with no runtime the page never "
+    + "leaves its loading state");
+
+  /* And the state it reaches without a host says so in words. */
+  const css = readFileSync(join(pub, "core/mymodels.mjs"), "utf8");
+  assert.match(css, /The desktop app is not connected/,
+    "the disconnected state should name what is missing");
+});
