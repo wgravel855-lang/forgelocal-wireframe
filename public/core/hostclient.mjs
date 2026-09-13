@@ -46,6 +46,7 @@ export const Notify = Object.freeze({
   SESSION_REPLAYED: "session.replayed",
   MODEL_TEST_PROGRESS: "model.test.progress",
   MODEL_TESTED: "model.tested",
+  SESSION_TOOLS: "session.tools",
 });
 
 /** Is a desktop host present at all?
@@ -258,9 +259,12 @@ export function createHostClient({
       return request(Request.SESSION_DISPOSE, { sessionId: id }, 5000);
     },
 
-    /** @param {string} text @param {string} [mode] @param {string} [effort] @param {string} [style] */
-    startTurn(text, mode, effort, style) {
-      return request(Request.TURN_START, { text, mode, effort, style });
+    /**
+     * @param {string} text @param {string} [mode] @param {string} [effort]
+     * @param {string} [style] @param {string[]} [groups]
+     */
+    startTurn(text, mode, effort, style, groups) {
+      return request(Request.TURN_START, { text, mode, effort, style, groups });
     },
     cancelTurn() { return request(Request.TURN_CANCEL, {}, 5000); },
     resolvePermission(requestId, decision) {

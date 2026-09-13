@@ -2,7 +2,11 @@
 /**
  * The acceptance runs that need a real model and a real browser.
  *
- *   node runtime/acceptance.mjs [baseUrl] [model]
+ *   node runtime/acceptance.mjs [baseUrl] [model] [only]
+ *
+ * `only` names one scenario by number, because the browser one drives a real
+ * model through a real task and takes minutes: re-running the cheap checks to
+ * get to it wastes the slowest resource on the machine.
  *
  * These are not part of `npm run check`, on purpose. A gate that needs a model
  * loaded and a browser installed is a gate that gets skipped, and a skipped
@@ -28,8 +32,15 @@ import { findBrowserBinary } from "./core/browser/session.mjs";
 const here = dirname(fileURLToPath(import.meta.url));
 const SIDECAR = join(here, "host", "sidecar.mjs");
 
-const baseUrl = process.argv[2] ?? "http://127.0.0.1:1234/v1";
-const wantedModel = process.argv[3] ?? null;
+/* `||`, not `??`: an argument can be present and empty, and `?? null` keeps
+   an empty string. Passing "" for the model once selected the empty model,
+   connected with none, and every later step failed with a timeout that named
+   nothing. */
+const baseUrl = process.argv[2] || "http://127.0.0.1:1234/v1";
+const wantedModel = process.argv[3] || null;
+const only = process.argv[4] || null;
+/** @param {string} n */
+const wants = (n) => !only || only === n;
 
 /* ------------------------------------------------------------- plumbing */
 
@@ -197,13 +208,40 @@ async function localUiBug(model) {
     await s.wait((f) => f.type === Notify.RUNTIME_STATE);
     s.send(Request.PROVIDER_CONNECT, { baseUrl, model });
     const conn = await s.wait((f) => f.type === Notify.PROVIDER_STATE && f.id);
-    if (!conn.payload.connected) {
-      fail("connect to the model server", conn.payload.error?.message);
+    if (!conn.payload.connected || !conn.payload.model) {
+      fail("connect to the model server",
+        conn.payload.error?.message ?? `connected with model ${JSON.stringify(conn.payload.model)}`);
+      return;
+    }
+
+    /* Browsing is only offered for a model the suite has graded, so the
+       scenario has to earn that first. This is the product's own flow, not a
+       harness convenience: skipping it here would mean testing a path the
+       app does not have. It costs ten real model turns. */
+    console.log("        grading the model first (browsing is gated on it)...");
+    const gradedAt = Date.now();
+    const mid = s.send(Request.MODEL_TEST, {});
+    const tested = await s.wait((f) => f.type === Notify.MODEL_TESTED && f.id === mid);
+    const grade = tested.payload.profile?.agentGrade;
+    console.log(`        graded "${grade}" in ${Math.round((Date.now() - gradedAt) / 1000)}s`);
+    if (!tested.payload.agentReady) {
+      /* Not a harness failure and not a product failure: this model cannot be
+         given a browser, and saying so is the correct outcome. */
+      fail("the model is graded well enough to be given a browser",
+        `graded ${grade}: ${tested.payload.reason}`);
       return;
     }
 
     const cid = s.send(Request.SESSION_CREATE, { root: base, mode: "allow_edits" });
-    const created = await s.wait((f) => f.type === Notify.SESSION_CREATED && f.id === cid);
+    /* Either answer, not just the happy one. A refusal carries the same id,
+       so waiting only for session.created turned "connect a model first"
+       into a ten-minute timeout with the reason unread in the frame list. */
+    const created = await s.wait((f) => f.id === cid
+      && (f.type === Notify.SESSION_CREATED || f.type === Notify.TURN_FAILED));
+    if (created.type === Notify.TURN_FAILED) {
+      fail("open a session on the project", created.payload.message);
+      return;
+    }
     const sessionId = created.payload.sessionId;
     stopApproving = s.autoApprove(asked);
 
@@ -216,6 +254,10 @@ async function localUiBug(model) {
         + "reload the page and confirm the console error is gone.",
       mode: "allow_edits",
       effort: "thorough",
+      /* Without this the session has no browser tools at all and the agent
+         cannot open anything — which is exactly what the first run of this
+         scenario found, and why the opt-in now exists. */
+      groups: ["read", "edit", "command", "plan", "browser"],
     }, sessionId);
 
     const done = await s.wait((f) =>
@@ -250,20 +292,22 @@ async function localUiBug(model) {
       "app.js was actually changed on disk",
       patched.length ? `${patched.length} file_changed event(s)` : "no file_changed event");
 
-    /* The check that matters, and it is not the model's word for it: load the
-       patched module and compute the total. A transcript saying "fixed" is not
-       evidence that anything was fixed. */
-    let computed = null;
-    let loadError = null;
-    try {
-      const mod = await import(`file://${join(base, "app.js")}?v=${Date.now()}`);
-      computed = mod.total([{ name: "a", price: "5" }, { name: "b", price: "10" }]);
-    } catch (/** @type {any} */ e) {
-      loadError = e && e.message ? e.message : String(e);
-    }
-    check(computed === 15,
-      "the patched total() really returns 15",
-      loadError ? `the module would not load: ${loadError}` : `total(...) === ${JSON.stringify(computed)}`);
+    /* The check that matters, and it is not the model's word for it: open the
+       page in a browser this harness controls and read what it renders.
+
+       The first version of this imported app.js and called the exported
+       function. That could never have passed: app.js touches `document` at
+       module scope, so importing it in Node throws before the export is
+       reachable — the check reported "the module would not load" whatever the
+       agent had done. Loading the page is also the better question, because
+       it is the page that was broken. */
+    const proof = await verifyInBrowser(site.url);
+    check(proof.total === "15",
+      "the page now renders the right total",
+      `the page shows "${proof.total}"`);
+    check(proof.errors.length === 0,
+      "the page's console error is gone",
+      proof.errors.length ? proof.errors[0] : "no console errors on load");
 
     check(done.payload.stop_reason === "final" || done.payload.disposed,
       "the turn ended by answering rather than at a limit",
@@ -279,6 +323,39 @@ async function localUiBug(model) {
     await site.close();
     rmSync(base, { recursive: true, force: true });
     rmSync(stateDir, { recursive: true, force: true });
+  }
+}
+
+/**
+ * Load the page and report what it actually renders.
+ *
+ * A separate, throwaway browser session, deliberately: the agent's session
+ * has been clicking around and reloading, and checking a fix in the state the
+ * agent left behind is checking the agent's memory rather than the page.
+ *
+ * @param {string} url
+ */
+async function verifyInBrowser(url) {
+  const { createBrowserSession } = await import("./core/browser/session.mjs");
+  /** @type {string[]} */
+  const errors = [];
+  const b = await createBrowserSession({
+    emit: (type, payload) => {
+      if (type === "browser_finding" && payload.kind === "console" && payload.level === "error") {
+        errors.push(String(payload.text));
+      }
+    },
+    downloadDir: mkdtempSync(join(tmpdir(), "fl-verify-")),
+    previews: false,
+  });
+  try {
+    await b.navigate(url);
+    await b.waitFor({ ms: 600 });
+    const text = await b.readText();
+    const m = text.text.match(/Total:\s*(\S+)/);
+    return { total: m ? m[1] : "(not found)", errors, text: text.text };
+  } finally {
+    await b.close();
   }
 }
 
@@ -344,16 +421,16 @@ if (!probe || !probe.data || !probe.data.length) {
   console.error(`No model server at ${baseUrl}. Start LM Studio, or pass a base URL.`);
   process.exit(2);
 }
-const model = wantedModel ?? probe.data[0].id;
+const model = wantedModel || probe.data[0].id;
 
 console.log(`model:   ${model}`);
 console.log(`server:  ${baseUrl}`);
 console.log(`browser: ${findBrowserBinary() ?? "NOT FOUND"}`);
 
-await webPreviewHonesty();
+if (wants("23")) await webPreviewHonesty();
 if (findBrowserBinary()) {
-  await isolation();
-  await localUiBug(model);
+  if (wants("16")) await isolation();
+  if (wants("22")) await localUiBug(model);
 } else {
   console.log("\nSkipping the browser scenarios: no Chromium-family browser found.\n");
 }

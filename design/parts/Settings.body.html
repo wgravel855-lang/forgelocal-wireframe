@@ -32,6 +32,7 @@
         <p class="setnav-g seclabel">Agents</p>
         <a class="setnav-r" href="#models" data-set-nav="models">Models & runtime</a>
         <a class="setnav-r" href="#answers" data-set-nav="answers">Answers</a>
+        <a class="setnav-r" href="#tools" data-set-nav="tools">Tools</a>
         <a class="setnav-r" href="#permissions" data-set-nav="permissions">Permissions</a>
         <p class="setnav-g seclabel">System</p>
         <a class="setnav-r" href="#privacy" data-set-nav="privacy">Privacy & diagnostics</a>
@@ -109,6 +110,22 @@
               or what counts as proof that something ran.</p>
             <div class="setopts" data-style-chooser><!--OUTPUT_STYLES--></div>
             <p class="set-d" data-style-state>Applies from your next message.</p>
+          </section>
+
+          <!-- What kinds of tool a session may use.
+
+               The four base groups are listed and not switchable: reading,
+               editing, running commands and planning are what an agent is,
+               and a toggle that removed reading would leave a loop with
+               nothing to reason from. The two optional ones are toggles, and
+               the runtime decides whether to honour them — a request over
+               the pipe is not a grant. -->
+          <section class="setsec" id="tools">
+            <h1 class="h1" style="font-size:20px">Tools</h1>
+            <p class="set-lede">What a session is allowed to reach for. Turning something on
+              here does not skip its approvals: commands still ask, and every website is
+              approved separately.</p>
+            <div data-tool-groups></div>
           </section>
 
           <!-- Every "always allow" made in a permission prompt lands here, with

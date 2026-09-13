@@ -380,6 +380,14 @@
       background 160ms ease-out; }
     .switch[aria-checked="true"]::before { background: var(--acc); border-color: var(--acc); }
     .switch[aria-checked="true"] > span { transform: translateX(18px); background: #fff; }
+    /* A switch that cannot be moved has to look like one. Without this the
+       browser toggle — unavailable until the model is graded — was pixel for
+       pixel the enabled one, so the only signal was a cursor you get after
+       trying and a sentence beside it that is easy to miss. */
+    .switch:disabled, .switch[aria-disabled="true"] { cursor: not-allowed; }
+    .switch:disabled::before, .switch[aria-disabled="true"]::before {
+      background: var(--dis-bg); border-color: var(--dis-bd); border-style: dashed; }
+    .switch:disabled > span, .switch[aria-disabled="true"] > span { background: var(--dis-icon); }
     @media (max-width: 860px) {
       .setwrap { flex-direction: column; }
       .setnav { width: auto; position: static; display: flex; gap: 4px; overflow-x: auto;

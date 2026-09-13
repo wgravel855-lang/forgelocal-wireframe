@@ -585,3 +585,120 @@ test("testing a model before connecting one is refused", async () => {
   assert.equal(f.payload.code, ErrorCode.PROVIDER);
   await s.stop();
 });
+
+/* ------------------------------------------- asking for tools, and being told no */
+
+test("a browser the model has not earned is refused, and the refusal is reported", async () => {
+  /* The gate is server-side on purpose. The renderer asks; the sidecar
+     decides. A renderer that has been tampered with — or simply one version
+     out of date — must not be able to hand an ungraded model a browser. */
+  const base = repo();
+  const stateDir = mkdtempSync(join(tmpdir(), "fl-gate-"));
+  const server = await startFakeModelServer({ turns: [{ text: "Nothing to do." }] });
+
+  const s = start({ stateDir });
+  await s.wait((f) => f.type === Notify.RUNTIME_STATE);
+  s.send(Request.PROVIDER_CONNECT, { baseUrl: server.baseUrl, model: server.model });
+  const conn = await s.wait((f) => f.type === Notify.PROVIDER_STATE && f.payload.connected);
+  assert.equal(conn.payload.profile.agentGrade, "untested");
+
+  const cid = s.send(Request.SESSION_CREATE, { root: base, mode: "allow_edits" });
+  const created = await s.wait((f) => f.type === Notify.SESSION_CREATED && f.id === cid);
+  const sessionId = created.payload.sessionId;
+
+  const tid = s.send(Request.TURN_START, {
+    text: "hello", groups: ["read", "edit", "command", "plan", "web", "browser"],
+  }, sessionId);
+
+  const told = await s.wait((f) => f.type === Notify.SESSION_TOOLS && f.id === tid);
+  assert.deepEqual(told.payload.denied, ["browser"],
+    `denied: ${JSON.stringify(told.payload.denied)}`);
+  assert.ok(!told.payload.groups.includes("browser"),
+    "an untested model was given a browser");
+  // Web is a different bar and is not refused with it.
+  assert.ok(told.payload.groups.includes("web"));
+  assert.match(told.payload.reason, /graded/);
+
+  await s.wait((f) => f.type === Notify.TURN_COMPLETED && f.sessionId === sessionId);
+
+  /* And the model was never offered the tools it was not granted. */
+  const sent = server.requests[server.requests.length - 1];
+  const offered = (sent.tools ?? []).map((t) => t.function.name);
+  assert.ok(!offered.some((n) => n.startsWith("browser_")),
+    `browser tools reached the model: ${offered.filter((n) => n.startsWith("browser_"))}`);
+  assert.ok(offered.includes("web_fetch"), `web_fetch was not offered: ${offered}`);
+
+  await s.stop();
+  await server.close();
+  clean(base);
+  rmSync(stateDir, { recursive: true, force: true });
+});
+
+test("a graded model really is given the browser tools it asked for", async () => {
+  // The other half. A gate that refuses everything is not a gate.
+  const base = repo();
+  const stateDir = mkdtempSync(join(tmpdir(), "fl-gate-ok-"));
+  const server = await startFakeModelServer({ turns: GOOD_TURNS.concat([{ text: "ok" }]) });
+
+  const s = start({ stateDir });
+  await s.wait((f) => f.type === Notify.RUNTIME_STATE);
+  s.send(Request.PROVIDER_CONNECT, { baseUrl: server.baseUrl, model: server.model });
+  await s.wait((f) => f.type === Notify.PROVIDER_STATE && f.payload.connected);
+
+  // Earn the grade.
+  const mid = s.send(Request.MODEL_TEST, {});
+  const tested = await s.wait((f) => f.type === Notify.MODEL_TESTED && f.id === mid, 60000);
+  assert.equal(tested.payload.profile.agentGrade, "ready", tested.payload.reason);
+
+  const cid = s.send(Request.SESSION_CREATE, { root: base, mode: "allow_edits" });
+  const created = await s.wait((f) => f.type === Notify.SESSION_CREATED && f.id === cid);
+  const sessionId = created.payload.sessionId;
+
+  const before = s.frames.filter((f) => f.type === Notify.SESSION_TOOLS).length;
+  s.send(Request.TURN_START, {
+    text: "hello", groups: ["read", "edit", "command", "plan", "browser"],
+  }, sessionId);
+  await s.wait((f) => f.type === Notify.TURN_COMPLETED && f.sessionId === sessionId);
+
+  assert.equal(s.frames.filter((f) => f.type === Notify.SESSION_TOOLS).length, before,
+    "a graded model was told something had been refused");
+
+  const sent = server.requests[server.requests.length - 1];
+  const offered = (sent.tools ?? []).map((t) => t.function.name);
+  assert.ok(offered.includes("browser_open"), `browser_open was not offered: ${offered}`);
+  assert.ok(offered.includes("browser_snapshot"));
+
+  await s.stop();
+  await server.close();
+  clean(base);
+  rmSync(stateDir, { recursive: true, force: true });
+});
+
+test("a group nobody has heard of is dropped rather than passed through", async () => {
+  const base = repo();
+  const stateDir = mkdtempSync(join(tmpdir(), "fl-gate-junk-"));
+  const server = await startFakeModelServer({ turns: [{ text: "ok" }] });
+
+  const s = start({ stateDir });
+  await s.wait((f) => f.type === Notify.RUNTIME_STATE);
+  s.send(Request.PROVIDER_CONNECT, { baseUrl: server.baseUrl, model: server.model });
+  await s.wait((f) => f.type === Notify.PROVIDER_STATE && f.payload.connected);
+  const cid = s.send(Request.SESSION_CREATE, { root: base, mode: "allow_edits" });
+  const created = await s.wait((f) => f.type === Notify.SESSION_CREATED && f.id === cid);
+  const sessionId = created.payload.sessionId;
+
+  s.send(Request.TURN_START, { text: "hello", groups: ["read", "__proto__", "sudo"] }, sessionId);
+  await s.wait((f) => f.type === Notify.TURN_COMPLETED && f.sessionId === sessionId);
+
+  const sent = server.requests[server.requests.length - 1];
+  const offered = (sent.tools ?? []).map((t) => t.function.name);
+  // The base four survived and nothing strange appeared.
+  assert.ok(offered.includes("read_file"));
+  assert.ok(offered.includes("apply_patch"));
+  assert.ok(!offered.some((n) => /proto|sudo/.test(n)));
+
+  await s.stop();
+  await server.close();
+  clean(base);
+  rmSync(stateDir, { recursive: true, force: true });
+});

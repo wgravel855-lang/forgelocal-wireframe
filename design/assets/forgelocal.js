@@ -36,6 +36,7 @@ import { initialState as initialRunView, reduceAgentEvent as reduceAgent } from 
 import { browserPanelBody, browserPanelHeader, VIEWPORTS } from "../core/browserpanel.mjs";
 import { normalizeStyle, styleLabel, OutputStyle } from "../core/styles.mjs";
 import { capabilityBlock, agentAllowed, gradeOf, GRADE_COPY } from "../core/capabilityview.mjs";
+import { toolGroupsHtml, requestedGroups, OPTIONAL_GROUPS, GROUP_COPY } from "../core/toolgroups.mjs";
 import { catalogViewState, localViewState, showsRows, showsDetail, stateBlockHtml } from "../core/viewstate.mjs";
 import {
   detectEnvironment, initialRuntime, reduceRuntime, isConnected,
@@ -1044,8 +1045,49 @@ import {
     });
   }
 
+  /**
+   * The tool-group setting.
+   *
+   * Stored, and sent with the next turn — the same shape as the output style
+   * and for the same reason. What the runtime actually grants is its own
+   * decision: browsing is refused for a model the suite has not graded, and
+   * the block below says so beside the control rather than showing a switch
+   * that silently does nothing.
+   */
+  function paintToolGroups() {
+    const host = $("[data-tool-groups]");
+    if (!host) return;
+    const p = LIVE.client ? LIVE.client.provider : null;
+    const profile = LIVE.profile ?? (p && p.profile) ?? null;
+    host.innerHTML = toolGroupsHtml(enabledGroups(), profile);
+  }
+
+  /** What the person has turned on, from storage. */
+  function enabledGroups() {
+    const raw = store.get("tool-groups", null);
+    return Array.isArray(raw) ? raw.filter((g) => OPTIONAL_GROUPS.includes(g)) : [];
+  }
+
+  function wireToolGroups() {
+    const host = $("[data-tool-groups]");
+    if (!host) return;
+    host.addEventListener("click", (e) => {
+      const b = e.target instanceof Element ? e.target.closest("[data-tool-group]") : null;
+      if (!b || b.disabled) return;
+      const id = b.getAttribute("data-tool-group");
+      const on = b.getAttribute("aria-checked") !== "true";
+      const next = new Set(enabledGroups());
+      if (on) next.add(id); else next.delete(id);
+      store.set("tool-groups", [...next]);
+      b.setAttribute("aria-checked", String(on));
+      announce(`${GROUP_COPY[id].label} ${on ? "on" : "off"} from your next message.`);
+    });
+    paintToolGroups();
+  }
+
   function wireSettings() {
     wireOutputStyle();
+    wireToolGroups();
     $$(".switch").forEach((b) => {
       const key = "switch:" + (b.getAttribute("aria-label") || "");
       // Each state carries its own sentence, because swapping only the leading
@@ -4294,7 +4336,7 @@ import {
       onRuntimeState: () => paintLiveComposer(),
       onProviderState: (p) => {
         LIVE.profile = p.profile ?? null;
-        paintLiveModels(p); paintLiveComposer(); paintCapability();
+        paintLiveModels(p); paintLiveComposer(); paintCapability(); paintToolGroups();
       },
       onAgentEvent: (event) => {
         LIVE.view = reduceRunSafe(LIVE.view, event);
@@ -4308,6 +4350,7 @@ import {
           : null;
         if (type === "model.tested") LIVE.profile = payload.profile ?? null;
         paintCapability();
+        paintToolGroups();
       },
       onLog: (line) => console.debug("[runtime]", line),
     });
@@ -4700,7 +4743,12 @@ import {
           String(store.get("data-effort", "Standard")).toLowerCase(),
           /* The style travels with the turn, so the setting the person can
              see and the one the model was given cannot disagree. */
-          normalizeStyle(store.get("output-style", OutputStyle.ADAPTIVE)));
+          normalizeStyle(store.get("output-style", OutputStyle.ADAPTIVE)),
+          /* Filtered by the same rule the settings page shows, so a stored
+             preference from a session with a graded model cannot silently
+             carry into one without. The runtime filters it again. */
+          requestedGroups(enabledGroups(),
+            LIVE.profile ?? (LIVE.client ? LIVE.client.provider.profile : null)));
       } catch (err) {
         showLiveError(err);
       } finally {

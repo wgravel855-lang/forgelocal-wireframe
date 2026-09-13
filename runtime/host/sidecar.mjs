@@ -19,7 +19,7 @@ import { randomUUID } from "node:crypto";
 import { join } from "node:path";
 import { canonicalRoot, PathEscape } from "../core/paths.mjs";
 import { createOrchestrator, StopReason } from "../core/orchestrator.mjs";
-import { DEFAULT_GROUPS } from "../core/tools/index.mjs";
+import { DEFAULT_GROUPS, ToolGroup } from "../core/tools/index.mjs";
 import { createOpenAIProvider } from "../core/providers/openai.mjs";
 import { ProviderFailure } from "../core/providers/types.mjs";
 import { normalizeMode, MODE_COPY } from "../core/permissions.mjs";
@@ -27,7 +27,7 @@ import { classifyCommand, Danger } from "../core/danger.mjs";
 import { openStore, defaultStoreDir, SessionStatus } from "../core/store.mjs";
 import { openProfiles } from "../core/profiles.mjs";
 import { runConformance, agentAllowed } from "../core/conformance.mjs";
-import { emptyProfile, AgentGrade } from "../core/capability.mjs";
+import { emptyProfile, AgentGrade, browserModeFor } from "../core/capability.mjs";
 import { summarise, renderSummary } from "../core/compact.mjs";
 import {
   PROTOCOL_VERSION, Request, Notify, ErrorCode,
@@ -90,6 +90,43 @@ try {
 /** The run in flight, so a second request is refused rather than interleaved. */
 /** @type {AbortController|null} */
 let testing = null;
+
+/**
+ * Which tool groups a session may actually have.
+ *
+ * The renderer asks; this decides. A request arriving over the pipe is not a
+ * grant, and putting the rule here rather than in the interface means a
+ * renderer that has been tampered with — or simply one version out of date —
+ * cannot turn on a capability the model has not earned.
+ *
+ * Three rules, in order of how much they take away:
+ *
+ *   - a model GRADED chat-only gets nothing. We know it cannot drive tools,
+ *     and handing it a set it will mishandle produces a loop the user has to
+ *     unpick. Conversation still works.
+ *   - browsing needs a model the suite has graded. browserModeFor returns
+ *     null for untested and for chat-only, and that is the gate. It is the
+ *     most consequential surface the agent has, and "we have not checked" is
+ *     not a good enough basis for handing it over.
+ *   - anything else the caller asked for that is a real group is allowed, and
+ *     the base four are always present: a loop that cannot read has nothing
+ *     to reason from.
+ *
+ * @param {readonly string[]} requested @param {any} profile
+ * @returns {string[]}
+ */
+function allowedGroups(requested, profile) {
+  if (profile && profile.agentGrade === AgentGrade.CHAT_ONLY) return [];
+
+  const known = new Set(Object.values(ToolGroup));
+  const want = new Set([
+    ...DEFAULT_GROUPS,
+    ...(Array.isArray(requested) ? requested : []).filter((g) => known.has(g)),
+  ]);
+
+  if (!browserModeFor(profile ?? emptyProfile())) want.delete(ToolGroup.BROWSER);
+  return [...want];
+}
 
 /** Record an event, never at the cost of delivering it. */
 function persist(sessionId, event) {
@@ -283,9 +320,7 @@ function build(model, sessionId, root, mode, restored) {
    * for a model the suite has actually graded — browserModeFor returns null
    * for untested and chat-only, which is what gates it.
    */
-  const groups = profile && profile.agentGrade === AgentGrade.CHAT_ONLY
-    ? []
-    : DEFAULT_GROUPS;
+  const groups = allowedGroups(DEFAULT_GROUPS, profile);
 
   state.agent = createOrchestrator({
     root, provider: model, mode, sessionId, restored, capabilities: profile, groups,
@@ -537,6 +572,24 @@ async function turnStart(id, sessionId, payload) {
      and the one the model was given disagree. */
   if (payload.style) {
     s.style = s.agent.setStyle(payload.style);
+  }
+  /* Which tool groups this turn may use, for the same reason — and filtered
+     through allowedGroups, because the request comes from the renderer and a
+     request is not a grant. What the session actually got is reported back so
+     the interface can show a toggle that was asked for and refused rather
+     than leaving it looking enabled. */
+  if (Array.isArray(payload.groups)) {
+    const profile = profiles && provider
+      ? profiles.get(provider.info.baseUrl, provider.info.model)
+      : null;
+    s.groups = s.agent.setGroups(allowedGroups(payload.groups, profile));
+    const denied = payload.groups.filter((g) => !s.groups.includes(g));
+    if (denied.length) {
+      send(notify(Notify.SESSION_TOOLS, {
+        groups: s.groups, denied,
+        reason: "Browsing is only offered for a model the conformance suite has graded.",
+      }, { id, sessionId }));
+    }
   }
   s.running = true;
   try {

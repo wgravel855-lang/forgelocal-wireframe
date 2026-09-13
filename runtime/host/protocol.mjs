@@ -67,6 +67,9 @@ export const Notify = Object.freeze({
      than from a grade at the end. */
   MODEL_TEST_PROGRESS: "model.test.progress",
   MODEL_TESTED: "model.tested",
+  /* Sent only when a session got fewer tool groups than it asked for, so a
+     toggle the runtime refused does not sit there looking enabled. */
+  SESSION_TOOLS: "session.tools",
 });
 
 export const REQUEST_TYPES = Object.freeze(Object.values(Request));
