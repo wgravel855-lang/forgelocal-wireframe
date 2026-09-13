@@ -822,8 +822,16 @@ import {
         </div>
 
         <footer class="loader-f">
+          <!-- What this button does, said accurately.
+
+               It used to read "These parameters are sent to the local runtime
+               when you load." They are not: no request carries them, and the
+               values above are computed from a fixed machine profile rather
+               than from this computer. Loading a model with a given context
+               size or KV cache type is done in the model server; ForgeLocal
+               chooses between the models that server already has. -->
           <p class="loader-why">${connected
-    ? "These parameters are sent to the local runtime when you load."
+    ? "Points ForgeLocal at this model on the connected server. How a model is loaded — context size, cache, layers — is set in the model server itself."
     : "Loading a model needs the desktop app, which is not released yet. Nothing here can load one."}</p>
           <span class="grow"></span>
           ${connected
@@ -918,13 +926,39 @@ import {
       toast("Reset to the recommended parameters for this model.");
     });
 
-    // Only rendered when a runtime is connected, so the request has somewhere
-    // to go. A model becomes loaded when the adapter reports it, never here.
+    /* Select this model on the connected server.
+     *
+     * This used to dispatch two local events and close. `model.load.requested`
+     * is a documented no-op — "requesting is not loading" — and nothing ever
+     * dispatched the `runtime.model.loaded` that would have answered it, so
+     * the button's entire effect was to close the dialog and leave the runtime
+     * state stuck on "loading" for the rest of the session. Nothing was ever
+     * sent to the sidecar.
+     *
+     * What it does now is the one thing the runtime can actually do, and it is
+     * the same call the composer's model picker makes: point the provider at
+     * this model. The state still comes from the adapter's answer rather than
+     * from the click — connectProviderTracked marks the request in flight and
+     * the provider.state frame resolves it — so the rule that a model is
+     * loaded only when the adapter says so is kept.
+     */
     const load = $("[data-loader-load]", host);
-    if (load) load.addEventListener("click", () => {
-      dispatchModel({ type: "model.load.requested", modelId: LOADER.modelId, params: current() });
-      dispatchRuntime({ type: "runtime.model.loading", modelId: LOADER.modelId });
+    if (load) load.addEventListener("click", async () => {
+      const id = LOADER.modelId;
       closeLoader();
+      if (!LIVE.client) {
+        announce("No runtime is connected, so no model can be selected.");
+        return;
+      }
+      try {
+        await connectProviderTracked(store.get("provider-url", "http://127.0.0.1:1234/v1"), id);
+        // A model change means a new session against the same project.
+        if (LIVE.project) await openProject(LIVE.project.path);
+      } catch (e) {
+        // MODEL_MISSING carries the models the server does have, which is the
+        // useful half of "that one is not loaded".
+        showLiveError(e);
+      }
     });
   }
 
