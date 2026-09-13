@@ -14,3 +14,9 @@ Thumbs.db
 public/qa-audit.js
 desktop/src-tauri/target/
 desktop/src-tauri/gen/
+
+# The inference engine binary, fetched by scripts/fetch-engine.mjs. Hundreds of
+# megabytes per acceleration build, so it is provisioned rather than committed.
+# Model weights are never here either; they live in the user's model folder.
+desktop/src-tauri/binaries/
+.forgelocal/engine-cache/

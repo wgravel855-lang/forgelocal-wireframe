@@ -13,6 +13,10 @@ tauri = { version = "2", features = [] }
 tauri-plugin-dialog = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+# The session token for the engine. A token from a clock and a pointer is
+# guessable by anything that can read a clock; this is the OS entropy source
+# and nothing more.
+getrandom = "0.2"
 
 [profile.dev]
 incremental = true

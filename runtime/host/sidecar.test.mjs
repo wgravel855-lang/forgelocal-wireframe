@@ -702,3 +702,132 @@ test("a group nobody has heard of is dropped rather than passed through", async 
   clean(base);
   rmSync(stateDir, { recursive: true, force: true });
 });
+
+/* --------------------------------------------- ForgeLocal's own engine ---- */
+
+test("the engine's token never appears in anything the renderer receives", async () => {
+  /* The claim this whole arrangement rests on. The host tells the runtime
+     where the engine is and what token opens it; the renderer is told only
+     that one exists. A token that reached the WebView would be a token in
+     whatever that WebView could be talked into fetching, and the endpoint it
+     opens is a local port with no other protection. */
+  const stateDir = mkdtempSync(join(tmpdir(), "fl-engine-"));
+  const server = await startFakeModelServer({ turns: [{ text: "ok" }] });
+  const SECRET = "b9f1c0de".repeat(8);
+
+  const s = start({ stateDir });
+  await s.wait((f) => f.type === Notify.RUNTIME_STATE);
+
+  // Exactly what the Rust host writes, straight onto the pipe.
+  const aid = s.send(Request.ENGINE_ATTACHED, {
+    baseUrl: server.baseUrl.replace(/^http:\/\/[^/]+/, "http://127.0.0.1:1"),
+    apiKey: SECRET,
+  });
+  const ready = await s.wait((f) => f.type === Notify.ENGINE_READY && f.id === aid);
+  assert.equal(ready.payload.available, true);
+  assert.ok(!("apiKey" in ready.payload), "the ready notice carried the token");
+  assert.ok(!("baseUrl" in ready.payload), "the ready notice carried the endpoint");
+
+  // Every frame the renderer has seen, searched for the secret.
+  const everything = JSON.stringify(s.frames);
+  assert.ok(!everything.includes(SECRET),
+    "the engine's session token reached the renderer");
+
+  await s.stop();
+  await server.close();
+  rmSync(stateDir, { recursive: true, force: true });
+});
+
+test("a malformed engine endpoint is refused even though only the host can send one", async () => {
+  /* The host is trusted; a bug in the host is not. A non-loopback address
+     here would send every prompt somewhere unintended, so it is checked on
+     arrival rather than assumed correct because of where it came from. */
+  const s = start();
+  await s.wait((f) => f.type === Notify.RUNTIME_STATE);
+
+  for (const bad of [
+    { baseUrl: "http://evil.example.com/v1", apiKey: "x" },
+    { baseUrl: "http://127.0.0.1:8080", apiKey: "x" },
+    { baseUrl: "http://127.0.0.1:8080/v1", apiKey: "" },
+    { baseUrl: "https://127.0.0.1:8080/v1", apiKey: "x" },
+    { baseUrl: "http://127.0.0.2:8080/v1", apiKey: "x" },
+  ]) {
+    const id = s.send(Request.ENGINE_ATTACHED, bad);
+    const f = await s.wait((x) => x.id === id);
+    assert.equal(f.type, Notify.TURN_FAILED, `accepted ${JSON.stringify(bad)}`);
+    assert.equal(f.payload.code, ErrorCode.BAD_ARGUMENT);
+  }
+  await s.stop();
+});
+
+test("connecting to the internal engine before it exists says so, and names the fix", async () => {
+  const s = start();
+  await s.wait((f) => f.type === Notify.RUNTIME_STATE);
+
+  const id = s.send(Request.PROVIDER_CONNECT, { source: "internal", model: "anything" });
+  const f = await s.wait((x) => x.type === Notify.PROVIDER_STATE && x.id === id);
+  assert.equal(f.payload.connected, false);
+  assert.equal(f.payload.error.code, "engine_not_running");
+  assert.match(f.payload.error.message, /Load a model/);
+  await s.stop();
+});
+
+test("the internal engine's address is not reported to the renderer", async () => {
+  /* It carries no secret on its own, but it is one half of an authenticated
+     pair and the interface has no use for it. */
+  const stateDir = mkdtempSync(join(tmpdir(), "fl-engine-url-"));
+  const server = await startFakeModelServer({ turns: [{ text: "ok" }] });
+  const s = start({ stateDir });
+  await s.wait((f) => f.type === Notify.RUNTIME_STATE);
+
+  s.send(Request.ENGINE_ATTACHED, { baseUrl: server.baseUrl, apiKey: "k".repeat(64) });
+  await s.wait((f) => f.type === Notify.ENGINE_READY);
+
+  const id = s.send(Request.PROVIDER_CONNECT, { source: "internal", model: server.model });
+  const f = await s.wait((x) => x.type === Notify.PROVIDER_STATE && x.id === id);
+  assert.equal(f.payload.connected, true, JSON.stringify(f.payload.error ?? {}));
+  assert.equal(f.payload.source, "internal");
+  assert.equal(f.payload.baseUrl, null, "the internal endpoint was reported");
+
+  await s.stop();
+  await server.close();
+  rmSync(stateDir, { recursive: true, force: true });
+});
+
+test("an external provider still works and is reported as external", async () => {
+  // LM Studio is optional, not removed. Nothing in the product requires it
+  // and everything in it still functions.
+  const server = await startFakeModelServer({ turns: [{ text: "ok" }] });
+  const s = start();
+  await s.wait((f) => f.type === Notify.RUNTIME_STATE);
+
+  const id = s.send(Request.PROVIDER_CONNECT, { baseUrl: server.baseUrl, model: server.model });
+  const f = await s.wait((x) => x.type === Notify.PROVIDER_STATE && x.id === id);
+  assert.equal(f.payload.connected, true);
+  assert.equal(f.payload.source, "external");
+  assert.equal(f.payload.baseUrl, server.baseUrl, "an external URL is the user's own and is shown");
+
+  await s.stop();
+  await server.close();
+});
+
+test("detaching the engine takes the endpoint with it", async () => {
+  const server = await startFakeModelServer({ turns: [{ text: "ok" }] });
+  const s = start();
+  await s.wait((f) => f.type === Notify.RUNTIME_STATE);
+
+  s.send(Request.ENGINE_ATTACHED, { baseUrl: server.baseUrl, apiKey: "k".repeat(64) });
+  await s.wait((f) => f.type === Notify.ENGINE_READY && f.payload.available === true);
+
+  const did = s.send(Request.ENGINE_DETACHED, {});
+  const gone = await s.wait((f) => f.type === Notify.ENGINE_READY && f.id === did);
+  assert.equal(gone.payload.available, false);
+
+  // And connecting to it now fails the same way it did before it ever existed.
+  const id = s.send(Request.PROVIDER_CONNECT, { source: "internal", model: server.model });
+  const f = await s.wait((x) => x.type === Notify.PROVIDER_STATE && x.id === id);
+  assert.equal(f.payload.error.code, "engine_not_running");
+
+  await s.stop();
+  await server.close();
+});

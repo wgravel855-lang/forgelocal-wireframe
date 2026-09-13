@@ -92,6 +92,18 @@ try {
 let testing = null;
 
 /**
+ * ForgeLocal's own inference engine, when the desktop host has one running.
+ *
+ * The base URL and the session token arrive on the pipe from the Rust host and
+ * are held here. They are never echoed to the renderer, never written to the
+ * session store, and never put in an event: a bearer token in a transcript is
+ * a bearer token in a backup.
+ *
+ * @type {{baseUrl: string, apiKey: string}|null}
+ */
+let engineEndpoint = null;
+
+/**
  * Which tool groups a session may actually have.
  *
  * The renderer asks; this decides. A request arriving over the pipe is not a
@@ -197,21 +209,83 @@ async function handle(frame) {
     case Request.SESSION_RESUME: return sessionResume(id, payload);
     case Request.MODEL_TEST: return modelTest(id, payload);
     case Request.MODEL_TEST_CANCEL: return modelTestCancel(id);
+    case Request.ENGINE_ATTACHED: return engineAttached(id, payload);
+    case Request.ENGINE_DETACHED: return engineDetached(id);
     default: return fail(id, ErrorCode.UNKNOWN_TYPE, `Unhandled type ${type}`);
   }
 }
 
+/**
+ * The desktop host started the engine and is telling us where it is.
+ *
+ * Recorded, not connected to. Choosing a model is still a deliberate act, and
+ * connecting here would mean a model became "the one in use" because a process
+ * started rather than because anybody chose it.
+ */
+function engineAttached(id, payload) {
+  const baseUrl = typeof payload.baseUrl === "string" ? payload.baseUrl : "";
+  const apiKey = typeof payload.apiKey === "string" ? payload.apiKey : "";
+  if (!/^http:\/\/127\.0\.0\.1:\d+\/v1$/.test(baseUrl) || !apiKey) {
+    /* Checked even though this frame can only come from the host. The host is
+       trusted; a bug in it is not, and a malformed endpoint here would send
+       every prompt somewhere unintended. */
+    return fail(id, ErrorCode.BAD_ARGUMENT,
+      "The engine endpoint was not a loopback address with a token.");
+  }
+  engineEndpoint = { baseUrl, apiKey };
+  /* The renderer is told an engine exists. It is NOT told where or with what:
+     the payload carries neither the URL nor the token. */
+  send(notify(Notify.ENGINE_READY, { available: true }, { id }));
+}
+
+function engineDetached(id) {
+  engineEndpoint = null;
+  send(notify(Notify.ENGINE_READY, { available: false }, { id }));
+}
+
 async function providerConnect(id, payload) {
-  const baseUrl = typeof payload.baseUrl === "string" && payload.baseUrl
-    ? payload.baseUrl : "http://127.0.0.1:1234/v1";
+  /* Two sources, and the renderer names one rather than a URL.
+   *
+   * "internal" is ForgeLocal's own engine, whose address and token the host
+   * gave us over the pipe. The renderer cannot supply either — that is the
+   * point — so it asks for the source by name and this fills in the rest.
+   *
+   * "external" is LM Studio or anything else speaking the OpenAI API. It is
+   * optional, it is the user's choice, and nothing in the product depends on
+   * it any more. */
+  const wantsInternal = payload.source === "internal";
+  if (wantsInternal && !engineEndpoint) {
+    return send(notify(Notify.PROVIDER_STATE, {
+      connected: false, models: [], model: null, source: "internal",
+      error: {
+        code: "engine_not_running",
+        message: "ForgeLocal's engine is not running. Load a model to start it.",
+      },
+    }, { id }));
+  }
+
+  /* Read once, after the guard above has established it is there. Reading
+     the module-level binding twice would let a detach between the two
+     produce a URL with no key. */
+  const internal = wantsInternal ? engineEndpoint : null;
+  const baseUrl = internal
+    ? internal.baseUrl
+    : (typeof payload.baseUrl === "string" && payload.baseUrl
+      ? payload.baseUrl : "http://127.0.0.1:1234/v1");
+  const apiKey = internal ? internal.apiKey : (payload.apiKey ?? undefined);
   const model = typeof payload.model === "string" ? payload.model : null;
 
   // Probing with no model named lists what is loaded, which is how the picker
   // gets real models instead of a catalogue of things that may not exist here.
-  const p = createOpenAIProvider({ baseUrl, model: model ?? "", contextWindow: payload.contextWindow ?? null });
+  const p = createOpenAIProvider({ baseUrl, apiKey, model: model ?? "", contextWindow: payload.contextWindow ?? null });
   try {
     const probe = await p.probe();
-    provider = { provider: model ? createOpenAIProvider({ baseUrl, model, contextWindow: payload.contextWindow ?? null }) : null, info: { baseUrl, models: probe.models, model } };
+    provider = {
+      provider: model
+        ? createOpenAIProvider({ baseUrl, apiKey, model, contextWindow: payload.contextWindow ?? null })
+        : null,
+      info: { baseUrl, models: probe.models, model, source: wantsInternal ? "internal" : "external" },
+    };
     /* The stored verdict, if there is one for this model on this server.
        Never a fresh grade: connecting proves the server answers, which is a
        different question from whether the model can drive a loop. A model
@@ -219,7 +293,13 @@ async function providerConnect(id, payload) {
        off until somebody runs the suite. */
     const known = model && profiles ? profiles.get(baseUrl, model) : null;
     send(notify(Notify.PROVIDER_STATE, {
-      connected: true, baseUrl, models: probe.models, model,
+      connected: true,
+      /* The internal engine's address is not reported. It changes every launch,
+         nothing in the interface can use it, and half of an authenticated pair
+         is not a thing to hand to a WebView. */
+      baseUrl: wantsInternal ? null : baseUrl,
+      source: wantsInternal ? "internal" : "external",
+      models: probe.models, model,
       capabilities: probe.capabilities,
       profile: known ?? (model ? emptyProfile({ model, baseUrl }) : null),
       agentReady: agentAllowed(known),
@@ -228,7 +308,10 @@ async function providerConnect(id, payload) {
     const kind = e instanceof ProviderFailure ? e.kind : "unknown";
     provider = null;
     send(notify(Notify.PROVIDER_STATE, {
-      connected: false, baseUrl, models: [], model: null,
+      connected: false,
+      baseUrl: wantsInternal ? null : baseUrl,
+      source: wantsInternal ? "internal" : "external",
+      models: [], model: null,
       error: { code: kind, message: e && e.message ? e.message : "Could not reach the inference server." },
       // MODEL_MISSING carries what *is* loaded, which is the useful half.
       available: (e && e.detail && e.detail.available) || [],

@@ -178,6 +178,38 @@ impl Sidecar {
         Ok(pid)
     }
 
+    /// Put one frame on the pipe. No validation; callers do that.
+    fn write(&self, frame: Value) -> Result<(), String> {
+        if !self.is_alive() {
+            return Err("The runtime is not running.".into());
+        }
+        let mut line = serde_json::to_string(&frame).map_err(|e| e.to_string())?;
+        line.push('\n');
+
+        let mut guard = self.stdin.lock().unwrap();
+        let stdin = guard.as_mut().ok_or("The runtime has no input pipe.")?;
+        stdin
+            .write_all(line.as_bytes())
+            .map_err(|e| format!("Could not write to the runtime: {e}"))?;
+        stdin
+            .flush()
+            .map_err(|e| format!("Could not flush to the runtime: {e}"))
+    }
+
+    /// Write a frame this host produced, bypassing the renderer allowlist.
+    ///
+    /// The allowlist governs what the *renderer* may ask for. Frames the host
+    /// originates — the engine's endpoint and its session token — are not in
+    /// it on purpose: including them would mean a page could forge one and
+    /// point the runtime at a server of its choosing, which is the entire
+    /// attack this separation exists to prevent.
+    ///
+    /// Nothing reaches this from IPC. It is called by engine_start and
+    /// engine_stop and by nothing else.
+    pub fn send_host_frame(&self, frame: Value) -> Result<(), String> {
+        self.write(frame)
+    }
+
     /// Validate and forward one frame from the renderer.
     pub fn send(&self, frame: Value) -> Result<(), String> {
         if !self.is_alive() {
@@ -202,17 +234,7 @@ impl Sidecar {
             return Err(format!("{kind} is not a request this host forwards."));
         }
 
-        let mut line = serde_json::to_string(&frame).map_err(|e| e.to_string())?;
-        line.push('\n');
-
-        let mut guard = self.stdin.lock().unwrap();
-        let stdin = guard.as_mut().ok_or("The runtime has no input pipe.")?;
-        stdin
-            .write_all(line.as_bytes())
-            .map_err(|e| format!("Could not write to the runtime: {e}"))?;
-        stdin
-            .flush()
-            .map_err(|e| format!("Could not flush to the runtime: {e}"))
+        self.write(frame)
     }
 
     /// Close stdin, then make sure the whole tree is gone.

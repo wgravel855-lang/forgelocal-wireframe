@@ -23,7 +23,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { REQUEST_TYPES } from "../../runtime/host/protocol.mjs";
+import { REQUEST_TYPES, HOST_ONLY } from "../../runtime/host/protocol.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const RUST = join(root, "desktop", "src-tauri", "src", "sidecar.rs");
@@ -38,7 +38,9 @@ function rustAllowed() {
 
 test("the Rust host forwards exactly the requests the runtime accepts", () => {
   const rust = rustAllowed();
-  const node = [...REQUEST_TYPES];
+  /* Minus the ones only the host may originate. Those are not a gap in the
+     allowlist; their absence from it is the thing being protected. */
+  const node = REQUEST_TYPES.filter((t) => !HOST_ONLY.includes(t));
 
   const missingInRust = node.filter((t) => !rust.includes(t));
   assert.deepEqual(missingInRust, [],
@@ -48,6 +50,20 @@ test("the Rust host forwards exactly the requests the runtime accepts", () => {
   const missingInNode = rust.filter((t) => !node.includes(t));
   assert.deepEqual(missingInNode, [],
     "the Rust host forwards requests the runtime does not implement");
+});
+
+test("a host-only request can never be sent by the renderer", () => {
+  /* engine.attached carries the session token for the local inference
+     server. A page that could send one would point the runtime at a server
+     of its choosing and read every prompt and every answer. The Rust host
+     writes these itself and refuses to forward them from the WebView, and
+     this asserts that rather than trusting the comment saying so. */
+  assert.ok(HOST_ONLY.length > 0, "nothing is marked host-only any more");
+  const rust = rustAllowed();
+  for (const t of HOST_ONLY) {
+    assert.ok(!rust.includes(t),
+      `${t} is forwardable from the renderer, which defeats the separation`);
+  }
 });
 
 test("neither list has duplicates, which would hide a typo", () => {

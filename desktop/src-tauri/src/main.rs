@@ -11,6 +11,8 @@
 //! The renderer never touches the filesystem or a shell. It can only ask this
 //! host to forward a frame, and the host checks the frame first.
 
+mod engine;
+mod hardware;
 mod sidecar;
 
 use std::path::PathBuf;
@@ -21,10 +23,12 @@ use serde_json::Value;
 use tauri::{AppHandle, Manager, State};
 use tauri_plugin_dialog::DialogExt;
 
+use engine::{Engine, EngineState, LaunchParams};
 use sidecar::Sidecar;
 
 struct HostState {
     sidecar: Arc<Sidecar>,
+    engine: Arc<Engine>,
     node: String,
     script: PathBuf,
 }
@@ -133,6 +137,98 @@ fn runtime_send(state: State<'_, HostState>, frame: Value) -> Result<(), String>
     state.sidecar.send(frame)
 }
 
+/* ------------------------------------------------------------ the engine */
+
+/// What this machine has, measured.
+///
+/// Every field is a measurement or a null. Nothing here substitutes a
+/// plausible default for a number it could not read, because these numbers
+/// decide which models the app says will run.
+#[tauri::command]
+fn hardware_probe() -> hardware::Hardware {
+    hardware::probe()
+}
+
+/// Whether the engine binary is installed, without saying where.
+///
+/// The path is a host detail and a renderer that knows it is a renderer that
+/// can be persuaded to mention it. Installed-or-not is the whole question the
+/// interface has.
+#[tauri::command]
+fn engine_installed(app: AppHandle) -> bool {
+    engine::locate(&app).is_some()
+}
+
+#[tauri::command]
+fn engine_status(state: State<'_, HostState>) -> EngineState {
+    state.engine.state()
+}
+
+/// The engine's own last words, for a failure the user can act on.
+#[tauri::command]
+fn engine_log(state: State<'_, HostState>) -> Vec<String> {
+    state.engine.recent_log()
+}
+
+/// Start a model and point the runtime at it.
+///
+/// The port and the session token are produced here and handed to the Node
+/// runtime down the pipe. **They are never returned to the renderer.** The
+/// WebView is untrusted: a bearer token that reaches it is a token in whatever
+/// that WebView can be talked into fetching, and the endpoint it opens is a
+/// local port with no other protection. The renderer learns only that a model
+/// is ready, which is all it needs to draw.
+#[tauri::command]
+async fn engine_start(
+    app: AppHandle,
+    state: State<'_, HostState>,
+    params: LaunchParams,
+) -> Result<EngineState, String> {
+    let engine = Arc::clone(&state.engine);
+    let handle = app.clone();
+
+    // Loading a model blocks for as long as it blocks. Off the UI thread, or
+    // the window is frozen for the minutes a 30B model takes.
+    let launched = tauri::async_runtime::spawn_blocking(move || {
+        engine::start(&handle, &engine, params)
+    })
+    .await
+    .map_err(|e| format!("The engine task failed: {e}"))?;
+
+    let (port, token) = launched?;
+
+    /* Straight down the pipe, bypassing the renderer entirely. This frame is
+       deliberately absent from the Rust allowlist that governs renderer
+       traffic, so there is no path by which a page could forge one and point
+       the runtime at a server of its choosing. */
+    state.sidecar.send_host_frame(serde_json::json!({
+        "v": sidecar::PROTOCOL_VERSION,
+        "id": "host-engine-attach",
+        "type": "engine.attached",
+        "sessionId": null,
+        "payload": {
+            "baseUrl": format!("http://127.0.0.1:{port}/v1"),
+            "apiKey": token,
+        }
+    }))?;
+
+    Ok(state.engine.state())
+}
+
+#[tauri::command]
+fn engine_stop(state: State<'_, HostState>) -> Result<(), String> {
+    engine::stop(&state.engine);
+    // The runtime is told the endpoint is gone, so a turn started against it
+    // fails with "the engine stopped" rather than a connection refused.
+    state.sidecar.send_host_frame(serde_json::json!({
+        "v": sidecar::PROTOCOL_VERSION,
+        "id": "host-engine-detach",
+        "type": "engine.detached",
+        "sessionId": null,
+        "payload": {}
+    }))
+}
+
 /// The native folder chooser.
 ///
 /// This is the only way a project root is ever set. The renderer cannot name a
@@ -225,6 +321,7 @@ fn main() {
             ));
             app.manage(HostState {
                 sidecar: Arc::new(Sidecar::new()),
+                engine: Arc::new(Engine::new()),
                 // A bundled runtime would ship its own Node; development uses
                 // the one on PATH, and a missing one is reported rather than
                 // guessed at.
@@ -238,6 +335,10 @@ fn main() {
             // user's project open.
             if let tauri::WindowEvent::Destroyed = event {
                 if let Some(state) = window.app_handle().try_state::<HostState>() {
+                    // The engine first: it is the one holding gigabytes of
+                    // VRAM, and an engine that outlives the window is the
+                    // leak nobody forgives.
+                    engine::stop(&state.engine);
                     state.sidecar.shutdown();
                 }
             }
@@ -266,7 +367,13 @@ fn main() {
             runtime_start,
             runtime_stop,
             runtime_send,
-            choose_project
+            choose_project,
+            hardware_probe,
+            engine_installed,
+            engine_status,
+            engine_log,
+            engine_start,
+            engine_stop
         ])
         .run(ctx)
         .expect("ForgeLocal failed to start");

@@ -41,7 +41,30 @@ export const Request = Object.freeze({
      to do, never something that happens on connect. */
   MODEL_TEST: "model.test",
   MODEL_TEST_CANCEL: "model.test.cancel",
+  /* The engine's endpoint, from the desktop host.
+     These two are HOST-ONLY. They carry the session token for the local
+     inference server, and the renderer must never be able to send one: a page
+     that could would point the runtime at a server of its choosing and read
+     everything the agent says. The Rust host keeps them out of the list it
+     forwards from the WebView and writes them itself, and
+     design/qa/protocol-parity.test.mjs asserts that absence rather than
+     trusting it. */
+  ENGINE_ATTACHED: "engine.attached",
+  ENGINE_DETACHED: "engine.detached",
 });
+
+/**
+ * Requests only the desktop host may originate.
+ *
+ * Named here so both sides can point at one list, and so the parity test can
+ * assert these are *missing* from the Rust allowlist rather than present in
+ * it. A request in this set reaching the sidecar from the renderer would mean
+ * the separation had failed.
+ */
+export const HOST_ONLY = Object.freeze([
+  Request.ENGINE_ATTACHED,
+  Request.ENGINE_DETACHED,
+]);
 
 /** Runtime -> frontend. */
 export const Notify = Object.freeze({
@@ -70,6 +93,9 @@ export const Notify = Object.freeze({
   /* Sent only when a session got fewer tool groups than it asked for, so a
      toggle the runtime refused does not sit there looking enabled. */
   SESSION_TOOLS: "session.tools",
+  /* Whether ForgeLocal's own engine is available. Carries no address and no
+     token — only the fact. */
+  ENGINE_READY: "engine.ready",
 });
 
 export const REQUEST_TYPES = Object.freeze(Object.values(Request));
