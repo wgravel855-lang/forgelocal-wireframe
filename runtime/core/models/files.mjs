@@ -17,9 +17,68 @@
  * catches expensively.
  */
 
-import { mkdirSync, readdirSync, statSync, rmSync, existsSync, openSync, readSync, closeSync, createReadStream } from "node:fs";
+import {
+  mkdirSync, readdirSync, statSync, rmSync, existsSync, openSync, readSync, closeSync,
+  createReadStream, readFileSync, writeFileSync,
+} from "node:fs";
+import { dirname } from "node:path";
 import { createHash } from "node:crypto";
 import { join } from "node:path";
+
+/**
+ * Where the chosen models folder is recorded.
+ *
+ * Its own small file rather than a row in the session database: it has to be
+ * readable before anything else starts, it is one string, and a person moving
+ * their models to another drive should not have that decision live inside a
+ * store they might delete to clear their history.
+ *
+ * @param {NodeJS.ProcessEnv} [env] @param {string} [platform]
+ */
+export function modelDirSettingPath(env = process.env, platform = process.platform) {
+  const home = env.USERPROFILE || env.HOME || ".";
+  const base = platform === "win32"
+    ? join(env.LOCALAPPDATA || join(home, "AppData", "Local"), "ForgeLocal")
+    : platform === "darwin"
+      ? join(home, "Library", "Application Support", "ForgeLocal")
+      : join(env.XDG_DATA_HOME || join(home, ".local", "share"), "forgelocal");
+  return join(base, "model-dir.json");
+}
+
+/**
+ * The folder the person chose, or null.
+ *
+ * Null on anything unexpected — missing file, unreadable JSON, a value that is
+ * not a string — because the platform default is always a usable answer and a
+ * corrupt preference should not stop the app finding models.
+ *
+ * @param {NodeJS.ProcessEnv} [env] @param {string} [platform]
+ */
+export function savedModelDir(env = process.env, platform = process.platform) {
+  try {
+    const raw = readFileSync(modelDirSettingPath(env, platform), "utf8");
+    const value = JSON.parse(raw);
+    return typeof value?.dir === "string" && value.dir ? value.dir : null;
+  } catch { return null; }
+}
+
+/**
+ * Record a new models folder.
+ *
+ * Nothing is moved and nothing is deleted. Pointing at a folder that already
+ * holds models shows those; the old folder keeps what it had. Copying tens of
+ * gigabytes on a click is not a thing to do quietly, and it is not what
+ * somebody choosing a directory is asking for.
+ *
+ * @param {string} dir @param {NodeJS.ProcessEnv} [env] @param {string} [platform]
+ */
+export function setModelDir(dir, env = process.env, platform = process.platform) {
+  const file = modelDirSettingPath(env, platform);
+  mkdirSync(dirname(file), { recursive: true });
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(file, `${JSON.stringify({ dir }, null, 2)}\n`);
+  return dir;
+}
 
 /**
  * Where weights live.
@@ -33,6 +92,14 @@ import { join } from "node:path";
  */
 export function defaultModelDir(env = process.env, platform = process.platform) {
   if (env.FORGELOCAL_MODEL_DIR) return env.FORGELOCAL_MODEL_DIR;
+  /* A folder the person chose, if they have chosen one.
+   *
+   * After the environment, so a test or a developer can still override it, and
+   * before the platform default, which is only where models go when nobody has
+   * said otherwise. Read from disk each time rather than cached: the setting
+   * is changed from the interface and the next listing has to see it. */
+  const chosen = savedModelDir(env, platform);
+  if (chosen) return chosen;
   const home = env.USERPROFILE || env.HOME || ".";
   if (platform === "win32") {
     return join(env.LOCALAPPDATA || join(home, "AppData", "Local"), "ForgeLocal", "models");
@@ -102,13 +169,23 @@ export function listModels(dir = defaultModelDir()) {
     if (!name.toLowerCase().endsWith(".gguf")) continue;
     const path = join(dir, name);
     let size = 0;
-    try { size = statSync(path).size; } catch { continue; }
+    /** @type {number|null} */
+    let modifiedMs = null;
+    try {
+      const st = statSync(path);
+      size = st.size;
+      /* When the file was last written. The models page sorts on it and shows
+         it in a column, and a stat already has it — asking for it separately
+         would be a second syscall per file for a number we just read. */
+      modifiedMs = st.mtimeMs;
+    } catch { continue; }
 
     const head = inspectGguf(path);
     out.push({
       name,
       path,
       bytes: size,
+      modifiedMs,
       /* A file that is present but not a model is listed rather than hidden.
          Hiding it means the user sees a download "succeed" and then cannot
          find what it produced. */

@@ -20,8 +20,12 @@
 //! would otherwise be reachable by any process on the machine, including a
 //! page in a browser.
 //!
-//! **Its whole tree dies with the window.** A 12GB model resident in VRAM
-//! after the app closes is not a leak anyone forgives.
+//! **Its whole tree dies with the window** — and with the process, however the
+//! process ends. A 12GB model resident in VRAM after the app closes is not a
+//! leak anyone forgives, and the close is the easy half: `stop` handles a
+//! clean quit, but a crash or an End Task runs none of our code. So every
+//! server is also assigned to a job object the host holds for its whole life,
+//! which the kernel tears down with the host. See `job.rs`.
 //!
 //! ## What it does when things go wrong
 //!
@@ -119,6 +123,11 @@ pub struct Engine {
     log: Mutex<Vec<String>>,
     /// The parameters of the current launch, so a restart repeats it exactly.
     last: Mutex<Option<LaunchParams>>,
+    /// The job object every engine process is assigned to, so that killing
+    /// this host kills the server with it. Created once and held for the life
+    /// of the process: closing the last handle is what does the killing, and
+    /// the kernel closes it for us when the host dies by any route.
+    job: Option<crate::job::Job>,
 }
 
 impl Engine {
@@ -132,6 +141,7 @@ impl Engine {
             restarts: AtomicU32::new(0),
             log: Mutex::new(Vec::new()),
             last: Mutex::new(None),
+            job: crate::job::Job::create(),
         }
     }
 
@@ -349,8 +359,100 @@ fn health(port: u16, token: &str, timeout: Duration) -> Option<u16> {
 ///
 /// The rule: name the thing that failed and the next step. "Engine error" with
 /// an exit code is a message that sends people to a search engine.
+/// The C++ runtime every llama.cpp Windows build imports.
+///
+/// Windows ships the *Universal* CRT in the box — the `api-ms-win-crt-*` set —
+/// and ForgeLocal's own binaries need nothing beyond it. These three are the
+/// other runtime, the one that comes with the Visual C++ Redistributable, and
+/// Windows does not include it. llama.cpp's release archives do not carry it
+/// either, so on a machine that has never had it the engine cannot start.
+///
+/// This was invisible during development for the obvious reason: a machine
+/// with a compiler on it has these. It is exactly what a clean-machine test is
+/// for, and the audit that found it is the reason this check exists.
+#[cfg(windows)]
+const VC_RUNTIME: [&str; 3] = ["VCRUNTIME140.dll", "VCRUNTIME140_1.dll", "MSVCP140.dll"];
+
+/// Which of those the engine would fail to find, in the order it looks.
+///
+/// The engine's own directory first, because a build that ships the runtime
+/// beside itself is satisfied and must not be reported as broken — that is
+/// app-local deployment and it is legitimate. Then the loader's normal search,
+/// which is what finds a system-wide install.
+#[cfg(windows)]
+fn missing_vc_runtime(engine_dir: &std::path::Path) -> Vec<&'static str> {
+    use windows_sys::Win32::Foundation::FreeLibrary;
+    use windows_sys::Win32::System::LibraryLoader::LoadLibraryA;
+
+    VC_RUNTIME
+        .iter()
+        .copied()
+        .filter(|name| {
+            if engine_dir.join(name).is_file() {
+                return false;
+            }
+            let mut c: Vec<u8> = name.as_bytes().to_vec();
+            c.push(0);
+            /* Loading it is the only honest test: the file can exist on a path
+               the loader will not search, or be the wrong architecture. */
+            let handle = unsafe { LoadLibraryA(c.as_ptr()) };
+            if handle.is_null() {
+                true
+            } else {
+                unsafe { FreeLibrary(handle) };
+                false
+            }
+        })
+        .collect()
+}
+
+/// What to say when the C++ runtime is not there.
+///
+/// Its own sentence rather than a line in `diagnose`, because the failure has
+/// no output to diagnose from: the loader gives up before the process runs, so
+/// the log is empty and the only signal is an exit code in the billions.
+#[cfg(windows)]
+fn vc_runtime_failure(missing: &[&str]) -> (String, String) {
+    (
+        "The engine needs the Microsoft Visual C++ runtime, which this computer does not have."
+            .to_string(),
+        format!(
+            "{} {} missing. Install the Microsoft Visual C++ Redistributable for Visual \
+             Studio 2015-2022 (x64) from microsoft.com, then start the model again. \
+             Every build of the engine needs it, so switching builds will not help.",
+            missing.join(", "),
+            if missing.len() == 1 { "is" } else { "are" },
+        ),
+    )
+}
+
+/// `STATUS_DLL_NOT_FOUND`, as an exit code.
+///
+/// Windows reports a process that died in the loader with an NTSTATUS in its
+/// exit code. Rust sees it as a negative `i32`.
+#[cfg(windows)]
+const STATUS_DLL_NOT_FOUND: i32 = 0xC000_0135_u32 as i32;
+#[cfg(windows)]
+const STATUS_ENTRYPOINT_NOT_FOUND: i32 = 0xC000_0139_u32 as i32;
+
 fn diagnose(log: &[String], exit: Option<i32>) -> (String, String) {
     let text = log.join("\n").to_lowercase();
+
+    /* A process that died in the loader printed nothing, so this is read from
+       the exit code rather than the log. The pre-flight check should have
+       caught the C++ runtime already; this catches anything else the engine
+       folder is missing, and stops the user seeing a ten-digit number. */
+    #[cfg(windows)]
+    if matches!(exit, Some(STATUS_DLL_NOT_FOUND) | Some(STATUS_ENTRYPOINT_NOT_FOUND)) {
+        return (
+            "The engine could not start because a library it needs is missing.".into(),
+            "It stopped in the Windows loader, before it ran, which usually means the \
+             engine folder is incomplete or the Microsoft Visual C++ Redistributable \
+             (x64) is not installed. Reinstall the engine from Settings, and install \
+             that redistributable from microsoft.com if this repeats."
+                .into(),
+        );
+    }
 
     if text.contains("cudart") || text.contains("cublas") || text.contains("cuda driver") {
         return (
@@ -384,7 +486,9 @@ fn diagnose(log: &[String], exit: Option<i32>) -> (String, String) {
     if text.contains("not a dynamic executable") || text.contains("dll") || text.contains("shared librar") {
         return (
             "The engine binary is missing files it needs beside it.".into(),
-            "Re-run scripts/fetch-engine.mjs to reinstall the engine.".into(),
+            "Reinstall the engine from Settings; the download that produced it is \
+             probably incomplete."
+                .into(),
         );
     }
     (
@@ -425,15 +529,35 @@ pub fn start(
             EngineState::Failed {
                 model: None,
                 reason: reason.clone(),
-                // The only actionable thing, said exactly.
-                fix: "Run `node scripts/fetch-engine.mjs --list` to see the builds for \
-                      this machine, then fetch one. ForgeLocal cannot run a model without it. \
-                      An external server such as LM Studio can be used instead, from Settings."
+                /* Not a terminal command. Someone who installed this app is not
+                   expected to have a checkout of it, and telling them to run a
+                   script out of one says the app is unfinished. */
+                fix: "ForgeLocal cannot run a model without it. Install the engine from \
+                      Settings, or point ForgeLocal at an external server such as \
+                      LM Studio, also from Settings."
                     .into(),
             },
         );
         return Err(reason);
     };
+
+    /* Before anything is spawned, because the failure it prevents has no
+       output to read: the loader gives up before the engine's first line, so
+       what reaches the user is an exit code in the billions and advice to try
+       a different build, which cannot help — every build needs this. */
+    #[cfg(windows)]
+    {
+        let dir = binary.parent().unwrap_or(&binary).to_path_buf();
+        let missing = missing_vc_runtime(&dir);
+        if !missing.is_empty() {
+            let (reason, fix) = vc_runtime_failure(&missing);
+            /* No model named: this is a fact about the computer, not about the
+               file somebody picked, and naming the file would suggest the file
+               is the problem. */
+            engine.set(app, EngineState::Failed { model: None, reason: reason.clone(), fix });
+            return Err(reason);
+        }
+    }
 
     let port = match free_port() {
         Ok(p) => p,
@@ -522,12 +646,22 @@ pub fn start(
                 model: Some(name),
                 reason: reason.clone(),
                 fix: "The engine binary may be blocked by endpoint protection, or missing \
-                      the libraries it needs beside it. Re-run scripts/fetch-engine.mjs."
+                      the libraries it needs beside it. Reinstall the engine from Settings."
                     .into(),
             });
             return Err(reason);
         }
     };
+
+    /* Into the host's job object before anything else happens to it, so that
+       from here on the server cannot outlive this process however this process
+       ends. `stop` still kills it on a clean quit; this is what covers a crash
+       or a kill, where no code of ours gets to run. A failure is logged rather
+       than fatal: without it the engine behaves as it did before, and that is
+       not a reason to refuse to run a model. */
+    if let Some(why) = crate::job::adopt(engine.job.as_ref(), &child) {
+        engine.note(app, format!("[engine] {why}"));
+    }
 
     // Drain stderr on its own thread. A child whose pipe fills up stops.
     if let Some(err) = child.stderr.take() {
@@ -720,6 +854,91 @@ pub fn stop(engine: &Arc<Engine>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// A build that ships the C++ runtime beside itself is satisfied, and a
+    /// machine that has it system-wide is satisfied. Neither may be reported
+    /// as broken; a name that is on neither path must be.
+    #[cfg(windows)]
+    #[test]
+    fn the_cpp_runtime_is_looked_for_where_the_loader_would_look() {
+        let dir = std::env::temp_dir().join(format!("fl-vc-{}", token()));
+        std::fs::create_dir_all(&dir).unwrap();
+
+        /* This test machine has the redistributable — a machine with a
+           compiler on it does — so nothing should be reported missing. That
+           is the case that made this invisible during development, which is
+           worth pinning so the check is known not to cry wolf. */
+        assert_eq!(
+            missing_vc_runtime(&dir),
+            Vec::<&str>::new(),
+            "a machine with the redistributable installed must not be told it is missing"
+        );
+
+        /* App-local deployment: a file beside the engine counts, even when it
+           is not a real library, because the loader looks there first. */
+        for name in VC_RUNTIME {
+            std::fs::write(dir.join(name), b"not a real library").unwrap();
+        }
+        assert_eq!(missing_vc_runtime(&dir), Vec::<&str>::new());
+
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    /// The sentence a person actually reads, when it is missing.
+    #[cfg(windows)]
+    #[test]
+    fn the_cpp_runtime_failure_names_the_files_and_the_fix() {
+        let (reason, fix) = vc_runtime_failure(&["VCRUNTIME140.dll", "MSVCP140.dll"]);
+        assert!(reason.contains("Visual C++"), "{reason}");
+        assert!(fix.contains("VCRUNTIME140.dll") && fix.contains("MSVCP140.dll"), "{fix}");
+        assert!(fix.contains("are missing"), "plural, for two files: {fix}");
+        assert!(
+            fix.contains("switching builds will not help"),
+            "the advice that would waste their time is ruled out explicitly: {fix}"
+        );
+        let (_, one) = vc_runtime_failure(&["VCRUNTIME140.dll"]);
+        assert!(one.contains("is missing"), "singular, for one file: {one}");
+    }
+
+    /// A process that died in the loader printed nothing, so the only signal
+    /// is the exit code. It must not reach the user as a ten-digit number.
+    #[cfg(windows)]
+    #[test]
+    fn a_loader_failure_is_explained_rather_than_numbered() {
+        for code in [STATUS_DLL_NOT_FOUND, STATUS_ENTRYPOINT_NOT_FOUND] {
+            let (reason, fix) = diagnose(&[], Some(code));
+            assert!(reason.contains("library it needs is missing"), "{reason}");
+            assert!(!reason.contains(&code.to_string()), "the number is not the message: {reason}");
+            assert!(fix.contains("Redistributable"), "{fix}");
+        }
+    }
+
+    /// Nothing the user reads may tell them to run a script from a checkout
+    /// they do not have. This is a rule of the milestone, and three of these
+    /// strings were still shipping.
+    #[test]
+    fn no_failure_tells_the_user_to_run_a_developer_script() {
+        let src = include_str!("engine.rs");
+        /* The shipped half only. This module is inside the same file and
+           names the forbidden string in its own assertion, so scanning the
+           whole file would only ever find this test. */
+        let shipped = src.split("#[cfg(test)]").next().unwrap_or("");
+        assert!(shipped.len() > 1000, "the split found no shipped code to check");
+
+        /* Comments are stripped: the note explaining why this rule exists is
+           allowed to name the script it is banning. */
+        for line in shipped.lines() {
+            let code = line.split("//").next().unwrap_or(line);
+            if !code.contains('"') {
+                continue;
+            }
+            assert!(
+                !code.contains("fetch-engine"),
+                "user-facing text still points at a developer script: {}",
+                line.trim()
+            );
+        }
+    }
 
     /// The locator has to agree with `runtime/engine/install.mjs` about the
     /// layout, in a different language and a different process. These pin the

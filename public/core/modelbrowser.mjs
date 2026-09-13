@@ -23,6 +23,7 @@
 
 import { escapeHtml as esc } from "./html.mjs";
 import { renderMarkdown } from "./markdown.mjs";
+import { sizeLabel } from "./units.mjs";
 
 /** What the list is doing. */
 export const ListState = Object.freeze({
@@ -109,12 +110,8 @@ export function countLabel(n) {
   return typeof n === "number" && Number.isFinite(n) ? n.toLocaleString("en-US") : null;
 }
 
-/** Bytes as the size a person recognises from a download. */
-export function sizeLabel(bytes) {
-  if (typeof bytes !== "number" || !(bytes > 0)) return null;
-  if (bytes >= 1024 ** 3) return `${(bytes / 1024 ** 3).toFixed(2)} GB`;
-  return `${Math.round(bytes / 1024 ** 2)} MB`;
-}
+/* Bytes become words in units.mjs, for the whole product. */
+export { sizeLabel };
 
 /**
  * The square at the left of a row.
@@ -500,6 +497,36 @@ function downloadSlots(s, variant) {
         bar: "",
       };
   }
+}
+
+/**
+ * Which variant to open on.
+ *
+ * Not the first one. Hugging Face lists a repository's files in its own
+ * order, which for Qwen2.5-Coder-7B-Instruct-GGUF puts Q2_K at the top — so
+ * the picker opened on the most degraded build in the repository, and a
+ * person who pressed Download without opening the list got that. Q2_K is a
+ * deliberate choice for a machine that cannot hold anything larger, not a
+ * default.
+ *
+ * Q4_K_M is the conventional default and what most publishers recommend, so
+ * it is preferred where it exists, then the nearest of the usual ladder, and
+ * only then the first file. Nothing here consults the hardware: a default
+ * that quietly dropped to a smaller quantisation on a small machine would be
+ * making that choice without saying so, and the compatibility badge beside
+ * the picker already reports the fit honestly.
+ *
+ * @param {{quantization?: string|null}[]} variants
+ * @returns {number} an index into `variants`, 0 when none is recognised
+ */
+export function defaultVariantIndex(variants) {
+  if (!Array.isArray(variants) || variants.length === 0) return 0;
+  const ladder = ["Q4_K_M", "Q4_K_S", "Q5_K_M", "Q5_K_S", "Q4_0", "Q6_K", "Q8_0", "Q3_K_M"];
+  for (const want of ladder) {
+    const i = variants.findIndex((v) => (v.quantization ?? "").toUpperCase() === want);
+    if (i >= 0) return i;
+  }
+  return 0;
 }
 
 /** The variant picker and the action beside it. */

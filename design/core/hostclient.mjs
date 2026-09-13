@@ -39,6 +39,8 @@ export const Request = Object.freeze({
   MODEL_VERIFY: "model.verify",
   MODEL_BROWSE: "model.browse",
   MODEL_DESCRIBE: "model.describe",
+  MODEL_META: "model.meta",
+  MODEL_DIR: "model.dir",
 });
 
 export const Notify = Object.freeze({
@@ -65,6 +67,8 @@ export const Notify = Object.freeze({
   MODEL_VERIFIED: "model.verified",
   MODEL_BROWSE: "model.browse",
   MODEL_DESCRIBE: "model.describe",
+  MODEL_META: "model.meta",
+  MODEL_DIR: "model.dir",
 });
 
 /** Is a desktop host present at all?
@@ -108,6 +112,13 @@ export function tauriTransport(w = window) {
     async info() { return invoke("host_info", {}); },
     async send(frame) { return invoke("runtime_send", { frame }); },
     async chooseProject() { return invoke("choose_project", {}); },
+    /* A folder for something other than a project, with its own prompt: a
+       person being asked where their models live should not be asked to
+       choose a project folder. */
+    async chooseDirectory(title) { return invoke("choose_directory", { title }); },
+    /* Show a file in the system file manager. The host refuses a path that
+       does not exist, so this cannot be used to probe the filesystem. */
+    async revealInFolder(path) { return invoke("reveal_in_folder", { path }); },
 
     /* ForgeLocal's own engine. These are host commands rather than runtime
        requests: the engine is a process the desktop host owns, and its port
@@ -451,6 +462,25 @@ export function createHostClient({
     /** One repository in full: metadata, variants, compatibility and README. */
     describeModel(repoId) {
       return request(Request.MODEL_DESCRIBE, { repoId }, 30000);
+    },
+
+    /**
+     * One installed file's own GGUF header.
+     *
+     * Not the same question as describeModel, which asks Hugging Face about a
+     * repository. This asks the file, which is what will be loaded.
+     * @param {string} name
+     */
+    modelMeta(name) {
+      return request(Request.MODEL_META, { name }, 30000);
+    },
+
+    /**
+     * The models folder: where it is, and what is in it.
+     * @param {string|null} [set]  a new folder to use, or nothing to just read
+     */
+    modelDir(set = null) {
+      return request(Request.MODEL_DIR, set ? { set } : {}, 15000);
     },
 
     /**

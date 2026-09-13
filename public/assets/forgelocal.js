@@ -26,8 +26,14 @@ import {
 import { liveModelState } from "../core/liveModels.mjs";
 import {
   modelBrowser, initialBrowserState, ListState, DetailState, InstallState,
+  defaultVariantIndex,
 } from "../core/modelbrowser.mjs";
 import { STAFF_PICKS, pickReason } from "../core/staffpicks.mjs";
+import {
+  myModelsPage, initialMyModels, rowMenu, TableState, LoadState, Tab as MMTab,
+  quantOf as mmQuant, displayName as mmName, sizeLabel as mmSize,
+} from "../core/mymodels.mjs";
+import { SAMPLING, ADVANCED } from "../core/mymodels-tabs.mjs";
 import { THIS_PC } from "../core/machine.mjs";
 import { gb, fmtCtx as fmtCtxUI } from "../core/units.mjs";
 import { renderCard } from "../core/modelcard.mjs";
@@ -287,6 +293,27 @@ import {
     if (!shell || !sidebar) return;
     const inSidebar = $("[data-sidebar-toggle]", sidebar);
     const inTopbar = $$("[data-sidebar-toggle]").find((b) => b !== inSidebar);
+
+    /* Mark which of the rail's three pages this is.
+       Matched on the path rather than on the route name the sidebar is built
+       with: that name is "models" for both the models pages, so it cannot tell
+       My Models from the search. The longest matching prefix wins, so
+       /app/models/installed/ marks itself and not /app/models/. */
+    const rail = $$("[data-rail]", sidebar);
+    if (rail.length) {
+      const here = location.pathname.replace(/\/?$/, "/");
+      let best = null;
+      for (const a of rail) {
+        const p = a.getAttribute("data-rail");
+        if (here.startsWith(p) && (!best || p.length > best.getAttribute("data-rail").length)) {
+          best = a;
+        }
+      }
+      rail.forEach((a) => {
+        if (a === best) a.setAttribute("aria-current", "page");
+        else a.removeAttribute("aria-current");
+      });
+    }
 
     // Below 1180 the sidebar is a drawer over the workspace. It needs its own
     // open flag and a scrim: the collapse class alone left it display:none, so
@@ -5083,8 +5110,10 @@ import {
 
     /* Screens. Each wires itself if its markup is on this route, so opening
        Models or Settings directly gets a live page instead of a dead one. */
-    /* The route, now that there is a runtime behind it. */
-    if (location.pathname.startsWith("/app/models")) void openBrowser();
+    /* The routes, now that there is a runtime behind them. */
+    /* mmRefresh measures the host itself, so there is nothing to set here. */
+    if (MM) void mmRefresh();
+    else if (isExploreRoute()) void openBrowser();
 
     wireLiveProject();
     wireLiveModelPicker();
@@ -5096,6 +5125,541 @@ import {
     await restoreSessions();
     paintLiveComposer();
     paintBrowserPanel();
+  }
+
+  /* ------------------------------------------------------------ my models */
+
+  /**
+   * The installed-models page.
+   *
+   * Held apart from LIVE for the same reason the browser is: this is also a
+   * route the web preview can reach with no runtime at all, and the difference
+   * between the two is one flag rather than a second code path.
+   */
+  let MM = null;
+
+  /** Settings are per model and per machine, so they live in local storage. */
+  const mmKey = (name) => `mm:${name}`;
+  const mmLoadSettings = (name) => store.get(mmKey(name), {}) || {};
+  const mmSaveSettings = (name, patch) => {
+    const next = { ...mmLoadSettings(name), ...patch };
+    store.set(mmKey(name), next);
+    if (MM) MM.settings[name] = next;
+    return next;
+  };
+
+  function mmHost() { return $("[data-mm-mount]"); }
+
+  function paintModels() {
+    const host = mmHost();
+    if (!host || !MM) return;
+    const keepRows = $(".mm-rows", host)?.scrollTop ?? 0;
+    const keepSide = $(".mm-side-b", host)?.scrollTop ?? 0;
+    const focused = document.activeElement;
+    const wasFilter = focused instanceof HTMLElement && focused.hasAttribute("data-mm-filter");
+    const caret = wasFilter ? /** @type {any} */ (focused).selectionStart : null;
+    /* Which accordions were open, so a repaint does not close what somebody
+       is reading. details elements lose their state with the markup. */
+    const open = $$("[data-mm-acc][open]", host).map((el) => el.getAttribute("data-mm-acc"));
+
+    host.innerHTML = myModelsPage(MM);
+
+    const rows = $(".mm-rows", host); if (rows) rows.scrollTop = keepRows;
+    const side = $(".mm-side-b", host); if (side) side.scrollTop = keepSide;
+    for (const id of open) {
+      const el = $(`[data-mm-acc="${id}"]`, host);
+      if (el) el.setAttribute("open", "");
+    }
+    if (wasFilter) {
+      const f = $("[data-mm-filter]", host);
+      if (f) { f.focus(); if (caret !== null) { try { f.setSelectionRange(caret, caret); } catch { /* not text */ } } }
+    }
+  }
+
+  /**
+   * Whether this really is the desktop host, asked now rather than remembered.
+   *
+   * `MM.desktop` is a render input: the row menu greys "Open in File Explorer"
+   * out from it. It is set when the page is built and again when the runtime
+   * announces itself, which leaves a window in which it is stale — and a
+   * stale copy of this particular flag is what told a person running the
+   * desktop app that they needed the desktop app. So the guards below measure
+   * instead of reading, and the cached copy is corrected on the way past.
+   */
+  function mmOnDesktop() {
+    const live = hasTauri() && !!LIVE.client;
+    if (MM && MM.desktop !== live) MM.desktop = live;
+    return live;
+  }
+
+  /** Everything on disk, and the folder it is in. */
+  async function mmRefresh() {
+    if (!MM) return;
+    if (!mmOnDesktop()) {
+      MM.tableState = TableState.DISCONNECTED;
+      MM.rows = []; MM.total = 0; MM.totalBytes = 0;
+      paintModels();
+      return;
+    }
+    try {
+      const [list, dir] = await Promise.all([
+        LIVE.client.listModels(LIVE.hardware),
+        LIVE.client.modelDir(),
+      ]);
+      const all = list.payload?.models ?? [];
+      MM.all = all;
+      MM.dir = dir.payload?.dir ?? null;
+      MM.total = all.length;
+      MM.totalBytes = all.reduce((n, m) => n + (m.bytes || 0), 0);
+      mmApplyFilter();
+      /* Selecting the first row is what makes the inspector useful on open. */
+      if (!MM.selected && MM.rows.length) await mmSelect(MM.rows[0].name);
+      else paintModels();
+      /* Headers are read one at a time, after the list is on screen: a folder
+         of forty models should not wait on forty file reads to draw a row. */
+      for (const m of all) void mmMeta(m.name);
+    } catch (e) {
+      MM.tableState = TableState.ERROR;
+      MM.error = errText(e);
+      paintModels();
+    }
+  }
+
+  /** Filter, sort and categorise what the runtime returned. */
+  function mmApplyFilter() {
+    if (!MM) return;
+    const q = (MM.query ?? "").trim().toLowerCase();
+    let rows = (MM.all ?? []).slice();
+
+    /* The two categories ForgeLocal cannot identify are disabled in the nav,
+       so reaching them means an empty list rather than a wrong one. */
+    if (MM.category === "embedding" || MM.category === "drafter") rows = [];
+    if (q) rows = rows.filter((m) => m.name.toLowerCase().includes(q));
+
+    const pinned = MM.pinned ?? [];
+    const key = {
+      params: (m) => (MM.meta?.[m.name]?.summary?.sizeLabel ?? "").toLowerCase(),
+      name: (m) => m.name.toLowerCase(),
+      size: (m) => m.bytes || 0,
+      when: (m) => m.modifiedMs || 0,
+    }[MM.sort] ?? ((m) => m.name.toLowerCase());
+
+    rows.sort((a, b) => {
+      /* Pinned first, always, whatever the column. That is what pinning is. */
+      const pa = pinned.includes(a.name) ? 0 : 1;
+      const pb = pinned.includes(b.name) ? 0 : 1;
+      if (pa !== pb) return pa - pb;
+      const ka = key(a); const kb = key(b);
+      const c = typeof ka === "number" ? ka - kb : String(ka).localeCompare(String(kb));
+      return MM.desc ? -c : c;
+    });
+
+    MM.rows = rows;
+    MM.tableState = rows.length ? TableState.READY
+      : (MM.all ?? []).length ? TableState.NO_MATCH : TableState.EMPTY;
+  }
+
+  /** One file's own header. Cached: a header does not change under us. */
+  async function mmMeta(name) {
+    if (!MM || !mmOnDesktop() || MM.meta[name]) return;
+    try {
+      const frame = await LIVE.client.modelMeta(name);
+      if (!MM) return;
+      MM.meta[name] = frame.payload;
+      /* The recommendation needs the layer count, which only arrives here. */
+      const layers = frame.payload?.summary?.blockCount;
+      const row = (MM.all ?? []).find((m) => m.name === name);
+      if (layers && row?.suggested?.gpuLayers != null) {
+        MM.recommended[name] = Math.min(row.suggested.gpuLayers, layers);
+      }
+      paintModels();
+    } catch { /* a header that will not read is shown as such by infoTab */ }
+  }
+
+  async function mmSelect(name) {
+    if (!MM || !name) return;
+    MM.selected = name;
+    MM.settings[name] = mmLoadSettings(name);
+    MM.load = mmLoadStateFor(name);
+    paintModels();
+    await mmMeta(name);
+  }
+
+  /** Whether this file is the one the engine is serving. */
+  function mmLoadStateFor(name) {
+    const e = LIVE.engine;
+    if (e && e.state === "ready" && e.model === name) {
+      return { state: LoadState.LOADED, reason: null,
+        detail: e.context ? `Loaded with ${e.context.toLocaleString("en-US")} tokens of context` : null };
+    }
+    if (e && e.state === "starting" && e.model === name) {
+      return { state: LoadState.LOADING, reason: null, detail: null };
+    }
+    if (e && e.state === "failed" && e.model === name) {
+      return { state: LoadState.FAILED, reason: e.detail ?? null, detail: null };
+    }
+    return { state: LoadState.IDLE, reason: null, detail: null };
+  }
+
+  /** Start the engine on the selected file with the settings from the Load tab. */
+  async function mmLoad() {
+    if (!MM || !mmOnDesktop() || !MM.selected) return;
+    const name = MM.selected;
+    const meta = MM.meta[name];
+    const set = MM.settings[name] ?? {};
+    const maxCtx = meta?.summary?.contextLength || 8192;
+    const layers = meta?.summary?.blockCount || 0;
+
+    MM.load = { state: LoadState.LOADING, reason: null, detail: null };
+    paintModels();
+    try {
+      const row = (MM.all ?? []).find((m) => m.name === name);
+      await LIVE.client.engineStart({
+        model_path: row.path,
+        /* Clamped here as well as in the control, because a stored setting
+           from a different model could be out of range for this one. */
+        gpu_layers: layers ? Math.max(0, Math.min(set.gpuLayers ?? layers, layers)) : null,
+        context: Math.max(512, Math.min(set.context ?? Math.min(8192, maxCtx), maxCtx)),
+        parallel: Math.max(1, Math.min(set.parallel ?? 1, 8)),
+        flash_attention: set.flashAttention !== false,
+      });
+      await connectProviderTracked(null, name);
+      if (!MM) return;
+      LIVE.engine = await LIVE.client.engineStatus();
+      MM.load = mmLoadStateFor(name);
+    } catch (e) {
+      if (!MM) return;
+      MM.load = { state: LoadState.FAILED, reason: errText(e), detail: null };
+    }
+    paintModels();
+  }
+
+  async function mmUnload() {
+    if (!MM || !mmOnDesktop()) return;
+    try {
+      await LIVE.client.engineStop();
+      LIVE.engine = await LIVE.client.engineStatus();
+    } catch (e) { toast(errText(e), "bad"); }
+    if (!MM) return;
+    MM.load = { state: LoadState.IDLE, reason: null, detail: null };
+    paintModels();
+  }
+
+  /**
+   * Load this model and open a chat with it.
+   *
+   * The settings go with it, because they are why somebody chose this model
+   * rather than the same weights at a different context. The composer is not
+   * touched: it reads the provider, and the provider is what this changes.
+   */
+  async function mmUseInNewChat() {
+    if (!MM || !mmOnDesktop() || !MM.selected) return;
+    if (MM.load.state !== LoadState.LOADED) await mmLoad();
+    if (!MM || MM.load.state !== LoadState.LOADED) return;
+    location.href = "/app/";
+  }
+
+  /* ----------------------------------------------------------- the menus */
+
+  let mmMenuEl = null;
+  function mmCloseMenu() {
+    if (mmMenuEl) { mmMenuEl.remove(); mmMenuEl = null; }
+  }
+
+  /** Open a menu anchored under the button that asked for it. */
+  function mmOpenMenu(html, anchor) {
+    mmCloseMenu();
+    const wrap = document.createElement("div");
+    wrap.innerHTML = html;
+    mmMenuEl = wrap.firstElementChild;
+    document.body.appendChild(mmMenuEl);
+    const r = anchor.getBoundingClientRect();
+    const box = mmMenuEl.getBoundingClientRect();
+    /* Flipped up or left rather than allowed off screen: a menu on the last
+       row of a full table opens above the button. */
+    const top = r.bottom + box.height + 8 > innerHeight ? r.top - box.height - 6 : r.bottom + 6;
+    const left = Math.min(r.left, innerWidth - box.width - 10);
+    mmMenuEl.style.top = `${Math.max(8, top)}px`;
+    mmMenuEl.style.left = `${Math.max(8, left)}px`;
+    const first = $("button:not(:disabled)", mmMenuEl);
+    if (first) first.focus();
+  }
+
+  /** Every row action. Each one does the thing or says why it cannot. */
+  async function mmDo(action, name) {
+    if (!MM || !name) return;
+    const row = (MM.all ?? []).find((m) => m.name === name);
+    if (!row) return;
+    mmCloseMenu();
+
+    switch (action) {
+      case "reveal":
+        if (!mmOnDesktop()) return toast("Opening a folder needs the desktop app.", "warn");
+        try {
+          await tauriTransport().revealInFolder(row.path);
+        } catch (e) { toast(errText(e), "bad"); }
+        return;
+
+      case "pin":
+      case "unpin": {
+        const next = action === "pin"
+          ? [...new Set([...(MM.pinned ?? []), name])]
+          : (MM.pinned ?? []).filter((x) => x !== name);
+        MM.pinned = next;
+        store.set("mm:pinned", next);
+        mmApplyFilter();
+        paintModels();
+        return;
+      }
+
+      case "copy-id":
+        return mmCopy(name, "identifier");
+      case "copy-path":
+        return mmCopy(row.path, "path");
+
+      case "raw":
+        return mmShowRaw(name);
+
+      case "hf": {
+        const repo = MM.meta[name]?.summary?.repo;
+        if (!repo) return toast("This file does not name a repository.", "warn");
+        window.open(repo, "_blank", "noopener");
+        return;
+      }
+
+      case "verify": {
+        if (!mmOnDesktop()) return toast("Verifying needs the desktop app.", "warn");
+        MM.verified[name] = "checking…";
+        paintModels();
+        try {
+          const frame = await LIVE.client.verifyModel({ name });
+          if (!MM) return;
+          const p = frame.payload ?? {};
+          MM.verified[name] = p.ok
+            ? (p.verified ? "checksum matches" : "size and format only")
+            : (p.reason || "did not verify");
+        } catch (e) {
+          if (MM) MM.verified[name] = errText(e);
+        }
+        paintModels();
+        return;
+      }
+
+      case "delete": {
+        if (!mmOnDesktop()) return toast("Deleting needs the desktop app.", "warn");
+        const ok = await flConfirm({
+          title: `Delete ${mmName(name)}?`,
+          body: "The file is removed from disk. It can be downloaded again.",
+          scope: [["File", name], ["Size", mmSize(row.bytes) ?? "unknown"],
+            ["Reversible", "No. The file is deleted."]],
+          confirm: "Delete", cancel: "Keep it", danger: true,
+        });
+        if (!ok || !MM) return;
+        try {
+          await LIVE.client.deleteModel(name);
+          if (!MM) return;
+          delete MM.meta[name];
+          if (MM.selected === name) MM.selected = null;
+          await mmRefresh();
+          toast(`${mmName(name)} was deleted.`);
+        } catch (e) { toast(errText(e), "bad"); }
+        return;
+      }
+
+      default:
+        return;
+    }
+  }
+
+  function mmCopy(text, what) {
+    navigator.clipboard?.writeText(text)
+      .then(() => toast(`Copied the ${what}.`))
+      .catch(() => toast("The clipboard is not available.", "warn"));
+  }
+
+  /** The raw header, as rows. */
+  function mmShowRaw(name) {
+    const meta = MM?.meta?.[name];
+    if (!meta?.ok) return toast("This file's header could not be read.", "warn");
+    const wrap = document.createElement("div");
+    wrap.className = "mm-raw";
+    wrap.setAttribute("data-mm-raw", "");
+    wrap.innerHTML = `<div class="mm-raw-p" role="dialog" aria-modal="true"
+      aria-label="Raw metadata for ${esc(mmName(name))}">
+      <header class="mm-raw-h">
+        <h2>Raw metadata</h2>
+        <span class="grow"></span>
+        <button class="mm-btn" type="button" data-mm-raw-copy>Copy all</button>
+        <button class="mm-btn" type="button" data-mm-raw-close>Close</button>
+      </header>
+      <div class="mm-raw-b">
+        <p class="mm-note">GGUF v${meta.version} &middot; ${meta.keys} keys &middot;
+          ${meta.tensors} tensors, read from the file.</p>
+        ${meta.raw.map((r) => `<div class="mm-raw-r">
+          <span class="mm-raw-k">${esc(r.key)}</span>
+          <span class="mm-raw-v">${esc(r.value)}</span></div>`).join("")}
+      </div>
+    </div>`;
+    document.body.appendChild(wrap);
+    $("[data-mm-raw-close]", wrap)?.focus();
+  }
+
+  /* -------------------------------------------------------- the wiring */
+
+  function wireMyModels() {
+    const host = mmHost();
+    if (!host) return;
+
+    MM = initialMyModels({
+      desktop: hasTauri() && !!LIVE.client,
+      pinned: store.get("mm:pinned", []) || [],
+    });
+    MM.all = [];
+    MM.recommended = {};
+    paintModels();
+
+    document.addEventListener("click", (e) => {
+      const el = e.target instanceof Element ? e.target : null;
+      if (!el) return;
+
+      if (mmMenuEl && !el.closest(".mm-menu")) mmCloseMenu();
+
+      const raw = el.closest("[data-mm-raw]");
+      if (raw && (el.closest("[data-mm-raw-close]") || el === raw)) return raw.remove();
+      if (el.closest("[data-mm-raw-copy]")) {
+        const rows = $$(".mm-raw-r", document).map((r) =>
+          `${$(".mm-raw-k", r).textContent}\t${$(".mm-raw-v", r).textContent}`).join("\n");
+        return mmCopy(rows, "metadata");
+      }
+
+      if (!MM) return;
+      const cat = el.closest("[data-mm-cat]");
+      if (cat && !cat.disabled) {
+        MM.category = cat.getAttribute("data-mm-cat");
+        mmApplyFilter(); paintModels(); return;
+      }
+      const sort = el.closest("[data-mm-sort]");
+      if (sort) {
+        const id = sort.getAttribute("data-mm-sort");
+        MM.desc = MM.sort === id ? !MM.desc : true;
+        MM.sort = id;
+        mmApplyFilter(); paintModels(); return;
+      }
+      const menu = el.closest("[data-mm-menu]");
+      if (menu) {
+        const name = menu.getAttribute("data-mm-menu");
+        const m = (MM.all ?? []).find((x) => x.name === name);
+        if (m) mmOpenMenu(rowMenu(m, MM), menu);
+        return;
+      }
+      const doIt = el.closest("[data-mm-do]");
+      if (doIt) {
+        const name = mmMenuEl?.getAttribute("aria-label")?.replace(/^Actions for /, "");
+        return void mmDo(doIt.getAttribute("data-mm-do"),
+          MM.rows.find((r) => mmName(r.name) === name)?.name ?? MM.selected);
+      }
+      const inspect = el.closest("[data-mm-inspect]");
+      if (inspect) {
+        MM.tab = MMTab.LOAD;
+        return void mmSelect(inspect.getAttribute("data-mm-inspect"));
+      }
+      const row = el.closest("[data-mm-row]");
+      if (row) return void mmSelect(row.getAttribute("data-mm-row"));
+
+      const tab = el.closest("[data-mm-tab]");
+      if (tab) { MM.tab = tab.getAttribute("data-mm-tab"); paintModels(); return; }
+
+      if (el.closest("[data-mm-load]")) return void mmLoad();
+      if (el.closest("[data-mm-unload]")) return void mmUnload();
+      if (el.closest("[data-mm-use]")) return void mmUseInNewChat();
+      if (el.closest("[data-mm-refresh]")) return void mmRefresh();
+      if (el.closest("[data-mm-open-dir]")) {
+        if (!mmOnDesktop()) return toast("Opening a folder needs the desktop app.", "warn");
+        return void tauriTransport().revealInFolder(MM.dir).catch((err) => toast(errText(err), "bad"));
+      }
+      if (el.closest("[data-mm-dir-menu]")) {
+        return mmOpenMenu(`<div class="mm-menu" role="menu" aria-label="Folder actions">
+          <button class="mm-mi" type="button" role="menuitem" data-mm-dir-open>Open the folder</button>
+          <button class="mm-mi" type="button" role="menuitem" data-mm-dir-change>Change folder&hellip;</button>
+          <button class="mm-mi" type="button" role="menuitem" data-mm-refresh>Rescan</button>
+        </div>`, el.closest("[data-mm-dir-menu]"));
+      }
+      if (el.closest("[data-mm-dir-open]")) {
+        mmCloseMenu();
+        return void tauriTransport().revealInFolder(MM.dir).catch((err) => toast(errText(err), "bad"));
+      }
+      if (el.closest("[data-mm-dir-change]")) { mmCloseMenu(); return void mmChangeDir(); }
+      if (el.closest("[data-mm-reset-sampling]")) {
+        const name = MM.selected;
+        if (!name) return;
+        const cleared = { ...mmLoadSettings(name) };
+        for (const x of SAMPLING) delete cleared[x.id];
+        store.set(mmKey(name), cleared);
+        MM.settings[name] = cleared;
+        paintModels();
+        return;
+      }
+      const sw = el.closest("[data-mm-set][role=switch]");
+      if (sw && MM.selected) {
+        const id = sw.getAttribute("data-mm-set");
+        mmSaveSettings(MM.selected, { [id]: sw.getAttribute("aria-checked") !== "true" });
+        paintModels();
+      }
+    });
+
+    /* Sliders and numbers write on input so the pair stays in step. */
+    document.addEventListener("input", (e) => {
+      const el = e.target;
+      if (!MM || !MM.selected || !(el instanceof HTMLElement)) return;
+      if (el.hasAttribute("data-mm-filter")) {
+        MM.query = /** @type {any} */ (el).value;
+        mmApplyFilter(); paintModels(); return;
+      }
+      const id = el.getAttribute("data-mm-set");
+      if (!id) return;
+      const v = /** @type {any} */ (el).value;
+      const num = Number(v);
+      mmSaveSettings(MM.selected, { [id]: Number.isFinite(num) && el.type !== "textarea" ? num : v });
+      if (el.type === "range" || el.type === "number") {
+        /* Keep the twin in step without a repaint, which would take the
+           caret out of whichever one is being typed into. */
+        for (const twin of $$(`[data-mm-set="${id}"]`, mmHost())) {
+          if (twin !== el) /** @type {any} */ (twin).value = v;
+        }
+        const est = $(".mm-est", mmHost());
+        if (est && (id === "context" || id === "gpuLayers")) paintModels();
+      }
+      if (id === "schema") {
+        try { JSON.parse(v); MM.schemaError = null; }
+        catch (err) { MM.schemaError = `Not valid JSON: ${err.message}`; }
+      }
+    });
+
+    /* Ctrl+F focuses the filter, as the reference's placeholder promises. */
+    document.addEventListener("keydown", (e) => {
+      if (!MM) return;
+      if (e.key === "Escape") {
+        if (mmMenuEl) { e.preventDefault(); return mmCloseMenu(); }
+        const raw = $("[data-mm-raw]");
+        if (raw) { e.preventDefault(); return raw.remove(); }
+      }
+      if ((e.ctrlKey || e.metaKey) && (e.key === "f" || e.key === "F")) {
+        const f = $("[data-mm-filter]", mmHost());
+        if (f) { e.preventDefault(); f.focus(); f.select(); }
+      }
+    });
+  }
+
+  /** Point the models folder somewhere else. Nothing is moved. */
+  async function mmChangeDir() {
+    if (!MM || !mmOnDesktop()) return toast("Choosing a folder needs the desktop app.", "warn");
+    try {
+      const picked = await tauriTransport().chooseDirectory("Choose a folder for model files");
+      if (!picked) return;
+      await LIVE.client.modelDir(picked);
+      await mmRefresh();
+      toast("The models folder was changed. Nothing was moved.");
+    } catch (e) { toast(errText(e), "bad"); }
   }
 
   /* --------------------------------------------------------- model browser */
@@ -5180,7 +5744,7 @@ import {
     paintBrowser();
     /* Opened as a route, closing means leaving it. Opened over the workspace,
        it means putting the workspace back. */
-    if (back && location.pathname.startsWith("/app/models")) location.href = "/app/";
+    if (back && isExploreRoute()) location.href = "/app/";
   }
 
   /** @param {KeyboardEvent} e */
@@ -5258,6 +5822,9 @@ import {
         MB.detail = { state: DetailState.ERROR, model: null, reason: payload.reason };
       } else {
         MB.detail = { state: DetailState.READY, model: payload.model, reason: null };
+        /* Open on a sensible build rather than whatever the repository lists
+           first, which is how a Q2_K ended up downloaded. */
+        MB.variantIndex = defaultVariantIndex(payload.model?.variants ?? []);
         mbSyncVariant();
       }
     } catch (e) {
@@ -5473,9 +6040,14 @@ import {
       e.preventDefault();
       /* Closing without the route jump: Ctrl+L over the workspace should put
          the workspace back, not navigate. */
-      if (MB) closeBrowser({ back: location.pathname.startsWith("/app/models") });
+      if (MB) closeBrowser({ back: isExploreRoute() });
       else void openBrowser();
     });
+  }
+
+  /** The Explore route, which is /app/models/ exactly and not its children. */
+  function isExploreRoute() {
+    return /^\/app\/models\/?$/.test(location.pathname);
   }
 
   function wireBrowserEntry() {
@@ -5487,7 +6059,10 @@ import {
      * `desktop: false` before the client existed and showed "the desktop app
      * is not connected" inside the connected desktop app. wireDesktop opens it
      * once the handshake is done. */
-    if (location.pathname.startsWith("/app/models") && !hasTauri()) {
+    /* Explore only. /app/models/installed/ is My Models, a page of its own,
+       and opening the browser over it would put two model surfaces on one
+       route -- which is the confusion the redesign set out to end. */
+    if (isExploreRoute() && !hasTauri()) {
       /* The page beneath is left as it is and dimmed by the scrim. Replacing
          it would mean the modal had nothing to sit over, and closing would
          have nowhere to go back to. */
@@ -6689,6 +7264,7 @@ import {
     wireSettings(); wireShortcuts(); wireDownloadRow(); wireLanding();
     wireScan(); wireSetupProject(); wireSetupPermissions(); wireSetupDownload();
     wireSessionSearch(); wireSessionFilter(); wireSettingsNav(); wireBrowser();
+    wireMyModels();
     wireBrowserEntry(); wireDesktop();
     
     wireInert();

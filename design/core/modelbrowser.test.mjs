@@ -22,7 +22,7 @@ import {
   modelBrowser, listPane, detailPane, summaryCard, downloadOptions, readmePanel,
   browserRow, capabilityMarks, capabilityBadges, compatibilityBadge, verifiedMark,
   artworkHtml, relativeTime, countLabel, sizeLabel, initialBrowserState,
-  ListState, DetailState, InstallState,
+  ListState, DetailState, InstallState, defaultVariantIndex,
 } from "./modelbrowser.mjs";
 
 const cap = (present, evidence = "because") => ({ present, evidence });
@@ -478,4 +478,23 @@ test("a paused download keeps its position, so resuming is worth choosing", () =
     install: { state: InstallState.PAUSED, bytes: 2.34e9, total: 4.68e9, reason: null },
   })).replace(/<[^>]+>/g, " ");
   assert.match(text, /Paused at 50%/, "a paused download forgot where it stopped");
+});
+
+test("the picker opens on a sensible build, not on whatever is listed first", () => {
+  /* The order Hugging Face returns for Qwen2.5-Coder-7B-Instruct-GGUF, which
+     is what made the modal open on the most degraded file in the repository. */
+  const asListed = ["Q2_K", "Q3_K_M", "Q4_0", "Q4_K_M", "Q5_K_M", "Q6_K", "Q8_0"]
+    .map((q) => ({ quantization: q }));
+  assert.equal(defaultVariantIndex(asListed), 3);
+  assert.equal(asListed[defaultVariantIndex(asListed)].quantization, "Q4_K_M");
+
+  /* Where the conventional default is absent, the nearest of the ladder. */
+  assert.equal(defaultVariantIndex([{ quantization: "Q2_K" }, { quantization: "Q5_K_M" }]), 1);
+  assert.equal(defaultVariantIndex([{ quantization: "Q8_0" }, { quantization: "Q6_K" }]), 1);
+
+  /* A repository publishing only one thing gets that thing, and an
+     unrecognised set falls back to the first rather than to nothing. */
+  assert.equal(defaultVariantIndex([{ quantization: "Q2_K" }]), 0);
+  assert.equal(defaultVariantIndex([{ quantization: "MXFP4" }, { quantization: null }]), 0);
+  assert.equal(defaultVariantIndex([]), 0);
 });

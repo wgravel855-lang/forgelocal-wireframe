@@ -31,7 +31,7 @@
  */
 
 /** GGUF file names carry the quantisation, and only that, reliably. */
-const QUANT = /[.-](Q\d[_A-Za-z0-9]*|IQ\d[_A-Za-z0-9]*|F16|F32|BF16)(?=[.-]|$)/i;
+const QUANT = /[.-](Q\d[_A-Za-z0-9]*|IQ\d[_A-Za-z0-9]*|FP16|FP32|F16|F32|BF16)(?=[.-]|$)/i;
 
 /**
  * The quantisation in a file name, or undefined.

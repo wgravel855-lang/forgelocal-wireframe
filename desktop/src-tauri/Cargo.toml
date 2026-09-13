@@ -18,5 +18,23 @@ serde_json = "1"
 # and nothing more.
 getrandom = "0.2"
 
+# The job object that makes the engine die with the host even when the host is
+# killed rather than closed. Already in the tree by way of tauri, so this names
+# a version that is being built anyway rather than adding one.
+#
+# Four feature groups, and each is needed by a signature rather than by us:
+# JobObjects for the calls, Foundation for the HANDLE and CloseHandle they
+# take, Security because CreateJobObjectW's first parameter is a
+# SECURITY_ATTRIBUTES pointer, and Threading because the extended limit struct
+# embeds IO_COUNTERS.
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = [
+  "Win32_Foundation",
+  "Win32_Security",
+  "Win32_System_JobObjects",
+  "Win32_System_LibraryLoader",
+  "Win32_System_Threading",
+] }
+
 [profile.dev]
 incremental = true

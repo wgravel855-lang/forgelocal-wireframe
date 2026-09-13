@@ -7,22 +7,22 @@
 
       <!--#include topbar.html {"title":"Models"} -->
 
-      <div class="scroll mc-scroll">
-        <div class="mc" data-filter-root="mine">
+      <!-- My Models is rendered by the controller from design/core/mymodels.mjs,
+           against the real models folder: its three panes, its table and its
+           inspector are all drawn from model.list, the files' own GGUF headers
+           and the measured hardware.
 
-          <!--#include model-center.html {"installed":" aria-current=\"page\"","tools":"<label class=\"field mc-search\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"var(--faint)\" stroke-width=\"2\" stroke-linecap=\"round\" aria-hidden=\"true\" style=\"flex-shrink:0\"><circle cx=\"11\" cy=\"11\" r=\"7\"/><path d=\"m20 20-3.6-3.6\"/></svg><span class=\"vh\">Search installed models</span><input type=\"search\" data-filter-search placeholder=\"Search installed models\"></label>"} -->
+           This mount is deliberately empty rather than pre-rendered. The page
+           was a static list built from the fixture catalogue, which showed the
+           same six models on a machine with none — and every figure on it, the
+           sizes, the fit, the footer's disk total, described a computer nobody
+           had looked at. There is nothing here to show until the runtime has
+           been asked.
 
-          <!-- Rendered from the shared store. When a real download is running
-               it appears here as one strip; with none, nothing is drawn. -->
-          <div data-models-mount="strip"><!--DOWNLOADS_STRIP--></div>
+           The web preview reaches this route too, and gets the disconnected
+           state: the panes, and a sentence saying why they are empty. -->
+      <div class="mm-mount" data-mm-mount></div>
 
-          <div data-models-mount="installed"><!--MINE_LIST--></div>
-
-
-          <p class="mc-foot" data-mine-stats><!--MINE_FOOT--></p>
-
-        </div>
-      </div>
     </div>
   </div>
 </div>

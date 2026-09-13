@@ -2896,16 +2896,74 @@ body.lp-anim .lp-enter.is-in { opacity:1; transform:none; }
     padding: 0; }
   .shell.is-collapsed .side-brand { flex-direction: column; height: auto;
     align-items: center; gap: 4px; padding: 8px 0; }
+  /* A column, so the divider below stacks above the project button rather
+     than sitting beside it: as a row, the rule that draws the line made it
+     a flex sibling, which pushed the folder off centre. */
   .shell.is-collapsed .side-nav { padding: 2px 0 6px; display: flex;
-    justify-content: center; }
+    flex-direction: column; align-items: center; }
   .shell.is-collapsed .navrow { width: 34px; justify-content: center; padding: 0; }
+  /* In the rail the project icon is on its own, beside three 18px rail
+     icons, so it matches them. Open it is 16px because it sits against a
+     label and a chevron, where 18 would out-weigh the text. The stroke
+     follows the size — 1.7 in a 24 box is 1.27px at 18 — so both states
+     land on the same rendered weight as everything around them. */
+  .shell.is-collapsed .navrow-i { width: 18px; height: 18px; }
   .shell.is-collapsed .acctbtn { padding: 0; }
   /* Nothing in the rail may overflow its 54px. */
   .shell.is-collapsed .sidebar .side-find { display: none; }
+
+  /* The rail's destinations, collapsed only. Open, these three are already
+     reachable from the session list and the account row. */
+  .shell.is-collapsed .side-chat { display: flex; justify-content: center;
+    padding: 2px 0 0; }
+  .shell.is-collapsed .side-rail { display: flex; flex-direction: column;
+    align-items: center; gap: 3px; padding: 0 0 6px; }
+  /* The divider sits above the project row, so it separates starting a
+     conversation from the three places you go to manage one. */
+  .shell.is-collapsed .side-nav::before { content: ""; display: block;
+    width: 22px; height: 1px; margin: 6px auto; background: var(--line); }
+
+  /* A menu cannot be 54px wide. Collapsed, both open as flyouts beside the
+     rail instead of inside it — the rail is 54px, so this clears it and
+     the sidebar does not clip, having no overflow of its own. */
+  .shell.is-collapsed .pop-project,
+  .shell.is-collapsed .pop-profile {
+    left: calc(100% - 6px); right: auto; width: 244px; }
+  .shell.is-collapsed .pop-project { top: 2px; }
+  .shell.is-collapsed .pop-profile { bottom: 4px; }
+
+  /* A menu is not the rail. It opens beside the rail at full width, so the
+     rules that strip the rail's labels and centre its icons must not reach
+     inside it — they were turning a list of three projects into a column
+     of three identical folder icons with every name hidden. */
+  .shell.is-collapsed .sidebar .popover .t,
+  .shell.is-collapsed .sidebar .popover [data-hide-collapsed] { display: revert; }
+  .shell.is-collapsed .sidebar .popover .srow {
+    justify-content: flex-start; padding: 4px 10px; }
 }
+/* Open, the rail is not rendered at all rather than hidden at a width:
+   three links to pages the open sidebar already lists is a second route to
+   the same place, and the one that is a row of unlabelled icons is the
+   worse of the two. */
+.side-rail, .side-chat { display: none; }
+.railbtn { display: inline-flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px; flex-shrink: 0; border-radius: 8px;
+  color: var(--mut); background: transparent; text-decoration: none;
+  transition: background 120ms ease-out, color 120ms ease-out; }
+.railbtn:hover { background: var(--sunk); color: var(--fg); }
+.railbtn[aria-current="page"] { background: var(--sidebar-selected); color: var(--fg); }
+.railbtn:focus-visible { outline: 2px solid var(--focus, #8d80f5); outline-offset: 1px; }
 
 .popover { position: absolute; z-index: 60; max-width: calc(100vw - 24px); }
 .popover[hidden] { display: none; }
+
+/* The sidebar's two menus. These carried their geometry in a style
+   attribute, which meant the collapsed rail could not reposition them:
+   an inline style wins over any rule. Opening the project picker in the
+   54px rail gave a 28px column of folder icons with every project name
+   clipped off — a menu of identical glyphs. */
+.pop-project { top: calc(100% + 6px); left: 8px; right: 8px; padding: 6px; }
+.pop-profile { bottom: calc(100% + 6px); left: 8px; width: 236px; padding: 6px; }
 
 .toast-host { position: fixed; right: 16px; bottom: 16px; z-index: 200;
   display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
@@ -3569,5 +3627,415 @@ h2.mb-mdh { font-size: 17px; }
    1160px, so it never grows past it however large the display is, and a
    rule pinning the list to a fixed width only broke the 40/60 ratio the
    specification asks for -- 430px of 1160 is 37%. */
+
+
+/* ======================================================= my models ==
+   Three panes over the app's own chrome: what kind, which one, and
+   everything about the one selected. It shares the model browser's
+   palette because the two are about the same subject, but it is a page
+   rather than a dialog and sits on the app's ground, not over it. */
+/* The mount fills whatever the app shell leaves, so the three panes reach
+   the bottom of the window. Without this the page laid itself out to its
+   content and left the lower half of a 900px window black. */
+.mm-mount { flex: 1; min-height: 0; display: flex; }
+/* The palette is declared for the page and for everything the controller
+   mounts on document.body: the two menus and the raw-metadata dialog.
+   They go on the body so their `position: fixed` escapes the panes'
+   overflow, which puts them outside `.mm` — where every --mm-* resolves
+   to nothing. Both were drawing with no background at all, and the page
+   behind them read straight through the words. Anything else mounted the
+   same way belongs in this list. */
+.mm, .mm-menu, .mm-raw {
+  --mm-bg: #1c1c1f;
+  --mm-pane: #222225;
+  --mm-surface: #29292e;
+  --mm-line: #313138;
+  --mm-line-soft: #2a2a30;
+  --mm-fg: #f1f1f4;
+  --mm-mut: #9b9ba4;
+  --mm-faint: #77777f;
+  --mm-acc: #6d5df0;
+  --mm-acc-soft: #8d80f5;
+}
+.mm {
+  flex: 1; min-width: 0;
+  display: grid;
+  grid-template-columns: 176px minmax(0, 1fr) 336px;
+  height: 100%; min-height: 0;
+  background: var(--mm-bg); color: var(--mm-fg);
+  font-size: 14px; line-height: 1.5;
+}
+
+/* ------------------------------------------------------- left nav -- */
+.mm-nav { display: flex; flex-direction: column; gap: 2px;
+  padding: 16px 12px; border-right: 1px solid var(--mm-line-soft); min-width: 0; }
+.mm-nav-h { margin: 0 8px 10px; font-size: 14px; font-weight: 650;
+  color: var(--mm-fg); }
+.mm-nav-i { display: flex; align-items: center; gap: 8px; width: 100%;
+  min-height: 34px; padding: 0 10px; border-radius: 8px;
+  font-size: 14px; color: var(--mm-mut); text-align: left; background: transparent; }
+.mm-nav-i:hover:not(:disabled) { background: var(--mm-surface); color: var(--mm-fg); }
+.mm-nav-i.is-on { background: var(--mm-acc); color: #fff; font-weight: 550; }
+.mm-nav-i:disabled { color: var(--mm-faint); opacity: .55; cursor: default; }
+.mm-nav-i:focus-visible { outline: 2px solid var(--mm-acc-soft); outline-offset: -2px; }
+.mm-nav-n { margin-left: auto; font-size: 13px; color: inherit; opacity: .7; }
+
+/* -------------------------------------------------- centre column -- */
+.mm-centre { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.mm-head { display: flex; align-items: center; gap: 16px;
+  padding: 16px 20px 12px; flex-shrink: 0; }
+.mm-h1 { margin: 0; font-size: 17px; font-weight: 650; }
+.mm-filter { position: relative; margin-left: auto; width: min(420px, 46%); }
+.mm-filter-i { position: absolute; left: 11px; top: 50%; transform: translateY(-50%);
+  display: grid; place-items: center; color: var(--mm-faint); pointer-events: none; }
+.mm-filter-in { width: 100%; height: 32px; padding: 0 12px 0 33px;
+  border: 1px solid var(--mm-line); border-radius: 8px;
+  background: #17171a; color: var(--mm-fg); font: inherit; font-size: 13px; }
+.mm-filter-in::placeholder { color: var(--mm-faint); }
+.mm-filter-in:focus { outline: none; border-color: #47474f; }
+.mm-filter-in::-webkit-search-cancel-button { display: none; }
+
+/* A state card takes the room the table would have taken, so the footer
+   stays at the bottom of the window rather than floating under the card
+   with empty space below it. The card itself stays its own size. */
+.mm-fill { flex: 1; min-height: 0; display: grid; place-items: center;
+  padding: 0 12px 8px; overflow-y: auto; }
+.mm-rows { flex: 1; min-height: 0; overflow-y: auto; padding: 0 12px 8px;
+  scrollbar-width: thin; scrollbar-color: #45454d transparent; }
+.mm-rows::-webkit-scrollbar { width: 9px; }
+.mm-rows::-webkit-scrollbar-thumb { background: #45454d; border-radius: 5px;
+  border: 3px solid transparent; background-clip: content-box; }
+
+/* A table, because it is one: five columns that have to line up down the
+   page. Rows are compact rather than carded — the reference fits eleven
+   in the height one card layout gives four. */
+.mm-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.mm-table th { padding: 0 10px 8px; text-align: left; font-size: 13px;
+  font-weight: 500; color: var(--mm-faint); }
+.mm-sortb { font: inherit; color: inherit; padding: 2px 0; background: none; }
+.mm-sortb:hover { color: var(--mm-fg); }
+.mm-sort-a { margin-left: 4px; }
+.mm-c-params { width: 74px; }
+.mm-c-size { width: 80px; }
+.mm-c-when { width: 106px; }
+.mm-c-act { width: 68px; text-align: right; }
+
+/* In a 1280 window the application's own sidebar has already taken 256px
+   before this page starts, which left the file name 110px of a 512px
+   table — the column the table exists for, and the only one whose content
+   varies. The fixed columns and the two side panes each give up a little
+   so it does not. Below this the name still ellipsises rather than any
+   figure being dropped: a size or a date cut in half would be a wrong
+   number, where a shortened name is a shortened name, with the whole of
+   it in the row's tooltip and in the inspector's heading. */
+@media (max-width: 1400px) {
+  .mm { grid-template-columns: 148px minmax(0, 1fr) 300px; }
+  .mm-row > td, .mm-table th { padding-left: 8px; padding-right: 8px; }
+  .mm-c-params { width: 62px; }
+  .mm-c-when { width: 92px; }
+  .mm-head { padding: 14px 16px 10px; }
+  .mm-filter { width: min(280px, 42%); }
+}
+
+.mm-row { height: 42px; cursor: default; }
+.mm-row > td { white-space: nowrap; }
+.mm-row > td { padding: 0 10px; border-top: 1px solid var(--mm-line-soft);
+  vertical-align: middle; }
+.mm-row:hover > td { background: #26262b; }
+.mm-row.is-on > td { background: var(--mm-acc); color: #fff; border-top-color: transparent; }
+.mm-row.is-on + .mm-row > td { border-top-color: transparent; }
+.mm-row.is-on > td:first-child { border-radius: 8px 0 0 8px; }
+.mm-row.is-on > td:last-child { border-radius: 0 8px 8px 0; }
+.mm-row:focus-visible > td { background: #2c2c33; }
+.mm-row:focus-visible { outline: 2px solid var(--mm-acc-soft); outline-offset: -2px; }
+
+.mm-badge { display: inline-flex; align-items: center; height: 21px; padding: 0 8px;
+  border-radius: 6px; font-size: 13px; font-weight: 600;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: var(--mm-fg); background: var(--mm-surface); border: 1px solid var(--mm-line); }
+.mm-badge.is-none { color: var(--mm-faint); font-weight: 400; }
+.mm-row.is-on .mm-badge { color: #fff; background: rgba(255,255,255,.16);
+  border-color: rgba(255,255,255,.2); }
+
+/* One line, ellipsised. The name is the widest thing in the table and
+   letting it wrap turned a 42px row into 60px and lost the density the
+   whole layout is for. The full name is in the title attribute and in the
+   inspector's header. */
+.mm-c-name { min-width: 0; }
+.mm-nameline { display: flex; align-items: center; gap: 8px; min-width: 0; }
+/* `0 1 auto`, not `1 1 auto`: the name takes what it needs and no more, so
+   the capability mark sits against the name it describes instead of being
+   pushed to the far edge of the column, where it reads as belonging to the
+   Size beside it. It still shrinks first when the column is tight. */
+.mm-name { flex: 0 1 auto; min-width: 0; font-size: 14px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: var(--mm-fg);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mm-nameline > .mm-cap-i, .mm-nameline > .mm-bad { flex-shrink: 0; margin-left: 0; }
+.mm-row.is-on .mm-name { color: #fff; }
+
+/* In a row the capability is the icon alone. The width of this column
+   belongs to the name; the word "Tool use" costs 83px of it and is one
+   hover or one glance at the inspector away. The icon keeps its title
+   and an accessible name, so it is not a mystery glyph. */
+.mm-cap-i { display: inline-grid; place-items: center; width: 22px; height: 22px;
+  border-radius: 6px; color: #5f9ede; }
+.mm-row.is-on .mm-cap-i { color: #fff; }
+.mm-c-size, .mm-c-when { font-size: 13px; color: var(--mm-mut); white-space: nowrap; }
+.mm-row.is-on .mm-c-size, .mm-row.is-on .mm-c-when { color: rgba(255,255,255,.85); }
+
+/* An icon with its label, not an icon alone in a circle. */
+.mm-cap { display: inline-flex; align-items: center; gap: 5px; margin-left: 8px;
+  padding: 2px 8px 2px 6px; border-radius: 6px; font-size: 13px;
+  color: #5f9ede; background: rgba(95,158,222,.12); border: 1px solid rgba(95,158,222,.26); }
+.mm-row.is-on .mm-cap { color: #fff; background: rgba(255,255,255,.17);
+  border-color: rgba(255,255,255,.22); }
+.mm-bad { display: inline-flex; align-items: center; gap: 5px; margin-left: 8px;
+  padding: 2px 8px 2px 6px; border-radius: 6px; font-size: 13px;
+  color: #e0736b; background: rgba(224,115,107,.12); border: 1px solid rgba(224,115,107,.28); }
+
+.mm-ico { width: 28px; height: 28px; border-radius: 7px; display: inline-grid;
+  place-items: center; color: var(--mm-faint); background: transparent; }
+.mm-ico:hover { color: var(--mm-fg); background: var(--mm-surface); }
+.mm-row.is-on .mm-ico { color: rgba(255,255,255,.82); }
+.mm-row.is-on .mm-ico:hover { color: #fff; background: rgba(255,255,255,.16); }
+.mm-ico:focus-visible { outline: 2px solid var(--mm-acc-soft); outline-offset: 1px; }
+
+/* --------------------------------------------------------- footer -- */
+.mm-foot { display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+  padding: 10px 20px; border-top: 1px solid var(--mm-line-soft);
+  font-size: 13px; color: var(--mm-mut); }
+/* The sentence is a count and a size and is never long; the path beside
+   it is arbitrarily long and already ellipsises from the left, keeping
+   the folder name that identifies it. So the path gives up the width and
+   the sentence keeps all of its own — it was losing its last two words
+   to a ten-pixel overflow. */
+.mm-foot-s { flex: 0 0 auto; white-space: nowrap; }
+.mm-dir { flex: 0 1 auto; min-width: 96px; max-width: 340px; padding: 4px 9px; border-radius: 7px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px; color: var(--mm-mut); background: var(--mm-surface);
+  border: 1px solid var(--mm-line);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: rtl; }
+.mm-dir:hover { color: var(--mm-fg); border-color: #47474f; }
+
+/* ------------------------------------------------------ inspector -- */
+.mm-side { display: flex; flex-direction: column; min-height: 0;
+  border-left: 1px solid var(--mm-line-soft); background: var(--mm-pane); }
+.mm-side-h { display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+  padding: 15px 16px 0; min-width: 0; color: var(--mm-mut); }
+.mm-side-t { margin: 0; font-size: 15px; font-weight: 650; color: var(--mm-fg);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Content width for the longer label, the rest for the primary action.
+   Two equal halves made "Use in New Chat" wrap to two lines in a 300px
+   inspector, leaving one button half again as tall as the other. */
+.mm-side-a > .mm-btn { white-space: nowrap; min-width: 0; }
+.mm-side-a { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px;
+  padding: 12px 16px; flex-shrink: 0; }
+
+.mm-tabs { display: flex; gap: 4px; padding: 0 16px 10px; flex-shrink: 0; }
+.mm-tab { flex: 1; display: inline-flex; align-items: center; justify-content: center;
+  gap: 6px; height: 30px; border-radius: 8px; font-size: 13px; font-weight: 550;
+  color: var(--mm-mut); background: transparent; }
+.mm-tab:hover { color: var(--mm-fg); background: var(--mm-surface); }
+.mm-tab.is-on { color: var(--mm-fg); background: var(--mm-surface);
+  border: 1px solid var(--mm-line); }
+.mm-tab:focus-visible { outline: 2px solid var(--mm-acc-soft); outline-offset: 1px; }
+
+.mm-side-b { flex: 1; min-height: 0; overflow-y: auto;
+  scrollbar-width: thin; scrollbar-color: #45454d transparent; }
+.mm-side-b::-webkit-scrollbar { width: 9px; }
+.mm-side-b::-webkit-scrollbar-thumb { background: #45454d; border-radius: 5px;
+  border: 3px solid transparent; background-clip: content-box; }
+.mm-pane { padding: 4px 16px 20px; }
+
+.mm-sec-h { display: flex; align-items: center; gap: 7px; margin: 8px 0 10px;
+  font-size: 14px; font-weight: 600; color: var(--mm-fg); }
+.mm-sec-h svg { color: var(--mm-faint); }
+
+/* Label left, value as a pill right — the reference's row shape. */
+.mm-kv { display: flex; align-items: center; gap: 12px; min-height: 30px;
+  border-bottom: 1px solid var(--mm-line-soft); }
+.mm-kv:last-of-type { border-bottom: 0; }
+.mm-kv-k { font-size: 13px; color: var(--mm-mut); flex-shrink: 0; }
+.mm-kv-v { margin-left: auto; max-width: 62%; padding: 2px 8px; border-radius: 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px; color: var(--mm-fg); background: var(--mm-surface);
+  border: 1px solid var(--mm-line);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* The long ones wrap instead: a name truncated to "Qwen2.5 Coder 7B
+   Instru…" has lost the half that says which build this is. */
+.mm-kv.is-long { align-items: flex-start; padding: 5px 0; }
+.mm-kv.is-long .mm-kv-k { padding-top: 3px; }
+.mm-kv.is-long .mm-kv-v { max-width: 70%; white-space: normal; overflow-wrap: anywhere;
+  line-height: 1.45; }
+.mm-kv-v.is-none { font-family: inherit; font-style: italic; color: var(--mm-faint);
+  background: transparent; border-color: transparent; }
+
+.mm-note { margin: 8px 0 0; font-size: 13px; line-height: 1.45; color: var(--mm-faint); }
+.mm-err, .mm-ok { display: flex; align-items: flex-start; gap: 7px;
+  margin: 0 16px 10px; padding: 8px 10px; border-radius: 8px; font-size: 13px; }
+.mm-err { color: #e0736b; background: rgba(224,115,107,.1);
+  border: 1px solid rgba(224,115,107,.28); }
+.mm-ok { color: #52b483; background: rgba(82,180,131,.1);
+  border: 1px solid rgba(82,180,131,.28); }
+.mm-err svg, .mm-ok svg { flex-shrink: 0; margin-top: 1px; }
+.mm-err-t { margin: 6px 0 0; font-size: 13px; color: #e0736b; }
+.mm-ok-t { margin: 6px 0 0; font-size: 13px; color: #52b483; }
+
+/* ------------------------------------------------------- controls -- */
+.mm-ctl { padding: 12px 0; border-bottom: 1px solid var(--mm-line-soft); }
+.mm-ctl-h { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.mm-ctl-l { font-size: 14px; color: var(--mm-fg); }
+.mm-ctl-s { font-size: 13px; color: var(--mm-faint); }
+/* The ceiling, stated between the value and the slider it constrains. */
+.mm-ctl-c { display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  margin: 0 0 9px; font-size: 13px; color: var(--mm-mut); }
+.mm-pill { padding: 1px 7px; border-radius: 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px; color: var(--mm-fg); background: var(--mm-surface);
+  border: 1px solid var(--mm-line); }
+.mm-ctl-n { margin: 6px 0 0; font-size: 13px; color: var(--mm-faint); }
+.mm-num { width: 82px; margin-left: auto; height: 26px; padding: 0 8px;
+  border: 1px solid var(--mm-line); border-radius: 6px; background: #17171a;
+  color: var(--mm-fg); font: inherit; font-size: 13px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.mm-num:focus { outline: none; border-color: var(--mm-acc-soft); }
+
+.mm-range { width: 100%; height: 18px; background: none; appearance: none; }
+.mm-range::-webkit-slider-runnable-track { height: 4px; border-radius: 2px;
+  background: #35353d; }
+.mm-range::-webkit-slider-thumb { appearance: none; width: 14px; height: 14px;
+  margin-top: -5px; border-radius: 50%; background: var(--mm-acc);
+  border: 2px solid #1c1c1f; }
+.mm-range::-moz-range-track { height: 4px; border-radius: 2px; background: #35353d; }
+.mm-range::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%;
+  background: var(--mm-acc); border: 2px solid #1c1c1f; }
+.mm-range:focus-visible { outline: 2px solid var(--mm-acc-soft); outline-offset: 2px; }
+
+.mm-row2 { display: flex; align-items: flex-start; gap: 12px; padding: 11px 0;
+  border-bottom: 1px solid var(--mm-line-soft); }
+.mm-row2 > div:first-child { flex: 1; min-width: 0; }
+.mm-row2 .mm-note { margin-top: 3px; }
+.mm-row2 .mm-num { margin-left: 0; flex-shrink: 0; }
+
+.mm-switch { flex-shrink: 0; width: 38px; height: 22px; border-radius: 11px;
+  background: #35353d; border: 1px solid var(--mm-line); position: relative;
+  transition: background 140ms ease-out; }
+.mm-switch > span { position: absolute; top: 2px; left: 2px; width: 16px; height: 16px;
+  border-radius: 50%; background: #8a8a94; transition: transform 140ms ease-out; }
+.mm-switch[aria-checked="true"] { background: var(--mm-acc); border-color: transparent; }
+.mm-switch[aria-checked="true"] > span { transform: translateX(16px); background: #fff; }
+.mm-switch:focus-visible { outline: 2px solid var(--mm-acc-soft); outline-offset: 2px; }
+
+.mm-ta { width: 100%; padding: 9px 11px; border: 1px solid var(--mm-line);
+  border-radius: 8px; background: #17171a; color: var(--mm-fg);
+  font: inherit; font-size: 13px; line-height: 1.5; resize: vertical; }
+.mm-ta:focus { outline: none; border-color: var(--mm-acc-soft); }
+.mm-ta.mm-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+.mm-est { margin-top: 14px; padding: 12px 14px; border-radius: 9px;
+  background: var(--mm-surface); border: 1px solid var(--mm-line-soft); }
+.mm-est-h { margin: 0 0 6px; font-size: 13px; font-weight: 600; color: var(--mm-fg); }
+
+/* ----------------------------------------------------- accordions -- */
+.mm-accs { padding-top: 0; }
+.mm-acc { border-bottom: 1px solid var(--mm-line-soft); }
+.mm-acc-h { display: flex; align-items: center; gap: 9px; min-height: 40px;
+  padding: 0 2px; font-size: 14px; font-weight: 550; color: var(--mm-fg);
+  cursor: pointer; list-style: none; }
+.mm-acc-h::-webkit-details-marker { display: none; }
+.mm-acc-h svg:first-child { color: var(--mm-faint); flex-shrink: 0; }
+.mm-acc-h svg:last-child { margin-left: auto; color: var(--mm-faint);
+  transition: transform 160ms ease-out; }
+.mm-acc[open] > .mm-acc-h svg:last-child { transform: rotate(90deg); }
+.mm-acc-h:hover { color: var(--mm-fg); }
+.mm-acc-h:focus-visible { outline: 2px solid var(--mm-acc-soft); outline-offset: -2px;
+  border-radius: 6px; }
+.mm-acc-b { padding: 2px 2px 14px; }
+.mm-acc-b > .mm-ctl:last-child, .mm-acc-b > .mm-row2:last-child { border-bottom: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .mm-acc-h svg:last-child, .mm-switch, .mm-switch > span { transition: none; }
+}
+
+/* --------------------------------------------------------- shared -- */
+.mm-btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  height: 32px; padding: 0 12px; border-radius: 8px; font-size: 13px; font-weight: 600;
+  color: var(--mm-fg); background: var(--mm-surface); border: 1px solid var(--mm-line); }
+.mm-btn:hover:not(:disabled) { background: #33333b; }
+.mm-btn-p { color: #fff; background: var(--mm-acc); border-color: transparent; }
+.mm-btn-p:hover:not(:disabled) { background: #7d6ef4; }
+.mm-btn:disabled { opacity: .5; }
+.mm-btn:focus-visible { outline: 2px solid var(--mm-acc-soft); outline-offset: 2px; }
+.mm-spin { width: 13px; height: 13px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,.35); border-top-color: #fff;
+  animation: mm-spin .7s linear infinite; }
+@keyframes mm-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .mm-spin { animation: none; } }
+
+.mm-state { margin: 40px auto; max-width: 420px; padding: 24px 20px;
+  border-radius: 11px; background: var(--mm-surface);
+  border: 1px dashed var(--mm-line); text-align: center; }
+.mm-state-t { margin: 0; font-size: 14px; font-weight: 600; color: var(--mm-fg); }
+.mm-state-b { margin: 7px 0 0; font-size: 13px; line-height: 1.5; color: var(--mm-mut); }
+.mm-state .mm-btn { margin-top: 13px; }
+.mm-skel { height: 34px; margin: 8px 12px; border-radius: 7px; background: #2a2a30;
+  animation: mm-pulse 1.4s ease-in-out infinite; }
+@keyframes mm-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .55; } }
+@media (prefers-reduced-motion: reduce) { .mm-skel { animation: none; } }
+
+/* The row and folder menus, positioned by the controller.
+
+   These are appended to document.body so that `position: fixed` escapes
+   the panes' overflow, which puts them outside `.mm` — where every
+   --mm-* it declares resolves to nothing. The menu was drawing with no
+   background at all and the inspector read straight through it. So the
+   palette is repeated here, on the element itself, rather than inherited
+   from an ancestor the menu does not have. */
+.mm-menu {
+  position: fixed; z-index: 70; min-width: 232px; padding: 5px;
+  border-radius: 10px; background: var(--mm-surface); color: var(--mm-fg);
+  font-size: 14px; line-height: 1.5;
+  border: 1px solid var(--mm-line); box-shadow: 0 18px 46px rgba(0,0,0,.5); }
+.mm-mi { display: flex; align-items: center; gap: 9px; width: 100%; min-height: 32px;
+  padding: 0 9px; border-radius: 7px; font-size: 13px; color: var(--mm-fg);
+  text-align: left; background: transparent; }
+.mm-mi svg { color: var(--mm-faint); flex-shrink: 0; }
+.mm-mi:hover:not(:disabled) { background: #34343d; }
+.mm-mi:disabled { opacity: .45; cursor: default; }
+.mm-mi.is-bad, .mm-mi.is-bad svg { color: #e0736b; }
+.mm-mi:focus-visible { outline: 2px solid var(--mm-acc-soft); outline-offset: -2px; }
+.mm-sep { height: 1px; margin: 4px 6px; background: var(--mm-line); }
+
+/* Raw metadata, as a drawer over the page. */
+.mm-raw { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center;
+  background: rgba(8,8,10,.6); }
+.mm-raw-p { width: min(760px, calc(100vw - 64px)); max-height: min(720px, calc(100vh - 64px));
+  display: flex; flex-direction: column; border-radius: 14px;
+  background: var(--mm-pane); border: 1px solid var(--mm-line);
+  box-shadow: 0 30px 80px rgba(0,0,0,.6); }
+.mm-raw-h { display: flex; align-items: center; gap: 10px; padding: 14px 16px;
+  border-bottom: 1px solid var(--mm-line-soft); }
+.mm-raw-h h2 { margin: 0; font-size: 15px; font-weight: 650; }
+.mm-raw-b { flex: 1; min-height: 0; overflow: auto; padding: 6px 16px 16px; }
+.mm-raw-r { display: flex; gap: 14px; padding: 6px 0;
+  border-bottom: 1px solid var(--mm-line-soft); font-size: 13px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.mm-raw-k { width: 42%; flex-shrink: 0; color: var(--mm-mut); word-break: break-all; }
+.mm-raw-v { flex: 1; min-width: 0; color: var(--mm-fg); word-break: break-word; }
+
+/* ----------------------------------------------------- responsive -- */
+@media (max-width: 1180px) {
+  .mm { grid-template-columns: 200px 1fr 320px; }
+}
+@media (max-width: 980px) {
+  /* The inspector is the pane worth keeping whole, so the nav collapses
+     into a row of chips above the table rather than squeezing three. */
+  .mm { grid-template-columns: 1fr 320px; }
+  .mm-nav { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap;
+    border-right: 0; border-bottom: 1px solid var(--mm-line-soft);
+    padding: 10px 12px; }
+  .mm-nav-h { display: none; }
+  .mm-nav-i { width: auto; }
+}
 
   

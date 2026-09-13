@@ -13,6 +13,7 @@
 
 mod engine;
 mod hardware;
+mod job;
 mod sidecar;
 
 use std::path::PathBuf;
@@ -342,6 +343,84 @@ async fn choose_project(app: AppHandle) -> Result<Option<String>, String> {
     }))
 }
 
+/// Choose a folder, for something other than a project.
+///
+/// The same dialog as `choose_project` with its own title, because a person
+/// being asked where their model files live should not be asked to "choose a
+/// project folder". The renderer still never names a path itself.
+#[tauri::command]
+async fn choose_directory(app: AppHandle, title: Option<String>) -> Result<Option<String>, String> {
+    let (tx, rx) = std::sync::mpsc::channel();
+    app.dialog()
+        .file()
+        .set_title(title.unwrap_or_else(|| "Choose a folder".into()))
+        .pick_folder(move |picked| {
+            let _ = tx.send(picked);
+        });
+    let picked = rx
+        .recv()
+        .map_err(|_| "The folder dialog closed unexpectedly.".to_string())?;
+
+    Ok(picked.map(|p| match p.into_path() {
+        Ok(path) => path.to_string_lossy().to_string(),
+        Err(e) => e.to_string(),
+    }))
+}
+
+/// Show a file in the system file manager, selected.
+///
+/// Refuses anything that is not an existing path, so a renderer cannot use
+/// this to probe the filesystem for what exists by watching which calls
+/// succeed — the answer is the same either way.
+///
+/// The platform calls differ in an important detail: Explorer and Finder both
+/// take a "select this file" form that opens the containing folder with the
+/// file highlighted, which is what people mean by "show in folder". Linux has
+/// no portable equivalent, so it opens the directory.
+#[tauri::command]
+fn reveal_in_folder(path: String) -> Result<(), String> {
+    let p = PathBuf::from(&path);
+    if !p.exists() {
+        return Err(format!("There is nothing at {path} any more."));
+    }
+
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+        /* No shell. The path is passed as one argument, so a file name
+           containing a quote or an ampersand cannot become a command. */
+        std::process::Command::new("explorer.exe")
+            .arg(format!("/select,{}", p.display()))
+            .creation_flags(CREATE_NO_WINDOW)
+            .spawn()
+            .map_err(|e| format!("File Explorer would not open: {e}"))?;
+        return Ok(());
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("open")
+            .arg("-R")
+            .arg(&p)
+            .spawn()
+            .map_err(|e| format!("Finder would not open: {e}"))?;
+        return Ok(());
+    }
+
+    #[cfg(all(not(windows), not(target_os = "macos")))]
+    {
+        let dir = if p.is_dir() { p.clone() } else {
+            p.parent().map(|x| x.to_path_buf()).unwrap_or(p.clone())
+        };
+        std::process::Command::new("xdg-open")
+            .arg(&dir)
+            .spawn()
+            .map_err(|e| format!("The file manager would not open: {e}"))?;
+        Ok(())
+    }
+}
+
 /// A development log next to the temp directory.
 ///
 /// The WebView swallows renderer errors that happen before the console is
@@ -467,6 +546,8 @@ fn main() {
             runtime_stop,
             runtime_send,
             choose_project,
+            choose_directory,
+            reveal_in_folder,
             hardware_probe,
             engine_installed,
             engine_status,

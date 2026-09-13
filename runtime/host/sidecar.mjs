@@ -29,9 +29,19 @@ import { openProfiles } from "../core/profiles.mjs";
 import { runConformance, agentAllowed } from "../core/conformance.mjs";
 import { emptyProfile, AgentGrade, browserModeFor } from "../core/capability.mjs";
 import { summarise, renderSummary } from "../core/compact.mjs";
-import { listModels, deleteModel, verifyModel, defaultModelDir } from "../core/models/files.mjs";
+import {
+  listModels, deleteModel, verifyModel, defaultModelDir, setModelDir,
+} from "../core/models/files.mjs";
+import { mkdirSync } from "node:fs";
 import { downloadModel, listRepoFiles } from "../core/models/download.mjs";
 import { describeModel, compatibilityFor, installStateFor } from "../core/models/browser.mjs";
+/* summarise is aliased: compact.mjs already exports one for session
+   transcripts, and two bindings of that name in one module is a syntax error
+   rather than a subtle bug -- but naming them apart is what keeps the two
+   kinds of summary distinguishable at the call site. */
+import {
+  readGgufHeader, summarise as summariseGguf, metaRows,
+} from "../core/models/gguf.mjs";
 import { fitFor, suggestLoad } from "../core/models/fit.mjs";
 import {
   installEngine, listEngines, removeEngine, engineDirName,
@@ -236,6 +246,8 @@ async function handle(frame) {
     case Request.MODEL_VERIFY: return modelVerify(id, payload);
     case Request.MODEL_BROWSE: return modelBrowse(id, payload);
     case Request.MODEL_DESCRIBE: return modelDescribe(id, payload);
+    case Request.MODEL_META: return modelMeta(id, payload);
+    case Request.MODEL_DIR: return modelDir(id, payload);
     case Request.ENGINE_LIST: return engineList(id);
     case Request.ENGINE_INSTALL: return engineInstall(id, payload);
     case Request.ENGINE_INSTALL_CANCEL: return engineInstallCancel(id);
@@ -472,6 +484,80 @@ async function modelDescribe(id, payload) {
     ok: true,
     model: { ...r.model, variants },
     hardwareKnown: !!hardware,
+  }, { id }));
+}
+
+/**
+ * One installed file's own metadata.
+ *
+ * Read from the GGUF header rather than from Hugging Face. For a file on disk
+ * that distinction is the whole point: it may have been renamed, it may not be
+ * in any repository, and the header is the only account of it that cannot
+ * disagree with what will actually be loaded. It is also where the real
+ * context ceiling and layer count live, which the load controls clamp to.
+ *
+ * The chat template is not sent. It is tens of kilobytes of Jinja, the
+ * inspector shows a conclusion drawn from it rather than the text, and a
+ * template is the one metadata field large enough to matter on the pipe.
+ */
+function modelMeta(id, payload) {
+  const name = String(payload.name ?? "");
+  const found = listModels().find((m) => m.name === name);
+  if (!found) return fail(id, ErrorCode.BAD_ARGUMENT, `No model called ${name}.`);
+
+  const head = readGgufHeader(found.path);
+  if (!head.ok) {
+    return send(notify(Notify.MODEL_META, {
+      ok: false, name, path: found.path, reason: head.reason,
+    }, { id }));
+  }
+
+  const summary = summariseGguf(head.meta);
+  const { chatTemplate, ...rest } = summary;
+  send(notify(Notify.MODEL_META, {
+    ok: true,
+    name,
+    path: found.path,
+    bytes: found.bytes,
+    version: head.version,
+    tensors: head.tensors,
+    keys: head.keys,
+    summary: { ...rest, hasChatTemplate: !!chatTemplate },
+    /* The raw view. Rows rather than the object, because the interface shows
+       them as a list and sorting them here keeps one ordering. */
+    raw: metaRows(head.meta),
+  }, { id }));
+}
+
+/**
+ * Where the models folder is, and moving it.
+ *
+ * Reading is free. Writing only records the choice — nothing is copied and no
+ * existing file is touched — because moving forty gigabytes is not something
+ * to do inside a request, and a person who points at a folder that already has
+ * models in it wants those, not a copy of the old ones.
+ */
+function modelDir(id, payload) {
+  if (payload.set) {
+    const next = String(payload.set);
+    try {
+      /* Created if missing, so pointing at a new folder works without the
+         person having to make it first. A path that cannot be created is
+         reported rather than silently kept as the old one. */
+      mkdirSync(next, { recursive: true });
+      setModelDir(next);
+    } catch (/** @type {any} */ e) {
+      return fail(id, ErrorCode.BAD_ARGUMENT,
+        `That folder could not be used: ${e && e.message ? e.message : e}`);
+    }
+  }
+
+  const dir = defaultModelDir();
+  const models = listModels();
+  send(notify(Notify.MODEL_DIR, {
+    dir,
+    count: models.length,
+    bytes: models.reduce((n, m) => n + (m.bytes || 0), 0),
   }, { id }));
 }
 

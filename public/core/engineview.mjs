@@ -98,12 +98,15 @@ export function engineBlock({ state, installed, log = [], desktop = true }) {
       "ForgeLocal's engine runs in the desktop app. This preview has no host to start one.");
   }
   if (!installed) {
-    /* The one failure with a command attached, because it is the one the
-       person can fix in a terminal in ten seconds. */
+    /* No terminal command here any more. Someone who installed the app does
+       not have a checkout of it to run scripts from, and this build ships
+       without the engine deliberately — it is a 150MB to 540MB download that
+       depends on the machine, so it is fetched rather than bundled.
+       What is honest to say is where it comes from and what else will do. */
     return `${row("warn", "The engine is not installed",
-      "ForgeLocal runs models itself, and the engine binary is not in this build.")}
-<p class="set-d">Fetch it with:</p>
-<pre class="lv-out m">node scripts/fetch-engine.mjs --list</pre>
+      "ForgeLocal runs models itself. The engine is downloaded for this machine rather "
+      + "than bundled, because the build that suits a given graphics card is between "
+      + "150MB and 540MB, and this copy has not been fetched yet.")}
 <p class="set-d">An external server such as LM Studio can be used instead — see the provider setting below.</p>`;
   }
 

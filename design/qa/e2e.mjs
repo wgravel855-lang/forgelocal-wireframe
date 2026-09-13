@@ -587,6 +587,31 @@ test("no surface tells a desktop user they need the desktop app", () => {
     return lines.slice(Math.max(0, i - 40), i + 1).join("\n");
   };
 
+  /**
+   * Functions whose own body asks the host. Calling one of these is asking,
+   * so a guard that calls one has measured as surely as one that calls
+   * `hasTauri()` itself — and a page with several of these claims is better
+   * off with one helper than with the call copied into each site.
+   *
+   * Found rather than listed, so a new helper needs no change here. What this
+   * does not admit is the thing the rule exists to forbid: a flag that was
+   * true once. A remembered boolean is not a function and never matches.
+   */
+  const measures = new Set(["hasTauri"]);
+  lines.forEach((line, i) => {
+    const decl = /^  (?:async )?function ([a-zA-Z][\w$]*)/.exec(line);
+    if (!decl) return;
+    let end = lines.length;
+    for (let k = i + 1; k < lines.length; k++) {
+      if (/^  (?:async )?function [a-zA-Z]/.test(lines[k])) { end = k; break; }
+    }
+    /* One level, deliberately. Following the chain further would end up
+       admitting most of the file, because a great deal of it eventually
+       reaches the host. */
+    if (/\bhasTauri\(\)/.test(lines.slice(i + 1, end).join("\n"))) measures.add(decl[1]);
+  });
+  const asks = new RegExp(`\\b(?:${[...measures].join("|")})\\(`);
+
   const claims = [];
   lines.forEach((line, i) => {
     const code = line.replace(/\/\/.*$/, "");
@@ -594,7 +619,15 @@ test("no surface tells a desktop user they need the desktop app", () => {
     /* Conditional on what was measured, not on which app this is: a host that
        looked and could not tell says so, and that is legitimate. */
     if (/res\.measured|measured \?/.test(code)) return;
-    if (!/hasTauri\(\)/.test(enclosing(i))) claims.push(`${i + 1}: ${code.trim().slice(0, 90)}`);
+
+    /* Where the claim is its own guard, the guard's condition is what has to
+       have asked. Reading the whole enclosing function instead lets one
+       correct guard vouch for a stale one beside it, which is how four of
+       these sat here reading a remembered boolean while the function around
+       them measured. */
+    const guard = /^\s*if \((.*?)\)\s*return /.exec(code);
+    const where = guard ? guard[1] : enclosing(i);
+    if (!asks.test(where)) claims.push(`${i + 1}: ${code.trim().slice(0, 90)}`);
   });
 
   assert.deepEqual(claims, [],
@@ -643,4 +676,166 @@ test("the composer's button still advertises the shortcut it has", () => {
     assert.match(js, /function wireBrowserShortcut\(\)/,
       'the button says "Ctrl L" and nothing binds it');
   }
+});
+
+/* ------------------- an element outside its palette paints nothing */
+
+test("a menu the controller moves to the body still has its colours", () => {
+  /* The row and folder menus are appended to `document.body` so that their
+     `position: fixed` escapes the panes' own overflow. That also moves them
+     out of `.mm`, which is where the page's --mm-* custom properties were
+     declared — so every one of them resolved to nothing, the menu drew with
+     no background at all, and the inspector behind it read straight through
+     the words.
+
+     Nothing in a unit test can see this: the markup was correct, the rule was
+     correct, and the two simply never met. The rule is therefore structural.
+     Any selector that a body-mounted element carries has to be in the same
+     declaration as the page itself, or it inherits from an ancestor it does
+     not have. */
+  const css = readFileSync(join(pub, "assets/forgelocal.css"), "utf8");
+  const js = readFileSync(join(pub, "assets/forgelocal.js"), "utf8");
+
+  /* Comments are stripped first: a selector chunk is everything since the
+     previous rule closed, which otherwise includes the comment above it. */
+  const bare = css.replace(/\/\*[\s\S]*?\*\//g, " ");
+
+  /* Which of the page's elements are at risk, found rather than listed, so a
+     third one added later is covered without touching this test.
+
+     The proxy is `position: fixed`. Tracing the mounts out of the controller
+     is not reliable — one of these two gets its class from an HTML string
+     rather than an assignment — but the reason an element is moved to the
+     body is always the same: it is fixed, and it has to escape the panes'
+     overflow to be positioned freely. So a fixed element in this page's
+     namespace is one that may not have `.mm` above it, and must carry the
+     palette itself. */
+  assert.match(js, /document\.body\.appendChild\(/,
+    "nothing is mounted on the body any more; this rule may no longer be needed");
+  const mounted = new Set(
+    [...bare.matchAll(/([^{}]*?)\{([^}]*position:\s*fixed[^}]*)\}/g)]
+      .flatMap((m) => m[1].split(",").map((s) => s.trim()))
+      .filter((s) => /^\.mm-[\w-]+$/.test(s)));
+  assert.ok(mounted.size >= 2,
+    `expected the menus and the raw dialog, found ${[...mounted].join(", ") || "nothing"}`);
+
+  /* Which selectors declare the palette. */
+  const declaring = [...bare.matchAll(/([^{}]+)\{([^}]*--mm-bg\s*:[^}]*)\}/g)]
+    .flatMap((m) => m[1].split(",").map((s) => s.trim()));
+  assert.ok(declaring.includes(".mm"), "the page itself should declare the palette");
+  for (const sel of mounted) {
+    assert.ok(declaring.includes(sel),
+      `${sel} is mounted on the body, so it must be in the same palette declaration as .mm `
+      + `or every colour it asks for resolves to nothing; the palette is declared for: `
+      + declaring.join(", "));
+  }
+
+  /* And they do paint from the palette, so the scoping matters. */
+  for (const sel of mounted) {
+    const rules = [...bare.matchAll(new RegExp(`\\${sel}[\\w-]*[^{}]*\\{([^}]*)\\}`, "g"))]
+      .map((m) => m[1]).join("");
+    assert.match(rules, /background:\s*var\(--mm-/,
+      `${sel} or its children should paint from the palette`);
+  }
+});
+
+/* ------------------------------------ the collapsed sidebar goes somewhere */
+
+test("the collapsed rail reaches a new chat, My Models and the model search", () => {
+  /* Collapsed, the sidebar was a column of icons that acted on the sidebar
+     itself — a search, a plus, a toggle — and reached no page at all. The two
+     pages a person moves between could only be opened by expanding it first. */
+  /* Only the routes that have a sidebar. Review and Settings are full-width
+     pages with none, so a rail on them would be a rail on nothing. */
+  const withSidebar = APP.filter((r) => page(r).includes('class="sidebar"'));
+  assert.ok(withSidebar.length >= 5,
+    `expected several routes with a sidebar, found ${withSidebar.length}`);
+
+  for (const route of withSidebar) {
+    const html = page(route);
+    const rail = [...html.matchAll(/<a class="railbtn" data-rail="([^"]+)"[^>]*aria-label="([^"]+)"/gs)]
+      .map((m) => ({ href: m[1], label: m[2] }));
+    assert.equal(rail.length, 3, `${route}: expected three rail destinations, got ${rail.length}`);
+    assert.deepEqual(rail.map((r) => r.href),
+      ["/app/", "/app/models/installed/", "/app/models/"],
+      `${route}: the rail's destinations, in order`);
+    assert.deepEqual(rail.map((r) => r.label), ["New chat", "My Models", "Model search"]);
+    /* Every one of them is a page this build actually ships. */
+    for (const r of rail) {
+      const dir = r.href.replace(/^\/|\/$/g, "");
+      assert.ok(existsSync(join(pub, dir, "index.html")),
+        `${route}: the rail points at ${r.href}, which was not built`);
+    }
+  }
+});
+
+test("collapsing the sidebar never removes the only way to open it again", () => {
+  /* The rail hides what the open sidebar carries. The toggle is the exception
+     and must never pick up data-hide-collapsed: without it the sidebar can be
+     closed and not reopened. */
+  const html = page("app");
+  const toggle = /<button[^>]*data-sidebar-toggle[^>]*>/.exec(html);
+  assert.ok(toggle, "the sidebar has a toggle");
+  assert.ok(!toggle[0].includes("data-hide-collapsed"),
+    "the toggle is hidden when collapsed, which traps the sidebar closed");
+});
+
+test("the rail is not a second copy of what the open sidebar already shows", () => {
+  const css = readFileSync(join(pub, "assets/forgelocal.css"), "utf8")
+    .replace(/\/\*[\s\S]*?\*\//g, " ");
+  /* Off by default, on only under the collapsed shell. Both slots: the chat
+     button sits in its own element above the project row, which is the only
+     way to put it there — the project row cannot move into the rail, because
+     its picker is positioned against `.side-nav`. */
+  for (const sel of [".side-rail", ".side-chat"]) {
+    assert.match(css, new RegExp(`\\${sel}[^{}]*\\{[^}]*display:\\s*none`),
+      `${sel} should be absent while the sidebar is open`);
+    assert.match(css,
+      new RegExp(`\\.shell\\.is-collapsed\\s+\\${sel}\\s*\\{[^}]*display:\\s*flex`),
+      `${sel} should be present while it is collapsed`);
+  }
+});
+
+test("a menu opened from the rail is a menu, not a column of icons", () => {
+  /* The collapsed sidebar strips labels and centres icons so a 54px rail
+     reads. Its menus are inside that sidebar but open beside it at full
+     width, so those two rules must not reach into them: the project picker
+     opened as a 28px column of three identical folder icons with every
+     project name hidden. */
+  const css = readFileSync(join(pub, "assets/forgelocal.css"), "utf8")
+    .replace(/\/\*[\s\S]*?\*\//g, " ");
+
+  /* The menus carry no inline geometry, or no rule could reposition them. */
+  const html = page("app");
+  for (const id of ["project-pop", "profile-pop"]) {
+    const el = new RegExp(`<div[^>]*id="${id}"[^>]*>`).exec(html);
+    assert.ok(el, `${id} is in the sidebar`);
+    assert.ok(!/\sstyle="/.test(el[0]),
+      `${id} pins its geometry inline, which the collapsed rail cannot override: ${el[0]}`);
+  }
+
+  /* Collapsed, both clear the rail rather than opening inside it. */
+  assert.match(css, /\.shell\.is-collapsed\s+\.pop-project[\s\S]{0,200}?left:\s*calc\(100% - 6px\)/,
+    "the project menu should open beside the rail");
+
+  /* A container that draws its divider with ::before has to stack, or the
+     line becomes a flex sibling of the icon beside it: `.side-nav` was a row,
+     so the divider sat to the left of the project folder and pushed it off
+     the rail's centre line. */
+  for (const m of css.matchAll(/\.shell\.is-collapsed\s+\.([\w-]+)::before\s*\{[^}]*\}/g)) {
+    const owner = m[1];
+    const rule = new RegExp(`\\.shell\\.is-collapsed\\s+\\.${owner}\\s*\\{([^}]*)\\}`).exec(css);
+    assert.ok(rule, `.${owner} draws a collapsed divider but has no collapsed rule`);
+    if (/display:\s*flex/.test(rule[1])) {
+      assert.match(rule[1], /flex-direction:\s*column/,
+        `.${owner} draws a ::before divider inside a flex row, which puts the line `
+        + `beside its icon instead of above it`);
+    }
+  }
+
+  /* And the label-stripping rules are undone inside any menu. */
+  assert.match(css, /\.shell\.is-collapsed\s+\.sidebar\s+\.popover\s+\.t[\s\S]{0,160}?display:\s*revert/,
+    "a menu's labels must survive the collapsed sidebar's hiding rule");
+  assert.match(css, /\.shell\.is-collapsed\s+\.sidebar\s+\.popover\s+\.srow[\s\S]{0,120}?justify-content:\s*flex-start/,
+    "a menu's rows must not be centred like rail icons");
 });
