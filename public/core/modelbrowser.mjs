@@ -69,8 +69,15 @@ const MB_ICON = Object.freeze({
   // Capabilities. Deliberately three different shapes, not three dots: they
   // are read at a glance in a 66px row and colour alone is not enough.
   vision: svg('<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.8"/>'),
-  tool: svg('<path d="M14.5 6a3.9 3.9 0 0 0 5.1 5.1l-7.4 7.4a2.4 2.4 0 0 1-3.4-3.4z"/><path d="m6.5 14.5-2 2a2 2 0 1 0 2.8 2.8l2-2"/>'),
-  reasoning: svg('<circle cx="12" cy="12" r="8.5"/><path d="M12 8v4.5"/><path d="M12 16h.01"/>'),
+  /* A wrench with an open jaw and a straight handle. The previous path was
+     neither — two arcs that met wrong and rendered as a blob nobody could name.
+     Drawn as one stroke so the jaw stays open at 13px, which is the feature
+     that makes it a wrench rather than a lollipop. */
+  tool: svg('<path d="M19.4 4.3a5 5 0 0 0-6.6 6.6l-8 8a2.1 2.1 0 0 0 3 3l8-8a5 5 0 0 0 6.6-6.6l-3 3-2.6-.4-.4-2.6z"/>'),
+  /* A bulb. This was a circle with an exclamation mark in it, which is the
+     universal warning glyph — so a model that supports reasoning was marked
+     with the same symbol the interface uses for something being wrong. */
+  reasoning: svg('<path d="M12 3a5.5 5.5 0 0 0-3.2 10c.5.4.8 1 .8 1.6v.4h4.8v-.4c0-.6.3-1.2.8-1.6A5.5 5.5 0 0 0 12 3Z"/><path d="M10 19h4"/>'),
   chevron: svg('<path d="m8 10 4-4 4 4"/><path d="m8 14 4 4 4-4"/>'),
   chip: svg('<rect x="7" y="7" width="10" height="10" rx="1.6"/><path d="M10 4v3M14 4v3M10 17v3M14 17v3M4 10h3M4 14h3M17 10h3M17 14h3"/>'),
   external: svg('<path d="M14 5h5v5"/><path d="m19 5-8 8"/><path d="M18 13.5V19H5V6h5.5"/>'),
