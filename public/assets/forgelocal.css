@@ -1200,31 +1200,43 @@ body.is-blurred .cshell::after { animation-play-state: paused; }
 }
 /* The control row must wrap rather than push Send past the viewport on a
    narrow window, and the model name truncates before it does. */
-.cbar { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; row-gap: 6px;
+/* The control row never wraps, at any width.
+
+   It used to wrap above 620px and scroll below it, on the assumption that
+   the row always fits on a wide window. A 49-character model id breaks
+   that assumption: the controls overflowed, and Send — the last child and
+   the only one that must not move — dropped onto a line of its own
+   underneath the composer. Wrapping puts the primary action wherever the
+   leftovers land, which is the one place it can never be.
+
+   So the treatment that was written for narrow windows is now the only
+   treatment: the row holds one line, attach / permission / Send stay put,
+   and project / model / effort slide under them when there is not enough
+   width for all three. */
+.cbar { display: flex; align-items: center; gap: 4px; flex-wrap: nowrap;
   min-height: 36px; }
 .cbar .btn, .cbar .ico { min-height: 36px; height: 36px; }
 .cbar-ctx { font-size: var(--t-label); line-height: var(--lh-label); color: var(--faint); padding: 0 8px; }
 .cbar > .btn { min-width: 0; }
-.cbar [data-model-label] { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-/* Narrow is handled by scrolling the row, not by shrinking the controls
-   or by growing the composer. See the rule below for why this is not
-   `wrap`. */
+.cbar-l { flex-wrap: nowrap; flex-shrink: 0; }
+/* This group scrolls; the row does not. */
+.cbar-r { flex-wrap: nowrap; flex: 1 1 auto; min-width: 0;
+  overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none; }
+.cbar-r::-webkit-scrollbar { display: none; }
+.cbar-r > * { flex-shrink: 0; }
+/* Send is the one control whose position is fixed. */
+.cbar > .btn.sendbtn { flex-shrink: 0; }
+.cbar [data-model-label] { overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; max-width: 22ch; }
+
 @media (max-width: 620px) {
-  .cbar { flex-wrap: nowrap; overflow: visible; }
-  .cbar-l { flex-wrap: nowrap; flex-shrink: 0; }
-  /* This group scrolls; the row does not. Attach, permission mode and Send
-     stay put, and project / model / effort slide under them. */
-  .cbar-r { flex-wrap: nowrap; flex: 1 1 auto; min-width: 0;
-    overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none;
+  /* The spacer earns nothing once the middle group is scrolling, and the
+     fade tells the reader there is more to the right — worth its
+     compositing cost only where the overflow is the normal case. */
+  .cbar > .grow { display: none; }
+  .cbar-r {
     mask-image: linear-gradient(to right, #000 calc(100% - 18px), transparent);
     -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 18px), transparent); }
-  .cbar-r::-webkit-scrollbar { display: none; }
-  .cbar-r > * { flex-shrink: 0; }
-  .cbar > .grow { display: none; }
-  .cbar > .btn.sendbtn { flex-shrink: 0; }
-  /* The group scrolls, so the label no longer has to be cut to a width
-     that made every model name look the same. */
-  .cbar [data-model-label] { max-width: 22ch; }
 }
 
 /* ---- the browser work surface --------------------------------------- */

@@ -415,3 +415,34 @@ test("the landing reveal cannot leave the page blank", () => {
       `.lp-enter hides content without the script-added gate: ${sel.trim()}`);
   }
 });
+
+test("the composer's control row never wraps, so Send cannot move", () => {
+  /* The bug this pins. `.cbar` was `flex-wrap: wrap` above 620px, on the
+     assumption that the row always fits on a wide window. A 49-character
+     model id does not fit, the controls overflowed, and Send — the last
+     child, and the only control whose position is specified — dropped onto a
+     line of its own below the composer.
+
+     Wrapping puts the primary action wherever the leftovers land, which is
+     the one place it can never be. The row holds one line at every width and
+     the middle group scrolls instead. */
+  const css = sheet().replace(/\/\*[\s\S]*?\*\//g, "");
+
+  const cbarRules = [...css.matchAll(/(^|\})\s*([^{}]*\.cbar[^{}]*)\{([^}]*)\}/g)]
+    .map((m) => ({ sel: m[2].trim(), body: m[3] }));
+  assert.ok(cbarRules.length, "no .cbar rules in the built stylesheet");
+
+  for (const r of cbarRules) {
+    // A rule may set nowrap; none may set wrap.
+    assert.ok(!/flex-wrap:\s*wrap/.test(r.body),
+      `${r.sel} lets the composer's control row wrap, which moves Send`);
+  }
+
+  // And the two rules that keep Send where it belongs are present.
+  assert.match(css, /\.cbar\s*\{[^}]*flex-wrap:\s*nowrap/,
+    "the control row does not declare nowrap");
+  assert.match(css, /\.cbar\s*>\s*\.btn\.sendbtn\s*\{[^}]*flex-shrink:\s*0/,
+    "Send can be shrunk out of place");
+  assert.match(css, /\.cbar-r\s*\{[^}]*overflow-x:\s*auto/,
+    "the middle group cannot scroll, so something else has to give");
+});
