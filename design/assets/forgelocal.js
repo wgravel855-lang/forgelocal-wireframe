@@ -836,7 +836,14 @@ import {
                chooses between the models that server already has. -->
           <p class="loader-why">${connected
     ? "Points ForgeLocal at this model on the connected server. How a model is loaded — context size, cache, layers — is set in the model server itself."
-    : "Loading a model needs the desktop app, which is not released yet. Nothing here can load one."}</p>
+    /* Two different situations, and they used to share one sentence that was
+       wrong in the one that matters. In the desktop app the app is not what
+       is missing — a model server is — and telling someone to go and get the
+       thing they are already running is the least actionable message there
+       is. */
+    : hasTauri()
+      ? "No model server is running yet. Download a model and start ForgeLocal's engine from Settings, or point it at a server you run."
+      : "This is the web preview, which cannot reach a model server. The desktop app loads models."}</p>
           <span class="grow"></span>
           ${connected
     ? `<button class="btn btns btnq" type="button" data-loader-close style="border-color:var(--line)">Cancel</button>
@@ -845,9 +852,17 @@ import {
     // No primary button, because there is no primary action to take. A purple
     // button whose only effect is a toast promises a connection that never
     // happens.
-    : `<button class="btn btns" type="button" disabled aria-disabled="true"
-         title="The desktop app is not released yet.">Desktop app required</button>
-       <button class="btn btnp btns" type="button" data-loader-close>Close</button>`}
+    /* In the desktop app there is a real action to offer, so the button does
+       something rather than sitting there disabled with a reason that does not
+       apply. In the preview there genuinely is nothing to do, and a primary
+       button whose only effect is a toast promises a connection that never
+       happens. */
+    : hasTauri()
+      ? `<a class="btn btnp btns" href="/app/settings/#engine">Set up a model</a>
+         <button class="btn btns" type="button" data-loader-close>Close</button>`
+      : `<button class="btn btns" type="button" disabled aria-disabled="true"
+           title="The web preview cannot reach a model server.">Desktop app required</button>
+         <button class="btn btnp btns" type="button" data-loader-close>Close</button>`}
         </footer>
       </div>`;
 
@@ -2250,6 +2265,19 @@ import {
   /* One answer to "is a local runtime connected", for every surface that used
      to carry its own. The environment is detected once, here; no component
      asks again, and nothing may substitute a fixture when the answer is no. */
+  /* The desktop shell identifies itself.
+   *
+   * detectEnvironment reads window.forgelocalDesktop, and nothing ever set it
+   * — so inside the desktop app the page decided it was a web preview, and the
+   * reducer below refuses every transition unless the environment is
+   * "desktop". The result was a runtime state frozen at "disconnected,
+   * web-preview" for the life of the process, and every control keyed on it
+   * telling a person using the desktop app that they needed the desktop app.
+   *
+   * hasTauri is the real signal: it tests for the IPC bridge the shell
+   * injects, which a web page cannot fake into existence. */
+  if (hasTauri()) { /** @type {any} */ (window).forgelocalDesktop = true; }
+
   const RUNTIME = {
     state: initialRuntime(detectEnvironment(window)),
     /** @type {Set<() => void>} */ subs: new Set(),
@@ -2259,7 +2287,10 @@ import {
      the model center labels itself when it is on, so a fixture is never
      mistaken for a measurement. */
   const DEMO = readDemoFlag(location, window.localStorage);
-  const DESKTOP = desktopState(RUNTIME.state, DEMO);
+  /* Recomputed rather than captured. This used to be read once at startup,
+     so a surface asking "is the runtime ready" got the answer from before the
+     runtime had connected, forever. */
+  let DESKTOP = desktopState(RUNTIME.state, DEMO);
   if (DEMO) { try { localStorage.setItem("forgelocal:demo", "1"); } catch { /* private mode */ } }
   /* Demo state is stored under its own key. A normal visit cannot read a store
      a demo visit wrote, so leaving demo mode leaves its fixtures behind too. */
@@ -2269,8 +2300,72 @@ import {
     const next = reduceRuntime(RUNTIME.state, event);
     if (next === RUNTIME.state) return RUNTIME.state;
     RUNTIME.state = next;
+    DESKTOP = desktopState(RUNTIME.state, DEMO);
     RUNTIME.subs.forEach((fn) => fn());
     return next;
+  }
+
+  /**
+   * Mirror the live host onto the runtime state machine.
+   *
+   * There are two state machines here for historical reasons: this one was
+   * built for the wireframe, and LIVE.client was built later for the real
+   * host. Plenty of controls read the first one — the loader dialog, the
+   * model store's idea of what is resident, whether the model search box is
+   * shown — and nothing ever dispatched into it, so all of them were stuck in
+   * the state the wireframe starts in.
+   *
+   * Rather than rewrite those controls, the real host drives the machine they
+   * already read. Every transition below is something the host actually
+   * reported: runtime.connected from the handshake, provider.connected and
+   * its model from the provider frame. Nothing here guesses.
+   */
+  /**
+   * The device block, from the probe or from nothing.
+   *
+   * Null fields rather than zeroes when something was not measured: zero VRAM
+   * is a claim about the machine, and "not measured" is not that claim.
+   */
+  function deviceFromHardware(hw) {
+    const gpus = hw && Array.isArray(hw.gpus) ? hw.gpus : [];
+    const best = gpus.find((g) => typeof g.vram_bytes === "number" && g.vram_bytes > 0) ?? gpus[0] ?? null;
+    return {
+      label: best?.name ?? "This computer",
+      vramBytes: best?.vram_bytes ?? null,
+      ramBytes: hw?.ram_bytes ?? null,
+    };
+  }
+
+  function syncRuntimeFromLive() {
+    const c = LIVE.client;
+    if (!c) return;
+    if (!c.runtime.connected) { dispatchRuntime({ type: "runtime.disconnected" }); return; }
+
+    /* connecting -> ready. The reducer only accepts ready from any state, but
+       connecting only from disconnected, so both are sent in order and the
+       one that does not apply is a no-op. */
+    dispatchRuntime({ type: "runtime.connecting" });
+    dispatchRuntime({
+      type: "runtime.ready",
+      version: String(c.runtime.version ?? ""),
+      /* What the host measured, or nothing. A device block invented here
+         would be a hardware claim with no probe behind it. */
+      /* snake_case, because the Rust probe serialises its fields as written
+         and nothing renames them. Reading gpu.vramBytes here returned
+         undefined on every machine. */
+      device: deviceFromHardware(LIVE.hardware),
+    });
+
+    const p = c.provider;
+    if (p && p.connected && p.model) {
+      dispatchRuntime({ type: "runtime.model.loading", modelId: p.model });
+      dispatchRuntime({
+        type: "runtime.model.loaded",
+        model: { id: p.model, name: p.model, contextTokens: null },
+      });
+    } else {
+      dispatchRuntime({ type: "runtime.model.unloaded" });
+    }
   }
   const onRuntime = (fn) => { RUNTIME.subs.add(fn); fn(); return () => RUNTIME.subs.delete(fn); };
 
@@ -4086,17 +4181,25 @@ import {
       start.hidden = true;
       const manual = $("[data-scan-manual]");
       if (manual) manual.hidden = true;
-      set("gpu", res.gpu ? "ok" : "na", res.gpu || "Needs the desktop app");
-      set("cpu", res.cpu ? "ok" : "na", res.cpu ? `${res.cpu} threads` : "Needs the desktop app");
-      set("mem", res.mem ? "ok" : "na", res.mem ? `${res.mem} GB or more` : "Needs the desktop app");
-      set("disk", "na", "Needs the desktop app");
-      set("runtime", "na", "Needs the desktop app");
+      /* "Not measured" when the host looked and could not tell, "Needs the
+         desktop app" only when it is true that a browser is what is doing the
+         looking. The two are different answers and were the same sentence. */
+      const missing = res.measured ? "Not measured on this machine" : "Needs the desktop app";
+      set("gpu", res.gpu ? "ok" : "na", res.gpu || missing);
+      set("cpu", res.cpu ? "ok" : "na", res.cpu ? `${res.cpu} threads` : missing);
+      set("mem", res.mem ? "ok" : "na", res.mem
+        ? (res.measured ? `${res.mem} GB` : `${res.mem} GB or more`) : missing);
+      set("disk", "na", missing);
+      set("runtime", res.measured ? "ok" : "na",
+        res.measured ? "ForgeLocal's own engine" : missing);
       const note = $("[data-scan-note]");
       if (note) {
         note.hidden = false;
-        note.textContent = res.gpu
-          ? "A browser can name the graphics adapter but not its video memory, your free disk space, or an installed runtime. The desktop app reads all five, and the recommendation on the next screen uses whichever of them it has."
-          : "This browser does not expose the graphics adapter. The desktop app reads it directly. You can continue and pick a model yourself.";
+        note.textContent = res.measured
+          ? `Read from this computer${res.driver ? `, graphics driver ${res.driver}` : ""}. The recommendation on the next screen uses whichever of these it has.`
+          : res.gpu
+            ? "A browser can name the graphics adapter but not its video memory, your free disk space, or an installed runtime. The desktop app reads all five, and the recommendation on the next screen uses whichever of them it has."
+            : "This browser does not expose the graphics adapter. The desktop app reads it directly. You can continue and pick a model yourself.";
       }
       const cont = $("[data-scan-continue]");
       if (cont) cont.hidden = false;
@@ -4104,12 +4207,20 @@ import {
 
     if (saved) { paint(saved); return; }
 
-    start.addEventListener("click", () => {
-      const res = {
-        gpu: readGpu(),
-        cpu: Number(navigator.hardwareConcurrency) || null,
-        mem: Number(navigator.deviceMemory) || null,
-      };
+    start.addEventListener("click", async () => {
+      /* The desktop app measures this properly. A browser can name the
+         graphics adapter through WebGL and guess at memory in powers of two;
+         the host reads the adapter, its video memory, the driver, the core
+         count and real RAM. Using the browser's answer inside the desktop app
+         was how five rows came to say "Needs the desktop app" to somebody
+         running it. */
+      const res = hasTauri() && LIVE.client
+        ? await scanFromHost()
+        : {
+          gpu: readGpu(),
+          cpu: Number(navigator.hardwareConcurrency) || null,
+          mem: Number(navigator.deviceMemory) || null,
+        };
       scan.hidden = false;
       start.disabled = true;
       // Rows resolve one at a time so the change is followable, not animated.
@@ -4118,6 +4229,37 @@ import {
         if (i === keys.length - 1) { setupSave({ scan: res }); paint(res); }
       }, reduced ? 0 : 160 * (i + 1)));
     });
+  }
+
+  /**
+   * What the host measured, in the shape this screen renders.
+   *
+   * Every field is whatever the probe returned, including null. A machine
+   * whose VRAM nothing could read reports no VRAM rather than a plausible
+   * number, and the row says so — that is the whole reason the probe
+   * distinguishes them.
+   */
+  async function scanFromHost() {
+    let hw = LIVE.hardware;
+    if (!hw) {
+      try { hw = await LIVE.client.hardware(); } catch { hw = null; }
+      if (hw) LIVE.hardware = hw;
+    }
+    if (!hw) return { gpu: readGpu(), cpu: null, mem: null, measured: false };
+
+    const gpus = Array.isArray(hw.gpus) ? hw.gpus : [];
+    const best = gpus.find((g) => typeof g.vram_bytes === "number" && g.vram_bytes > 0) ?? gpus[0] ?? null;
+    const gb = (n) => (typeof n === "number" && n > 0 ? Math.round(n / 1024 ** 3) : null);
+    return {
+      measured: true,
+      gpu: best ? (best.vram_bytes ? `${best.name} · ${gb(best.vram_bytes)} GB` : best.name) : null,
+      cpu: typeof hw.cpu_cores === "number" ? hw.cpu_cores : null,
+      mem: gb(hw.ram_bytes),
+      /* No disk field. The probe measures free *memory*, not free disk, and
+         there is no reading here to report — so the row says it was not
+         measured rather than showing a number about something else. */
+      driver: best?.driver ?? null,
+    };
   }
 
   function wireSetupProject() {
@@ -4164,6 +4306,21 @@ import {
     }
 
     btn.addEventListener("click", async () => {
+      /* The desktop app has a real folder dialog, and this screen was not
+         using it: it fell through to the browser API and, where that is
+         missing, told the reader that choosing a project needs the desktop
+         app they were already in. The native dialog also gives a full path,
+         which showDirectoryPicker cannot — it yields a name and a handle, so
+         the runtime never learned which folder was meant. */
+      if (hasTauri() && LIVE.client) {
+        try {
+          const picked = await LIVE.client.chooseProject();
+          if (picked) show(basename(picked), picked);
+        } catch (e) {
+          if (note) { note.hidden = false; note.textContent = errText(e); }
+        }
+        return;
+      }
       if (typeof window.showDirectoryPicker === "function") {
         try {
           const handle = await window.showDirectoryPicker({ id: "forgelocal-project", mode: "read" });
@@ -4176,7 +4333,7 @@ import {
       if (input) input.click();
       else if (note) {
         note.hidden = false;
-        note.textContent = "This browser cannot open a folder picker. Choosing a project needs the desktop app.";
+        note.textContent = "This browser cannot open a folder picker. The desktop app opens one natively.";
       }
     });
 
@@ -4239,19 +4396,47 @@ import {
   /* Download progress belongs to a real download store. There is none in the
      web preview, so the button says what it needs rather than animating a bar
      that measures nothing. */
+  /**
+   * The Download button on setup step 2.
+   *
+   * This used to say "Downloading a model needs the desktop app" whatever it
+   * was running in — including the desktop app, where it was the one thing
+   * standing between a person and a model. The message was written for the
+   * static preview and never asked which one it was in.
+   *
+   * In the desktop app it now goes to the place downloads actually happen. It
+   * does not start one from here, and that is deliberate rather than lazy: the
+   * model named on this screen comes from the built-in catalogue, which
+   * records a name, a size and a licence but no repository, so there is no
+   * file for a button here to fetch. Sending someone to a surface that can
+   * fetch a real one beats starting a download of something that does not
+   * exist.
+   */
   function wireSetupDownload() {
     const start = $("[data-dl-start]");
     if (!start) return;
     const note = $("[data-model-note]");
+    const next = $("[data-model-next]");
+
+    if (hasTauri()) {
+      start.textContent = "Choose a model to download";
+      start.addEventListener("click", () => {
+        /* Settings is where a Hugging Face repository is looked up and its
+           GGUF files are downloaded, verified and listed. */
+        location.href = "/app/settings/#engine";
+      });
+      if (next) next.hidden = false;
+      return;
+    }
+
     start.addEventListener("click", () => {
       if (note) {
         note.hidden = false;
-        note.textContent = "Downloading a model needs the desktop app. This preview has no download store, so nothing here reports bytes or speed. You can still look at the recommendation and continue through setup.";
+        note.textContent = "This is the web preview, which has no download store: nothing here reports bytes or speed. The desktop app downloads models, checks them against their published checksum and keeps them in one folder. You can still read the recommendation and continue through setup.";
       }
-      const next = $("[data-model-next]");
       if (next) next.hidden = false;
       start.disabled = true;
-      announce("Model download needs the desktop app.");
+      announce("Downloading a model needs the desktop app.");
     });
   }
 
@@ -4769,9 +4954,13 @@ import {
 
     LIVE.client = createHostClient({
       transport: tauriTransport(),
-      onRuntimeState: () => paintLiveComposer(),
+      onRuntimeState: () => { syncRuntimeFromLive(); paintLiveComposer(); },
       onProviderState: (p) => {
         LIVE.profile = p.profile ?? null;
+        /* Before painting: several of the painters below read the runtime
+           state machine, and painting first would render the state from
+           before this frame arrived. */
+        syncRuntimeFromLive();
         paintLiveModels(p); paintLiveComposer(); paintCapability(); paintToolGroups();
       },
       onAgentEvent: (event) => {
@@ -4824,6 +5013,7 @@ import {
       showLiveError(e);
       return;
     }
+    syncRuntimeFromLive();
 
     // The fixture transcript has no place in a live window.
     const host = liveThread();
@@ -5829,14 +6019,26 @@ import {
     }));
     // Queueing is a real store transition; downloading is not, and the toast
     // says which of the two just happened.
+    /* Install, on a catalogue row.
+     *
+     * The catalogue records a name, a publisher, a size and a licence. It does
+     * not record a repository, so there is no file for this button to fetch,
+     * in the desktop app or anywhere else. It used to answer that by saying
+     * downloading needs the desktop app, which inside the desktop app is both
+     * false and a dead end.
+     *
+     * In the desktop app it now goes to the surface that can fetch a real
+     * file: paste a Hugging Face repository, see its GGUF files with sizes and
+     * published checksums, download one. */
     $$("[data-model-install]", root).forEach((b) => b.addEventListener("click", () => {
+      if (hasTauri()) { location.href = "/app/settings/#engine"; return; }
       const id = b.dataset.modelId;
       if (id) dispatchModel({ type: "download.queued", modelId: id });
       b.textContent = "Queued";
       b.disabled = true;
       b.setAttribute("aria-disabled", "true");
-      b.title = "Queued. Downloading needs the desktop app.";
-      toast(`${b.dataset.modelInstall} is queued and listed under Downloads. Downloading needs the desktop app, so no bytes are being fetched.`);
+      b.title = "Queued. This preview does not fetch bytes.";
+      toast(`${b.dataset.modelInstall} is queued and listed under Downloads. This is the web preview, so no bytes are being fetched.`);
     }));
   }
 
@@ -5988,7 +6190,11 @@ import {
       if (type === "download.paused") toast(`Paused. ${m.displayName} resumes from ${gb(m.downloadState.receivedBytes, 2)} GB.`);
       if (type === "download.resumed") toast("Download resumed.");
       if (type === "download.canceled") toast("Cancelled. Nothing else was changed.");
-      if (type === "download.retried") toast(`${m.displayName} is queued again. Downloading needs the desktop app, so it will not start here.`);
+      if (type === "download.retried") {
+        toast(hasTauri()
+          ? `${m.displayName} is queued again.`
+          : `${m.displayName} is queued again. This preview does not fetch bytes.`);
+      }
       if (type === "model.unloaded") toast(`${m.displayName} was ejected. Video memory is free again.`);
     });
   }

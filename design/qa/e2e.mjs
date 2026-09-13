@@ -533,3 +533,70 @@ test("the client can ask for a folder without asking for a session", () => {
     "the renderer has no way to attach a folder to an open session");
   assert.match(client, /SESSION_SET_ROOT: "session\.root"/);
 });
+
+/* ------------------------ the app must not ask you to install the app */
+
+test("the desktop shell identifies itself, so the runtime state can move", () => {
+  /* Root cause of "desktop app required" appearing inside the desktop app.
+     detectEnvironment reads window.forgelocalDesktop and nothing ever set it,
+     so the page decided it was a web preview — and reduceRuntime refuses every
+     transition unless the environment is "desktop". The runtime state was
+     frozen at {disconnected, web-preview} for the life of the process, and
+     every control keyed on it said the app was missing. */
+  const js = readFileSync(join(pub, "assets/forgelocal.js"), "utf8");
+  assert.match(js, /forgelocalDesktop\s*=\s*true/,
+    "nothing tells the page it is running in the desktop shell");
+  /* And only on the evidence of the IPC bridge. A page that set this from a
+     query string or a stored value could talk itself into "desktop". */
+  const line = js.split("\n").find((l) => /forgelocalDesktop\s*=\s*true/.test(l)) ?? "";
+  assert.match(line, /hasTauri\(\)/,
+    "the desktop flag is set without checking for the desktop bridge");
+});
+
+test("the live host drives the runtime state machine", () => {
+  /* The other half: dispatchRuntime existed and had no callers at all, so even
+     with the right environment nothing ever moved the state off disconnected. */
+  const js = readFileSync(join(pub, "assets/forgelocal.js"), "utf8");
+  const calls = (js.match(/syncRuntimeFromLive\(\)/g) ?? []).length;
+  assert.ok(calls >= 3,
+    `the runtime state machine is driven from ${calls} place(s); it needs the handshake and the provider frames`);
+  assert.match(js, /function syncRuntimeFromLive\(\)/);
+});
+
+test("no surface tells a desktop user they need the desktop app", () => {
+  /* The reported symptom, as a rule rather than as six separate fixes: a
+     person running the desktop app was told, by the desktop app, that they
+     needed the desktop app. Every remaining claim of that shape has to sit in
+     a function that checked which host it is in — or be about something the
+     host genuinely could not measure, which is a different sentence.
+
+     Comments are stripped first. An explanation of why a string was removed
+     should not read as the string. */
+  const raw = readFileSync(join(pub, "assets/forgelocal.js"), "utf8");
+  /* Block comments are blanked rather than removed, so reported line numbers
+     still point at the file. Stripping per-line cannot work: a continuation
+     line inside a block comment carries no marker of its own. */
+  const js = raw.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, " "));
+  const lines = js.split("\n");
+
+  /** The nearest enclosing top-level function declaration, searching upward. */
+  const enclosing = (i) => {
+    for (let k = i; k >= 0; k--) {
+      if (/^  (?:async )?function [a-zA-Z]/.test(lines[k])) return lines.slice(k, i + 1).join("\n");
+    }
+    return lines.slice(Math.max(0, i - 40), i + 1).join("\n");
+  };
+
+  const claims = [];
+  lines.forEach((line, i) => {
+    const code = line.replace(/\/\/.*$/, "");
+    if (!/needs the desktop app|Desktop app required/i.test(code)) return;
+    /* Conditional on what was measured, not on which app this is: a host that
+       looked and could not tell says so, and that is legitimate. */
+    if (/res\.measured|measured \?/.test(code)) return;
+    if (!/hasTauri\(\)/.test(enclosing(i))) claims.push(`${i + 1}: ${code.trim().slice(0, 90)}`);
+  });
+
+  assert.deepEqual(claims, [],
+    `these tell the reader to get the desktop app without checking whether they already have it:\n${claims.join("\n")}`);
+});
