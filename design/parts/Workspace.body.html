@@ -26,7 +26,10 @@
             <span data-jump-label>Jump to latest</span>
           </button>
           <!--#include composer.html {"placeholder":"Describe a task or ask a question","mode":"Allow edits","send":"<!--#include send-arrow.html -->"} -->
-          <!--#include model-browser.html -->
+          <!-- The model browser is a modal the controller mounts on the body,
+               from design/core/modelbrowser.mjs. It used to be a second one
+               built into this markup against the fixture catalogue, which meant
+               the composer's button and /app/models/ opened different screens. -->
           </div>
         </div>
       </div>

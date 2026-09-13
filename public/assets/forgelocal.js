@@ -1530,106 +1530,11 @@ import {
       confirm: "Close", cancel: "Back",
     });
   }
-  /* ------------------------------------------------- the model browser */
-
-  /**
-   * The catalogue, over the conversation.
-   *
-   * Choosing a model used to mean leaving the chat for /app/models/ and
-   * finding the way back. The markup is rendered by the same catalogHtml the
-   * page uses and wired by the same wireCatalogRoot and wireFilterRoot, so
-   * there is one list, one detail pane, one download selector and one
-   * compatibility statement rather than a second copy that drifts.
-   */
-  function wireModelBrowser() {
-    const mb = $("[data-model-browser]");
-    if (!mb) return;
-    const panel = $(".mb-panel", mb);
-    const search = $("[data-mb-search]", mb);
-    /** What had focus before the modal opened, so it can be given back. */
-    let returnTo = null;
-
-    const focusable = () => $$(
-      'a[href],button:not([disabled]),input:not([disabled]),select,textarea,[tabindex]:not([tabindex="-1"])',
-      panel,
-    ).filter((el) => el.offsetParent !== null);
-
-    const open = () => {
-      if (!mb.hidden) return;
-      returnTo = document.activeElement;
-      mb.hidden = false;
-      // The page behind must not scroll while a modal is over it.
-      document.body.style.overflow = "hidden";
-      // The search keeps whatever was typed last time: reopening to an empty
-      // box after narrowing a 500-model list is its own small punishment.
-      if (search) { search.focus(); search.select(); }
-      $$("[data-model-browser-open]").forEach((b) => b.setAttribute("aria-expanded", "true"));
-    };
-
-    const close = () => {
-      if (mb.hidden) return;
-      mb.hidden = true;
-      document.body.style.overflow = "";
-      $$("[data-model-browser-open]").forEach((b) => b.setAttribute("aria-expanded", "false"));
-      /* Back to the control that opened it. <body> passes a naive "is it still
-         in the document" test and is not focusable, so closing after a Ctrl+L
-         pressed from the transcript dropped the keyboard at the top of the
-         page. The composer's model control is the documented destination and
-         the sensible one: it is what the browser belongs to. */
-      const usable = returnTo
-        && returnTo !== document.body
-        && document.contains(returnTo)
-        && typeof returnTo.focus === "function"
-        && returnTo.offsetParent !== null;
-      const target = usable ? returnTo : $("[data-popover='model-pop']");
-      if (target) target.focus({ preventScroll: true });
-      returnTo = null;
-    };
-
-    $$("[data-mb-close]", mb).forEach((b) => b.addEventListener("click", close));
-    $$("[data-model-browser-open]").forEach((b) => b.addEventListener("click", (e) => {
-      e.preventDefault();
-      closePop();
-      open();
-    }));
-
-    mb.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") {
-        // A destructive confirmation inside the modal owns Escape first.
-        if ($("[data-confirm]:not([hidden])", mb)) return;
-        e.preventDefault();
-        e.stopPropagation();
-        close();
-        return;
-      }
-      if (e.key !== "Tab") return;
-      const items = focusable();
-      if (!items.length) return;
-      const first = items[0];
-      const last = items[items.length - 1];
-      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
-    });
-
-    /* Down from the search box enters the results, which is what every list
-       with a box above it does. Selection and Enter are wireCatalogRoot's. */
-    if (search) {
-      search.addEventListener("keydown", (e) => {
-        if (e.key !== "ArrowDown") return;
-        const row = $$("[data-cat-row]", mb).find((r) => r.offsetParent !== null);
-        if (!row) return;
-        e.preventDefault();
-        row.focus();
-      });
-    }
-
-    document.addEventListener("keydown", (e) => {
-      if (e.key !== "l" && e.key !== "L") return;
-      if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey) return;
-      e.preventDefault();
-      mb.hidden ? open() : close();
-    });
-  }
+  /* The model browser used to be a second one built into the workspace
+     markup against the fixture catalogue, unhidden by the composer's button
+     while /app/models/ showed a different screen entirely. It is one modal
+     now, mounted on the body from design/core/modelbrowser.mjs, and both
+     entry points open it. */
 
   function wireShortcuts() {
     $$("[data-shortcuts]").forEach((b) => b.addEventListener("click", () => {
@@ -3418,11 +3323,11 @@ import {
   /* Mode, effort and the model shortcut. Each writes one value and closes its
      own popover; none of them claims anything ran. */
   function wireComposerControls() {
-    /* Ctrl/Cmd+L used to open the composer's model popover. It opens the
-       model browser now, and that handler lives in wireModelBrowser. Both were
-       bound for a moment and they fought over the same keystroke: the popover
-       opened, the modal opened behind it, and the popover's own dismissal took
-       the modal down with it. One owner per shortcut. */
+    /* Ctrl/Cmd+L belongs to the model browser and is bound in
+       wireBrowserShortcut. It is deliberately not bound here as well: both
+       were once, and they fought over the keystroke — the popover opened, the
+       modal opened behind it, and the popover's dismissal took the modal down
+       with it. One owner per shortcut. */
 
     // Ctrl+1..3 switch mode, matching the shortcuts the menu shows.
     const modeKeys = { 1: "plan", 2: "manual", 3: "allow_edits" };
@@ -5472,6 +5377,29 @@ import {
    * desktop window can be pointed at it — but what it renders is the modal
    * over whatever the app already had behind it.
    */
+  /**
+   * Ctrl/Cmd+L opens and closes the model browser.
+   *
+   * It belonged to the overlay this modal replaced, and the composer's button
+   * prints "Ctrl L" on its face — so removing the overlay without rebinding
+   * would have left the app advertising a keystroke that does nothing.
+   *
+   * One owner for the shortcut, which is why it is here rather than in
+   * wireComposerControls: both were bound once before and they fought, the
+   * popover opening over the modal and its dismissal taking the modal with it.
+   */
+  function wireBrowserShortcut() {
+    document.addEventListener("keydown", (e) => {
+      if (e.key !== "l" && e.key !== "L") return;
+      if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey) return;
+      e.preventDefault();
+      /* Closing without the route jump: Ctrl+L over the workspace should put
+         the workspace back, not navigate. */
+      if (MB) closeBrowser({ back: location.pathname.startsWith("/app/models") });
+      else void openBrowser();
+    });
+  }
+
   function wireBrowserEntry() {
     /* On the route, open it now only when there is no host to wait for.
      *
@@ -5488,7 +5416,16 @@ import {
       void openBrowser();
     }
 
-    /* Anything that says "open the model browser" goes to one place. */
+    /* Anything that says "open the model browser" goes to one place.
+     *
+     * Both kinds, because there are two: the composer's button, rendered by
+     * paintLiveModels and rewired whenever that repaints, and any static
+     * control in the markup. This bound only [data-open-models] — an attribute
+     * invented here and carried by nothing in the app — so it bound nothing at
+     * all, and the composer's button went on opening the old overlay.
+     */
+    wireBrowserShortcut();
+    wireBrowserOpeners(document);
     $$("[data-open-models]").forEach((el) => {
       el.addEventListener("click", (e) => {
         e.preventDefault();
@@ -5895,6 +5832,14 @@ import {
   }
 
   /** Re-rendered markup needs its openers bound again. */
+  /**
+   * Every "Browse models" control, pointed at the one browser.
+   *
+   * This used to unhide [data-model-browser], a second browser built into the
+   * workspace markup against the fixture catalogue — so the composer's button
+   * and /app/models/ opened two different screens, which is exactly what the
+   * redesign was meant to end. It opens the real one now.
+   */
   function wireBrowserOpeners(host) {
     $$("[data-model-browser-open]", host).forEach((b) => {
       if (b.dataset.mbWired === "true") return;
@@ -5902,11 +5847,7 @@ import {
       b.addEventListener("click", (e) => {
         e.preventDefault();
         closePop();
-        const mb = $("[data-model-browser]");
-        if (mb) mb.hidden = false;
-        const s = $("[data-mb-search]");
-        if (s) { s.focus(); s.select(); }
-        document.body.style.overflow = "hidden";
+        void openBrowser();
       });
     });
   }
@@ -6656,7 +6597,7 @@ import {
     wireScan(); wireSetupProject(); wireSetupPermissions(); wireSetupDownload();
     wireSessionSearch(); wireSessionFilter(); wireSettingsNav(); wireBrowser();
     wireBrowserEntry(); wireDesktop();
-    wireModelBrowser();
+    
     wireInert();
     document.documentElement.dataset.reducedMotion = String(reduced);
   };

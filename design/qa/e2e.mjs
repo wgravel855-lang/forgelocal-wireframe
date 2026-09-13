@@ -600,3 +600,47 @@ test("no surface tells a desktop user they need the desktop app", () => {
   assert.deepEqual(claims, [],
     `these tell the reader to get the desktop app without checking whether they already have it:\n${claims.join("\n")}`);
 });
+
+/* ------------------------------ one model browser, not two */
+
+test("the workspace ships no second model browser", () => {
+  /* Reported from use: clicking "Browse models" showed a dimmed, dead screen.
+     It was a whole second browser built into the workspace markup against the
+     fixture catalogue — [data-model-browser] — that the composer's button
+     unhid, while /app/models/ opened the real one. Two screens for one thing,
+     which is what the redesign existed to end. */
+  for (const route of ["app", "app/review"]) {
+    const html = page(route);
+    assert.ok(!/data-model-browser\b(?!-open)/.test(html),
+      `${route} still ships the old model-browser overlay`);
+  }
+});
+
+test("every way into the model browser opens the same one", () => {
+  const js = readFileSync(join(pub, "assets/forgelocal.js"), "utf8");
+
+  /* The composer's button. This bound [data-open-models] — an attribute
+     invented for it and carried by nothing — so it bound nothing at all. */
+  const openers = /function wireBrowserOpeners\(host\) \{([\s\S]*?)\n  \}/.exec(js);
+  assert.ok(openers, "wireBrowserOpeners is not where this test expects it");
+  assert.match(openers[1], /openBrowser\(\)/,
+    "the composer's Browse models button does not open the browser");
+  assert.ok(!/data-model-browser\]/.test(openers[1]),
+    "it still unhides the old overlay");
+
+  /* And the shortcut the old overlay owned. The button prints "Ctrl L" on its
+     face, so losing it would leave the app advertising a dead keystroke. */
+  assert.match(js, /function wireBrowserShortcut\(\)/, "Ctrl+L is not bound anywhere");
+  const sc = /function wireBrowserShortcut\(\)[\s\S]*?\n  \}/.exec(js)[0];
+  assert.match(sc, /e\.key !== "l"/, "the shortcut is not Ctrl+L");
+  assert.match(sc, /openBrowser\(\)/, "Ctrl+L does not open the browser");
+});
+
+test("the composer's button still advertises the shortcut it has", () => {
+  const js = readFileSync(join(pub, "assets/forgelocal.js"), "utf8");
+  /* If the label and the binding ever disagree, one of them is a lie. */
+  if (/Browse models<span class="mpick-k">Ctrl L<\/span>/.test(js)) {
+    assert.match(js, /function wireBrowserShortcut\(\)/,
+      'the button says "Ctrl L" and nothing binds it');
+  }
+});
