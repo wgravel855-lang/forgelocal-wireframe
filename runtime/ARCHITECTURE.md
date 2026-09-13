@@ -3,22 +3,33 @@
 This describes what exists. Anything sequenced for later is named at the bottom
 rather than described as if it were here.
 
-## Three processes, and what each is allowed to do
+## Four processes, and what each is allowed to do
 
 ```
-  Rust host (Tauri v2 / WebView2)      owns the window, the sidecar's lifetime,
-   │                                   and the native dialogs
+  Rust host (Tauri v2 / WebView2)      owns the window, both child processes,
+   │        │                          the hardware probe and native dialogs
+   │        │
+   │        │  spawn, --api-key <32 bytes of OS entropy>
+   │        ▼
+   │   llama-server (llama.cpp)        the inference engine. 127.0.0.1 on an
+   │                                   OS-chosen port, authenticated per launch
+   │
    │  spawn, stdin/stdout
    ▼
   Node sidecar (runtime/host)          owns sessions, providers, tools, the
-   │                                   browser, the filesystem and the database
+   │                                   browser, weights and the database
    │  NDJSON frames over the pipe
    ▼
   WebView renderer (design/)           owns the interface, and nothing else
 ```
 
-The boundary that matters: **the renderer holds no filesystem, shell or browser
-authority.** It renders events and sends requests. It never holds a page handle,
+The boundary that matters: **the renderer holds no filesystem, shell, browser
+or engine authority.** It is never told the engine's port or its session token:
+the host hands those straight to the Node sidecar down the pipe, and the
+renderer learns only that a model is ready. A bearer token in a WebView is a
+token in whatever that WebView can be talked into fetching.
+
+It renders events and sends requests. It never holds a page handle,
 a file descriptor or a child process, so a compromised renderer cannot drive a
 browser or read a file — it can only ask, and every ask goes through the
 permission policy in the sidecar.
@@ -36,6 +47,38 @@ buys is that the agent loop, the tools, the permission policy and the browser
 are one body of code that the integration tests drive directly — the same code
 path the app uses, with nothing mocked between the test and the tool.
 
+## The engine
+
+ForgeLocal runs models itself. LM Studio is one optional external provider
+among any OpenAI-compatible server, and nothing in the product requires it.
+
+`desktop/src-tauri/src/engine.rs` owns a bundled `llama-server` from spawn to
+kill: a port the OS chooses, `--api-key` set to 32 bytes of OS entropy
+generated per launch, health polled rather than assumed, and a bounded restart
+with backoff when a server that was working stops answering. A loopback port
+without that token is reachable by every process on the machine, including a
+web page.
+
+Failures name the next step. `diagnose()` reads the server's own last lines and
+turns an old CUDA driver, a model that would not load, an out-of-memory or a
+taken port into a sentence plus a fix — not an exit code.
+
+The binary is not in the repository; it is 100-400MB per acceleration build.
+`scripts/fetch-engine.mjs` fetches one build of a pinned llama.cpp release, and
+because llama.cpp publishes no checksums it refuses to install an unverified
+executable unless a person says otherwise, then records the hash so later
+fetches are checked against the first. It is a bundle *resource* rather than
+Tauri's `externalBin`, which is a hard build requirement: an app with no engine
+says so and offers the command, and that is worth more than a guarantee that
+would stop anyone compiling the project.
+
+`runtime/core/models/` owns weights: resumable downloads against a host
+allowlist re-checked at every redirect, verification before a file is renamed
+into place — so a `.gguf` in the models folder is always one that passed — and
+a fit calculation driven by the real hardware probe that produces `null`
+rather than a guess for anything it could not measure. Weights live in per-user
+application data and are in no installer.
+
 ## The protocol
 
 One JSON object per line, both directions. `JSON.stringify` escapes every
@@ -48,8 +91,17 @@ an authorization check and neither is a UI one.
 
 Requests are a closed set (`protocol.mjs`): session create/dispose/list/resume,
 turn start/cancel, permission resolve, question answer, provider
-connect/disconnect, browser control, model test. Anything else is refused by
-name.
+connect/disconnect, browser control, model test, and the model-weight
+operations. Anything else is refused by name.
+
+Two requests are **host-only**: `engine.attached` and `engine.detached` carry
+the engine's endpoint and token, and are deliberately absent from the Rust
+allowlist. A page that could send one would point the runtime at a server of
+its choosing and read every prompt and every answer.
+`design/qa/protocol-parity.test.mjs` reads both lists and asserts that absence,
+along with the agreement of everything else — the two drifted apart once and
+the only symptom was five features silently not working in the shipped app,
+with every test and the web preview passing.
 
 ## Layout
 
@@ -77,6 +129,12 @@ runtime/
       snapshot.mjs      the in-page walker and the text it renders to
       policy.mjs        the browser permission axis
     providers/          fake (deterministic) and openai-compatible
+    models/
+      files.mjs         the model folder, listing, GGUF sniffing, verifying
+      download.mjs      resumable downloads and the Hugging Face lookup
+      fit.mjs           whether a model runs here, from the real probe
+  engine/
+    manifest.mjs        which llama.cpp build ships, and its recorded hash
   host/
     protocol.mjs        the frame contract
     sidecar.mjs         the process: sessions, provider, store, profiles
@@ -244,7 +302,10 @@ Rewind, background commands, PTY, Git tools, LSP, MCP, subagents, BYOK. The
 brief sequences these after the behaviour and runtime work, and claiming them
 would be the failure mode it warns about.
 
-Two limits worth stating rather than discovering:
+Three limits worth stating rather than discovering:
+
+- **The engine binary is not in a fresh clone.** The app builds and runs
+  without one and says so; fetching it is a documented build step.
 
 - **The desktop app is the product.** The hosted web preview has no runtime at
   all, and every surface that depends on one says "Desktop not connected"
