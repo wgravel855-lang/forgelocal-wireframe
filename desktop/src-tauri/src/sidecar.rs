@@ -30,12 +30,17 @@ pub const PROTOCOL_VERSION: u64 = 1;
 const ALLOWED: &[&str] = &[
     "session.create",
     "session.dispose",
+    "session.list",
+    "session.resume",
     "turn.start",
     "turn.cancel",
     "permission.resolve",
     "question.answer",
     "provider.connect",
     "provider.disconnect",
+    "browser.control",
+    "model.test",
+    "model.test.cancel",
 ];
 
 pub struct Sidecar {
