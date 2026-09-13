@@ -29,6 +29,8 @@ import { openProfiles } from "../core/profiles.mjs";
 import { runConformance, agentAllowed } from "../core/conformance.mjs";
 import { emptyProfile, AgentGrade, browserModeFor } from "../core/capability.mjs";
 import { summarise, renderSummary } from "../core/compact.mjs";
+import { listModels, deleteModel, verifyModel, defaultModelDir } from "../core/models/files.mjs";
+import { downloadModel, listRepoFiles } from "../core/models/download.mjs";
 import {
   PROTOCOL_VERSION, Request, Notify, ErrorCode,
   invalidRequest, notify, encode, createDecoder,
@@ -211,7 +213,128 @@ async function handle(frame) {
     case Request.MODEL_TEST_CANCEL: return modelTestCancel(id);
     case Request.ENGINE_ATTACHED: return engineAttached(id, payload);
     case Request.ENGINE_DETACHED: return engineDetached(id);
+    case Request.MODEL_LIST: return modelList(id);
+    case Request.MODEL_DELETE: return modelDelete(id, payload);
+    case Request.MODEL_SEARCH: return modelSearch(id, payload);
+    case Request.MODEL_DOWNLOAD: return modelDownload(id, payload);
+    case Request.MODEL_DOWNLOAD_CANCEL: return modelDownloadCancel(id, payload);
+    case Request.MODEL_VERIFY: return modelVerify(id, payload);
     default: return fail(id, ErrorCode.UNKNOWN_TYPE, `Unhandled type ${type}`);
+  }
+}
+
+/* ------------------------------------------------------------- weights --- */
+
+/**
+ * Downloads in flight, by file name.
+ *
+ * Keyed by name rather than by request id so a second request for the same
+ * file joins the existing download instead of starting a second one writing to
+ * the same partial file.
+ *
+ * @type {Map<string, AbortController>}
+ */
+const downloading = new Map();
+
+function modelList(id) {
+  try {
+    send(notify(Notify.MODEL_LIST, {
+      dir: defaultModelDir(),
+      models: listModels(),
+    }, { id }));
+  } catch (/** @type {any} */ e) {
+    fail(id, ErrorCode.INTERNAL, `The models folder could not be read: ${e && e.message}`);
+  }
+}
+
+function modelDelete(id, payload) {
+  /* Resolved inside the models folder rather than taking a path. The renderer
+     naming an arbitrary path to delete is exactly the authority it does not
+     have. */
+  const name = String(payload.name ?? "");
+  const found = listModels().find((m) => m.name === name);
+  if (!found) return fail(id, ErrorCode.BAD_ARGUMENT, `No model called ${name}.`);
+  try {
+    deleteModel(found.path);
+    send(notify(Notify.MODEL_LIST, { dir: defaultModelDir(), models: listModels() }, { id }));
+  } catch (/** @type {any} */ e) {
+    fail(id, ErrorCode.INTERNAL, `It could not be deleted: ${e && e.message}`);
+  }
+}
+
+async function modelSearch(id, payload) {
+  const repo = String(payload.repo ?? "");
+  try {
+    const out = await listRepoFiles(repo);
+    if (!out.ok) return fail(id, ErrorCode.BAD_ARGUMENT, out.reason);
+    send(notify(Notify.MODEL_SEARCH, out, { id }));
+  } catch (/** @type {any} */ e) {
+    fail(id, ErrorCode.INTERNAL,
+      `Hugging Face could not be reached: ${e && e.message ? e.message : e}`);
+  }
+}
+
+async function modelDownload(id, payload) {
+  const name = String(payload.name ?? "");
+  if (downloading.has(name)) {
+    return fail(id, ErrorCode.BUSY, `${name} is already downloading.`);
+  }
+  const controller = new AbortController();
+  downloading.set(name, controller);
+
+  try {
+    const out = await downloadModel({
+      url: String(payload.url ?? ""),
+      name,
+      bytes: typeof payload.bytes === "number" ? payload.bytes : null,
+      sha256: typeof payload.sha256 === "string" ? payload.sha256 : null,
+      signal: controller.signal,
+      onProgress: (p) => {
+        send(notify(Notify.MODEL_DOWNLOAD_PROGRESS, { name, ...p }, { id }));
+      },
+    });
+    send(notify(Notify.MODEL_DOWNLOADED, { name, ...out }, { id }));
+  } catch (/** @type {any} */ e) {
+    send(notify(Notify.MODEL_DOWNLOADED, {
+      name, ok: false,
+      reason: `The download failed: ${e && e.message ? e.message : e}`,
+    }, { id }));
+  } finally {
+    downloading.delete(name);
+  }
+}
+
+function modelDownloadCancel(id, payload) {
+  const name = String(payload.name ?? "");
+  const c = downloading.get(name);
+  if (!c) {
+    return send(notify(Notify.MODEL_DOWNLOADED, {
+      name, ok: false, reason: "That download is not running.",
+    }, { id }));
+  }
+  /* The partial file survives. A cancel that threw away thirty gigabytes
+     would make cancelling something people are afraid to do. */
+  c.abort();
+}
+
+async function modelVerify(id, payload) {
+  const name = String(payload.name ?? "");
+  const found = listModels().find((m) => m.name === name);
+  if (!found) return fail(id, ErrorCode.BAD_ARGUMENT, `No model called ${name}.`);
+  try {
+    const out = await verifyModel({
+      path: found.path,
+      expectedBytes: typeof payload.bytes === "number" ? payload.bytes : null,
+      expectedSha256: typeof payload.sha256 === "string" ? payload.sha256 : null,
+      onProgress: (done, total) => {
+        send(notify(Notify.MODEL_DOWNLOAD_PROGRESS, {
+          name, phase: "verifying", bytes: done, total,
+        }, { id }));
+      },
+    });
+    send(notify(Notify.MODEL_VERIFIED, { name, ...out }, { id }));
+  } catch (/** @type {any} */ e) {
+    fail(id, ErrorCode.INTERNAL, `It could not be checked: ${e && e.message}`);
   }
 }
 

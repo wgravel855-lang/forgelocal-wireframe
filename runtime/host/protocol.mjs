@@ -51,6 +51,15 @@ export const Request = Object.freeze({
      trusting it. */
   ENGINE_ATTACHED: "engine.attached",
   ENGINE_DETACHED: "engine.detached",
+  /* Model weights. Listing and deleting what is on disk, finding what a
+     Hugging Face repository holds, downloading one with resume, and checking
+     a file that is already there. */
+  MODEL_LIST: "model.list",
+  MODEL_DELETE: "model.delete",
+  MODEL_SEARCH: "model.search",
+  MODEL_DOWNLOAD: "model.download",
+  MODEL_DOWNLOAD_CANCEL: "model.download.cancel",
+  MODEL_VERIFY: "model.verify",
 });
 
 /**
@@ -96,6 +105,14 @@ export const Notify = Object.freeze({
   /* Whether ForgeLocal's own engine is available. Carries no address and no
      token — only the fact. */
   ENGINE_READY: "engine.ready",
+  MODEL_LIST: "model.list",
+  MODEL_SEARCH: "model.search",
+  /* One per tick while a file is coming down, then one final frame. Progress
+     is its own notification rather than a reply, because a 40GB download
+     produces thousands of them and a reply happens once. */
+  MODEL_DOWNLOAD_PROGRESS: "model.download.progress",
+  MODEL_DOWNLOADED: "model.downloaded",
+  MODEL_VERIFIED: "model.verified",
 });
 
 export const REQUEST_TYPES = Object.freeze(Object.values(Request));

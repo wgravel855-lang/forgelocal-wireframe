@@ -41,6 +41,12 @@ const ALLOWED: &[&str] = &[
     "browser.control",
     "model.test",
     "model.test.cancel",
+    "model.list",
+    "model.delete",
+    "model.search",
+    "model.download",
+    "model.download.cancel",
+    "model.verify",
 ];
 
 pub struct Sidecar {
