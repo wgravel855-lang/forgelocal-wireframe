@@ -30,7 +30,8 @@
         <a class="setnav-r is-on" href="#general" data-set-nav="general" aria-current="location">General</a>
         <a class="setnav-r" href="#appearance" data-set-nav="appearance">Appearance</a>
         <p class="setnav-g seclabel">Agents</p>
-        <a class="setnav-r" href="#models" data-set-nav="models">Models & runtime</a>
+        <a class="setnav-r" href="#engine" data-set-nav="engine">Engine & models</a>
+        <a class="setnav-r" href="#models" data-set-nav="models">Provider</a>
         <a class="setnav-r" href="#answers" data-set-nav="answers">Answers</a>
         <a class="setnav-r" href="#tools" data-set-nav="tools">Tools</a>
         <a class="setnav-r" href="#permissions" data-set-nav="permissions">Permissions</a>
@@ -74,8 +75,48 @@
             </div>
           </section>
 
+          <!-- ForgeLocal's own inference engine.
+
+               Everything in here is rendered from the host: what the machine
+               actually has, whether the engine binary is installed, what it is
+               doing, and which model files are on disk with whether each will
+               run. Nothing is computed from a fixed hardware profile and
+               nothing claims a number the host could not measure. -->
+          <section class="setsec" id="engine">
+            <h1 class="h1" style="font-size:20px">Engine &amp; models</h1>
+            <p class="set-lede">ForgeLocal runs models itself. The engine listens only on this
+              machine, on a port chosen at launch, and requires a token generated for this
+              session. Nothing else on the computer can reach it.</p>
+
+            <h3 class="set-h3">This machine</h3>
+            <div data-hardware></div>
+
+            <h3 class="set-h3">Engine</h3>
+            <div class="capbox" data-engine></div>
+
+            <h3 class="set-h3">Models on this machine</h3>
+            <div data-downloads></div>
+            <div data-models></div>
+
+            <h3 class="set-h3">Add a model</h3>
+            <p class="set-d">Paste a Hugging Face repository that publishes GGUF files. Weights are
+              not part of the installer and are usually several gigabytes.</p>
+            <div class="bp-vp" style="max-width:520px">
+              <label class="vh" for="mdl-repo">Hugging Face repository</label>
+              <input id="mdl-repo" class="askfree" type="text" data-model-repo
+                placeholder="owner/repository-GGUF" autocomplete="off"
+                style="flex:1;height:36px;padding:0 11px;border:1px solid var(--line);border-radius:8px;background:var(--sunk);color:var(--fg);font:inherit">
+              <button class="btn btns" type="button" data-model-search>Look up</button>
+            </div>
+            <div data-model-results></div>
+          </section>
+
           <section class="setsec" id="models">
-            <h1 class="h1" style="font-size:20px">Models &amp; runtime</h1>
+            <h1 class="h1" style="font-size:20px">Provider</h1>
+            <p class="set-lede">Where answers come from. ForgeLocal's own engine is the default and
+              needs nothing else installed. An external server that speaks the OpenAI API — LM Studio,
+              llama-server, anything else — can be used instead.</p>
+            <div class="setopts" data-provider-source></div>
             <!-- Rendered from core/runtime.mjs. A runtime version, a device, a
                  model folder and an idle policy are facts only a connected
                  runtime reports, so there is no markup here to print them from

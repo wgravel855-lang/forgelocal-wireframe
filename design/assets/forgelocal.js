@@ -37,6 +37,9 @@ import { browserPanelBody, browserPanelHeader, VIEWPORTS } from "../core/browser
 import { normalizeStyle, styleLabel, OutputStyle } from "../core/styles.mjs";
 import { capabilityBlock, agentAllowed, gradeOf, GRADE_COPY } from "../core/capabilityview.mjs";
 import { toolGroupsHtml, requestedGroups, OPTIONAL_GROUPS, GROUP_COPY } from "../core/toolgroups.mjs";
+import {
+  engineBlock, hardwareSummary, modelsBlock, downloadRow, gbLabel,
+} from "../core/engineview.mjs";
 import { catalogViewState, localViewState, showsRows, showsDetail, stateBlockHtml } from "../core/viewstate.mjs";
 import {
   detectEnvironment, initialRuntime, reduceRuntime, isConnected,
@@ -1119,9 +1122,270 @@ import {
     paintToolGroups();
   }
 
+  /**
+   * The engine section, drawn from the host.
+   *
+   * Everything here is a fact the host reported. The hardware line says what
+   * it could not measure rather than filling the gap, and a model row with no
+   * fit says the machine could not be measured rather than showing a verdict
+   * computed from nothing.
+   */
+  function paintEngine() {
+    const hwHost = $("[data-hardware]");
+    if (hwHost) {
+      const hw = hardwareSummary(LIVE.hardware);
+      hwHost.innerHTML = `<p class="set-d m">${esc(hw.summary)}</p>`
+        + (hw.unknown.length && LIVE.hardware
+          ? `<p class="set-d"><em>Could not measure: ${esc(hw.unknown.join(", "))}. `
+            + `Anything that depends on those is left blank rather than guessed.</em></p>`
+          : "");
+    }
+
+    const engHost = $("[data-engine]");
+    if (engHost) {
+      engHost.innerHTML = engineBlock({
+        state: LIVE.engine,
+        installed: LIVE.engineInstalled,
+        log: LIVE.engineLog,
+        desktop: !!LIVE.client,
+      });
+    }
+
+    const dl = $("[data-downloads]");
+    if (dl) {
+      const rows = [...LIVE.downloads.values()];
+      dl.innerHTML = rows.map(downloadRow).join("");
+    }
+
+    const mHost = $("[data-models]");
+    if (mHost) {
+      const loadedName = LIVE.engine && LIVE.engine.state === "ready"
+        ? LIVE.engine.model : null;
+      mHost.innerHTML = modelsBlock({ ...LIVE.models, loadedName });
+    }
+  }
+
+  /** One delegated listener for the whole section; it is redrawn constantly. */
+  function wireEngine() {
+    const sec = $("#engine");
+    if (!sec || sec.dataset.engineWired === "true") return;
+    sec.dataset.engineWired = "true";
+
+    sec.addEventListener("click", async (e) => {
+      const el = e.target instanceof Element ? e.target : null;
+      if (!el || !LIVE.client) return;
+
+      if (el.closest("[data-engine-stop]")) {
+        try { await LIVE.client.engineStop(); }
+        catch (err) { announce(errText(err)); }
+        return;
+      }
+
+      const load = el.closest("[data-model-load]");
+      if (load) return loadModelFile(load.getAttribute("data-model-load"));
+
+      const del = el.closest("[data-model-delete]");
+      if (del) {
+        const name = del.getAttribute("data-model-delete");
+        const ok = await flConfirm({
+          title: `Delete ${name}?`,
+          body: "The file is removed from this machine. It can be downloaded again.",
+          confirm: "Delete",
+        });
+        if (!ok) return;
+        try { await LIVE.client.deleteModel(name); await refreshModels(); }
+        catch (err) { announce(errText(err)); }
+        return;
+      }
+
+      const check = el.closest("[data-model-verify]");
+      if (check) {
+        const name = check.getAttribute("data-model-verify");
+        announce(`Checking ${name}. This reads the whole file.`);
+        try { await LIVE.client.verifyModel({ name }); }
+        catch (err) { announce(errText(err)); }
+        return;
+      }
+
+      const cancel = el.closest("[data-download-cancel]");
+      if (cancel) {
+        LIVE.client.cancelDownload(cancel.getAttribute("data-download-cancel")).catch(() => {});
+        return;
+      }
+
+      if (el.closest("[data-model-search]")) return searchRepo();
+
+      const get = el.closest("[data-model-get]");
+      if (get) {
+        const file = LIVE.found?.files?.find((f) => f.name === get.getAttribute("data-model-get"));
+        if (file) startDownload(file);
+      }
+    });
+
+    sec.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && e.target instanceof Element && e.target.closest("[data-model-repo]")) {
+        e.preventDefault();
+        searchRepo();
+      }
+    });
+  }
+
+  /** Start the engine on one file, using the suggestion the runtime computed. */
+  async function loadModelFile(name) {
+    const m = LIVE.models.models.find((x) => x.name === name);
+    if (!m || !LIVE.client) return;
+    try {
+      await LIVE.client.engineStart({
+        model_path: m.path,
+        /* The runtime's suggestion, from the real probe. Nulls are passed
+           through as nulls: llama.cpp decides what nobody measured. */
+        gpu_layers: m.suggested?.gpuLayers ?? null,
+        context: m.suggested?.context ?? null,
+        parallel: 1,
+        flash_attention: true,
+      });
+      /* Connecting is separate from loading, and the renderer names the
+         source rather than an address: it has never been told where the
+         engine is. */
+      await connectProviderTracked(null, name);
+      if (LIVE.project) await openProject(LIVE.project.path);
+    } catch (err) {
+      announce(errText(err));
+    }
+  }
+
+  async function refreshModels() {
+    if (!LIVE.client) return;
+    try { await LIVE.client.listModels(LIVE.hardware); }
+    catch (err) { console.debug("[models]", err); }
+  }
+
+  async function searchRepo() {
+    const input = $("[data-model-repo]");
+    const out = $("[data-model-results]");
+    if (!input || !out || !LIVE.client) return;
+    const repo = input.value.trim();
+    if (!repo) return;
+    out.innerHTML = `<p class="set-d">Looking up ${esc(repo)}…</p>`;
+    try { await LIVE.client.searchModels(repo); }
+    catch (err) { out.innerHTML = `<p class="set-d">${esc(errText(err))}</p>`; }
+  }
+
+  function paintFound() {
+    const out = $("[data-model-results]");
+    if (!out) return;
+    if (!LIVE.found) { out.innerHTML = ""; return; }
+    const files = LIVE.found.files ?? [];
+    if (!files.length) {
+      out.innerHTML = `<p class="set-d">${esc(LIVE.found.repo)} has no GGUF files.</p>`;
+      return;
+    }
+    out.innerHTML = files.map((f) => `<div class="setrow">
+      <div><span class="set-l">${esc(f.name)}</span>
+        <p class="set-d m">${esc(gbLabel(f.bytes) ?? "size unknown")}${
+          f.sha256 ? " · checksum published" : " · no checksum published"}</p>
+        ${f.sha256 ? "" : `<p class="set-d"><em>This file is not stored as an LFS object, so
+          Hugging Face publishes no checksum for it. It will be checked for size and format
+          only.</em></p>`}</div>
+      <button class="btn btns" type="button" data-model-get="${esc(f.name)}">Download</button>
+    </div>`).join("");
+  }
+
+  function startDownload(file) {
+    if (!LIVE.client) return;
+    LIVE.downloads.set(file.name, { name: file.name, phase: "downloading", bytes: 0, total: file.bytes });
+    paintEngine();
+    LIVE.client.downloadModel({
+      url: file.url, name: file.name, bytes: file.bytes, sha256: file.sha256,
+    }).catch((err) => {
+      LIVE.downloads.delete(file.name);
+      paintEngine();
+      announce(errText(err));
+    });
+  }
+
+  const errText = (e) => (e && e.message ? e.message : String(e));
+
+  /**
+   * Where answers come from.
+   *
+   * ForgeLocal's own engine, or any OpenAI-compatible server the user runs.
+   * LM Studio is the second kind and is named because most people who have
+   * one have that one — but nothing in the product depends on it, and the
+   * option says so rather than treating it as a supported integration.
+   */
+  function paintProviderSource() {
+    const host = $("[data-provider-source]");
+    if (!host) return;
+    const source = store.get("provider-source", "internal");
+    const url = store.get("provider-url", "http://127.0.0.1:1234/v1");
+
+    host.innerHTML = `
+<label class="askopt">
+  <input type="radio" name="provider-source" value="internal"${source === "internal" ? " checked" : ""}>
+  <span class="askopt-b">
+    <span class="askopt-l">ForgeLocal's engine <span class="askopt-r">default</span></span>
+    <span class="askopt-d">Runs models itself. Nothing else to install, and the server it starts
+      listens only on this machine behind a token generated for the session.</span>
+  </span>
+</label>
+<label class="askopt">
+  <input type="radio" name="provider-source" value="external"${source === "external" ? " checked" : ""}>
+  <span class="askopt-b">
+    <span class="askopt-l">Another server</span>
+    <span class="askopt-d">Anything speaking the OpenAI API — LM Studio, llama-server, a machine
+      on your network. ForgeLocal does not manage it, does not load models into it, and cannot
+      report what it is doing.</span>
+  </span>
+</label>
+<div class="bp-vp" style="max-width:520px;margin-top:4px"${source === "external" ? "" : " hidden"}>
+  <label class="lab" for="prov-url">Address</label>
+  <input id="prov-url" type="text" data-provider-url value="${esc(url)}"
+    style="flex:1;height:34px;padding:0 11px;border:1px solid var(--line);border-radius:8px;background:var(--sunk);color:var(--fg);font:inherit">
+  <button class="btn btns" type="button" data-provider-connect>Connect</button>
+</div>`;
+  }
+
+  function wireProviderSource() {
+    const sec = $("#models");
+    if (!sec || sec.dataset.provWired === "true") return;
+    sec.dataset.provWired = "true";
+
+    sec.addEventListener("change", (e) => {
+      const r = e.target instanceof Element
+        ? e.target.closest('input[name="provider-source"]') : null;
+      if (!r) return;
+      store.set("provider-source", r.value);
+      paintProviderSource();
+      announce(r.value === "internal"
+        ? "ForgeLocal's engine will be used. Load a model to start it."
+        : "An external server will be used. Enter its address and connect.");
+    });
+
+    sec.addEventListener("click", async (e) => {
+      const b = e.target instanceof Element ? e.target.closest("[data-provider-connect]") : null;
+      if (!b || !LIVE.client) return;
+      const field = $("[data-provider-url]");
+      const url = field ? field.value.trim() : "";
+      if (!url) return;
+      store.set("provider-url", url);
+      try { await connectProviderTracked(url, null); }
+      catch (err) { announce(errText(err)); }
+    });
+
+    paintProviderSource();
+  }
+
   function wireSettings() {
     wireOutputStyle();
     wireToolGroups();
+    wireEngine();
+    wireProviderSource();
+    /* Painted here as well as from the host, so the no-host case renders
+       its own state. Without this the section was three empty boxes in the
+       web preview: engineBlock has a branch that says the engine needs the
+       desktop app, and nothing was calling it. */
+    paintEngine();
     $$(".switch").forEach((b) => {
       const key = "switch:" + (b.getAttribute("aria-label") || "");
       // Each state carries its own sentence, because swapping only the leading
@@ -4073,9 +4337,58 @@ import {
     providerBusy: false,
     /** The stored conformance verdict for the loaded model, or null. */
     profile: null,
+    /** What the host measured. Null until it answers, and null in the preview. */
+    hardware: null,
+    /** Whether the engine binary is in this build. */
+    engineInstalled: false,
+    /** The engine's state, straight from the host. */
+    engine: null,
+    /** Its last lines, for a failure worth reading. */
+    engineLog: [],
+    /** Models on disk, with their fit. */
+    models: { models: [], hardwareKnown: false, dir: null },
+    /** Downloads in flight, by file name. */
+    downloads: new Map(),
+    /** What a repository lookup returned. */
+    found: null,
     /** A run in flight: {done, total, line}, or null. */
     testing: null,
   };
+
+  /**
+   * Ask the host what this machine has, and follow the engine from then on.
+   *
+   * Every one of these is allowed to fail: the web preview has no host, and an
+   * older host may not have the commands. A failure leaves the field null, and
+   * null renders as "not measured" rather than as a default.
+   */
+  async function startEngineSurfaces() {
+    if (!LIVE.client) return;
+
+    LIVE.hardware = await LIVE.client.hardware();
+    LIVE.engineInstalled = await LIVE.client.engineInstalled();
+    LIVE.engine = await LIVE.client.engineStatus();
+    paintEngine();
+
+    /* The engine's state arrives as events rather than being polled: loading
+       a 30GB model produces a stream of progress lines, and asking every
+       second would show a state a second out of date. */
+    const io = tauriTransport();
+    if (io.onEngineState) {
+      io.onEngineState(async (ev) => {
+        LIVE.engine = ev.payload ?? ev;
+        if (LIVE.engine && LIVE.engine.state === "failed") {
+          // The engine's own last words, which are more specific about why a
+          // model would not load than anything this code could say.
+          LIVE.engineLog = await LIVE.client.engineLog();
+        }
+        paintEngine();
+        paintLiveComposer();
+      });
+    }
+
+    await refreshModels();
+  }
 
   /** Run a provider.connect with the model dot showing it is in flight. */
   async function connectProviderTracked(url, model) {
@@ -4378,6 +4691,33 @@ import {
       },
       onPermission: (card) => { LIVE.permission = card; paintLive(); },
       onQuestion: (q) => { LIVE.question = q; paintLive(); },
+      onEngineReady: () => { paintEngine(); },
+      onModelEvent: (type, payload) => {
+        if (type === "model.list") {
+          LIVE.models = {
+            models: payload.models ?? [],
+            hardwareKnown: payload.hardwareKnown === true,
+            dir: payload.dir ?? null,
+          };
+        }
+        if (type === "model.search") { LIVE.found = payload; paintFound(); }
+        if (type === "model.download.progress") {
+          LIVE.downloads.set(payload.name, payload);
+        }
+        if (type === "model.downloaded") {
+          LIVE.downloads.delete(payload.name);
+          announce(payload.ok
+            ? `${payload.name} is ready.${payload.note ? " " + payload.note : ""}`
+            : `${payload.name}: ${payload.reason}`);
+          refreshModels();
+        }
+        if (type === "model.verified") {
+          announce(payload.ok
+            ? `${payload.name} checks out${payload.verified ? " against its published checksum." : ", but no checksum was available."}`
+            : `${payload.name}: ${payload.reason}`);
+        }
+        paintEngine();
+      },
       onModelTest: (type, payload) => {
         LIVE.testing = type === "model.test.progress"
           ? { done: payload.done, total: payload.total, line: payload.line }
@@ -4463,6 +4803,7 @@ import {
     wireAskCard();
     wireBrowserPanel();
     wireCapability();
+    await startEngineSurfaces();
     paintLiveComposer();
     paintBrowserPanel();
   }

@@ -30,6 +30,12 @@ export const Request = Object.freeze({
   SESSION_RESUME: "session.resume",
   MODEL_TEST: "model.test",
   MODEL_TEST_CANCEL: "model.test.cancel",
+  MODEL_LIST: "model.list",
+  MODEL_DELETE: "model.delete",
+  MODEL_SEARCH: "model.search",
+  MODEL_DOWNLOAD: "model.download",
+  MODEL_DOWNLOAD_CANCEL: "model.download.cancel",
+  MODEL_VERIFY: "model.verify",
 });
 
 export const Notify = Object.freeze({
@@ -47,6 +53,12 @@ export const Notify = Object.freeze({
   MODEL_TEST_PROGRESS: "model.test.progress",
   MODEL_TESTED: "model.tested",
   SESSION_TOOLS: "session.tools",
+  ENGINE_READY: "engine.ready",
+  MODEL_LIST: "model.list",
+  MODEL_SEARCH: "model.search",
+  MODEL_DOWNLOAD_PROGRESS: "model.download.progress",
+  MODEL_DOWNLOADED: "model.downloaded",
+  MODEL_VERIFIED: "model.verified",
 });
 
 /** Is a desktop host present at all?
@@ -90,6 +102,18 @@ export function tauriTransport(w = window) {
     async info() { return invoke("host_info", {}); },
     async send(frame) { return invoke("runtime_send", { frame }); },
     async chooseProject() { return invoke("choose_project", {}); },
+
+    /* ForgeLocal's own engine. These are host commands rather than runtime
+       requests: the engine is a process the desktop host owns, and its port
+       and token are deliberately never returned here. */
+    async hardware() { return invoke("hardware_probe", {}); },
+    async engineInstalled() { return invoke("engine_installed", {}); },
+    async engineStatus() { return invoke("engine_status", {}); },
+    async engineLog() { return invoke("engine_log", {}); },
+    async engineStart(params) { return invoke("engine_start", { params }); },
+    async engineStop() { return invoke("engine_stop", {}); },
+    onEngineState(fn) { return listen("engine://state", fn); },
+    onEngineLog(fn) { return listen("engine://log", fn); },
     /** @param {(frame: any) => void} fn */
     onFrame(fn) { return listen("runtime://frame", fn); },
     /** @param {(line: string) => void} fn */
@@ -106,14 +130,18 @@ export function tauriTransport(w = window) {
  * @param {(card: any) => void} [opts.onPermission]
  * @param {(q: any) => void} [opts.onQuestion]
  * @param {(type: string, payload: any) => void} [opts.onModelTest]
+ * @param {(type: string, payload: any) => void} [opts.onModelEvent]
+ * @param {(available: boolean) => void} [opts.onEngineReady]
  * @param {(line: string) => void} [opts.onLog]
  */
 export function createHostClient({
   transport, onRuntimeState, onProviderState, onAgentEvent, onPermission, onQuestion, onLog,
-  onModelTest,
+  onModelTest, onModelEvent, onEngineReady,
 }) {
   /** @type {any} */
   const io = transport;
+  /** Whether the host has an engine running. Set by the runtime, never guessed. */
+  let engineAvailable = false;
   let seq = 0;
   /** id -> {resolve, reject} */
   const waiting = new Map();
@@ -162,6 +190,19 @@ export function createHostClient({
 
       case Notify.QUESTION_REQUESTED:
         if (onQuestion) onQuestion(frame.payload);
+        break;
+
+      case Notify.ENGINE_READY:
+        engineAvailable = frame.payload.available === true;
+        if (onEngineReady) onEngineReady(engineAvailable);
+        break;
+
+      case Notify.MODEL_DOWNLOAD_PROGRESS:
+      case Notify.MODEL_DOWNLOADED:
+      case Notify.MODEL_VERIFIED:
+      case Notify.MODEL_LIST:
+      case Notify.MODEL_SEARCH:
+        if (onModelEvent) onModelEvent(frame.type, frame.payload);
         break;
 
       case Notify.MODEL_TEST_PROGRESS:
@@ -244,8 +285,23 @@ export function createHostClient({
     /** The native folder dialog. The renderer never names a path itself. */
     async chooseProject() { return io.chooseProject(); },
 
+    get engineAvailable() { return engineAvailable; },
+
+    /**
+     * Point the runtime at a model.
+     *
+     * For ForgeLocal's own engine the renderer names the source and nothing
+     * else: it has never been told the address or the token, which is the
+     * point. For an external server it passes the URL the user typed.
+     *
+     * @param {string|null} baseUrl  null for the internal engine
+     * @param {string} model
+     * @param {number} [contextWindow]
+     */
     connectProvider(baseUrl, model, contextWindow) {
-      return request(Request.PROVIDER_CONNECT, { baseUrl, model, contextWindow }, 20000);
+      return request(Request.PROVIDER_CONNECT, baseUrl
+        ? { baseUrl, model, contextWindow }
+        : { source: "internal", model, contextWindow }, 20000);
     },
     disconnectProvider() { return request(Request.PROVIDER_DISCONNECT, {}, 5000); },
 
@@ -295,6 +351,70 @@ export function createHostClient({
      */
     testModel() { return request(Request.MODEL_TEST, {}, 20 * 60 * 1000); },
     cancelModelTest() { return request(Request.MODEL_TEST_CANCEL, {}, 5000); },
+
+    /* -------------------------------------------------- the local engine */
+
+    /** What this machine has, measured by the host. Null without one. */
+    async hardware() {
+      if (!io.hardware) return null;
+      try { return await io.hardware(); } catch { return null; }
+    },
+
+    async engineInstalled() {
+      if (!io.engineInstalled) return false;
+      try { return await io.engineInstalled(); } catch { return false; }
+    },
+
+    async engineStatus() {
+      if (!io.engineStatus) return { state: "stopped" };
+      try { return await io.engineStatus(); } catch { return { state: "stopped" }; }
+    },
+
+    /** The engine's own last lines, for a failure the user can act on. */
+    async engineLog() {
+      if (!io.engineLog) return [];
+      try { return await io.engineLog(); } catch { return []; }
+    },
+
+    /**
+     * Load a model.
+     *
+     * Resolves when it is answering or when it has failed; either way the
+     * state that came back says which, and the host has already told the
+     * runtime where to reach it. The renderer never sees the endpoint.
+     * @param {any} params
+     */
+    async engineStart(params) {
+      if (!io.engineStart) throw new Error("Loading a model needs the desktop app.");
+      return io.engineStart(params);
+    },
+
+    async engineStop() {
+      if (!io.engineStop) return null;
+      return io.engineStop();
+    },
+
+    /* ------------------------------------------------------ model weights */
+
+    /**
+     * What is on disk, with whether each will run here.
+     *
+     * The hardware is passed through from the host's probe rather than
+     * measured again: the arithmetic lives in the runtime so there is one
+     * answer to "will this fit".
+     * @param {any} hardware
+     */
+    listModels(hardware) {
+      return request(Request.MODEL_LIST, { hardware }, 15000);
+    },
+    deleteModel(name) { return request(Request.MODEL_DELETE, { name }, 15000); },
+    searchModels(repo) { return request(Request.MODEL_SEARCH, { repo }, 30000); },
+    /** Long: these files are tens of gigabytes. Progress arrives as events. */
+    downloadModel(file) {
+      return request(Request.MODEL_DOWNLOAD, file, 24 * 60 * 60 * 1000);
+    },
+    cancelDownload(name) { return request(Request.MODEL_DOWNLOAD_CANCEL, { name }, 5000); },
+    verifyModel(file) { return request(Request.MODEL_VERIFY, file, 60 * 60 * 1000); },
 
     /** What is on disk. Rows only: no events, no payloads. */
     listSessions(limit = 50) {

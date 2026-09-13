@@ -31,6 +31,7 @@ import { emptyProfile, AgentGrade, browserModeFor } from "../core/capability.mjs
 import { summarise, renderSummary } from "../core/compact.mjs";
 import { listModels, deleteModel, verifyModel, defaultModelDir } from "../core/models/files.mjs";
 import { downloadModel, listRepoFiles } from "../core/models/download.mjs";
+import { fitFor, suggestLoad } from "../core/models/fit.mjs";
 import {
   PROTOCOL_VERSION, Request, Notify, ErrorCode,
   invalidRequest, notify, encode, createDecoder,
@@ -213,7 +214,7 @@ async function handle(frame) {
     case Request.MODEL_TEST_CANCEL: return modelTestCancel(id);
     case Request.ENGINE_ATTACHED: return engineAttached(id, payload);
     case Request.ENGINE_DETACHED: return engineDetached(id);
-    case Request.MODEL_LIST: return modelList(id);
+    case Request.MODEL_LIST: return modelList(id, payload);
     case Request.MODEL_DELETE: return modelDelete(id, payload);
     case Request.MODEL_SEARCH: return modelSearch(id, payload);
     case Request.MODEL_DOWNLOAD: return modelDownload(id, payload);
@@ -236,11 +237,29 @@ async function handle(frame) {
  */
 const downloading = new Map();
 
-function modelList(id) {
+/**
+ * What is on disk, and whether each one will run here.
+ *
+ * The hardware comes from the caller because only the desktop host can
+ * measure it. The arithmetic stays here, in one place, rather than being
+ * mirrored into the renderer: a second copy of "will this fit" is a second
+ * answer waiting to disagree with the first.
+ *
+ * With no hardware, every model is listed with a null fit and the interface
+ * says it does not know — not a default that would be wrong for most people.
+ */
+function modelList(id, payload = {}) {
+  const hardware = payload.hardware ?? null;
   try {
+    const models = listModels().map((m) => ({
+      ...m,
+      fit: hardware && m.usable ? fitFor({ fileBytes: m.bytes, hardware }) : null,
+      suggested: hardware && m.usable ? suggestLoad({ fileBytes: m.bytes, hardware }) : null,
+    }));
     send(notify(Notify.MODEL_LIST, {
       dir: defaultModelDir(),
-      models: listModels(),
+      hardwareKnown: !!hardware,
+      models,
     }, { id }));
   } catch (/** @type {any} */ e) {
     fail(id, ErrorCode.INTERNAL, `The models folder could not be read: ${e && e.message}`);
