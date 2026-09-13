@@ -58,6 +58,58 @@ fn plain(path: PathBuf) -> PathBuf {
     }
 }
 
+/// The Node that runs the sidecar.
+///
+/// Resolution order, and the order is the whole point:
+///
+/// 1. `FORGELOCAL_NODE`, so a developer can point at a specific build.
+/// 2. The Node we shipped, under the app's resources.
+/// 3. `node` on PATH — **development only**.
+///
+/// Step three used to be the only step, which meant the app worked on a
+/// machine with developer tools and failed on every other one. A person who
+/// installs a chat application has not installed Node, and telling them to is
+/// telling them to become a developer first.
+///
+/// In a release build the fallback is gone rather than quiet. If the vendored
+/// runtime is not in the bundle, something went wrong in packaging, and picking
+/// up whatever `node` happens to be on the user's PATH would turn that into a
+/// heisenbug that reproduces only on machines that don't have one.
+fn locate_node(app: &AppHandle) -> Result<String, String> {
+    if let Ok(explicit) = std::env::var("FORGELOCAL_NODE") {
+        if !explicit.is_empty() {
+            return Ok(explicit);
+        }
+    }
+
+    let exe = if cfg!(windows) { "node.exe" } else { "node" };
+    if let Ok(dir) = app.path().resource_dir() {
+        let bundled = plain(dir).join("vendor").join("node").join(exe);
+        if bundled.exists() {
+            return Ok(bundled.to_string_lossy().to_string());
+        }
+    }
+
+    // Development: the vendored copy sits in the source tree before packaging.
+    let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let in_tree = manifest.join("vendor").join("node").join(exe);
+    if in_tree.exists() {
+        return Ok(in_tree.to_string_lossy().to_string());
+    }
+
+    #[cfg(debug_assertions)]
+    {
+        devlog("[host] no vendored node; falling back to PATH (development only)");
+        return Ok("node".into());
+    }
+
+    #[cfg(not(debug_assertions))]
+    Err(format!(
+        "The bundled runtime is missing: no {exe} under the application's resources. \
+         This build was packaged incorrectly. Reinstalling ForgeLocal should fix it."
+    ))
+}
+
 fn locate_script(app: &AppHandle) -> PathBuf {
     if let Ok(dir) = app.path().resource_dir() {
         let bundled = plain(dir).join("runtime").join("host").join("sidecar.mjs");
@@ -114,6 +166,17 @@ fn runtime_start(app: AppHandle, state: State<'_, HostState>) -> Result<u32, Str
         let pid = state.sidecar.pid();
         devlog(&format!("[host] runtime already running (pid {pid})"));
         return Ok(pid);
+    }
+    if state.node.is_empty() {
+        /* locate_node already said why in the log. This is the sentence the
+           person sees, and it names the fix rather than the missing file:
+           nobody installing a chat app can act on "no node.exe under
+           resources". */
+        return Err(
+            "ForgeLocal's runtime did not ship with this build, so nothing can start. \
+             Reinstalling ForgeLocal should fix it."
+                .to_string(),
+        );
     }
     if !state.script.exists() {
         return Err(format!(
@@ -319,13 +382,24 @@ fn main() {
                 script.display(),
                 script.exists()
             ));
+            /* A packaging failure is reported here rather than at the first
+               message. The window still opens and still says what is wrong;
+               refusing to start would leave a person with an app that flashes
+               and vanishes, which is the least debuggable failure there is. */
+            let node = match locate_node(&handle) {
+                Ok(n) => {
+                    devlog(&format!("[host] node={n}"));
+                    n
+                }
+                Err(e) => {
+                    devlog(&format!("[host] {e}"));
+                    String::new()
+                }
+            };
             app.manage(HostState {
                 sidecar: Arc::new(Sidecar::new()),
                 engine: Arc::new(Engine::new()),
-                // A bundled runtime would ship its own Node; development uses
-                // the one on PATH, and a missing one is reported rather than
-                // guessed at.
-                node: std::env::var("FORGELOCAL_NODE").unwrap_or_else(|_| "node".into()),
+                node,
                 script,
             });
             Ok(())

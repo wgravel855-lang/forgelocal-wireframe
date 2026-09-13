@@ -60,6 +60,14 @@ export const Request = Object.freeze({
   MODEL_DOWNLOAD: "model.download",
   MODEL_DOWNLOAD_CANCEL: "model.download.cancel",
   MODEL_VERIFY: "model.verify",
+  /* The engine itself. Not host-only: these say "fetch the llama.cpp build
+     this machine can use" and carry no address and no token. The endpoint and
+     the session secret still only ever come from the host, through
+     ENGINE_ATTACHED above, and that is the boundary that matters. */
+  ENGINE_LIST: "engine.list",
+  ENGINE_INSTALL: "engine.install",
+  ENGINE_INSTALL_CANCEL: "engine.install.cancel",
+  ENGINE_REMOVE: "engine.remove",
 });
 
 /**
@@ -113,6 +121,13 @@ export const Notify = Object.freeze({
   MODEL_DOWNLOAD_PROGRESS: "model.download.progress",
   MODEL_DOWNLOADED: "model.downloaded",
   MODEL_VERIFIED: "model.verified",
+  /* What is installed, what is available for this machine, and how a fetch of
+     one is going. The progress frames carry the asset name because a CUDA
+     install is two archives and a bar that restarts with no explanation looks
+     like a bug rather than like the second file. */
+  ENGINE_LIST: "engine.list",
+  ENGINE_INSTALL_PROGRESS: "engine.install.progress",
+  ENGINE_INSTALLED: "engine.installed",
 });
 
 export const REQUEST_TYPES = Object.freeze(Object.values(Request));

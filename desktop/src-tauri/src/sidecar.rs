@@ -47,6 +47,14 @@ const ALLOWED: &[&str] = &[
     "model.download",
     "model.download.cancel",
     "model.verify",
+    // The engine as a thing to install, not as a thing to point at. These ask
+    // the runtime to fetch a verified llama.cpp build for this machine; the
+    // endpoint and the session token still only ever come from this host,
+    // through engine.attached, which is deliberately absent from this list.
+    "engine.list",
+    "engine.install",
+    "engine.install.cancel",
+    "engine.remove",
 ];
 
 pub struct Sidecar {

@@ -35,7 +35,9 @@
     "resources": {
       "../../runtime": "runtime",
       "../../design/core": "design/core",
-      "binaries/*": ""
+      "binaries/*": "",
+      "vendor/node/node.exe": "vendor/node/node.exe",
+      "vendor/node_modules/playwright-core": "node_modules/playwright-core"
     }
   }
 }

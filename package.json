@@ -11,14 +11,18 @@
     "test:e2e": "node --test design/qa/e2e.mjs && npm run test:console",
     "check": "npm run lint && npm run typecheck && npm test && npm run test:runtime && npm run test:e2e",
     "test:console": "node design/qa/console-run.mjs",
-    "test:runtime": "node --test \"runtime/core/*.test.mjs\" \"runtime/core/tools/*.test.mjs\" \"runtime/core/models/*.test.mjs\" \"runtime/core/providers/*.test.mjs\" \"runtime/core/browser/*.test.mjs\" \"runtime/host/*.test.mjs\"",
-    "golden": "node runtime/golden.mjs"
+    "test:runtime": "node --test \"runtime/core/*.test.mjs\" \"runtime/core/tools/*.test.mjs\" \"runtime/core/models/*.test.mjs\" \"runtime/engine/*.test.mjs\" \"runtime/core/providers/*.test.mjs\" \"runtime/core/browser/*.test.mjs\" \"runtime/host/*.test.mjs\"",
+    "golden": "node runtime/golden.mjs",
+    "vendor": "node scripts/vendor-node.mjs",
+    "vendor:check": "node scripts/vendor-node.mjs --check"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.11.4",
     "@types/node": "^26.5.0",
     "jsdom": "^30.0.1",
-    "playwright-core": "^1.63.0",
     "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "playwright-core": "^1.63.0"
   }
 }

@@ -20,3 +20,9 @@ desktop/src-tauri/gen/
 # Model weights are never here either; they live in the user's model folder.
 desktop/src-tauri/binaries/
 .forgelocal/engine-cache/
+
+# The vendored Node and playwright-core, produced by scripts/vendor-node.mjs.
+# A hundred megabytes of third-party binary that any build can reproduce from
+# runtime/vendor/node-manifest.mjs, verified against the checksum nodejs.org
+# publishes. The manifest is committed; the payload is not.
+desktop/src-tauri/vendor/

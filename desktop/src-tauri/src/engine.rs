@@ -168,13 +168,79 @@ impl Engine {
     }
 }
 
-/// Where the bundled server is.
+/// Engines the user has installed, newest build first.
 ///
-/// `externalBin` puts it beside the executable with the target triple stripped.
-/// In development it is wherever `scripts/fetch-engine.mjs` placed it, which is
-/// the same `binaries/` directory the bundler reads.
+/// This is the normal case. The installer carries no engine — it is
+/// hardware-specific and the NVIDIA path is 645MB — so the engine that runs is
+/// almost always one the app downloaded into the user's own data directory on
+/// first run. `runtime/engine/install.mjs` is what puts it there, and this must
+/// agree with it about where "there" is.
+///
+/// Directories are named `<build>-<accel>`, so several can coexist and an
+/// upgrade that turns out badly is a matter of pointing back at the older one.
+/// Dot-prefixed directories are staging and are skipped: during an install they
+/// briefly contain a real executable that is about to be moved or deleted.
+fn installed_engines() -> Vec<PathBuf> {
+    let name = if cfg!(windows) { "llama-server.exe" } else { "llama-server" };
+    let root = match std::env::var("FORGELOCAL_ENGINE_DIR") {
+        Ok(v) if !v.is_empty() => PathBuf::from(v),
+        _ => {
+            let base = if cfg!(windows) {
+                std::env::var("LOCALAPPDATA").ok().map(PathBuf::from)
+            } else if cfg!(target_os = "macos") {
+                std::env::var("HOME")
+                    .ok()
+                    .map(|h| PathBuf::from(h).join("Library").join("Application Support"))
+            } else {
+                std::env::var("XDG_DATA_HOME")
+                    .ok()
+                    .map(PathBuf::from)
+                    .or_else(|| {
+                        std::env::var("HOME")
+                            .ok()
+                            .map(|h| PathBuf::from(h).join(".local").join("share"))
+                    })
+            };
+            match base {
+                Some(b) => b
+                    .join(if cfg!(windows) { "ForgeLocal" } else { "forgelocal" })
+                    .join("engines"),
+                None => return Vec::new(),
+            }
+        }
+    };
+
+    let mut found: Vec<(String, PathBuf)> = Vec::new();
+    if let Ok(entries) = std::fs::read_dir(&root) {
+        for e in entries.flatten() {
+            let dir_name = e.file_name().to_string_lossy().to_string();
+            if dir_name.starts_with('.') {
+                continue;
+            }
+            let exe = e.path().join(name);
+            if exe.exists() {
+                found.push((dir_name, exe));
+            }
+        }
+    }
+    // Newest build first. Tags sort as `b<number>`, so a plain descending sort
+    // over the directory name puts b11000 above b10936.
+    found.sort_by(|a, b| b.0.cmp(&a.0));
+    found.into_iter().map(|(_, p)| p).collect()
+}
+
+/// Where the server is.
+///
+/// A user-installed engine wins over anything in the bundle. That order is
+/// deliberate: if a build ever does ship an engine, the one the person
+/// downloaded for *their* hardware is the better answer than a generic one we
+/// guessed at packaging time.
 pub fn locate(app: &AppHandle) -> Option<PathBuf> {
     let name = if cfg!(windows) { "llama-server.exe" } else { "llama-server" };
+
+    if let Some(installed) = installed_engines().into_iter().next() {
+        return Some(installed);
+    }
 
     if let Ok(dir) = app.path().resource_dir() {
         let p = strip_unc(dir).join(name);
@@ -639,6 +705,73 @@ pub fn stop(engine: &Arc<Engine>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The locator has to agree with `runtime/engine/install.mjs` about the
+    /// layout, in a different language and a different process. These pin the
+    /// three rules that agreement rests on.
+    #[test]
+    fn an_installed_engine_is_found_and_staging_is_not() {
+        let root = std::env::temp_dir().join(format!("fl-loc-{}", token()));
+        let exe = if cfg!(windows) {
+            "llama-server.exe"
+        } else {
+            "llama-server"
+        };
+
+        // Two real installs and one staging directory mid-download.
+        for dir in ["b10936-vulkan", "b11000-cpu", ".staging-b11000-cuda12"] {
+            let d = root.join(dir);
+            std::fs::create_dir_all(&d).unwrap();
+            std::fs::write(d.join(exe), b"not really an engine").unwrap();
+        }
+        // A directory that never finished: no executable in it.
+        std::fs::create_dir_all(root.join("b10500-cpu")).unwrap();
+
+        // Safety: single-threaded test, and the variable is removed below.
+        unsafe { std::env::set_var("FORGELOCAL_ENGINE_DIR", &root) };
+        let found = installed_engines();
+        unsafe { std::env::remove_var("FORGELOCAL_ENGINE_DIR") };
+
+        assert_eq!(found.len(), 2, "expected exactly the two complete installs");
+
+        let names: Vec<String> = found
+            .iter()
+            .map(|p| {
+                p.parent()
+                    .unwrap()
+                    .file_name()
+                    .unwrap()
+                    .to_string_lossy()
+                    .to_string()
+            })
+            .collect();
+        assert_eq!(
+            names[0], "b11000-cpu",
+            "the newest build should be preferred"
+        );
+        assert!(
+            names.iter().all(|n| !n.starts_with('.')),
+            "a staging directory was offered as an installed engine: {names:?}"
+        );
+        assert!(
+            !names.iter().any(|n| n == "b10500-cpu"),
+            "a directory with no executable was counted as an engine"
+        );
+
+        std::fs::remove_dir_all(&root).ok();
+    }
+
+    #[test]
+    fn no_engine_directory_is_not_an_error() {
+        let root = std::env::temp_dir().join(format!("fl-empty-{}", token()));
+        unsafe { std::env::set_var("FORGELOCAL_ENGINE_DIR", &root) };
+        let found = installed_engines();
+        unsafe { std::env::remove_var("FORGELOCAL_ENGINE_DIR") };
+        assert!(
+            found.is_empty(),
+            "a machine with no engine installed should report none, not fail"
+        );
+    }
 
     #[test]
     fn a_token_is_not_guessable() {

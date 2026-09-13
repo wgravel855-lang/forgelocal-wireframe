@@ -33,6 +33,10 @@ import { listModels, deleteModel, verifyModel, defaultModelDir } from "../core/m
 import { downloadModel, listRepoFiles } from "../core/models/download.mjs";
 import { fitFor, suggestLoad } from "../core/models/fit.mjs";
 import {
+  installEngine, listEngines, removeEngine, engineDirName,
+} from "../engine/install.mjs";
+import { buildsFor, ENGINE_BUILD, isSupportedPlatform, totalBytes } from "../engine/manifest.mjs";
+import {
   PROTOCOL_VERSION, Request, Notify, ErrorCode,
   invalidRequest, notify, encode, createDecoder,
 } from "./protocol.mjs";
@@ -228,6 +232,10 @@ async function handle(frame) {
     case Request.MODEL_DOWNLOAD: return modelDownload(id, payload);
     case Request.MODEL_DOWNLOAD_CANCEL: return modelDownloadCancel(id, payload);
     case Request.MODEL_VERIFY: return modelVerify(id, payload);
+    case Request.ENGINE_LIST: return engineList(id);
+    case Request.ENGINE_INSTALL: return engineInstall(id, payload);
+    case Request.ENGINE_INSTALL_CANCEL: return engineInstallCancel(id);
+    case Request.ENGINE_REMOVE: return engineRemove(id, payload);
     default: return fail(id, ErrorCode.UNKNOWN_TYPE, `Unhandled type ${type}`);
   }
 }
@@ -342,6 +350,100 @@ function modelDownloadCancel(id, payload) {
   /* The partial file survives. A cancel that threw away thirty gigabytes
      would make cancelling something people are afraid to do. */
   c.abort();
+}
+
+/* ------------------------------------------------------------- the engine */
+
+/** The install in flight, if there is one. At most one: they are hundreds of
+ *  megabytes and two at once would compete for the same staging directory. */
+/** @type {AbortController|null} */
+let installing = null;
+
+/**
+ * What is installed and what could be.
+ *
+ * Both halves, because the interface needs to say "you have this one, these
+ * are the others" and computing the difference in the renderer would mean two
+ * places that know the build list.
+ */
+async function engineList(id) {
+  const installed = await listEngines();
+  const available = buildsFor().map((b) => ({
+    id: b.id, label: b.label, accel: b.accel, note: b.note,
+    bytes: totalBytes(b),
+    /* Installed-ness is per build *and* per acceleration, because the
+       directory name is both. */
+    installed: installed.some((e) => e.build === ENGINE_BUILD && e.id === b.id),
+  }));
+  send(notify(Notify.ENGINE_LIST, {
+    build: ENGINE_BUILD,
+    supported: isSupportedPlatform(),
+    installed: installed.map((e) => ({
+      dir: e.dir.split(/[\\/]/).pop(), build: e.build, id: e.id,
+      bytes: e.bytes, installedAt: e.installedAt,
+    })),
+    available,
+  }, { id }));
+}
+
+/**
+ * Fetch and install one build.
+ *
+ * Progress is a notification rather than a reply because a CUDA install is
+ * 645MB across two archives and produces thousands of ticks. The final frame
+ * is sent on both paths, so an interface that is waiting for it is never left
+ * waiting because the thing failed.
+ */
+async function engineInstall(id, payload) {
+  if (installing) {
+    return fail(id, ErrorCode.BUSY, "An engine is already being installed.");
+  }
+  const controller = new AbortController();
+  installing = controller;
+  try {
+    const out = await installEngine({
+      id: payload.id ? String(payload.id) : undefined,
+      hardware: payload.hardware ?? null,
+      signal: controller.signal,
+      onProgress: (e) => send(notify(Notify.ENGINE_INSTALL_PROGRESS, e, { id })),
+    });
+    /* The path is not sent. The renderer has never needed to know where the
+       engine lives and giving it one would be the first step towards it
+       deciding which one to run. */
+    send(notify(Notify.ENGINE_INSTALLED, {
+      ok: true, build: out.build, id: out.id, reused: !!out.reused,
+    }, { id }));
+  } catch (/** @type {any} */ e) {
+    const aborted = controller.signal.aborted;
+    send(notify(Notify.ENGINE_INSTALLED, {
+      ok: false,
+      cancelled: aborted,
+      reason: aborted
+        ? "The engine download was cancelled. Nothing was installed."
+        : `The engine could not be installed: ${e && e.message ? e.message : e}`,
+    }, { id }));
+  } finally {
+    installing = null;
+  }
+}
+
+function engineInstallCancel(id) {
+  if (!installing) {
+    return send(notify(Notify.ENGINE_INSTALLED, {
+      ok: false, cancelled: true, reason: "No engine is being installed.",
+    }, { id }));
+  }
+  installing.abort();
+}
+
+async function engineRemove(id, payload) {
+  const dir = String(payload.dir ?? "");
+  if (!/^[A-Za-z0-9._-]+$/.test(dir)) {
+    return fail(id, ErrorCode.BAD_ARGUMENT, "That is not an engine name.");
+  }
+  const out = await removeEngine(dir);
+  if (!out.ok) return fail(id, ErrorCode.BAD_ARGUMENT, out.reason);
+  return engineList(id);
 }
 
 async function modelVerify(id, payload) {

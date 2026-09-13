@@ -72,6 +72,19 @@ export async function runCommand(ctx, args, opts = {}) {
     // No shell. The argv array is passed through, which is the whole point:
     // a model-authored string never reaches a command interpreter.
     shell: false,
+    /* Its own process group, on POSIX.
+     *
+     * killTree kills `-pid`, which means "every process in the group led by
+     * pid" — and that only means anything if the child actually leads a group,
+     * which is what detached does. Without it the child stays in *our* group,
+     * so `-pid` names a group that does not exist: the kill fails, the
+     * fallback kills the direct child alone, and a grandchild keeps running
+     * and keeps writing. The Windows tests could not catch this because
+     * Windows takes the taskkill path instead.
+     *
+     * Not detached on Windows, where it opens a console window and the tree is
+     * walked by taskkill /t rather than by process group. */
+    detached: process.platform !== "win32",
   });
 
   let stdout = "";
@@ -157,6 +170,11 @@ export async function runCommand(ctx, args, opts = {}) {
  * On Windows, `child.kill()` terminates only the direct child. A `cmd` or
  * `npm` wrapper leaves the real work running, which is how a "cancelled"
  * command keeps writing to the disk. `taskkill /T` walks the tree.
+ *
+ * Elsewhere the tree is a process group, and `kill(-pid)` signals all of it.
+ * That depends on runCommand spawning detached so the child leads a group of
+ * its own; without that, `-pid` names our own group, and the fallback below
+ * quietly degrades to killing the direct child alone.
  *
  * @param {number|undefined} pid
  */

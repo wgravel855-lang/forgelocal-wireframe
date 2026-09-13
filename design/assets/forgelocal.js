@@ -23,6 +23,7 @@ import {
   installedSections, installedFooter, installedStats, downloadsHtml, downloadStrip,
   downloadsBadge, downloadsSummary, pickerHtml, composerModelLabel,
 } from "../core/modelviews.mjs";
+import { liveModelState } from "../core/liveModels.mjs";
 import { THIS_PC } from "../core/machine.mjs";
 import { gb, fmtCtx as fmtCtxUI } from "../core/units.mjs";
 import { renderCard } from "../core/modelcard.mjs";
@@ -2151,7 +2152,39 @@ import {
     /** @type {Set<() => void>} */ subs: new Set(),
   };
 
+  /**
+   * Whether the runtime has told us what is on disk.
+   *
+   * Not "is the client connected": a connected client that has not answered
+   * model.list yet knows nothing, and rendering an empty list at that moment
+   * would say "you have no models" to somebody who has six.
+   */
+  function haveLiveModels() {
+    return !!(LIVE.client && LIVE.models && Array.isArray(LIVE.models.models));
+  }
+
+  /**
+   * The model store, from the runtime when there is one.
+   *
+   * The Models pages were built against a seeded catalogue in localStorage,
+   * which was right while there was nothing to ask and wrong afterwards: it
+   * showed the same rows on a machine with no models installed as on one with
+   * six, and neither had anything to do with the folder the engine loads from.
+   *
+   * The pages are not rewritten. liveModelState produces the same shape they
+   * already render, so there is one rendering path with a different source
+   * under it — and the fixture remains exactly where it belongs, which is the
+   * static preview with no runtime behind it.
+   */
   function hydrateModels() {
+    if (haveLiveModels()) {
+      const p = LIVE.client.provider;
+      MODELS.state = liveModelState(LIVE.models, {
+        loaded: p && p.connected ? p.model : null,
+        agentReady: !!(LIVE.profile && LIVE.profile.agentGrade === "ready"),
+      });
+      return MODELS.state;
+    }
     if (MODELS.state) return MODELS.state;
     let saved = null;
     try {
@@ -4360,6 +4393,8 @@ import {
      * conversation has a session and no folder, so the two came apart and the
      * composer needs the one it actually depends on. */
     session: null,
+    /** Session rows from session.list, or [] when there are none to show. */
+    sessions: [],
     running: false,
     // A provider.connect this renderer has sent and not yet had answered. The
     // model dot reads it, because the provider itself only reports the result.
@@ -4714,11 +4749,23 @@ import {
     }
   }
 
+  /**
+   * Connect this window to the host.
+   *
+   * This is the application shell, not a screen. It used to return early when
+   * the route had no [data-composer], which meant /app/models/,
+   * /app/models/installed/ and /app/settings/ never created a host client at
+   * all: every model operation on those pages ran against nothing, and the
+   * only reason the app appeared to work was that people reached them from the
+   * workspace, where the composer had already done the connecting.
+   *
+   * The composer is now one of the things that gets wired *if it is there*,
+   * rather than the thing that decides whether anything is wired.
+   */
   async function wireDesktop() {
     if (!hasTauri()) return;                       // browser: nothing to connect
     const form = $("[data-composer]");
-    if (!form) { tellHost("wireDesktop: no composer on this route"); return; }
-    tellHost(`wireDesktop: starting; globalApi=${!!(/** @type {any} */ (window).__TAURI__)}`);
+    tellHost(`wireDesktop: starting; composer=${!!form}; globalApi=${!!(/** @type {any} */ (window).__TAURI__)}`);
 
     LIVE.client = createHostClient({
       transport: tauriTransport(),
@@ -4787,13 +4834,16 @@ import {
        screen beside a real session: the header named the folder that was
        actually open while the sidebar went on naming a different one, and
        "Add a filter bar to the list" sat in a list of sessions that never
-       happened. The runtime does not persist sessions yet, so the honest
-       state is one live session and no history, and that is what this says. */
+       happened.
+
+       It is emptied here and filled by restoreSessions from session.list.
+       What replaced the fixture used to say ForgeLocal keeps no session
+       history, which was true when it was written and is not true now: the
+       runtime stores sessions and their events in SQLite and can replay
+       them. Saying otherwise told people to expect to lose work they were
+       not going to lose. */
     const list = $(".chat-list");
-    if (list) {
-      list.innerHTML = `<p class="side-empty">This session only. ForgeLocal does not keep
-        a session history yet.</p>`;
-    }
+    if (list) { list.innerHTML = `<p class="side-empty">Loading sessions&hellip;</p>`; }
     $$("[data-project-label]").forEach((el) => { el.textContent = "No project"; });
     $$("[data-project-count]").forEach((el) => { el.hidden = true; });
 
@@ -4832,22 +4882,178 @@ import {
 
     paintLive();
 
-    // Reach the model server. Failure is reported and the app stays usable.
-    try {
-      await connectProviderTracked(store.get("provider-url", "http://127.0.0.1:1234/v1"), null);
-    } catch (e) {
-      console.debug("[forgelocal] provider not reachable yet", e && e.message);
+    /* Reach a model server, but only one the person actually chose.
+     *
+     * This used to connect to 127.0.0.1:1234 on every launch regardless of the
+     * provider source, which defaults to internal. On a machine with no LM
+     * Studio that is a guaranteed failure at startup, and on a machine with
+     * one it silently adopts a server the person never pointed us at. The
+     * internal engine is connected by startEngineSurfaces when it reports
+     * ready; nothing here should be reaching for port 1234 unless "Another
+     * server" is the stored choice. */
+    if (store.get("provider-source", "internal") === "external") {
+      const url = store.get("provider-url", "");
+      if (url) {
+        try {
+          await connectProviderTracked(url, null);
+        } catch (e) {
+          console.debug("[forgelocal] external provider not reachable yet", e && e.message);
+        }
+      }
     }
 
+    /* Screens. Each wires itself if its markup is on this route, so opening
+       Models or Settings directly gets a live page instead of a dead one. */
     wireLiveProject();
     wireLiveModelPicker();
-    wireLiveComposer(form);
+    if (form) wireLiveComposer(form);
     wireAskCard();
     wireBrowserPanel();
     wireCapability();
     await startEngineSurfaces();
+    await restoreSessions();
     paintLiveComposer();
     paintBrowserPanel();
+  }
+
+  /* ------------------------------------------------------- session history */
+
+  /** A date a person can read, without pretending to more precision than helps. */
+  function whenLabel(ms) {
+    if (!ms) return "";
+    const d = new Date(ms);
+    if (Number.isNaN(d.getTime())) return "";
+    const days = Math.floor((Date.now() - ms) / 86400000);
+    if (days <= 0) return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+    if (days === 1) return "Yesterday";
+    if (days < 7) return `${days} days ago`;
+    return d.toLocaleDateString([], { month: "short", day: "numeric" });
+  }
+
+  /**
+   * Fill the sidebar from what is actually on disk.
+   *
+   * Three states, and each is said rather than inferred: the store could not
+   * be opened, the store is empty, or here are the sessions. The middle one
+   * is not a failure and does not read as one.
+   */
+  async function restoreSessions() {
+    const list = $(".chat-list");
+    if (!list || !LIVE.client) return;
+    try {
+      const frame = await LIVE.client.listSessions(50);
+      const payload = frame.payload ?? {};
+      if (!payload.available) {
+        LIVE.sessions = [];
+        list.innerHTML = `<p class="side-empty">${esc(payload.reason
+          || "Session history could not be opened on this machine.")}</p>`;
+        return;
+      }
+      LIVE.sessions = Array.isArray(payload.sessions) ? payload.sessions : [];
+      paintSessions();
+    } catch (e) {
+      LIVE.sessions = [];
+      list.innerHTML = `<p class="side-empty">Session history could not be read: ${
+        esc(e && e.message ? e.message : String(e))}</p>`;
+    }
+  }
+
+  /** Render LIVE.sessions. Grouped by what the runtime says, not by guesswork. */
+  function paintSessions() {
+    const list = $(".chat-list");
+    if (!list) return;
+    const rows = LIVE.sessions;
+    if (!rows.length) {
+      list.innerHTML = `<p class="side-empty">No saved sessions yet. The one you start
+        will be here when you come back.</p>`;
+      return;
+    }
+
+    /* Two buckets, both from the stored status. "Interrupted" is the one a
+       person needs to see first: it did not finish and nobody stopped it. */
+    const unfinished = rows.filter((r) => r.interrupted);
+    const rest = rows.filter((r) => !r.interrupted);
+
+    /* The same shape the sidebar already uses: one row, one title, one status
+       slot. The project and the date go in the tooltip and the accessible
+       label rather than into a second line, because a second line would mean
+       new rules for the sidebar and this milestone is not redesigning it. */
+    const row = (r) => {
+      const title = r.title || (r.root ? basename(r.root) : "Conversation");
+      const where = r.root ? basename(r.root) : "no project";
+      const when = whenLabel(r.updatedAt || r.createdAt);
+      const detail = [where, when].filter(Boolean).join(" \u00b7 ");
+      const current = r.sessionId === LIVE.session;
+      return `<div class="chat${current ? " is-on" : ""}" data-session-row="${esc(r.sessionId)}"
+        data-project="${esc(where)}" data-bucket="${r.interrupted ? "needs" : "recent"}">
+        <button class="chat-open" type="button" title="${esc(`${title} \u2014 ${detail}`)}"
+          data-session-open="${esc(r.sessionId)}"
+          aria-label="${esc(`${title}, ${detail}${r.interrupted ? ", did not finish" : ""}`)}">
+          <span class="t" data-chat-title>${esc(title)}</span>
+          ${r.interrupted
+            ? `<span class="chat-mark is-need" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><path d="M12 7.5v5.5"/><circle cx="12" cy="16.6" r=".9" fill="currentColor" stroke="none"/></svg></span>`
+            : ""}
+          <span class="vh" data-chat-state>${r.interrupted ? "did not finish" : "saved"}</span>
+        </button>
+      </div>`;
+    };
+
+    const chevron = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" '
+      + 'stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" '
+      + 'aria-hidden="true"><path d="m6 9.5 6 6 6-6"/></svg>';
+    const group = (id, label, items) => (items.length
+      ? `<section class="cgroup" data-group="${id}">
+        <h2 class="cgroup-hd"><button type="button" data-group-toggle aria-expanded="true">${
+          chevron}${esc(label)}</button></h2>
+        <div class="cgroup-body">${items.map(row).join("")}</div>
+      </section>`
+      : "");
+
+    list.innerHTML = group("needs", "Did not finish", unfinished)
+      + group("recent", unfinished.length ? "Earlier" : "Sessions", rest);
+
+    $$("[data-session-open]", list).forEach((b) => {
+      b.addEventListener("click", () => openSession(b.dataset.sessionOpen));
+    });
+  }
+
+  /**
+   * Reopen a stored session.
+   *
+   * The transcript is not reconstructed here. The runtime replays the stored
+   * events as ordinary agent events marked `replayed`, and the same reducer
+   * that built the transcript live folds them again — so a reopened session
+   * cannot show something that never happened, and there is no second
+   * rendering path to drift from the first.
+   *
+   * @param {string} id
+   */
+  async function openSession(id) {
+    if (!LIVE.client || !id) return;
+    /* Cleared before the replay, not after: the events arrive one at a time
+       and folding them onto the previous session's view would interleave two
+       transcripts. */
+    LIVE.view = initialRunView();
+    LIVE.permission = null;
+    LIVE.question = null;
+    LIVE.session = null;
+    paintLive();
+    try {
+      const frame = await LIVE.client.resumeSession(id);
+      const payload = frame.payload ?? {};
+      LIVE.session = payload.sessionId ?? id;
+      const root = payload.root || null;
+      LIVE.project = root ? { path: root, name: basename(root) } : null;
+      if (root) store.set("project", { name: LIVE.project.name, path: root });
+      paintProjectLabels();
+      if (payload.wasInterrupted) {
+        toast("This session was interrupted. Its transcript is what had happened when it stopped.", "warn");
+      }
+      paintSessions();
+      paintLive();
+    } catch (e) {
+      showLiveError(e);
+    }
   }
 
   /* The project comes from the OS dialog, through the host. */
@@ -4902,14 +5108,7 @@ import {
            launch does not silently reopen something the person left. */
         LIVE.project = null;
         store.set("project", null);
-        $$("[data-project-name]").forEach((el) => { el.textContent = "Choose project"; });
-        $$("[data-project-choose]").forEach((b) => {
-          b.dataset.empty = "true";
-          b.title = "No folder open. The agent can talk, but cannot read or change anything.";
-        });
-        $$("[data-pd-name]").forEach((el) => { el.textContent = "No project"; });
-        $$("[data-pd-path]").forEach((el) => { el.textContent = "Not open"; el.title = ""; });
-        $$("[data-project-label]").forEach((el) => { el.textContent = "No project"; });
+        paintProjectLabels();
         LIVE.view = initialRunView();
         paintLive();
         return;
@@ -4917,18 +5116,7 @@ import {
 
       LIVE.project = { path: root, name: basename(root) };
       store.set("project", { name: LIVE.project.name, path: LIVE.project.path });
-      // The canonical path the runtime resolved, not the string the dialog gave.
-      $$("[data-project-name]").forEach((el) => { el.textContent = LIVE.project.name; });
-      $$("[data-project-choose]").forEach((b) => {
-        b.dataset.empty = "false";
-        b.title = LIVE.project.path;
-      });
-      $$("[data-pd-name]").forEach((el) => { el.textContent = LIVE.project.name; });
-      $$("[data-pd-path]").forEach((el) => { el.textContent = LIVE.project.path; el.title = ""; });
-      // The sidebar names the project too, under its own attribute. It was
-      // missed here, so the header said the folder that was open and the
-      // sidebar went on naming the fixture one, in the same window.
-      $$("[data-project-label]").forEach((el) => { el.textContent = LIVE.project.name; });
+      paintProjectLabels();
       LIVE.view = initialRunView();
       paintLive();
     } catch (e) {
@@ -4939,6 +5127,33 @@ import {
   }
 
   const basename = (p) => String(p).replace(/[\\/]+$/, "").split(/[\\/]/).pop() || p;
+
+  /**
+   * Say which project is open, everywhere it is named.
+   *
+   * One function because there are four places that name it and they had
+   * already disagreed once: the header said the folder that was open while
+   * the sidebar went on naming the fixture one, in the same window. Reading
+   * LIVE.project rather than taking an argument means a caller cannot paint a
+   * label for a project that is not the open one.
+   */
+  function paintProjectLabels() {
+    const p = LIVE.project;
+    $$("[data-project-name]").forEach((el) => {
+      el.textContent = p ? p.name : "Choose project";
+    });
+    $$("[data-project-choose]").forEach((b) => {
+      b.dataset.empty = p ? "false" : "true";
+      b.title = p ? p.path
+        : "No folder open. The agent can talk, but cannot read or change anything.";
+    });
+    $$("[data-pd-name]").forEach((el) => { el.textContent = p ? p.name : "No project"; });
+    $$("[data-pd-path]").forEach((el) => {
+      el.textContent = p ? p.path : "Not open";
+      el.title = "";
+    });
+    $$("[data-project-label]").forEach((el) => { el.textContent = p ? p.name : "No project"; });
+  }
 
   /* Only models the server actually has. */
   /**
