@@ -498,3 +498,38 @@ test("loading a model opens a session whether or not a project is open", () => {
   const opens = js.match(/await openProject\(LIVE\.project \? LIVE\.project\.path : null\)/g) ?? [];
   assert.equal(opens.length, 3, `expected three model-load paths, found ${opens.length}`);
 });
+
+/* ------------------------------ opening a folder must not reset the chat */
+
+test("opening a project attaches it instead of starting a new session", () => {
+  /* Reported from use: the model said "open a project folder so I can read
+     that file" — which is what the prompt tells it to say — and opening one
+     cleared the conversation. openProject called createSession every time, so
+     the transcript that had just asked for the folder was thrown away at the
+     moment the person acted on it, and the old session was left running.
+
+     The check is on the branch, because that is what went wrong: a window with
+     a live session attaches, and only a window without one creates. */
+  const js = readFileSync(join(pub, "assets/forgelocal.js"), "utf8");
+
+  const fn = /async function openProject\(path\) \{([\s\S]*?)\n  \}/.exec(js);
+  assert.ok(fn, "openProject is not where this test expects it");
+  assert.match(fn[1], /if \(LIVE\.session\) return attachProject\(/,
+    "openProject still creates a session even when one is already open");
+
+  const attach = /async function attachProject\(path\) \{([\s\S]*?)\n  \}/.exec(js);
+  assert.ok(attach, "there is no attachProject");
+  assert.match(attach[1], /setSessionRoot\(/,
+    "attachProject does not use the request that keeps the session");
+  assert.ok(!/createSession\(/.test(attach[1]),
+    "attachProject creates a session, which is the bug it exists to fix");
+  assert.ok(!/initialRunView\(\)/.test(attach[1]),
+    "attaching a folder still resets the transcript");
+});
+
+test("the client can ask for a folder without asking for a session", () => {
+  const client = readFileSync(join(pub, "core/hostclient.mjs"), "utf8");
+  assert.match(client, /setSessionRoot\(root\)/,
+    "the renderer has no way to attach a folder to an open session");
+  assert.match(client, /SESSION_SET_ROOT: "session\.root"/);
+});

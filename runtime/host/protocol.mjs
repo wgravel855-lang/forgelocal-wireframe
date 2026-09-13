@@ -36,6 +36,13 @@ export const Request = Object.freeze({
      the whole point is to reach a session this process did not create. */
   SESSION_LIST: "session.list",
   SESSION_RESUME: "session.resume",
+  /* Give an open conversation a project folder, or take one away.
+
+     Deliberately not "create a session with a root instead". The model is
+     told to ask for a folder when it needs one, so the person opening one is
+     usually mid-conversation, and answering that by starting a new session
+     would throw away the exchange that led to it. */
+  SESSION_SET_ROOT: "session.root",
   /* Run the conformance suite against the connected model. Its own request
      because it costs ten real model turns: it is something a person chooses
      to do, never something that happens on connect. */
@@ -110,6 +117,11 @@ export const Notify = Object.freeze({
   /* Sent only when a session got fewer tool groups than it asked for, so a
      toggle the runtime refused does not sit there looking enabled. */
   SESSION_TOOLS: "session.tools",
+  /* The open conversation's folder changed. Deliberately not session.created:
+     the interface must repaint the project labels and the tool controls
+     WITHOUT clearing the transcript, and a frame that says "created" invites
+     exactly the opposite. */
+  SESSION_ROOT: "session.root",
   /* Whether ForgeLocal's own engine is available. Carries no address and no
      token — only the fact. */
   ENGINE_READY: "engine.ready",
@@ -138,6 +150,10 @@ const REQUESTS = new Set(REQUEST_TYPES);
 const NEEDS_SESSION = new Set([
   Request.SESSION_DISPOSE, Request.TURN_START, Request.TURN_CANCEL,
   Request.PERMISSION_RESOLVE, Request.QUESTION_ANSWER, Request.BROWSER_CONTROL,
+  /* Attaching a folder is something done *to* an open conversation. Without
+     one there is nothing to attach it to, and the caller wants session.create
+     with a root instead. */
+  Request.SESSION_SET_ROOT,
 ]);
 
 export const ErrorCode = Object.freeze({

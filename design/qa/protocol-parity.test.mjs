@@ -23,7 +23,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { REQUEST_TYPES, HOST_ONLY } from "../../runtime/host/protocol.mjs";
+import { REQUEST_TYPES, NOTIFY_TYPES, HOST_ONLY } from "../../runtime/host/protocol.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const RUST = join(root, "desktop", "src-tauri", "src", "sidecar.rs");
@@ -77,5 +77,37 @@ test("every allowed request looks like a request and not a notification", () => 
      the renderer could send that nothing handles. */
   for (const t of rustAllowed()) {
     assert.match(t, /^[a-z]+\.[a-z.]+$/, `${t} is not a request name`);
+  }
+});
+
+/* -------------------------------------------- the client's own copy, too */
+
+/**
+ * The renderer cannot import from the runtime tree — it is a static site built
+ * separately — so design/core/hostclient.mjs keeps its own copy of the request
+ * and notification names. Three copies of one list now, and nothing compared
+ * the third: adding session.setRoot meant hand-syncing it, and a typo there
+ * would have produced a request the sidecar refuses with "unknown type" at the
+ * moment a person clicks something.
+ */
+test("the renderer's copy of the protocol matches the runtime's", async () => {
+  const client = await import("../core/hostclient.mjs");
+
+  for (const [name, value] of Object.entries(client.Request)) {
+    assert.ok(REQUEST_TYPES.includes(value),
+      `the client can send ${name} ("${value}"), which the runtime does not accept`);
+  }
+  for (const [name, value] of Object.entries(client.Notify)) {
+    assert.ok(NOTIFY_TYPES.includes(value),
+      `the client listens for ${name} ("${value}"), which the runtime never sends`);
+  }
+
+  /* The other direction is a warning, not a failure: the runtime may
+     legitimately have requests the renderer has no button for, and every
+     HOST_ONLY one is required to be absent. But a notification the runtime
+     sends and the client has no name for is a frame nobody handles. */
+  for (const value of HOST_ONLY) {
+    assert.ok(!Object.values(client.Request).includes(value),
+      `the renderer has a name for ${value}, which only the host may send`);
   }
 });

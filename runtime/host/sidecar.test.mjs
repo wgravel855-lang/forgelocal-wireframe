@@ -931,3 +931,155 @@ test("a folder still gives a session its tools", async () => {
   await server.close();
   clean(base);
 });
+
+/* ------------------------------- opening a folder mid-conversation */
+
+test("opening a project keeps the conversation that asked for it", async () => {
+  /* The bug, exactly. The prompt tells a model with no folder to say so and
+     ask the person to open one. Opening one used to mean session.create — a
+     NEW session — so the transcript that had just explained why a folder was
+     needed vanished at the moment the person acted on it, and the old session
+     was left running in the runtime.
+
+     What must be true: same session id, same event log, and the model's next
+     turn still carries what was said before. */
+  const base = repo();
+  const server = await startFakeModelServer({
+    turns: [{ text: "I cannot read that file. Open a project folder." }, { text: "Now I can." }],
+  });
+  const s = start();
+
+  const created = await chatOnly(s, server, { mode: "manual" });
+  const sessionId = created.payload.sessionId;
+  assert.equal(created.payload.root, null);
+  assert.deepEqual(created.payload.groups, []);
+
+  s.send(Request.TURN_START, { text: "What is in src/a.js?" }, sessionId);
+  await s.wait((f) => f.type === Notify.TURN_COMPLETED && f.sessionId === sessionId);
+
+  const before = s.frames.filter((f) => f.type === Notify.AGENT_EVENT).length;
+  assert.ok(before > 0, "the first turn produced no events to lose");
+
+  // The person opens a folder.
+  const rid = s.send(Request.SESSION_SET_ROOT, { root: base }, sessionId);
+  const attached = await s.wait((f) => f.id === rid
+    && (f.type === Notify.SESSION_ROOT || f.type === Notify.TURN_FAILED));
+  assert.equal(attached.type, Notify.SESSION_ROOT,
+    `attaching a folder failed: ${attached.payload?.message}`);
+
+  assert.equal(attached.payload.sessionId, sessionId,
+    "opening a folder started a different session");
+  assert.equal(attached.payload.canAct, true);
+  assert.ok(attached.payload.groups.includes("read"),
+    `a folder was opened and no tools arrived: ${attached.payload.groups}`);
+
+  /* Nothing said the session was created again. That frame is what an
+     interface would act on by clearing the screen. */
+  const creates = s.frames.filter((f) => f.type === Notify.SESSION_CREATED);
+  assert.equal(creates.length, 1, "a second session was created behind the scenes");
+
+  /* The conversation is still there: the model's next turn is sent the
+     earlier exchange. */
+  s.send(Request.TURN_START, { text: "Try again." }, sessionId);
+  await s.wait((f) => f.type === Notify.TURN_COMPLETED && f.sessionId === sessionId
+    && s.frames.filter((x) => x.type === Notify.TURN_COMPLETED).length >= 2);
+
+  const sent = server.requests[server.requests.length - 1];
+  const said = sent.messages.map((m) => String(m.content ?? "")).join("\n");
+  assert.match(said, /What is in src\/a\.js\?/,
+    "the conversation was lost when the folder was opened");
+
+  const system = sent.messages.filter((m) => m.role === "system")
+    .map((m) => m.content).join("\n");
+  assert.ok(!/No project folder is open/.test(system),
+    "the prompt still claims there is no project after one was opened");
+  assert.match(system, /Project root:/);
+
+  const offered = (sent.tools ?? []).map((t) => t.function.name);
+  assert.ok(offered.includes("read_file"),
+    `no file tools after a folder was opened: ${offered}`);
+
+  await s.stop();
+  await server.close();
+  clean(base);
+});
+
+test("a reopened session remembers the folder it was given", async () => {
+  /* The store row has to follow, or closing the app loses the folder while
+     keeping the transcript that depends on it. */
+  const base = repo();
+  const stateDir = mkdtempSync(join(tmpdir(), "fl-attach-"));
+  const server = await startFakeModelServer({ turns: [{ text: "ok" }, { text: "ok" }] });
+
+  const first = start({ stateDir });
+  const created = await chatOnly(first, server, { mode: "manual" });
+  const sessionId = created.payload.sessionId;
+  first.send(Request.TURN_START, { text: "hello" }, sessionId);
+  await first.wait((f) => f.type === Notify.TURN_COMPLETED);
+
+  const rid = first.send(Request.SESSION_SET_ROOT, { root: base }, sessionId);
+  await first.wait((f) => f.id === rid && f.type === Notify.SESSION_ROOT);
+  await first.stop();
+
+  const second = start({ stateDir });
+  await second.wait((f) => f.type === Notify.RUNTIME_STATE);
+  second.send(Request.PROVIDER_CONNECT, { baseUrl: server.baseUrl, model: server.model });
+  await second.wait((f) => f.type === Notify.PROVIDER_STATE && f.payload.connected);
+  const back = second.send(Request.SESSION_RESUME, { sessionId });
+  const resumed = await second.wait((f) => f.id === back
+    && (f.type === Notify.SESSION_CREATED || f.type === Notify.TURN_FAILED));
+  assert.equal(resumed.type, Notify.SESSION_CREATED,
+    `the session would not reopen: ${resumed.payload?.message}`);
+  assert.equal(resumed.payload.root, base,
+    "a session reopened without the folder it had been given");
+
+  await second.stop();
+  await server.close();
+  clean(base);
+  rmSync(stateDir, { recursive: true, force: true });
+});
+
+test("a folder cannot be swapped underneath a running turn", async () => {
+  /* Mid-turn the model is reasoning from a prompt that says there is no
+     folder, and tools would appear between one tool call and the next. */
+  const base = repo();
+  const server = await startFakeModelServer({ turns: [{ hang: true }] });
+  const s = start();
+  const created = await chatOnly(s, server, { mode: "manual" });
+  const sessionId = created.payload.sessionId;
+
+  s.send(Request.TURN_START, { text: "think about this for a while" }, sessionId);
+  await s.wait((f) => f.type === Notify.AGENT_EVENT && f.sessionId === sessionId);
+
+  const rid = s.send(Request.SESSION_SET_ROOT, { root: base }, sessionId);
+  const refused = await s.wait((f) => f.id === rid
+    && (f.type === Notify.TURN_FAILED || f.type === Notify.SESSION_ROOT));
+  assert.equal(refused.type, Notify.TURN_FAILED, "a folder was attached mid-turn");
+  assert.match(refused.payload.message, /Finish or stop the current turn/);
+
+  await s.stop();
+  await server.close();
+  clean(base);
+});
+
+test("a folder that escapes is refused, and the session keeps the one it had", async () => {
+  const base = repo();
+  const server = await startFakeModelServer({ turns: [{ text: "ok" }] });
+  const s = start();
+  const created = await open(s, server, base);
+  const sessionId = created.payload.sessionId;
+
+  const rid = s.send(Request.SESSION_SET_ROOT, { root: "\u0000not a path" }, sessionId);
+  const refused = await s.wait((f) => f.id === rid
+    && (f.type === Notify.TURN_FAILED || f.type === Notify.SESSION_ROOT));
+  assert.equal(refused.type, Notify.TURN_FAILED, "a bad path was accepted as a project folder");
+
+  // and the session still works with the folder it had
+  s.send(Request.TURN_START, { text: "still here?" }, sessionId);
+  const done = await s.wait((f) => f.type === Notify.TURN_COMPLETED && f.sessionId === sessionId);
+  assert.equal(done.payload.stop, "final");
+
+  await s.stop();
+  await server.close();
+  clean(base);
+});

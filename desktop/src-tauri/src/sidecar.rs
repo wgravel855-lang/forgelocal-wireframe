@@ -32,6 +32,10 @@ const ALLOWED: &[&str] = &[
     "session.dispose",
     "session.list",
     "session.resume",
+    // Attaching a project folder to the conversation that is already open.
+    // Without this the renderer's only way to open a folder is session.create,
+    // which starts a new session and discards the transcript that asked for it.
+    "session.root",
     "turn.start",
     "turn.cancel",
     "permission.resolve",

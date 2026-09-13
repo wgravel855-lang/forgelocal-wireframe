@@ -5093,7 +5093,23 @@ import {
    *
    * @param {string|null} path
    */
+  /**
+   * Open a folder for the conversation that is already happening.
+   *
+   * The bug this replaces: this used to call createSession every time, which
+   * starts a *new* session and cleared the transcript. So the model would say
+   * "I cannot read that file, open a project folder" — the thing the prompt
+   * tells it to say — and doing what it asked wiped the conversation that had
+   * just asked for it. The abandoned session was left running in the runtime
+   * too.
+   *
+   * Now: a live session is given the folder and keeps everything else. Only a
+   * window with no session open creates one.
+   *
+   * @param {string|null} path
+   */
   async function openProject(path) {
+    if (LIVE.session) return attachProject(path);
     /* Cleared first. If the call fails there is no session, and Send must not
        stay enabled on the strength of the last one. */
     LIVE.session = null;
@@ -5122,6 +5138,38 @@ import {
     } catch (e) {
       LIVE.session = null;
       paintLive();
+      showLiveError(e);
+    }
+  }
+
+  /**
+   * Attach a folder to the session that is already open.
+   *
+   * Everything the person can see stays: the transcript, the pending question,
+   * the plan. What changes is the project labels and the tool controls, because
+   * a conversation that gains a folder gains tools with it — and the runtime is
+   * what decides that, so the groups are read back from its answer rather than
+   * assumed here.
+   *
+   * @param {string|null} path
+   */
+  async function attachProject(path) {
+    try {
+      const frame = await LIVE.client.setSessionRoot(path ?? null);
+      const root = frame.payload.root || null;
+      LIVE.project = root ? { path: root, name: basename(root) } : null;
+      store.set("project", root ? { name: LIVE.project.name, path: root } : null);
+      paintProjectLabels();
+      /* The transcript is deliberately left alone. Resetting the run view
+         here is what made choosing a folder look like the app had forgotten
+         the conversation, and e2e.mjs asserts this stays absent. */
+      paintToolGroups();
+      paintLiveComposer();
+      paintLive();
+      announce(root
+        ? `${LIVE.project.name} is open. The agent can now read and change files in it.`
+        : "The project folder was closed. The agent can talk, but cannot read or change anything.");
+    } catch (e) {
       showLiveError(e);
     }
   }

@@ -28,6 +28,7 @@ export const Request = Object.freeze({
   BROWSER_CONTROL: "browser.control",
   SESSION_LIST: "session.list",
   SESSION_RESUME: "session.resume",
+  SESSION_SET_ROOT: "session.root",
   MODEL_TEST: "model.test",
   MODEL_TEST_CANCEL: "model.test.cancel",
   MODEL_LIST: "model.list",
@@ -53,6 +54,7 @@ export const Notify = Object.freeze({
   MODEL_TEST_PROGRESS: "model.test.progress",
   MODEL_TESTED: "model.tested",
   SESSION_TOOLS: "session.tools",
+  SESSION_ROOT: "session.root",
   ENGINE_READY: "engine.ready",
   MODEL_LIST: "model.list",
   MODEL_SEARCH: "model.search",
@@ -425,6 +427,21 @@ export function createHostClient({
     },
     cancelDownload(name) { return request(Request.MODEL_DOWNLOAD_CANCEL, { name }, 5000); },
     verifyModel(file) { return request(Request.MODEL_VERIFY, file, 60 * 60 * 1000); },
+
+    /**
+     * Give the open conversation a project folder, or take one away.
+     *
+     * Not createSession. The model is told to ask for a folder when it needs a
+     * file it cannot read, so the person opening one is usually mid-sentence
+     * with it — and creating a session would throw away the exchange that led
+     * there. The session keeps its id, its transcript and its event log, and
+     * gains a root.
+     *
+     * @param {string|null} root
+     */
+    setSessionRoot(root) {
+      return request(Request.SESSION_SET_ROOT, { root: root ?? null }, 20000);
+    },
 
     /** What is on disk. Rows only: no events, no payloads. */
     listSessions(limit = 50) {

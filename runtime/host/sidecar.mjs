@@ -222,6 +222,7 @@ async function handle(frame) {
     case Request.BROWSER_CONTROL: return browserControl(id, sessionId, payload);
     case Request.SESSION_LIST: return sessionList(id, payload);
     case Request.SESSION_RESUME: return sessionResume(id, payload);
+    case Request.SESSION_SET_ROOT: return sessionSetRoot(id, sessionId, payload);
     case Request.MODEL_TEST: return modelTest(id, payload);
     case Request.MODEL_TEST_CANCEL: return modelTestCancel(id);
     case Request.ENGINE_ATTACHED: return engineAttached(id, payload);
@@ -799,6 +800,71 @@ function sessionResume(id, payload) {
     status: row.status,
     summarised: !!summary,
   }, { id, sessionId: wanted }));
+}
+
+/**
+ * Give an open conversation a project folder.
+ *
+ * This exists because of a bug worth stating plainly. The prompt tells a model
+ * with no folder to say so and ask the person to open one — and opening one
+ * used to mean session.create, which is a *new* session. The transcript that
+ * had just explained why a folder was needed disappeared at the moment the
+ * person acted on it. Answering "open a folder" with a blank screen is worse
+ * than never offering the folder.
+ *
+ * So the session keeps its identity, its event log, its messages and its plan,
+ * and gains a root. The stored row is updated rather than replaced, because it
+ * is one conversation that gained a folder partway through; recording it as
+ * two would lose the half that explains the other.
+ *
+ * Tools arrive with the folder, through the same allowedGroups that refuses
+ * them without one — so this is also the moment a conversation stops being
+ * only a conversation, and it says so.
+ */
+async function sessionSetRoot(id, sessionId, payload) {
+  const s = sessions.get(sessionId);
+  if (!s) return fail(id, ErrorCode.NO_SUCH_SESSION, "That session is not open.");
+  if (s.running) {
+    /* Mid-turn the model is already reasoning from a prompt that says there is
+       no folder, and tools would appear underneath it between one tool call
+       and the next. */
+    return fail(id, ErrorCode.BUSY,
+      "Finish or stop the current turn before opening a project folder.");
+  }
+
+  /** @type {string|null} */
+  let root = null;
+  if (payload.root) {
+    try {
+      root = canonicalRoot(String(payload.root));
+    } catch (/** @type {any} */ e) {
+      return fail(id, ErrorCode.BAD_ARGUMENT,
+        e instanceof PathEscape ? e.message : "That project folder could not be opened.");
+    }
+  }
+
+  s.root = root;
+  /* The same place session.create puts them: inside the project, because a
+     checkpoint of a file belongs beside the file it can restore. */
+  s.agent.setRoot(root, {
+    snapshotDir: root ? join(root, ".forgelocal", "snapshots") : undefined,
+  });
+
+  const profile = profiles && provider
+    ? profiles.get(provider.info.baseUrl, provider.info.model)
+    : null;
+  s.groups = s.agent.setGroups(allowedGroups(DEFAULT_GROUPS, profile, root));
+
+  /* The row follows the session rather than the other way round. A store that
+     cannot be written is not a reason to refuse the folder — the person would
+     lose the conversation to protect a record of it. */
+  try { store.setRoot(sessionId, root ?? ""); } catch (/** @type {any} */ e) {
+    log(`[sidecar] the session row could not be updated: ${e && e.message}`);
+  }
+
+  send(notify(Notify.SESSION_ROOT, {
+    sessionId, root, canAct: !!root, groups: s.groups,
+  }, { id, sessionId }));
 }
 
 async function sessionDispose(id, sessionId) {

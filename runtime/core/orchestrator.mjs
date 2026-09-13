@@ -103,6 +103,10 @@ export const StopReason = Object.freeze({
  *   reopened after a restart.
  */
 export function createOrchestrator({
+  /* Reassigned by setRoot, which is why this is destructured into a binding
+     that is written to later rather than used as a constant. A conversation
+     that starts with no folder can be given one without becoming a different
+     conversation. */
   root, provider, mode = "manual", sessionId = randomUUID(),
   onEvent, paths = {}, limits: limitsIn = LIMITS, now = () => Date.now(),
   style = OutputStyle.ADAPTIVE, capabilities = null, skills = [],
@@ -119,7 +123,9 @@ export function createOrchestrator({
     return ev;
   };
 
-  const instructions = loadInstructions(root);
+  /* Reloaded by setRoot: a project's instructions belong to the project, and
+     a session that gains one gains them. */
+  let instructions = loadInstructions(root);
   const ledger = createLedger();
   const grants = new Set();
 
@@ -857,6 +863,47 @@ export function createOrchestrator({
     get approvedOrigins() { return [...grantedOrigins]; },
 
     start() { started(); },
+
+    /**
+     * Give this conversation a project folder, or take it away.
+     *
+     * The conversation survives. That is the entire point: the model is told
+     * to ask for a folder when it needs one, and the person who then opens one
+     * must not lose what they were talking about — answering "open a folder"
+     * with a blank screen is worse than not offering the folder at all.
+     *
+     * What changes is everything downstream of the root, and it changes for
+     * the *next* turn rather than retroactively: the system prompt is rebuilt
+     * per turn by buildMessages, so it picks this up on its own, and the
+     * project's own instructions are reloaded here because they belong to the
+     * project rather than to the session.
+     *
+     * What does not change is the message history, the ledger, the plan, or
+     * the event log. The transcript is one conversation that gained a folder
+     * partway through, and recording it as two would lose the half that
+     * explains why the folder was opened.
+     *
+     * Permissions are not carried across. Grants are keyed to what the person
+     * approved when there was nothing to act on, and a grant made in a
+     * conversation with no tools must not become a standing permission over a
+     * folder they have only just named.
+     *
+     * @param {string|null} next  a canonical root, or null to detach
+     * @param {{snapshotDir?: string}} [paths2]
+     */
+    setRoot(next, paths2 = {}) {
+      const changed = (next ?? null) !== (root ?? null);
+      root = next ?? null;
+      ctx.root = root;
+      instructions = loadInstructions(root);
+      if (paths2.snapshotDir !== undefined) ctx.snapshotDir = paths2.snapshotDir;
+      if (changed) {
+        /* Approvals do not follow the folder. */
+        grants.clear();
+        grantedOrigins.clear();
+      }
+      return root;
+    },
 
     /**
      * Turn tool groups on or off for subsequent turns.

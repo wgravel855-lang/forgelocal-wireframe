@@ -157,6 +157,7 @@ export function openStore(dir) {
     closeSession: db.prepare(
       "UPDATE sessions SET status = ?, closed_at = ?, updated_at = ? WHERE id = ?"),
     setTitle: db.prepare("UPDATE sessions SET title = ?, updated_at = ? WHERE id = ?"),
+    setRoot: db.prepare("UPDATE sessions SET root = ?, updated_at = ? WHERE id = ?"),
     getSession: db.prepare("SELECT * FROM sessions WHERE id = ?"),
     listSessions: db.prepare(
       "SELECT * FROM sessions ORDER BY updated_at DESC LIMIT ?"),
@@ -212,6 +213,25 @@ export function openStore(dir) {
     /** @param {string} id @param {string|null} title */
     setTitle(id, title) {
       stmt.setTitle.run(title, now(), id);
+    },
+
+    /**
+     * The folder this session works in, changed after the fact.
+     *
+     * A conversation can start without one and be given one partway through,
+     * which is the ordinary case rather than an odd one: the model is told to
+     * ask for a folder when it needs a file it cannot read. The row is updated
+     * rather than a second session being written, because it is one
+     * conversation — and splitting it would leave the half that explains why
+     * the folder was opened attached to a session with no folder.
+     *
+     * `""` means no folder. The column is NOT NULL and an empty string is
+     * already what a session with no project is stored as.
+     *
+     * @param {string} id @param {string} root
+     */
+    setRoot(id, root) {
+      stmt.setRoot.run(root, now(), id);
     },
 
     /** @param {string} id @param {string} status */
